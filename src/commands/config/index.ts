@@ -70,10 +70,10 @@ profilesCommand
   .action(() => {
     const profiles = listProfiles();
     const config = loadConfig();
-    profiles.forEach((name) => {
+    for (const name of profiles) {
       const marker = name === config['default-profile'] ? ' (default)' : '';
       console.log(`${name}${marker}`);
-    });
+    }
   });
 
 profilesCommand

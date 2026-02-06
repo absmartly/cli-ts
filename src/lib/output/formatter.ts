@@ -145,30 +145,12 @@ export function formatMarkdown(data: unknown, options: OutputOptions = {}): stri
 }
 
 export function formatValue(value: unknown, options: OutputOptions = {}): string {
-  if (value === null || value === undefined) {
-    return '';
-  }
-
-  if (typeof value === 'boolean') {
-    return value ? 'true' : 'false';
-  }
-
-  if (typeof value === 'number') {
-    return String(value);
-  }
-
-  if (typeof value === 'string') {
-    return truncateText(value, options);
-  }
-
-  if (Array.isArray(value)) {
-    return value.map((v) => formatValue(v, options)).join(', ');
-  }
-
-  if (typeof value === 'object') {
-    return JSON.stringify(value);
-  }
-
+  if (value === null || value === undefined) return '';
+  if (typeof value === 'boolean') return String(value);
+  if (typeof value === 'number') return String(value);
+  if (typeof value === 'string') return truncateText(value, options);
+  if (Array.isArray(value)) return value.map((v) => formatValue(v, options)).join(', ');
+  if (typeof value === 'object') return JSON.stringify(value);
   return String(value);
 }
 
@@ -186,9 +168,8 @@ export function truncateText(text: string, options: OutputOptions = {}): string 
 }
 
 export function colorize(text: string, color: string, noColor = false): string {
-  if (noColor) {
-    return text;
-  }
+  if (noColor) return text;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const colorFn = (chalk as any)[color];
-  return typeof colorFn === 'function' ? colorFn(text) : text;
+  return typeof colorFn === 'function' ? (colorFn as (s: string) => string)(text) : text;
 }

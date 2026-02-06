@@ -29,7 +29,7 @@ describe('experiments list command integration', () => {
       expect(receivedParams?.get('offset')).toBe('40');
     });
 
-    it('should handle page 1 with offset 0 (offset not sent when 0)', async () => {
+    it('should handle page 1 with offset 0 (offset IS sent even when 0)', async () => {
       let receivedParams: URLSearchParams | null = null;
       server.use(
         http.get(`${BASE_URL}/experiments`, ({ request }) => {
@@ -45,7 +45,7 @@ describe('experiments list command integration', () => {
 
       await client.listExperiments({ limit, offset });
 
-      expect(receivedParams?.has('offset')).toBe(false);
+      expect(receivedParams?.get('offset')).toBe('0');
       expect(receivedParams?.get('limit')).toBe('10');
     });
 

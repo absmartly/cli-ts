@@ -1,35 +1,20 @@
 import { Command } from 'commander';
-import { getAPIClientFromOptions, getGlobalOptions } from '../../lib/utils/api-helper.js';
-import { formatOutput } from '../../lib/output/formatter.js';
-import type { Experiment, Note } from '../../lib/api/types.js';
+import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
 
 export const getCommand = new Command('get')
   .description('Get experiment details')
   .argument('<id>', 'experiment ID', parseInt)
   .option('--activity', 'include activity notes in the output')
-  .action(async (id: number, options) => {
-    try {
-      const globalOptions = getGlobalOptions(getCommand);
-      const client = await getAPIClientFromOptions(globalOptions);
+  .action(withErrorHandling(async (id: number, options) => {
+    const globalOptions = getGlobalOptions(getCommand);
+    const client = await getAPIClientFromOptions(globalOptions);
 
-      const experiment = await client.getExperiment(id);
+    const experiment = await client.getExperiment(id);
 
-      let experimentWithActivity: Experiment & { activity?: Note[] } = experiment;
-
-      if (options.activity) {
-        const notes = await client.listExperimentNotes(id);
-        experimentWithActivity = { ...experiment, activity: notes };
-      }
-
-      const output = formatOutput(experimentWithActivity, globalOptions.output, {
-        noColor: globalOptions.noColor,
-        full: globalOptions.full,
-        terse: globalOptions.terse,
-      });
-
-      console.log(output);
-    } catch (error) {
-      console.error('Error:', error instanceof Error ? error.message : error);
-      process.exit(1);
+    if (options.activity) {
+      const notes = await client.listExperimentNotes(id);
+      printFormatted({ ...experiment, activity: notes }, globalOptions);
+    } else {
+      printFormatted(experiment, globalOptions);
     }
-  });
+  }));

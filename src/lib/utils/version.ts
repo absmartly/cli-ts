@@ -2,26 +2,20 @@ import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-function getPackageInfo() {
+function getPackageInfo(): { version: string; buildDate: string } {
   try {
-    const packagePath = join(__dirname, '../../../package.json');
-    const packageJson = JSON.parse(readFileSync(packagePath, 'utf8'));
+    const __dirname = dirname(fileURLToPath(import.meta.url));
+    const packageJson = JSON.parse(readFileSync(join(__dirname, '../../../package.json'), 'utf8'));
     return {
       version: packageJson.version || '0.0.0',
       buildDate: packageJson.buildDate || new Date().toISOString(),
     };
   } catch {
-    return {
-      version: '0.0.0',
-      buildDate: new Date().toISOString(),
-    };
+    return { version: '0.0.0', buildDate: new Date().toISOString() };
   }
 }
 
-const { version: pkgVersion, buildDate: pkgBuildDate } = getPackageInfo();
+const packageInfo = getPackageInfo();
 
-export const version = pkgVersion;
-export const buildDate = pkgBuildDate;
+export const version = packageInfo.version;
+export const buildDate = packageInfo.buildDate;

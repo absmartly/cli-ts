@@ -37,9 +37,9 @@ export const setupCommand = new Command('setup')
         let application: string | undefined;
         if (apps.length > 0) {
           console.log('Available applications:');
-          apps.forEach((app, idx) => {
+          for (const [idx, app] of apps.entries()) {
             console.log(`  ${idx + 1}. ${app.name}`);
-          });
+          }
 
           const appChoice = await rl.question(
             `\nSelect application (1-${apps.length}) or press Enter to skip: `
@@ -53,11 +53,8 @@ export const setupCommand = new Command('setup')
           }
         }
 
-        let environment: string | undefined;
-        const envChoice = await rl.question(
-          '\nDefault environment [production]: '
-        );
-        environment = envChoice || 'production';
+        const envChoice = await rl.question('\nDefault environment [production]: ');
+        const environment = envChoice || 'production';
 
         const profile = {
           api: {

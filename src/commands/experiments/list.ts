@@ -1,6 +1,5 @@
 import { Command } from 'commander';
-import { getAPIClientFromOptions, getGlobalOptions } from '../../lib/utils/api-helper.js';
-import { formatOutput } from '../../lib/output/formatter.js';
+import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseDateFlagOrUndefined } from '../../lib/utils/date-parser.js';
 import type { ListOptions } from '../../lib/api/types.js';
 
@@ -34,59 +33,45 @@ export const listCommand = new Command('list')
   .option('--limit <number>', 'maximum number of results', parseInt, 20)
   .option('--offset <number>', 'offset for pagination', parseInt, 0)
   .option('--page <number>', 'page number for pagination', parseInt)
-  .action(async (options) => {
-    try {
-      const globalOptions = getGlobalOptions(listCommand);
-      const client = await getAPIClientFromOptions(globalOptions);
+  .action(withErrorHandling(async (options) => {
+    const globalOptions = getGlobalOptions(listCommand);
+    const client = await getAPIClientFromOptions(globalOptions);
 
-      let limit = options.limit;
-      let offset = options.offset;
+    const limit = options.limit;
+    const offset = options.page && options.page > 0
+      ? (options.page - 1) * limit
+      : options.offset;
 
-      if (options.page && options.page > 0) {
-        offset = (options.page - 1) * limit;
-      }
+    const listOptions: ListOptions = {
+      limit,
+      offset,
+      application: options.app,
+      state: options.state,
+      type: options.type,
+      search: options.search,
+      unit_types: options.unitTypes,
+      owners: options.owners,
+      teams: options.teams,
+      tags: options.tags,
+      created_after: parseDateFlagOrUndefined(options.createdAfter),
+      created_before: parseDateFlagOrUndefined(options.createdBefore),
+      started_after: parseDateFlagOrUndefined(options.startedAfter),
+      started_before: parseDateFlagOrUndefined(options.startedBefore),
+      stopped_after: parseDateFlagOrUndefined(options.stoppedAfter),
+      stopped_before: parseDateFlagOrUndefined(options.stoppedBefore),
+      analysis_type: options.analysisType,
+      running_type: options.runningType,
+      alert_srm: options.alertSrm,
+      alert_cleanup_needed: options.alertCleanupNeeded,
+      alert_audience_mismatch: options.alertAudienceMismatch,
+      alert_sample_size_reached: options.alertSampleSizeReached,
+      alert_experiments_interact: options.alertExperimentsInteract,
+      alert_group_sequential_updated: options.alertGroupSequentialUpdated,
+      alert_assignment_conflict: options.alertAssignmentConflict,
+      alert_metric_threshold_reached: options.alertMetricThresholdReached,
+      significance: options.significance,
+    };
 
-      const listOptions: ListOptions = {
-        limit,
-        offset,
-        application: options.app,
-        state: options.state,
-        type: options.type,
-        search: options.search,
-        unit_types: options.unitTypes,
-        owners: options.owners,
-        teams: options.teams,
-        tags: options.tags,
-        created_after: parseDateFlagOrUndefined(options.createdAfter),
-        created_before: parseDateFlagOrUndefined(options.createdBefore),
-        started_after: parseDateFlagOrUndefined(options.startedAfter),
-        started_before: parseDateFlagOrUndefined(options.startedBefore),
-        stopped_after: parseDateFlagOrUndefined(options.stoppedAfter),
-        stopped_before: parseDateFlagOrUndefined(options.stoppedBefore),
-        analysis_type: options.analysisType,
-        running_type: options.runningType,
-        alert_srm: options.alertSrm,
-        alert_cleanup_needed: options.alertCleanupNeeded,
-        alert_audience_mismatch: options.alertAudienceMismatch,
-        alert_sample_size_reached: options.alertSampleSizeReached,
-        alert_experiments_interact: options.alertExperimentsInteract,
-        alert_group_sequential_updated: options.alertGroupSequentialUpdated,
-        alert_assignment_conflict: options.alertAssignmentConflict,
-        alert_metric_threshold_reached: options.alertMetricThresholdReached,
-        significance: options.significance,
-      };
-
-      const experiments = await client.listExperiments(listOptions);
-
-      const output = formatOutput(experiments, globalOptions.output, {
-        noColor: globalOptions.noColor,
-        full: globalOptions.full,
-        terse: globalOptions.terse,
-      });
-
-      console.log(output);
-    } catch (error) {
-      console.error('Error:', error instanceof Error ? error.message : error);
-      process.exit(1);
-    }
-  });
+    const experiments = await client.listExperiments(listOptions);
+    printFormatted(experiments, globalOptions);
+  }));

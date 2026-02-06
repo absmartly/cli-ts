@@ -82,41 +82,50 @@ export class APIClient {
 
     const endpoint = error.config?.url || 'unknown endpoint';
     const method = error.config?.method?.toUpperCase() || 'unknown method';
+    const status = error.response?.status;
 
-    if (error.response?.status === 401) {
-      apiError.message =
-        `Unauthorized: Invalid or expired API key.\n` +
-        `Endpoint: ${method} ${endpoint}\n` +
-        `Run: abs auth login --api-key YOUR_KEY`;
-    } else if (error.response?.status === 403) {
-      apiError.message =
-        `Forbidden: Insufficient permissions for this operation.\n` +
-        `Endpoint: ${method} ${endpoint}\n` +
-        `Please check your API key has the required permissions.`;
-    } else if (error.response?.status === 404) {
-      apiError.message =
-        `Not found: Resource does not exist.\n` +
-        `Endpoint: ${method} ${endpoint}`;
-    } else if (error.response?.status === 429) {
-      const retryAfter = error.response.headers['retry-after'];
-      apiError.message =
-        `Rate limit exceeded.\n` +
-        `Endpoint: ${method} ${endpoint}\n` +
-        (retryAfter ? `Retry after: ${retryAfter} seconds` : 'Please try again later.');
-    } else if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
-      apiError.message =
-        `Cannot connect to API server.\n` +
-        `Endpoint: ${endpoint}\n` +
-        `Please check your network connection and API endpoint configuration.`;
-    } else if (error.code === 'ETIMEDOUT') {
-      apiError.message =
-        `Request timeout.\n` +
-        `Endpoint: ${method} ${endpoint}\n` +
-        `The server took too long to respond. Please try again.`;
-    } else {
-      apiError.message =
-        `API error: ${error.message || 'unknown error'}\n` +
-        `Endpoint: ${method} ${endpoint}`;
+    switch (status) {
+      case 401:
+        apiError.message =
+          `Unauthorized: Invalid or expired API key.\n` +
+          `Endpoint: ${method} ${endpoint}\n` +
+          `Run: abs auth login --api-key YOUR_KEY`;
+        break;
+      case 403:
+        apiError.message =
+          `Forbidden: Insufficient permissions for this operation.\n` +
+          `Endpoint: ${method} ${endpoint}\n` +
+          `Please check your API key has the required permissions.`;
+        break;
+      case 404:
+        apiError.message =
+          `Not found: Resource does not exist.\n` +
+          `Endpoint: ${method} ${endpoint}`;
+        break;
+      case 429: {
+        const retryAfter = error.response?.headers['retry-after'];
+        apiError.message =
+          `Rate limit exceeded.\n` +
+          `Endpoint: ${method} ${endpoint}\n` +
+          (retryAfter ? `Retry after: ${retryAfter} seconds` : 'Please try again later.');
+        break;
+      }
+      default:
+        if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
+          apiError.message =
+            `Cannot connect to API server.\n` +
+            `Endpoint: ${endpoint}\n` +
+            `Please check your network connection and API endpoint configuration.`;
+        } else if (error.code === 'ETIMEDOUT') {
+          apiError.message =
+            `Request timeout.\n` +
+            `Endpoint: ${method} ${endpoint}\n` +
+            `The server took too long to respond. Please try again.`;
+        } else {
+          apiError.message =
+            `API error: ${error.message || 'unknown error'}\n` +
+            `Endpoint: ${method} ${endpoint}`;
+        }
     }
 
     return apiError;
@@ -125,8 +134,8 @@ export class APIClient {
   async listExperiments(options: ListOptions = {}): Promise<Experiment[]> {
     const params: Record<string, string> = {};
 
-    if (options.limit) params.limit = String(options.limit);
-    if (options.offset) params.offset = String(options.offset);
+    if (options.limit !== undefined) params.limit = String(options.limit);
+    if (options.offset !== undefined) params.offset = String(options.offset);
     if (options.application) params.application = options.application;
     if (options.status) params.status = options.status;
     if (options.state) params.state = options.state;
@@ -150,19 +159,19 @@ export class APIClient {
     if (options.running_type) params.running_type = options.running_type;
     if (options.search) params.search = options.search;
 
-    if (options.alert_srm) params.sample_ratio_mismatch = String(options.alert_srm);
-    if (options.alert_cleanup_needed) params.cleanup_needed = String(options.alert_cleanup_needed);
-    if (options.alert_audience_mismatch)
+    if (options.alert_srm !== undefined) params.sample_ratio_mismatch = String(options.alert_srm);
+    if (options.alert_cleanup_needed !== undefined) params.cleanup_needed = String(options.alert_cleanup_needed);
+    if (options.alert_audience_mismatch !== undefined)
       params.audience_mismatch = String(options.alert_audience_mismatch);
-    if (options.alert_sample_size_reached)
+    if (options.alert_sample_size_reached !== undefined)
       params.sample_size_reached = String(options.alert_sample_size_reached);
-    if (options.alert_experiments_interact)
+    if (options.alert_experiments_interact !== undefined)
       params.experiments_interact = String(options.alert_experiments_interact);
-    if (options.alert_group_sequential_updated)
+    if (options.alert_group_sequential_updated !== undefined)
       params.group_sequential_updated = String(options.alert_group_sequential_updated);
-    if (options.alert_assignment_conflict)
+    if (options.alert_assignment_conflict !== undefined)
       params.assignment_conflict = String(options.alert_assignment_conflict);
-    if (options.alert_metric_threshold_reached)
+    if (options.alert_metric_threshold_reached !== undefined)
       params.metric_threshold_reached = String(options.alert_metric_threshold_reached);
 
     if (options.significance) params.significance = options.significance;

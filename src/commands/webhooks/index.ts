@@ -1,7 +1,6 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
-import { getAPIClientFromOptions, getGlobalOptions } from '../../lib/utils/api-helper.js';
-import { formatOutput } from '../../lib/output/formatter.js';
+import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
 
 export const webhooksCommand = new Command('webhooks')
   .alias('webhook')
@@ -11,48 +10,24 @@ const listCommand = new Command('list')
   .description('List all webhooks')
   .option('--limit <number>', 'maximum number of results', parseInt, 20)
   .option('--offset <number>', 'offset for pagination', parseInt, 0)
-  .action(async (options) => {
-    try {
-      const globalOptions = getGlobalOptions(listCommand);
-      const client = await getAPIClientFromOptions(globalOptions);
+  .action(withErrorHandling(async (options) => {
+    const globalOptions = getGlobalOptions(listCommand);
+    const client = await getAPIClientFromOptions(globalOptions);
 
-      const webhooks = await client.listWebhooks(options.limit, options.offset);
-
-      const output = formatOutput(webhooks, globalOptions.output, {
-        noColor: globalOptions.noColor,
-        full: globalOptions.full,
-        terse: globalOptions.terse,
-      });
-
-      console.log(output);
-    } catch (error) {
-      console.error('Error:', error instanceof Error ? error.message : error);
-      process.exit(1);
-    }
-  });
+    const webhooks = await client.listWebhooks(options.limit, options.offset);
+    printFormatted(webhooks, globalOptions);
+  }));
 
 const getCommand = new Command('get')
   .description('Get webhook details')
   .argument('<id>', 'webhook ID', parseInt)
-  .action(async (id: number) => {
-    try {
-      const globalOptions = getGlobalOptions(getCommand);
-      const client = await getAPIClientFromOptions(globalOptions);
+  .action(withErrorHandling(async (id: number) => {
+    const globalOptions = getGlobalOptions(getCommand);
+    const client = await getAPIClientFromOptions(globalOptions);
 
-      const webhook = await client.getWebhook(id);
-
-      const output = formatOutput(webhook, globalOptions.output, {
-        noColor: globalOptions.noColor,
-        full: globalOptions.full,
-        terse: globalOptions.terse,
-      });
-
-      console.log(output);
-    } catch (error) {
-      console.error('Error:', error instanceof Error ? error.message : error);
-      process.exit(1);
-    }
-  });
+    const webhook = await client.getWebhook(id);
+    printFormatted(webhook, globalOptions);
+  }));
 
 const createCommand = new Command('create')
   .description('Create a new webhook')
@@ -63,28 +38,21 @@ const createCommand = new Command('create')
   .option('--no-enabled', 'disable the webhook')
   .option('--ordered', 'send events in order', false)
   .option('--max-retries <number>', 'maximum number of retries', parseInt, 3)
-  .action(async (options) => {
-    try {
-      const globalOptions = getGlobalOptions(createCommand);
-      const client = await getAPIClientFromOptions(globalOptions);
+  .action(withErrorHandling(async (options) => {
+    const globalOptions = getGlobalOptions(createCommand);
+    const client = await getAPIClientFromOptions(globalOptions);
 
-      const data = {
-        name: options.name,
-        url: options.url,
-        description: options.description,
-        enabled: options.enabled,
-        ordered: options.ordered,
-        max_retries: options.maxRetries,
-      };
+    const webhook = await client.createWebhook({
+      name: options.name,
+      url: options.url,
+      description: options.description,
+      enabled: options.enabled,
+      ordered: options.ordered,
+      max_retries: options.maxRetries,
+    });
 
-      const webhook = await client.createWebhook(data);
-
-      console.log(chalk.green(`✓ Webhook created with ID: ${webhook.id}`));
-    } catch (error) {
-      console.error('Error:', error instanceof Error ? error.message : error);
-      process.exit(1);
-    }
-  });
+    console.log(chalk.green(`✓ Webhook created with ID: ${webhook.id}`));
+  }));
 
 const updateCommand = new Command('update')
   .description('Update a webhook')
@@ -95,44 +63,32 @@ const updateCommand = new Command('update')
   .option('--enabled <boolean>', 'enable/disable the webhook', (val) => val === 'true')
   .option('--ordered <boolean>', 'send events in order', (val) => val === 'true')
   .option('--max-retries <number>', 'maximum number of retries', parseInt)
-  .action(async (id: number, options) => {
-    try {
-      const globalOptions = getGlobalOptions(updateCommand);
-      const client = await getAPIClientFromOptions(globalOptions);
+  .action(withErrorHandling(async (id: number, options) => {
+    const globalOptions = getGlobalOptions(updateCommand);
+    const client = await getAPIClientFromOptions(globalOptions);
 
-      const data: Record<string, string | boolean | number> = {};
-      if (options.name) data.name = options.name;
-      if (options.url) data.url = options.url;
-      if (options.description) data.description = options.description;
-      if (options.enabled !== undefined) data.enabled = options.enabled;
-      if (options.ordered !== undefined) data.ordered = options.ordered;
-      if (options.maxRetries !== undefined) data.max_retries = options.maxRetries;
+    const data: Record<string, string | boolean | number> = {};
+    if (options.name) data.name = options.name;
+    if (options.url) data.url = options.url;
+    if (options.description) data.description = options.description;
+    if (options.enabled !== undefined) data.enabled = options.enabled;
+    if (options.ordered !== undefined) data.ordered = options.ordered;
+    if (options.maxRetries !== undefined) data.max_retries = options.maxRetries;
 
-      await client.updateWebhook(id, data);
-
-      console.log(chalk.green(`✓ Webhook ${id} updated`));
-    } catch (error) {
-      console.error('Error:', error instanceof Error ? error.message : error);
-      process.exit(1);
-    }
-  });
+    await client.updateWebhook(id, data);
+    console.log(chalk.green(`✓ Webhook ${id} updated`));
+  }));
 
 const deleteCommand = new Command('delete')
   .description('Delete a webhook')
   .argument('<id>', 'webhook ID', parseInt)
-  .action(async (id: number) => {
-    try {
-      const globalOptions = getGlobalOptions(deleteCommand);
-      const client = await getAPIClientFromOptions(globalOptions);
+  .action(withErrorHandling(async (id: number) => {
+    const globalOptions = getGlobalOptions(deleteCommand);
+    const client = await getAPIClientFromOptions(globalOptions);
 
-      await client.deleteWebhook(id);
-
-      console.log(chalk.green(`✓ Webhook ${id} deleted`));
-    } catch (error) {
-      console.error('Error:', error instanceof Error ? error.message : error);
-      process.exit(1);
-    }
-  });
+    await client.deleteWebhook(id);
+    console.log(chalk.green(`✓ Webhook ${id} deleted`));
+  }));
 
 webhooksCommand.addCommand(listCommand);
 webhooksCommand.addCommand(getCommand);

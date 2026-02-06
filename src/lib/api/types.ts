@@ -1,10 +1,3 @@
-/**
- * API Types for ABSmartly CLI
- *
- * These types are mapped from the OpenAPI specification for easier use
- * in the CLI. For the complete OpenAPI types, see openapi-types.ts
- */
-
 import type {
   Experiment as OpenAPIExperiment,
   ExperimentShort as OpenAPIExperimentShort,
@@ -28,13 +21,11 @@ import type {
   Webhook as OpenAPIWebhook,
 } from './openapi-types.js';
 
-// Re-export OpenAPI types for strict type checking when needed
 export type ExperimentStrict = OpenAPIExperiment;
 export type ExperimentShortStrict = OpenAPIExperimentShort;
 export type VariantStrict = OpenAPIExperimentVariant;
 export type NoteStrict = OpenAPIExperimentNote;
 
-// Simplified types for CLI use (partial OpenAPI types with required fields)
 export type Experiment = Partial<OpenAPIExperiment> & { id: number; name: string };
 export type ExperimentShort = Partial<OpenAPIExperimentShort> & { id: number; name: string };
 export type Variant = {
@@ -61,7 +52,6 @@ export type Role = OpenAPIRole;
 export type Permission = OpenAPIPermission;
 export type Webhook = OpenAPIWebhook;
 
-// Simplified types for common use
 export interface Alert {
   id: number;
   type: string;
@@ -97,7 +87,6 @@ export interface PermissionCategory {
   permissions?: Permission[];
 }
 
-// List options for API queries
 export interface ListOptions {
   limit?: number;
   offset?: number;
@@ -129,7 +118,6 @@ export interface ListOptions {
   significance?: string;
 }
 
-// API Error type
 export interface APIError extends Error {
   statusCode?: number;
   response?: unknown;

@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import open from 'open';
 import { getProfile, loadConfig } from '../../lib/config/config.js';
+import { handleCommandError } from '../../lib/utils/api-helper.js';
 
 export const openCommand = new Command('open')
   .description('Open dashboard in browser')
@@ -22,7 +23,6 @@ export const openCommand = new Command('open')
       await open(webURL);
       console.log(`Opening ${webURL}`);
     } catch (error) {
-      console.error('Error:', error instanceof Error ? error.message : error);
-      process.exit(1);
+      handleCommandError(error);
     }
   });

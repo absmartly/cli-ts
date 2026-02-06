@@ -380,7 +380,7 @@ describe('APIClient - List Options', () => {
   });
 
   describe('Edge Cases', () => {
-    it('should handle limit of 0', async () => {
+    it('should handle limit of 0 (sent explicitly)', async () => {
       let receivedParams: URLSearchParams | null = null;
       server.use(
         http.get(`${BASE_URL}/experiments`, ({ request }) => {
@@ -392,10 +392,10 @@ describe('APIClient - List Options', () => {
 
       await client.listExperiments({ limit: 0 });
 
-      expect(receivedParams?.has('limit')).toBe(false);
+      expect(receivedParams?.get('limit')).toBe('0');
     });
 
-    it('should handle offset of 0', async () => {
+    it('should handle offset of 0 (sent explicitly)', async () => {
       let receivedParams: URLSearchParams | null = null;
       server.use(
         http.get(`${BASE_URL}/experiments`, ({ request }) => {
@@ -407,7 +407,7 @@ describe('APIClient - List Options', () => {
 
       await client.listExperiments({ offset: 0 });
 
-      expect(receivedParams?.has('offset')).toBe(false);
+      expect(receivedParams?.get('offset')).toBe('0');
     });
 
     it('should handle very large limit', async () => {

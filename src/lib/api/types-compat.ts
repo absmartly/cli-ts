@@ -1,33 +1,21 @@
-/**
- * Compatibility layer between OpenAPI types and simplified CLI types
- *
- * The OpenAPI schema has strict types with many required fields.
- * This file provides simplified interfaces for CLI use while maintaining
- * type safety through mapped types.
- */
-
 import type {
   Experiment as OpenAPIExperiment,
   ExperimentVariant as OpenAPIVariant,
   ExperimentNote as OpenAPINote,
 } from './openapi-types.js';
 
-// Simplified Experiment type for CLI operations
-// Maps from strict OpenAPI type to optional fields for easier use
 export type Experiment = Partial<OpenAPIExperiment> & {
   id: number;
   name: string;
 };
 
-// Simplified Variant type - OpenAPI uses string for config
 export type Variant = {
   name: string;
-  config?: string | object; // CLI accepts both
+  config?: string | object;
   variant?: number;
   experiment_id?: number;
 };
 
-// Simplified Note type
 export type Note = Partial<OpenAPINote> & {
   id: number;
   text?: string;
@@ -35,7 +23,6 @@ export type Note = Partial<OpenAPINote> & {
   created_at?: string;
 };
 
-// Helper to convert CLI variant to OpenAPI variant
 export function toOpenAPIVariant(variant: Variant, variantNumber: number): OpenAPIVariant {
   return {
     experiment_id: variant.experiment_id,
@@ -45,7 +32,6 @@ export function toOpenAPIVariant(variant: Variant, variantNumber: number): OpenA
   };
 }
 
-// Helper to convert OpenAPI variant to CLI variant
 export function fromOpenAPIVariant(variant: OpenAPIVariant): Variant {
   return {
     name: variant.name,

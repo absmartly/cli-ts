@@ -2,7 +2,7 @@ import { createAPIClient, APIClient } from '../api/client.js';
 import { getProfile, loadConfig } from '../config/config.js';
 import { getAPIKey } from '../config/keyring.js';
 import { Command } from 'commander';
-import type { OutputFormat } from '../output/formatter.js';
+import { formatOutput, type OutputFormat } from '../output/formatter.js';
 
 export async function getAPIClientFromOptions(options: Record<string, unknown>): Promise<APIClient> {
   const config = loadConfig();
@@ -20,9 +20,7 @@ export async function getAPIClientFromOptions(options: Record<string, unknown>):
     );
   }
 
-  const verbose = options.verbose as boolean;
-
-  return createAPIClient(endpoint, apiKey, { verbose });
+  return createAPIClient(endpoint, apiKey, { verbose: options.verbose as boolean });
 }
 
 export interface GlobalOptions extends Record<string, unknown> {
@@ -40,18 +38,17 @@ export interface GlobalOptions extends Record<string, unknown> {
   full?: boolean;
 }
 
+const VALID_FORMATS: OutputFormat[] = ['table', 'json', 'yaml', 'plain', 'markdown'];
+
 export function getGlobalOptions(cmd: Command): GlobalOptions {
   const opts = cmd.optsWithGlobals();
-  const outputStr = opts.output || 'table';
+  const output = (opts.output || 'table') as OutputFormat;
 
-  const validFormats: OutputFormat[] = ['table', 'json', 'yaml', 'plain', 'markdown'];
-  if (!validFormats.includes(outputStr as OutputFormat)) {
+  if (!VALID_FORMATS.includes(output)) {
     throw new Error(
-      `Invalid output format: '${outputStr}'. Must be one of: ${validFormats.join(', ')}`
+      `Invalid output format: '${output}'. Must be one of: ${VALID_FORMATS.join(', ')}`
     );
   }
-
-  const output: OutputFormat = outputStr as OutputFormat;
 
   return {
     config: opts.config,
@@ -67,4 +64,30 @@ export function getGlobalOptions(cmd: Command): GlobalOptions {
     terse: opts.terse || false,
     full: opts.full || false,
   };
+}
+
+export function printFormatted(data: unknown, globalOptions: GlobalOptions): void {
+  const output = formatOutput(data, globalOptions.output, {
+    noColor: globalOptions.noColor,
+    full: globalOptions.full,
+    terse: globalOptions.terse,
+  });
+  console.log(output);
+}
+
+export function handleCommandError(error: unknown): never {
+  console.error('Error:', error instanceof Error ? error.message : error);
+  process.exit(1);
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function withErrorHandling<T extends (...args: any[]) => Promise<void>>(fn: T): T {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (async (...args: any[]) => {
+    try {
+      await fn(...args);
+    } catch (error) {
+      handleCommandError(error);
+    }
+  }) as T;
 }
