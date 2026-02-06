@@ -53,10 +53,10 @@ export class APIClient {
       retries: 3,
       retryDelay: axiosRetry.exponentialDelay,
       retryCondition: (error: AxiosError) => {
-        return (
-          axiosRetry.isNetworkOrIdempotentRequestError(error) ||
-          (error.response?.status ?? 0) >= 500
-        );
+        if (axiosRetry.isNetworkOrIdempotentRequestError(error)) return true;
+        const method = error.config?.method?.toUpperCase();
+        const isIdempotent = ['GET', 'HEAD', 'OPTIONS', 'PUT', 'DELETE'].includes(method ?? '');
+        return isIdempotent && (error.response?.status ?? 0) >= 500;
       },
     });
 
