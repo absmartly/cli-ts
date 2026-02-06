@@ -1,3 +1,74 @@
+/**
+ * API Types for ABSmartly CLI
+ *
+ * These types are mapped from the OpenAPI specification for easier use
+ * in the CLI. For the complete OpenAPI types, see openapi-types.ts
+ */
+
+import type {
+  Experiment as OpenAPIExperiment,
+  ExperimentShort as OpenAPIExperimentShort,
+  ExperimentVariant as OpenAPIExperimentVariant,
+  ExperimentNote as OpenAPIExperimentNote,
+  ExperimentTag as OpenAPIExperimentTag,
+  Goal as OpenAPIGoal,
+  GoalTag as OpenAPIGoalTag,
+  Segment as OpenAPISegment,
+  Team as OpenAPITeam,
+  User as OpenAPIUser,
+  Metric as OpenAPIMetric,
+  MetricTag as OpenAPIMetricTag,
+  MetricCategory as OpenAPIMetricCategory,
+  Application as OpenAPIApplication,
+  Environment as OpenAPIEnvironment,
+  UnitType as OpenAPIUnitType,
+  ApiKey as OpenAPIApiKey,
+  Role as OpenAPIRole,
+  Permission as OpenAPIPermission,
+  Webhook as OpenAPIWebhook,
+} from './openapi-types.js';
+
+// Re-export OpenAPI types for strict type checking when needed
+export type ExperimentStrict = OpenAPIExperiment;
+export type ExperimentShortStrict = OpenAPIExperimentShort;
+export type VariantStrict = OpenAPIExperimentVariant;
+export type NoteStrict = OpenAPIExperimentNote;
+
+// Simplified types for CLI use (partial OpenAPI types with required fields)
+export type Experiment = Partial<OpenAPIExperiment> & { id: number; name: string };
+export type ExperimentShort = Partial<OpenAPIExperimentShort> & { id: number; name: string };
+export type Variant = {
+  name: string;
+  config?: string | object;
+  variant?: number;
+  experiment_id?: number;
+};
+export type Note = Partial<OpenAPIExperimentNote> & { id: number };
+export type ExperimentTag = OpenAPIExperimentTag;
+export type Goal = OpenAPIGoal;
+export type GoalTag = OpenAPIGoalTag;
+export type Segment = OpenAPISegment;
+export type Team = OpenAPITeam;
+export type User = OpenAPIUser;
+export type Metric = OpenAPIMetric;
+export type MetricTag = OpenAPIMetricTag;
+export type MetricCategory = OpenAPIMetricCategory;
+export type Application = OpenAPIApplication;
+export type Environment = OpenAPIEnvironment;
+export type UnitType = OpenAPIUnitType;
+export type ApiKey = OpenAPIApiKey;
+export type Role = OpenAPIRole;
+export type Permission = OpenAPIPermission;
+export type Webhook = OpenAPIWebhook;
+
+// Simplified types for common use
+export interface Alert {
+  id: number;
+  type: string;
+  dismissed?: boolean;
+  created_at?: string;
+}
+
 export interface ExperimentApplication {
   experiment_id?: number;
   application_id: number;
@@ -12,7 +83,6 @@ export interface ExperimentCustomFieldValue {
   value: string;
   updated_at?: string;
   updated_by_user_id?: number;
-  custom_section_field?: CustomSectionField;
 }
 
 export interface CustomSectionField {
@@ -21,214 +91,13 @@ export interface CustomSectionField {
   type: string;
 }
 
-export interface Experiment {
-  id: number;
-  name: string;
-  display_name?: string;
-  description?: string;
-  type?: string;
-  state?: string;
-  application?: Application;
-  applications?: ExperimentApplication[];
-  unit_type?: UnitType;
-  unit_type_id?: number;
-  primary_metric_id?: number;
-  variants?: Variant[];
-  traffic?: number;
-  percentages?: string;
-  start_at?: string;
-  stop_at?: string;
-  created_at?: string;
-  updated_at?: string;
-  owner_id?: number;
-  custom_field_values?: Record<string, string>;
-  custom_section_field_values?: ExperimentCustomFieldValue[];
-  alerts?: Alert[];
-  notes?: Note[];
-  teams?: Team[];
-  tags?: ExperimentTag[];
-}
-
-export interface Variant {
-  name: string;
-  config?: unknown;
-}
-
-export interface Flag {
-  id: number;
-  key: string;
-  name?: string;
-  description?: string;
-  application?: Application;
-  enabled: boolean;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface Goal {
-  id: number;
-  name: string;
-  description?: string;
-  type?: string;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface Segment {
-  id: number;
-  name: string;
-  description?: string;
-  value_source_attribute?: string;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface Application {
-  id: number;
-  name: string;
-}
-
-export interface Environment {
-  id: number;
-  name: string;
-  production?: boolean;
-}
-
-export interface UnitType {
-  id: number;
-  name: string;
-}
-
-export interface Team {
-  id: number;
-  name: string;
-  initials?: string;
-  color?: string;
-  description?: string;
-  parent_team_id?: number;
-  archived?: boolean;
-  is_global_team?: boolean;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface User {
-  id: number;
-  email: string;
-  first_name: string;
-  last_name: string;
-  job_title?: string;
-  department?: string;
-  archived?: boolean;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface Metric {
-  id: number;
-  name: string;
-  description?: string;
-  version?: number;
-  archived?: boolean;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface ExperimentTag {
-  id: number;
-  tag: string;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface Role {
-  id: number;
-  name: string;
-  description?: string;
-  default_user_role?: boolean;
-  full_admin_role?: boolean;
-  deletable?: boolean;
-  editable?: boolean;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface Webhook {
-  id: number;
-  name: string;
-  description?: string;
-  url: string;
-  enabled: boolean;
-  ordered?: boolean;
-  max_retries?: number;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface ApiKey {
-  id: number;
-  name: string;
-  description?: string;
-  hashed_key?: string;
-  key_ending?: string;
-  key?: string;
-  permissions?: string;
-  used_at?: string;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface Permission {
-  id: number;
-  name: string;
-  description?: string;
-  permission_category_id?: number;
-}
-
 export interface PermissionCategory {
   id: number;
   name: string;
   permissions?: Permission[];
 }
 
-export interface GoalTag {
-  id: number;
-  tag: string;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface MetricTag {
-  id: number;
-  tag: string;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface MetricCategory {
-  id: number;
-  name: string;
-  description?: string;
-  color?: string;
-  archived?: boolean;
-  created_at?: string;
-  updated_at?: string;
-}
-
-export interface Alert {
-  id: number;
-  type: string;
-  dismissed?: boolean;
-  created_at?: string;
-}
-
-export interface Note {
-  id: number;
-  text: string;
-  action?: string;
-  created_at?: string;
-}
-
+// List options for API queries
 export interface ListOptions {
   limit?: number;
   offset?: number;
@@ -260,6 +129,7 @@ export interface ListOptions {
   significance?: string;
 }
 
+// API Error type
 export interface APIError extends Error {
   statusCode?: number;
   response?: unknown;

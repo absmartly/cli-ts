@@ -18,7 +18,7 @@ const listCommand = new Command('list')
 
       const metrics = await client.listMetrics(options.limit, options.offset);
 
-      const output = formatOutput(metrics, globalOptions.output as any, {
+      const output = formatOutput(metrics, globalOptions.output, {
         noColor: globalOptions.noColor,
         full: globalOptions.full,
         terse: globalOptions.terse,
@@ -41,7 +41,7 @@ const getCommand = new Command('get')
 
       const metric = await client.getMetric(id);
 
-      const output = formatOutput(metric, globalOptions.output as any, {
+      const output = formatOutput(metric, globalOptions.output, {
         noColor: globalOptions.noColor,
         full: globalOptions.full,
         terse: globalOptions.terse,

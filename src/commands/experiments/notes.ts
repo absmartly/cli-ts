@@ -20,7 +20,7 @@ const listNotesCommand = new Command('list')
         return;
       }
 
-      const output = formatOutput(notes, globalOptions.output as any, {
+      const output = formatOutput(notes, globalOptions.output, {
         noColor: globalOptions.noColor,
         full: globalOptions.full,
         terse: globalOptions.terse,

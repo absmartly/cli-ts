@@ -16,7 +16,7 @@ const listCommand = new Command('list')
 
       const envs = await client.listEnvironments();
 
-      const output = formatOutput(envs, globalOptions.output as any, {
+      const output = formatOutput(envs, globalOptions.output, {
         noColor: globalOptions.noColor,
         full: globalOptions.full,
         terse: globalOptions.terse,
@@ -39,7 +39,7 @@ const getCommand = new Command('get')
 
       const env = await client.getEnvironment(id);
 
-      const output = formatOutput(env, globalOptions.output as any, {
+      const output = formatOutput(env, globalOptions.output, {
         noColor: globalOptions.noColor,
         full: globalOptions.full,
         terse: globalOptions.terse,

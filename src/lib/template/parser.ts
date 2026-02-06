@@ -33,8 +33,41 @@ export interface ExperimentTemplate {
 }
 
 export function parseExperimentFile(filePath: string): ExperimentTemplate {
-  const content = readFileSync(filePath, 'utf8');
-  const { data, content: markdownContent } = matter(content);
+  let content: string;
+  try {
+    content = readFileSync(filePath, 'utf8');
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.message.includes('ENOENT')) {
+        throw new Error(
+          `Template file not found: ${filePath}\n` +
+          `Please check the file path and try again.`
+        );
+      }
+      if (error.message.includes('EACCES')) {
+        throw new Error(
+          `Permission denied reading template file: ${filePath}\n` +
+          `Run: chmod +r ${filePath}`
+        );
+      }
+    }
+    throw new Error(
+      `Failed to read template file ${filePath}: ${error instanceof Error ? error.message : error}`
+    );
+  }
+
+  let data: Record<string, unknown>;
+  let markdownContent: string;
+  try {
+    const parsed = matter(content);
+    data = parsed.data;
+    markdownContent = parsed.content;
+  } catch (error) {
+    throw new Error(
+      `Invalid YAML frontmatter in template: ${filePath}\n` +
+      `${error instanceof Error ? error.message : error}`
+    );
+  }
 
   const template: ExperimentTemplate = {
     type: 'test',

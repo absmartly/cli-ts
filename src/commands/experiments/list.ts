@@ -78,7 +78,7 @@ export const listCommand = new Command('list')
 
       const experiments = await client.listExperiments(listOptions);
 
-      const output = formatOutput(experiments, globalOptions.output as any, {
+      const output = formatOutput(experiments, globalOptions.output, {
         noColor: globalOptions.noColor,
         full: globalOptions.full,
         terse: globalOptions.terse,

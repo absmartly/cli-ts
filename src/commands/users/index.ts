@@ -15,7 +15,7 @@ const listCommand = new Command('list')
 
       const users = await client.listUsers(options.includeArchived);
 
-      const output = formatOutput(users, globalOptions.output as any, {
+      const output = formatOutput(users, globalOptions.output, {
         noColor: globalOptions.noColor,
         full: globalOptions.full,
         terse: globalOptions.terse,
@@ -38,7 +38,7 @@ const getCommand = new Command('get')
 
       const user = await client.getUser(id);
 
-      const output = formatOutput(user, globalOptions.output as any, {
+      const output = formatOutput(user, globalOptions.output, {
         noColor: globalOptions.noColor,
         full: globalOptions.full,
         terse: globalOptions.terse,

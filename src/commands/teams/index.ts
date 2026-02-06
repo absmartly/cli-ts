@@ -15,7 +15,7 @@ const listCommand = new Command('list')
 
       const teams = await client.listTeams(options.includeArchived);
 
-      const output = formatOutput(teams, globalOptions.output as any, {
+      const output = formatOutput(teams, globalOptions.output, {
         noColor: globalOptions.noColor,
         full: globalOptions.full,
         terse: globalOptions.terse,
@@ -38,7 +38,7 @@ const getCommand = new Command('get')
 
       const team = await client.getTeam(id);
 
-      const output = formatOutput(team, globalOptions.output as any, {
+      const output = formatOutput(team, globalOptions.output, {
         noColor: globalOptions.noColor,
         full: globalOptions.full,
         terse: globalOptions.terse,

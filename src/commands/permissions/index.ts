@@ -15,7 +15,7 @@ const listCommand = new Command('list')
 
       const permissions = await client.listPermissions();
 
-      const output = formatOutput(permissions, globalOptions.output as any, {
+      const output = formatOutput(permissions, globalOptions.output, {
         noColor: globalOptions.noColor,
         full: globalOptions.full,
         terse: globalOptions.terse,
@@ -38,7 +38,7 @@ const categoriesCommand = new Command('categories')
 
       const categories = await client.listPermissionCategories();
 
-      const output = formatOutput(categories, globalOptions.output as any, {
+      const output = formatOutput(categories, globalOptions.output, {
         noColor: globalOptions.noColor,
         full: globalOptions.full,
         terse: globalOptions.terse,

@@ -75,15 +75,51 @@ export function loadConfig(): Config {
     const config = yaml.load(content) as Config;
     return { ...defaultConfig(), ...config };
   } catch (error) {
-    throw new Error(`Failed to load config: ${error instanceof Error ? error.message : error}`);
+    if (error instanceof Error) {
+      if (error.message.includes('EACCES')) {
+        throw new Error(
+          `Permission denied reading config file: ${path}\n` +
+          `Run: chmod 600 ${path}`
+        );
+      }
+      if (error.message.includes('YAMLException') || error.name === 'YAMLException') {
+        throw new Error(
+          `Invalid YAML syntax in config file: ${path}\n` +
+          `${error.message}\n` +
+          `Please fix the syntax or delete the file to reset to defaults.`
+        );
+      }
+    }
+    throw new Error(`Failed to load config from ${path}: ${error instanceof Error ? error.message : error}`);
   }
 }
 
 export function saveConfig(config: Config): void {
-  ensureConfigDir();
-  const path = getConfigPath();
-  const content = yaml.dump(config, { indent: 2, lineWidth: 120 });
-  writeFileSync(path, content, { encoding: 'utf8', mode: 0o600 });
+  try {
+    ensureConfigDir();
+    const path = getConfigPath();
+    const content = yaml.dump(config, { indent: 2, lineWidth: 120 });
+    writeFileSync(path, content, { encoding: 'utf8', mode: 0o600 });
+  } catch (error) {
+    if (error instanceof Error) {
+      if (error.message.includes('ENOSPC')) {
+        throw new Error(
+          `Disk full - cannot save config file.\n` +
+          `Please free up disk space and try again.`
+        );
+      }
+      if (error.message.includes('EACCES')) {
+        throw new Error(
+          `Permission denied writing config file: ${getConfigPath()}\n` +
+          `Run: chmod u+w ${getConfigDir()}`
+        );
+      }
+    }
+    throw new Error(
+      `Failed to save config to ${getConfigPath()}: ${error instanceof Error ? error.message : error}\n` +
+      `Please check file permissions and available disk space.`
+    );
+  }
 }
 
 export function getProfile(profileName?: string): Profile {

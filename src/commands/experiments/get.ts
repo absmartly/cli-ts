@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import { getAPIClientFromOptions, getGlobalOptions } from '../../lib/utils/api-helper.js';
 import { formatOutput } from '../../lib/output/formatter.js';
+import type { Experiment, Note } from '../../lib/api/types.js';
 
 export const getCommand = new Command('get')
   .description('Get experiment details')
@@ -13,12 +14,14 @@ export const getCommand = new Command('get')
 
       const experiment = await client.getExperiment(id);
 
+      let experimentWithActivity: Experiment & { activity?: Note[] } = experiment;
+
       if (options.activity) {
         const notes = await client.listExperimentNotes(id);
-        (experiment as any).activity = notes;
+        experimentWithActivity = { ...experiment, activity: notes };
       }
 
-      const output = formatOutput(experiment, globalOptions.output as any, {
+      const output = formatOutput(experimentWithActivity, globalOptions.output, {
         noColor: globalOptions.noColor,
         full: globalOptions.full,
         terse: globalOptions.terse,

@@ -18,7 +18,20 @@ export const apiCommand = new Command('api')
         headers[key.trim()] = valueParts.join(':').trim();
       }
 
-      const data = options.data ? JSON.parse(options.data) : undefined;
+      let data: unknown = undefined;
+      if (options.data) {
+        try {
+          data = JSON.parse(options.data);
+        } catch (parseError) {
+          throw new Error(
+            `Invalid JSON in --data option: ${parseError instanceof Error ? parseError.message : 'unknown error'}\n` +
+            `\n` +
+            `Example: --data '{"name": "test", "type": "experiment"}'\n` +
+            `\n` +
+            `Your input: ${options.data}`
+          );
+        }
+      }
 
       const result = await client.rawRequest(path, options.method, data, headers);
 

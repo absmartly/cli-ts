@@ -18,7 +18,7 @@ const listCommand = new Command('list')
 
       const segments = await client.listSegments(options.limit, options.offset);
 
-      const output = formatOutput(segments, globalOptions.output as any, {
+      const output = formatOutput(segments, globalOptions.output, {
         noColor: globalOptions.noColor,
         full: globalOptions.full,
         terse: globalOptions.terse,
@@ -41,7 +41,7 @@ const getCommand = new Command('get')
 
       const segment = await client.getSegment(id);
 
-      const output = formatOutput(segment, globalOptions.output as any, {
+      const output = formatOutput(segment, globalOptions.output, {
         noColor: globalOptions.noColor,
         full: globalOptions.full,
         terse: globalOptions.terse,

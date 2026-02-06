@@ -13,7 +13,7 @@ export const searchCommand = new Command('search')
 
       const experiments = await client.searchExperiments(query, options.limit);
 
-      const output = formatOutput(experiments, globalOptions.output as any, {
+      const output = formatOutput(experiments, globalOptions.output, {
         noColor: globalOptions.noColor,
         full: globalOptions.full,
         terse: globalOptions.terse,

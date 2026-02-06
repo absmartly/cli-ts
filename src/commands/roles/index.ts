@@ -16,7 +16,7 @@ const listCommand = new Command('list')
 
       const roles = await client.listRoles(options.limit, options.offset);
 
-      const output = formatOutput(roles, globalOptions.output as any, {
+      const output = formatOutput(roles, globalOptions.output, {
         noColor: globalOptions.noColor,
         full: globalOptions.full,
         terse: globalOptions.terse,
@@ -39,7 +39,7 @@ const getCommand = new Command('get')
 
       const role = await client.getRole(id);
 
-      const output = formatOutput(role, globalOptions.output as any, {
+      const output = formatOutput(role, globalOptions.output, {
         noColor: globalOptions.noColor,
         full: globalOptions.full,
         terse: globalOptions.terse,

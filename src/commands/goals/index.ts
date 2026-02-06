@@ -16,7 +16,7 @@ const listCommand = new Command('list')
 
       const goals = await client.listGoals(options.limit, options.offset);
 
-      const output = formatOutput(goals, globalOptions.output as any, {
+      const output = formatOutput(goals, globalOptions.output, {
         noColor: globalOptions.noColor,
         full: globalOptions.full,
         terse: globalOptions.terse,
@@ -39,7 +39,7 @@ const getCommand = new Command('get')
 
       const goal = await client.getGoal(id);
 
-      const output = formatOutput(goal, globalOptions.output as any, {
+      const output = formatOutput(goal, globalOptions.output, {
         noColor: globalOptions.noColor,
         full: globalOptions.full,
         terse: globalOptions.terse,

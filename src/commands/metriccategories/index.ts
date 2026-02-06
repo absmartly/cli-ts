@@ -21,7 +21,7 @@ const listCommand = new Command('list')
 
       const categories = await client.listMetricCategories(options.limit, options.offset);
 
-      const output = formatOutput(categories, globalOptions.output as any, {
+      const output = formatOutput(categories, globalOptions.output, {
         noColor: globalOptions.noColor,
         full: globalOptions.full,
         terse: globalOptions.terse,
@@ -44,7 +44,7 @@ const getCommand = new Command('get')
 
       const category = await client.getMetricCategory(id);
 
-      const output = formatOutput(category, globalOptions.output as any, {
+      const output = formatOutput(category, globalOptions.output, {
         noColor: globalOptions.noColor,
         full: globalOptions.full,
         terse: globalOptions.terse,
@@ -76,7 +76,7 @@ const createCommand = new Command('create')
       const category = await client.createMetricCategory(data);
 
       console.log(chalk.green('Metric category created successfully'));
-      const output = formatOutput(category, globalOptions.output as any, {
+      const output = formatOutput(category, globalOptions.output, {
         noColor: globalOptions.noColor,
         full: globalOptions.full,
         terse: globalOptions.terse,
@@ -107,7 +107,7 @@ const updateCommand = new Command('update')
       const category = await client.updateMetricCategory(id, data);
 
       console.log(chalk.green('Metric category updated successfully'));
-      const output = formatOutput(category, globalOptions.output as any, {
+      const output = formatOutput(category, globalOptions.output, {
         noColor: globalOptions.noColor,
         full: globalOptions.full,
         terse: globalOptions.terse,

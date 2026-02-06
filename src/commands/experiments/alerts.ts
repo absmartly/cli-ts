@@ -20,7 +20,7 @@ const listAlertsCommand = new Command('list')
         return;
       }
 
-      const output = formatOutput(alerts, globalOptions.output as any, {
+      const output = formatOutput(alerts, globalOptions.output, {
         noColor: globalOptions.noColor,
         full: globalOptions.full,
         terse: globalOptions.terse,

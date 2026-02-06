@@ -16,7 +16,7 @@ const listCommand = new Command('list')
 
       const apps = await client.listApplications();
 
-      const output = formatOutput(apps, globalOptions.output as any, {
+      const output = formatOutput(apps, globalOptions.output, {
         noColor: globalOptions.noColor,
         full: globalOptions.full,
         terse: globalOptions.terse,
@@ -39,7 +39,7 @@ const getCommand = new Command('get')
 
       const app = await client.getApplication(id);
 
-      const output = formatOutput(app, globalOptions.output as any, {
+      const output = formatOutput(app, globalOptions.output, {
         noColor: globalOptions.noColor,
         full: globalOptions.full,
         terse: globalOptions.terse,

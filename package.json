@@ -68,6 +68,7 @@
     "@typescript-eslint/eslint-plugin": "^8.21.0",
     "@typescript-eslint/parser": "^8.21.0",
     "@vitest/ui": "^4.0.18",
+    "absmartly-api-mocks": "file:../absmartly-api-mocks",
     "eslint": "^9.19.0",
     "jsdom": "^28.0.0",
     "msw": "^2.12.8",

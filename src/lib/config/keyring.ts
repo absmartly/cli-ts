@@ -16,24 +16,45 @@ export async function setPassword(
   value: string,
   options: KeyringOptions = {}
 ): Promise<void> {
-  const keyName = getKeyName(key, options.profile);
-  await keytar.setPassword(SERVICE_NAME, keyName, value);
+  try {
+    const keyName = getKeyName(key, options.profile);
+    await keytar.setPassword(SERVICE_NAME, keyName, value);
+  } catch (error) {
+    throw new Error(
+      `Failed to save to system keychain: ${error instanceof Error ? error.message : 'unknown error'}. ` +
+      `Please ensure your system keychain is unlocked and accessible.`
+    );
+  }
 }
 
 export async function getPassword(
   key: string,
   options: KeyringOptions = {}
 ): Promise<string | null> {
-  const keyName = getKeyName(key, options.profile);
-  return await keytar.getPassword(SERVICE_NAME, keyName);
+  try {
+    const keyName = getKeyName(key, options.profile);
+    return await keytar.getPassword(SERVICE_NAME, keyName);
+  } catch (error) {
+    throw new Error(
+      `Failed to read from system keychain: ${error instanceof Error ? error.message : 'unknown error'}. ` +
+      `Please ensure your system keychain is unlocked and accessible.`
+    );
+  }
 }
 
 export async function deletePassword(
   key: string,
   options: KeyringOptions = {}
 ): Promise<boolean> {
-  const keyName = getKeyName(key, options.profile);
-  return await keytar.deletePassword(SERVICE_NAME, keyName);
+  try {
+    const keyName = getKeyName(key, options.profile);
+    return await keytar.deletePassword(SERVICE_NAME, keyName);
+  } catch (error) {
+    throw new Error(
+      `Failed to delete from system keychain: ${error instanceof Error ? error.message : 'unknown error'}. ` +
+      `Please ensure your system keychain is unlocked and accessible.`
+    );
+  }
 }
 
 export async function setAPIKey(apiKey: string, profile?: string): Promise<void> {

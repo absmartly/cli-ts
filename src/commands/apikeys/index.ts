@@ -18,7 +18,7 @@ const listCommand = new Command('list')
 
       const apiKeys = await client.listApiKeys(options.limit, options.offset);
 
-      const output = formatOutput(apiKeys, globalOptions.output as any, {
+      const output = formatOutput(apiKeys, globalOptions.output, {
         noColor: globalOptions.noColor,
         full: globalOptions.full,
         terse: globalOptions.terse,
@@ -41,7 +41,7 @@ const getCommand = new Command('get')
 
       const apiKey = await client.getApiKey(id);
 
-      const output = formatOutput(apiKey, globalOptions.output as any, {
+      const output = formatOutput(apiKey, globalOptions.output, {
         noColor: globalOptions.noColor,
         full: globalOptions.full,
         terse: globalOptions.terse,

@@ -20,7 +20,7 @@ const listCommand = new Command('list')
 
       const tags = await client.listGoalTags(options.limit, options.offset);
 
-      const output = formatOutput(tags, globalOptions.output as any, {
+      const output = formatOutput(tags, globalOptions.output, {
         noColor: globalOptions.noColor,
         full: globalOptions.full,
         terse: globalOptions.terse,
@@ -43,7 +43,7 @@ const getCommand = new Command('get')
 
       const tag = await client.getGoalTag(id);
 
-      const output = formatOutput(tag, globalOptions.output as any, {
+      const output = formatOutput(tag, globalOptions.output, {
         noColor: globalOptions.noColor,
         full: globalOptions.full,
         terse: globalOptions.terse,
@@ -71,7 +71,7 @@ const createCommand = new Command('create')
       const tag = await client.createGoalTag(data);
 
       console.log(chalk.green('Goal tag created successfully'));
-      const output = formatOutput(tag, globalOptions.output as any, {
+      const output = formatOutput(tag, globalOptions.output, {
         noColor: globalOptions.noColor,
         full: globalOptions.full,
         terse: globalOptions.terse,
@@ -98,7 +98,7 @@ const updateCommand = new Command('update')
       const tag = await client.updateGoalTag(id, data as { tag: string });
 
       console.log(chalk.green('Goal tag updated successfully'));
-      const output = formatOutput(tag, globalOptions.output as any, {
+      const output = formatOutput(tag, globalOptions.output, {
         noColor: globalOptions.noColor,
         full: globalOptions.full,
         terse: globalOptions.terse,

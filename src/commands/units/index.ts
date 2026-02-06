@@ -15,7 +15,7 @@ const listCommand = new Command('list')
 
       const units = await client.listUnitTypes();
 
-      const output = formatOutput(units, globalOptions.output as any, {
+      const output = formatOutput(units, globalOptions.output, {
         noColor: globalOptions.noColor,
         full: globalOptions.full,
         terse: globalOptions.terse,
@@ -38,7 +38,7 @@ const getCommand = new Command('get')
 
       const unit = await client.getUnitType(id);
 
-      const output = formatOutput(unit, globalOptions.output as any, {
+      const output = formatOutput(unit, globalOptions.output, {
         noColor: globalOptions.noColor,
         full: globalOptions.full,
         terse: globalOptions.terse,

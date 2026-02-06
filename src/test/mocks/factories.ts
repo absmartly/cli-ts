@@ -239,12 +239,12 @@ export function createMockApiKey(overrides?: Partial<ApiKey>): ApiKey {
   return {
     id: faker.number.int({ min: 1, max: 1000 }),
     name: faker.word.words(2),
-    description: faker.lorem.sentence(),
     key_ending: faker.string.alphanumeric(4),
     created_at: faker.date.past().toISOString(),
     updated_at: faker.date.recent().toISOString(),
+    created_by_user_id: faker.number.int({ min: 1, max: 100 }),
     ...overrides,
-  };
+  } as ApiKey;
 }
 
 export function createMockApiKeys(count: number): ApiKey[] {
@@ -255,13 +255,12 @@ export function createMockWebhook(overrides?: Partial<Webhook>): Webhook {
   return {
     id: faker.number.int({ min: 1, max: 1000 }),
     name: faker.word.words(2),
-    description: faker.lorem.sentence(),
     url: faker.internet.url(),
     enabled: faker.datatype.boolean(),
     created_at: faker.date.past().toISOString(),
     updated_at: faker.date.recent().toISOString(),
     ...overrides,
-  };
+  } as Webhook;
 }
 
 export function createMockWebhooks(count: number): Webhook[] {
@@ -286,10 +285,12 @@ export function createMockNote(overrides?: Partial<Note>): Note {
   return {
     id: faker.number.int({ min: 1, max: 1000 }),
     text: faker.lorem.sentence(),
-    action: faker.helpers.arrayElement(['comment', 'started', 'stopped', 'saved_draft']),
+    action: faker.helpers.arrayElement(['archive', 'start', 'stop', 'create', 'ready', 'development', 'full_on', 'edit', 'comment']),
     created_at: faker.date.past().toISOString(),
+    experiment_id: faker.number.int({ min: 1, max: 1000 }),
+    created_by_user_id: faker.number.int({ min: 1, max: 100 }),
     ...overrides,
-  };
+  } as Note;
 }
 
 export function createMockNotes(count: number): Note[] {

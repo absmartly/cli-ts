@@ -18,7 +18,7 @@ const listCommand = new Command('list')
 
       const webhooks = await client.listWebhooks(options.limit, options.offset);
 
-      const output = formatOutput(webhooks, globalOptions.output as any, {
+      const output = formatOutput(webhooks, globalOptions.output, {
         noColor: globalOptions.noColor,
         full: globalOptions.full,
         terse: globalOptions.terse,
@@ -41,7 +41,7 @@ const getCommand = new Command('get')
 
       const webhook = await client.getWebhook(id);
 
-      const output = formatOutput(webhook, globalOptions.output as any, {
+      const output = formatOutput(webhook, globalOptions.output, {
         noColor: globalOptions.noColor,
         full: globalOptions.full,
         terse: globalOptions.terse,

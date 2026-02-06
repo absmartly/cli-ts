@@ -1,7 +1,8 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions } from '../../lib/utils/api-helper.js';
-import { parseExperimentFile } from '../../lib/template/parser.js';
+import { parseExperimentFile, type VariantTemplate } from '../../lib/template/parser.js';
+import type { Experiment } from '../../lib/api/types.js';
 
 export const createCommand = new Command('create')
   .description('Create a new experiment')
@@ -19,7 +20,7 @@ export const createCommand = new Command('create')
       const globalOptions = getGlobalOptions(createCommand);
       const client = await getAPIClientFromOptions(globalOptions);
 
-      let data: any;
+      let data: Partial<Experiment>;
 
       if (options.fromFile) {
         const template = parseExperimentFile(options.fromFile);
@@ -33,7 +34,7 @@ export const createCommand = new Command('create')
         };
 
         if (template.variants && template.variants.length > 0) {
-          data.variants = template.variants.map((v: any) => ({
+          data.variants = template.variants.map((v: VariantTemplate) => ({
             name: v.name,
             config: v.config ? JSON.parse(v.config) : {},
           }));

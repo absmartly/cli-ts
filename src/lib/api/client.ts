@@ -80,14 +80,43 @@ export class APIClient {
     apiError.statusCode = error.response?.status;
     apiError.response = error.response?.data;
 
+    const endpoint = error.config?.url || 'unknown endpoint';
+    const method = error.config?.method?.toUpperCase() || 'unknown method';
+
     if (error.response?.status === 401) {
-      apiError.message = 'unauthorized: invalid or expired API key';
+      apiError.message =
+        `Unauthorized: Invalid or expired API key.\n` +
+        `Endpoint: ${method} ${endpoint}\n` +
+        `Run: abs auth login --api-key YOUR_KEY`;
     } else if (error.response?.status === 403) {
-      apiError.message = 'forbidden: insufficient permissions';
+      apiError.message =
+        `Forbidden: Insufficient permissions for this operation.\n` +
+        `Endpoint: ${method} ${endpoint}\n` +
+        `Please check your API key has the required permissions.`;
     } else if (error.response?.status === 404) {
-      apiError.message = 'not found';
+      apiError.message =
+        `Not found: Resource does not exist.\n` +
+        `Endpoint: ${method} ${endpoint}`;
+    } else if (error.response?.status === 429) {
+      const retryAfter = error.response.headers['retry-after'];
+      apiError.message =
+        `Rate limit exceeded.\n` +
+        `Endpoint: ${method} ${endpoint}\n` +
+        (retryAfter ? `Retry after: ${retryAfter} seconds` : 'Please try again later.');
+    } else if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
+      apiError.message =
+        `Cannot connect to API server.\n` +
+        `Endpoint: ${endpoint}\n` +
+        `Please check your network connection and API endpoint configuration.`;
+    } else if (error.code === 'ETIMEDOUT') {
+      apiError.message =
+        `Request timeout.\n` +
+        `Endpoint: ${method} ${endpoint}\n` +
+        `The server took too long to respond. Please try again.`;
     } else {
-      apiError.message = error.message || 'API error';
+      apiError.message =
+        `API error: ${error.message || 'unknown error'}\n` +
+        `Endpoint: ${method} ${endpoint}`;
     }
 
     return apiError;

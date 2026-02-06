@@ -2,6 +2,7 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions } from '../../lib/utils/api-helper.js';
 import { parseExperimentFile } from '../../lib/template/parser.js';
+import type { Experiment } from '../../lib/api/types.js';
 
 export const updateCommand = new Command('update')
   .description('Update an existing experiment')
@@ -15,7 +16,7 @@ export const updateCommand = new Command('update')
       const globalOptions = getGlobalOptions(updateCommand);
       const client = await getAPIClientFromOptions(globalOptions);
 
-      let data: any;
+      let data: Partial<Experiment>;
 
       if (options.fromFile) {
         const template = parseExperimentFile(options.fromFile);

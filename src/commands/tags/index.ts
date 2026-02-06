@@ -19,7 +19,7 @@ const listCommand = new Command('list')
 
       const tags = await client.listExperimentTags(options.limit, options.offset);
 
-      const output = formatOutput(tags, globalOptions.output as any, {
+      const output = formatOutput(tags, globalOptions.output, {
         noColor: globalOptions.noColor,
         full: globalOptions.full,
         terse: globalOptions.terse,
@@ -42,7 +42,7 @@ const getCommand = new Command('get')
 
       const tag = await client.getExperimentTag(id);
 
-      const output = formatOutput(tag, globalOptions.output as any, {
+      const output = formatOutput(tag, globalOptions.output, {
         noColor: globalOptions.noColor,
         full: globalOptions.full,
         terse: globalOptions.terse,
@@ -70,7 +70,7 @@ const createCommand = new Command('create')
       const tag = await client.createExperimentTag(data);
 
       console.log(chalk.green('Experiment tag created successfully'));
-      const output = formatOutput(tag, globalOptions.output as any, {
+      const output = formatOutput(tag, globalOptions.output, {
         noColor: globalOptions.noColor,
         full: globalOptions.full,
         terse: globalOptions.terse,
@@ -97,7 +97,7 @@ const updateCommand = new Command('update')
       const tag = await client.updateExperimentTag(id, data as { tag: string });
 
       console.log(chalk.green('Experiment tag updated successfully'));
-      const output = formatOutput(tag, globalOptions.output as any, {
+      const output = formatOutput(tag, globalOptions.output, {
         noColor: globalOptions.noColor,
         full: globalOptions.full,
         terse: globalOptions.terse,
