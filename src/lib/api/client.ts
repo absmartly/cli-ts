@@ -675,6 +675,13 @@ export class APIClient {
       );
     }
 
+    if (path.includes('/../') || path.endsWith('/..') || path.includes('/./')) {
+      throw new Error(
+        'Invalid API path: Path traversal sequences (../, ./) are not allowed.\n' +
+        'Use absolute paths from API root (e.g., /experiments, /goals).'
+      );
+    }
+
     const response = await this.client.request({
       url: path,
       method,

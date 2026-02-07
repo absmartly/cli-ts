@@ -13,8 +13,21 @@ export const apiCommand = new Command('api')
 
     const headers: Record<string, string> = {};
     for (const header of options.header) {
+      if (!header.includes(':')) {
+        throw new Error(
+          `Invalid header format: "${header}"\n` +
+          `Expected "Key: Value" format (e.g., "Content-Type: application/json")`
+        );
+      }
+
       const [key, ...valueParts] = header.split(':');
-      headers[key.trim()] = valueParts.join(':').trim();
+      const trimmedKey = key.trim();
+
+      if (trimmedKey === '') {
+        throw new Error('Header key cannot be empty');
+      }
+
+      headers[trimmedKey] = valueParts.join(':').trim();
     }
 
     let data: unknown;

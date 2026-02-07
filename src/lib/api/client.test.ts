@@ -202,5 +202,23 @@ describe('APIClient', () => {
       const result = await client.rawRequest('/custom/endpoint', 'GET');
       expect(result).toEqual({ success: true });
     });
+
+    it('should reject path traversal with /../', async () => {
+      await expect(client.rawRequest('/api/../admin', 'GET')).rejects.toThrow(
+        'Invalid API path: Path traversal sequences'
+      );
+    });
+
+    it('should reject path traversal ending with /..', async () => {
+      await expect(client.rawRequest('/api/..', 'GET')).rejects.toThrow(
+        'Invalid API path: Path traversal sequences'
+      );
+    });
+
+    it('should reject path with /./', async () => {
+      await expect(client.rawRequest('/api/./endpoint', 'GET')).rejects.toThrow(
+        'Invalid API path: Path traversal sequences'
+      );
+    });
   });
 });
