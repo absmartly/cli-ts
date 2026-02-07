@@ -137,7 +137,7 @@ function parseVariants(content: string): VariantTemplate[] {
       continue;
     }
 
-    const variantNum = parseInt(variantNumStr);
+    const variantNum = parseInt(variantNumStr, 10);
     const variant: VariantTemplate = {
       variant: variantNum,
       name: `variant_${variantNum}`,

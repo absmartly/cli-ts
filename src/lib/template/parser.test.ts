@@ -72,4 +72,27 @@ config: {"description": "Treatment"}
     expect(template.percentages).toBe('50/50');
     expect(template.custom_fields).toBeDefined();
   });
+
+  it('should correctly parse variant numbers with radix 10', () => {
+    const content = `
+## Variants
+
+### variant_08
+
+name: variant_with_leading_zero
+
+---
+
+### variant_09
+
+name: another_variant
+`;
+
+    writeFileSync(testFile, content, 'utf8');
+    const template = parseExperimentFile(testFile);
+
+    expect(template.variants).toBeDefined();
+    expect(template.variants?.[0].variant).toBe(8);
+    expect(template.variants?.[1].variant).toBe(9);
+  });
 });

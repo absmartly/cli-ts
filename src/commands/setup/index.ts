@@ -47,7 +47,7 @@ export const setupCommand = new Command('setup')
           );
 
           if (appChoice) {
-            const idx = parseInt(appChoice) - 1;
+            const idx = parseInt(appChoice, 10) - 1;
             const selectedApp = apps[idx];
             if (idx >= 0 && idx < apps.length && selectedApp) {
               application = selectedApp.name;
