@@ -26,55 +26,67 @@ describe('parseId', () => {
 
   describe('invalid inputs - non-numeric', () => {
     it('should throw error for alphabetic string', () => {
-      expect(() => parseId('abc')).toThrow('Invalid ID: "abc" -- must be a number');
+      expect(() => parseId('abc')).toThrow('Invalid ID: "abc" must be a valid number');
     });
 
-    it('should parse alphanumeric string as integer (parseInt behavior)', () => {
-      expect(parseId('123abc')).toBe(123);
+    it('should throw error for alphanumeric string (strict validation)', () => {
+      expect(() => parseId('123abc')).toThrow('Invalid ID: "123abc" must be a valid number');
     });
 
     it('should throw error for empty string', () => {
-      expect(() => parseId('')).toThrow('Invalid ID: "" -- must be a number');
+      expect(() => parseId('')).toThrow('Invalid ID: "" must be a valid number');
     });
 
     it('should throw error for special characters', () => {
-      expect(() => parseId('!@#')).toThrow('Invalid ID: "!@#" -- must be a number');
+      expect(() => parseId('!@#')).toThrow('Invalid ID: "!@#" must be a valid number');
     });
   });
 
   describe('invalid inputs - negative and zero', () => {
     it('should throw error for negative number', () => {
-      expect(() => parseId('-5')).toThrow('Invalid ID: -5 -- must be a positive integer');
+      expect(() => parseId('-5')).toThrow('Invalid ID: -5 must be a positive integer');
     });
 
     it('should throw error for zero', () => {
-      expect(() => parseId('0')).toThrow('Invalid ID: 0 -- must be a positive integer');
+      expect(() => parseId('0')).toThrow('Invalid ID: 0 must be a positive integer');
     });
 
     it('should throw error for negative zero', () => {
-      expect(() => parseId('-0')).toThrow('Invalid ID: 0 -- must be a positive integer');
+      expect(() => parseId('-0')).toThrow('Invalid ID: "-0" contains non-numeric characters');
     });
   });
 
   describe('edge cases', () => {
-    it('should parse decimal as integer (parseInt behavior)', () => {
-      expect(parseId('3.14')).toBe(3);
+    it('should throw error for decimal (strict integer validation)', () => {
+      expect(() => parseId('3.14')).toThrow('Invalid ID: "3.14" must be an integer (got 3.14)');
     });
 
-    it('should parse number with trailing non-numeric (parseInt behavior)', () => {
-      expect(parseId('42extra')).toBe(42);
+    it('should throw error for number with trailing non-numeric (strict validation)', () => {
+      expect(() => parseId('42extra')).toThrow('Invalid ID: "42extra" must be a valid number');
     });
 
     it('should handle whitespace-only string', () => {
-      expect(() => parseId('   ')).toThrow('must be a number');
+      expect(() => parseId('   ')).toThrow('must be a valid number');
     });
 
-    it('should throw for hex notation (parses as 0)', () => {
-      expect(() => parseId('0x10')).toThrow('must be a positive integer');
+    it('should throw for hex notation', () => {
+      expect(() => parseId('0x10')).toThrow('contains non-numeric characters');
     });
 
-    it('should handle negative decimal', () => {
-      expect(() => parseId('-3.5')).toThrow('must be a positive integer');
+    it('should throw error for negative decimal', () => {
+      expect(() => parseId('-3.5')).toThrow('Invalid ID: "-3.5" must be an integer (got -3.5)');
+    });
+
+    it('should throw error for scientific notation', () => {
+      expect(() => parseId('1e5')).toThrow('contains non-numeric characters');
+    });
+
+    it('should throw error for infinity', () => {
+      expect(() => parseId('Infinity')).toThrow('must be a valid number');
+    });
+
+    it('should throw error for leading zeros', () => {
+      expect(() => parseId('042')).toThrow('contains non-numeric characters');
     });
   });
 });

@@ -17,18 +17,31 @@ import {
 } from '../api/branded-types.js';
 
 function parseIdGeneric<T extends number>(value: string, typeName: string): T {
-  const id = parseInt(value, 10);
+  const trimmed = value.trim();
 
-  if (isNaN(id)) {
-    throw new Error(`Invalid ${typeName}: "${value}" -- must be a number`);
+  if (trimmed === '') {
+    throw new Error(`Invalid ${typeName}: "${value}" must be a valid number`);
   }
 
-  if (id <= 0) {
-    throw new Error(`Invalid ${typeName}: ${id} -- must be a positive integer`);
+  const id = Number(trimmed);
+
+  if (!Number.isFinite(id)) {
+    throw new Error(`Invalid ${typeName}: "${value}" must be a valid number`);
   }
 
   if (!Number.isInteger(id)) {
-    throw new Error(`Invalid ${typeName}: ${id} -- must be an integer`);
+    throw new Error(`Invalid ${typeName}: "${value}" must be an integer (got ${id})`);
+  }
+
+  if (id.toString() !== trimmed) {
+    throw new Error(
+      `Invalid ${typeName}: "${value}" contains non-numeric characters\n` +
+      `Expected a plain integer like "42", not "${value}"`
+    );
+  }
+
+  if (id <= 0) {
+    throw new Error(`Invalid ${typeName}: ${id} must be a positive integer`);
   }
 
   return id as T;
