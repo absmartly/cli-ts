@@ -15,15 +15,45 @@ const typesCommand = new Command('types')
     const globalOptions = getGlobalOptions(typesCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
-    // Fetch all experiments using pagination
     const allExperiments = [];
     const limit = 100;
+    const MAX_EXPERIMENTS = 50000;
     let offset = 0;
     let hasMore = true;
+    let pageCount = 0;
+    const MAX_PAGES = 500;
 
     while (hasMore) {
+      if (pageCount >= MAX_PAGES) {
+        throw new Error(
+          `Pagination limit exceeded: ${MAX_PAGES} pages\n` +
+          `Fetched ${allExperiments.length} experiments. Use filters to reduce result set.`
+        );
+      }
+
+      if (allExperiments.length >= MAX_EXPERIMENTS) {
+        console.warn(
+          chalk.yellow(`Warning: Reached ${MAX_EXPERIMENTS} experiment limit.\n`) +
+          `Generating types for ${allExperiments.length} experiments.\n` +
+          `Some experiments may be excluded.`
+        );
+        break;
+      }
+
       const batch = await client.listExperiments({ limit, offset });
+
+      if (!Array.isArray(batch)) {
+        throw new Error(
+          `Invalid API response at page ${pageCount + 1}: Expected array, got ${typeof batch}`
+        );
+      }
+
       allExperiments.push(...batch);
+      pageCount++;
+
+      if (process.env.DEBUG) {
+        console.error(chalk.gray(`Fetched page ${pageCount}: ${batch.length} experiments (total: ${allExperiments.length})`));
+      }
 
       if (batch.length < limit) {
         hasMore = false;
@@ -32,9 +62,7 @@ const typesCommand = new Command('types')
       }
     }
 
-    if (process.env.DEBUG) {
-      console.error(chalk.gray(`Fetched ${allExperiments.length} experiments`));
-    }
+    console.log(chalk.gray(`Fetched ${allExperiments.length} experiments from ${pageCount} pages`));
 
     const uniqueNames = [...new Set(allExperiments.map((e) => e.name).filter(Boolean))];
 

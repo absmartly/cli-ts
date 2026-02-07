@@ -47,7 +47,7 @@ export const createCommand = new Command('create')
           }
           return {
             name: v.name,
-            variant: index,
+            variant: v.variant ?? index,
             config: JSON.stringify(parsedConfig),
           };
         });

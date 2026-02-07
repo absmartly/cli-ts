@@ -97,18 +97,20 @@ export function parseExperimentFile(filePath: string): ExperimentTemplate {
   }
 
   for (const [sectionName, sectionContent] of Object.entries(sections)) {
-    const keyValuePattern = /^(\w+(?:_\w+)*):\s*(.*)$/gm;
-    let match;
+    if (sectionName !== 'Variants' && sectionName !== 'Custom Fields') {
+      const keyValuePattern = /^(\w+(?:_\w+)*):\s*(.*)$/gm;
+      let match;
 
-    while ((match = keyValuePattern.exec(sectionContent)) !== null) {
-      const matchedKey = match[1];
-      const matchedValue = match[2];
-      if (matchedKey && matchedValue) {
-        const key = matchedKey.toLowerCase();
-        const value = matchedValue.trim();
+      while ((match = keyValuePattern.exec(sectionContent)) !== null) {
+        const matchedKey = match[1];
+        const matchedValue = match[2];
+        if (matchedKey && matchedValue) {
+          const key = matchedKey.toLowerCase();
+          const value = matchedValue.trim();
 
-        if (value) {
-          (template as Record<string, unknown>)[key] = value;
+          if (value) {
+            (template as Record<string, unknown>)[key] = value;
+          }
         }
       }
     }
