@@ -9,11 +9,22 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
+
+    // Strict Type Checking
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
+    "noImplicitOverride": true,
+    "allowUnusedLabels": false,
+    "allowUnreachableCode": false,
+
+    // Additional safety (enabled incrementally)
+    // "noUncheckedIndexedAccess": true,  // Future: makes array/object access return T | undefined
+    // "exactOptionalPropertyTypes": true,  // Future: stricter optional property handling
+
+    // Module Resolution
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
