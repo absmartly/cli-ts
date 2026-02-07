@@ -20,59 +20,144 @@ import type {
   Permission as OpenAPIPermission,
   Webhook as OpenAPIWebhook,
 } from './openapi-types.js';
+import type {
+  ExperimentId,
+  GoalId,
+  SegmentId,
+  TeamId,
+  UserId,
+  MetricId,
+  ApplicationId,
+  EnvironmentId,
+  UnitTypeId,
+  NoteId,
+  AlertId,
+  RoleId,
+  ApiKeyId,
+  WebhookId,
+} from './branded-types.js';
 
 export type ExperimentStrict = OpenAPIExperiment;
 export type ExperimentShortStrict = OpenAPIExperimentShort;
 export type VariantStrict = OpenAPIExperimentVariant;
 export type NoteStrict = OpenAPIExperimentNote;
 
-export type Experiment = Partial<OpenAPIExperiment> & { id: number; name: string };
-export type ExperimentShort = Partial<OpenAPIExperimentShort> & { id: number; name: string };
+export type Experiment = Partial<OpenAPIExperiment> & {
+  id: ExperimentId;
+  name: string;
+  unit_type_id?: UnitTypeId;
+  application_id?: ApplicationId;
+  environment_id?: EnvironmentId;
+  owner_id?: UserId;
+  team_id?: TeamId;
+};
+
+export type ExperimentShort = Partial<OpenAPIExperimentShort> & {
+  id: ExperimentId;
+  name: string;
+  unit_type_id?: UnitTypeId;
+  application_id?: ApplicationId;
+  owner_id?: UserId;
+  team_id?: TeamId;
+};
+
 export type Variant = {
   name: string;
   config?: string | object;
   variant?: number;
-  experiment_id?: number;
+  experiment_id?: ExperimentId;
 };
-export type Note = Partial<OpenAPIExperimentNote> & { id: number };
+
+export type Note = Partial<OpenAPIExperimentNote> & {
+  id: NoteId;
+  experiment_id?: ExperimentId;
+  created_by_user_id?: UserId;
+};
+
 export type ExperimentTag = OpenAPIExperimentTag;
-export type Goal = OpenAPIGoal;
+
+export type Goal = Partial<OpenAPIGoal> & {
+  id: GoalId;
+  name: string;
+};
+
 export type GoalTag = OpenAPIGoalTag;
-export type Segment = OpenAPISegment;
-export type Team = OpenAPITeam;
-export type User = OpenAPIUser;
-export type Metric = OpenAPIMetric;
+
+export type Segment = Partial<OpenAPISegment> & {
+  id: SegmentId;
+  name: string;
+};
+
+export type Team = Partial<OpenAPITeam> & {
+  id: TeamId;
+  name: string;
+};
+
+export type User = Partial<OpenAPIUser> & {
+  id: UserId;
+  email: string;
+};
+
+export type Metric = Partial<OpenAPIMetric> & {
+  id: MetricId;
+  name: string;
+  goal_id?: GoalId;
+};
+
 export type MetricTag = OpenAPIMetricTag;
 export type MetricCategory = OpenAPIMetricCategory;
-export type Application = OpenAPIApplication;
-export type Environment = OpenAPIEnvironment;
-export type UnitType = OpenAPIUnitType;
-export type ApiKey = OpenAPIApiKey;
-export type Role = OpenAPIRole;
+
+export type Application = Partial<OpenAPIApplication> & {
+  id: ApplicationId;
+  name: string;
+};
+
+export type Environment = Partial<OpenAPIEnvironment> & {
+  id: EnvironmentId;
+  name: string;
+};
+
+export type UnitType = Partial<OpenAPIUnitType> & {
+  id: UnitTypeId;
+  name: string;
+};
+
+export type ApiKey = Partial<OpenAPIApiKey> & {
+  id: ApiKeyId;
+};
+
+export type Role = Partial<OpenAPIRole> & {
+  id: RoleId;
+  name: string;
+};
+
 export type Permission = OpenAPIPermission;
-export type Webhook = OpenAPIWebhook;
+export type Webhook = Partial<OpenAPIWebhook> & {
+  id: WebhookId;
+};
 
 export interface Alert {
-  id: number;
+  id: AlertId;
+  experiment_id?: ExperimentId;
   type: string;
   dismissed?: boolean;
   created_at?: string;
 }
 
 export interface ExperimentApplication {
-  experiment_id?: number;
-  application_id: number;
+  experiment_id?: ExperimentId;
+  application_id: ApplicationId;
   application_version?: string;
   application?: Application;
 }
 
 export interface ExperimentCustomFieldValue {
-  experiment_id?: number;
+  experiment_id?: ExperimentId;
   experiment_custom_section_field_id: number;
   type: string;
   value: string;
   updated_at?: string;
-  updated_by_user_id?: number;
+  updated_by_user_id?: UserId;
 }
 
 export interface CustomSectionField {
