@@ -151,7 +151,13 @@ export function formatValue(value: unknown, options: OutputOptions = {}): string
   if (value === null || value === undefined) return '';
   if (typeof value === 'boolean') return String(value);
   if (typeof value === 'number') return String(value);
-  if (typeof value === 'string') return truncateText(value, options);
+  if (typeof value === 'string') {
+    const text = truncateText(value, options);
+    if (options.format === 'markdown') {
+      return text.replace(/\|/g, '\\|');
+    }
+    return text;
+  }
   if (Array.isArray(value)) return value.map((v) => formatValue(v, options)).join(', ');
   if (isObject(value)) return JSON.stringify(value);
   return String(value);

@@ -25,6 +25,19 @@ describe('Output Formatter', () => {
     it('should format arrays', () => {
       expect(formatValue([1, 2, 3])).toBe('1, 2, 3');
     });
+
+    it('should escape pipe characters in markdown format', () => {
+      expect(formatValue('value|with|pipes', { format: 'markdown' })).toBe('value\\|with\\|pipes');
+    });
+
+    it('should not escape pipes in non-markdown formats', () => {
+      expect(formatValue('value|with|pipes', { format: 'table' })).toBe('value|with|pipes');
+      expect(formatValue('value|with|pipes', {})).toBe('value|with|pipes');
+    });
+
+    it('should escape multiple pipes correctly', () => {
+      expect(formatValue('a|b|c|d', { format: 'markdown' })).toBe('a\\|b\\|c\\|d');
+    });
   });
 
   describe('truncateText', () => {
