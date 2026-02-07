@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
 import { Command } from 'commander';
+import chalk from 'chalk';
 import { version } from './lib/utils/version.js';
 import { experimentsCommand } from './commands/experiments/index.js';
 import { authCommand } from './commands/auth/index.js';
@@ -76,5 +77,22 @@ program.addCommand(apiKeysCommand);
 program.addCommand(webhooksCommand);
 program.addCommand(generateCommand);
 program.addCommand(setupCommand);
+
+const BUG_REPORT_URL = 'https://github.com/absmartly/absmartly-cli/issues';
+
+function handleFatalError(label: string, reason: unknown): never {
+  console.error(chalk.red(`\nFatal error (${label}):`));
+  const error = reason instanceof Error ? reason : new Error(String(reason));
+  console.error(error.message);
+  if (process.env.DEBUG) {
+    console.error('\nStack trace:');
+    console.error(error.stack);
+  }
+  console.error(`\nThis is a bug. Please report it at: ${BUG_REPORT_URL}`);
+  process.exit(1);
+}
+
+process.on('unhandledRejection', (reason) => handleFatalError('unhandled promise rejection', reason));
+process.on('uncaughtException', (error) => handleFatalError('uncaught exception', error));
 
 program.parse();

@@ -10,8 +10,13 @@ function getPackageInfo(): { version: string; buildDate: string } {
       version: packageJson.version || '0.0.0',
       buildDate: packageJson.buildDate || new Date().toISOString(),
     };
-  } catch {
-    return { version: '0.0.0', buildDate: new Date().toISOString() };
+  } catch (error) {
+    if (process.env.DEBUG) {
+      console.error(
+        `Warning: Failed to read version from package.json: ${error instanceof Error ? error.message : 'unknown error'}`
+      );
+    }
+    return { version: '0.0.0-dev', buildDate: new Date().toISOString() };
   }
 }
 

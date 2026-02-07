@@ -11,6 +11,15 @@ function getKeyName(key: string, profile?: string): string {
   return `${key}${profileSuffix}`;
 }
 
+function keyringError(action: string, key: string, profile: string | undefined, error: unknown): Error {
+  const profileInfo = profile ? ` for profile "${profile}"` : '';
+  const errorMsg = error instanceof Error ? error.message : 'unknown error';
+  return new Error(
+    `Failed to ${action} "${key}"${profileInfo} ${action === 'save' ? 'to' : 'from'} system keychain: ${errorMsg}\n` +
+    `Please ensure your system keychain is unlocked and accessible.`
+  );
+}
+
 export async function setPassword(
   key: string,
   value: string,
@@ -20,10 +29,7 @@ export async function setPassword(
     const keyName = getKeyName(key, options.profile);
     await keytar.setPassword(SERVICE_NAME, keyName, value);
   } catch (error) {
-    throw new Error(
-      `Failed to save to system keychain: ${error instanceof Error ? error.message : 'unknown error'}. ` +
-      `Please ensure your system keychain is unlocked and accessible.`
-    );
+    throw keyringError('save', key, options.profile, error);
   }
 }
 
@@ -35,10 +41,7 @@ export async function getPassword(
     const keyName = getKeyName(key, options.profile);
     return await keytar.getPassword(SERVICE_NAME, keyName);
   } catch (error) {
-    throw new Error(
-      `Failed to read from system keychain: ${error instanceof Error ? error.message : 'unknown error'}. ` +
-      `Please ensure your system keychain is unlocked and accessible.`
-    );
+    throw keyringError('read', key, options.profile, error);
   }
 }
 
@@ -50,10 +53,7 @@ export async function deletePassword(
     const keyName = getKeyName(key, options.profile);
     return await keytar.deletePassword(SERVICE_NAME, keyName);
   } catch (error) {
-    throw new Error(
-      `Failed to delete from system keychain: ${error instanceof Error ? error.message : 'unknown error'}. ` +
-      `Please ensure your system keychain is unlocked and accessible.`
-    );
+    throw keyringError('delete', key, options.profile, error);
   }
 }
 
