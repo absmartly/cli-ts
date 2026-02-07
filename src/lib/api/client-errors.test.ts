@@ -170,13 +170,13 @@ describe('APIClient - Error Handling', () => {
       expect(attempts).toBe(1);
     });
 
-    it('should retry on network errors', async () => {
+    it('should retry on 5xx errors for GET requests', async () => {
       let attempts = 0;
       server.use(
         http.get(`${BASE_URL}/experiments`, () => {
           attempts++;
           if (attempts < 2) {
-            return HttpResponse.error();
+            return new HttpResponse(null, { status: 503 });
           }
           return HttpResponse.json({ experiments: [] });
         })

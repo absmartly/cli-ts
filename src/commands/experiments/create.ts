@@ -53,6 +53,13 @@ export const createCommand = new Command('create')
         });
       }
     } else {
+      if (!options.name) {
+        throw new Error(
+          'Missing required option: --name\n' +
+          'Either provide --name or use --from-file with a template.'
+        );
+      }
+
       data = {
         name: options.name,
         display_name: options.displayName || options.name,

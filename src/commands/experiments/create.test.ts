@@ -1,6 +1,8 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import { createCommand } from './create.js';
+import { Command } from 'commander';
 
 describe('Experiment Create Command - JSON Error Handling Documentation', () => {
   const createFilePath = join(__dirname, 'create.ts');
@@ -73,5 +75,39 @@ describe('Experiment Create - JSON Validation Logic', () => {
     const ifBlock = content.match(/if \(v\.config\) \{[\s\S]+?\}/);
     expect(ifBlock).toBeDefined();
     expect(ifBlock![0]).toContain('JSON.parse(v.config)');
+  });
+});
+
+describe('Experiment Create - Name Validation', () => {
+  const createFilePath = join(__dirname, 'create.ts');
+
+  it('should require --name option when not using --from-file', () => {
+    const content = readFileSync(createFilePath, 'utf8');
+
+    expect(content).toContain('if (!options.name)');
+    expect(content).toContain('Missing required option: --name');
+    expect(content).toContain('Either provide --name or use --from-file');
+  });
+
+  it('should validate name is present in non-file mode', () => {
+    const content = readFileSync(createFilePath, 'utf8');
+
+    const elseBlock = content.match(/\} else \{[\s\S]+?if \(!options\.name\)/);
+    expect(elseBlock).toBeDefined();
+  });
+
+  it('should throw error when name is missing', () => {
+    const content = readFileSync(createFilePath, 'utf8');
+
+    expect(content).toContain('throw new Error');
+    const errorPattern = content.match(/if \(!options\.name\) \{[\s\S]+?throw new Error/);
+    expect(errorPattern).toBeDefined();
+  });
+
+  it('should provide helpful error message with alternatives', () => {
+    const content = readFileSync(createFilePath, 'utf8');
+
+    expect(content).toContain('--name');
+    expect(content).toContain('--from-file');
   });
 });
