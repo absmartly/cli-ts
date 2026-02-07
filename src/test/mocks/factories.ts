@@ -3,12 +3,12 @@ import type { Experiment, Goal, Segment, Team, User, Metric, Application, Enviro
 
 export function createMockExperiment(overrides?: Partial<Experiment>): Experiment {
   return {
-    id: faker.number.int({ min: 1, max: 10000 }),
+    id: faker.number.int({ min: 1, max: 10000 }) as any,
     name: faker.helpers.slugify(faker.commerce.productName()).toLowerCase(),
     display_name: faker.commerce.productName(),
     type: faker.helpers.arrayElement(['test', 'feature']) as 'test' | 'feature',
     state: faker.helpers.arrayElement(['created', 'ready', 'running', 'stopped', 'archived']) as 'created' | 'ready' | 'running' | 'stopped' | 'archived',
-    unit_type_id: faker.number.int({ min: 1, max: 10 }),
+    unit_type_id: faker.number.int({ min: 1, max: 10 }) as any,
     created_at: faker.date.past().toISOString(),
     updated_at: faker.date.recent().toISOString(),
     variants: [
@@ -41,7 +41,7 @@ export function createMockGoals(count: number): Goal[] {
 
 export function createMockSegment(overrides?: Partial<Segment>): Segment {
   return {
-    id: faker.number.int({ min: 1, max: 10000 }),
+    id: faker.number.int({ min: 1, max: 10000 }) as any,
     name: faker.helpers.slugify(faker.word.words(2)).toLowerCase(),
     archived: false,
     created_at: faker.date.past().toISOString() || null,
@@ -73,7 +73,7 @@ export function createMockTeams(count: number): Team[] {
 
 export function createMockUser(overrides?: Partial<User>): User {
   return {
-    id: faker.number.int({ min: 1, max: 10000 }),
+    id: faker.number.int({ min: 1, max: 10000 }) as any,
     email: faker.internet.email(),
     first_name: faker.person.firstName(),
     last_name: faker.person.lastName(),
@@ -278,7 +278,7 @@ export function createMockWebhooks(count: number): Webhook[] {
 
 export function createMockAlert(overrides?: Partial<Alert>): Alert {
   return {
-    id: faker.number.int({ min: 1, max: 1000 }),
+    id: faker.number.int({ min: 1, max: 1000 }) as any,
     type: faker.helpers.arrayElement(['sample_ratio_mismatch', 'cleanup_needed', 'audience_mismatch']),
     dismissed: faker.datatype.boolean(),
     created_at: faker.date.past().toISOString(),
@@ -292,12 +292,12 @@ export function createMockAlerts(count: number): Alert[] {
 
 export function createMockNote(overrides?: Partial<Note>): Note {
   return {
-    id: faker.number.int({ min: 1, max: 1000 }),
+    id: faker.number.int({ min: 1, max: 1000 }) as any,
     text: faker.lorem.sentence(),
     action: faker.helpers.arrayElement(['archive', 'start', 'stop', 'create', 'ready', 'development', 'full_on', 'edit', 'comment']),
     created_at: faker.date.past().toISOString(),
-    experiment_id: faker.number.int({ min: 1, max: 1000 }),
-    created_by_user_id: faker.number.int({ min: 1, max: 100 }),
+    experiment_id: faker.number.int({ min: 1, max: 1000 }) as any,
+    created_by_user_id: faker.number.int({ min: 1, max: 100 }) as any,
     ...overrides,
   } as Note;
 }
