@@ -14,10 +14,15 @@ vi.mock('../api/client', () => ({
   createAPIClient: vi.fn(),
 }));
 
-import { getAPIClientFromOptions, getGlobalOptions } from './api-helper.js';
+vi.mock('../output/formatter', () => ({
+  formatOutput: vi.fn((data) => JSON.stringify(data)),
+}));
+
+import { getAPIClientFromOptions, getGlobalOptions, printFormatted } from './api-helper.js';
 import { loadConfig, getProfile } from '../config/config.js';
 import { getAPIKey } from '../config/keyring.js';
 import { createAPIClient } from '../api/client.js';
+import { formatOutput } from '../output/formatter.js';
 
 describe('API Helper', () => {
   beforeEach(() => {
@@ -198,8 +203,8 @@ describe('API Helper', () => {
       expect(options.verbose).toBe(true);
     });
 
-    it('should parse noColor flag', () => {
-      mockCommand.setOptionValue('noColor', true);
+    it('should handle --no-color flag', () => {
+      mockCommand.parse(['node', 'test', '--no-color']);
 
       const options = getGlobalOptions(mockCommand);
       expect(options.noColor).toBe(true);
@@ -219,6 +224,44 @@ describe('API Helper', () => {
 
       const options = getGlobalOptions(mockCommand);
       expect(options.profile).toBe('staging');
+    });
+
+    it('should pass noColor correctly to formatOutput when --no-color is set', () => {
+      mockCommand.parse(['node', 'test', '--no-color']);
+
+      const globalOptions = getGlobalOptions(mockCommand);
+      const testData = { name: 'test-experiment', status: 'running' };
+
+      printFormatted(testData, globalOptions);
+
+      expect(formatOutput).toHaveBeenCalledWith(
+        testData,
+        'table',
+        expect.objectContaining({
+          noColor: true,
+          full: false,
+          terse: false,
+        })
+      );
+    });
+
+    it('should pass noColor as false when --no-color is not set', () => {
+      mockCommand.parse(['node', 'test']);
+
+      const globalOptions = getGlobalOptions(mockCommand);
+      const testData = { name: 'test-experiment', status: 'running' };
+
+      printFormatted(testData, globalOptions);
+
+      expect(formatOutput).toHaveBeenCalledWith(
+        testData,
+        'table',
+        expect.objectContaining({
+          noColor: false,
+          full: false,
+          terse: false,
+        })
+      );
     });
   });
 });

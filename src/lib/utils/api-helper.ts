@@ -57,7 +57,7 @@ export function getGlobalOptions(cmd: Command): GlobalOptions {
     app: opts.app,
     env: opts.env,
     output,
-    noColor: opts.noColor || false,
+    noColor: opts.color === false,
     verbose: opts.verbose || false,
     quiet: opts.quiet || false,
     profile: opts.profile,
