@@ -2,26 +2,105 @@
  * Common validation functions for CLI inputs
  */
 
-/**
- * Parse and validate a resource ID
- * @throws Error if value is not a positive integer
- */
-export function parseId(value: string): number {
+import {
+  ExperimentId,
+  GoalId,
+  SegmentId,
+  TeamId,
+  UserId,
+  MetricId,
+  ApplicationId,
+  EnvironmentId,
+  UnitTypeId,
+  NoteId,
+  AlertId,
+  TagId,
+  RoleId,
+  ApiKeyId,
+  WebhookId,
+} from '../api/branded-types.js';
+
+function parseIdGeneric<T extends number>(value: string, typeName: string): T {
   const id = parseInt(value, 10);
 
   if (isNaN(id)) {
-    throw new Error(`Invalid ID: "${value}" -- must be a number`);
+    throw new Error(`Invalid ${typeName}: "${value}" -- must be a number`);
   }
 
   if (id <= 0) {
-    throw new Error(`Invalid ID: ${id} -- must be a positive integer`);
+    throw new Error(`Invalid ${typeName}: ${id} -- must be a positive integer`);
   }
 
   if (!Number.isInteger(id)) {
-    throw new Error(`Invalid ID: ${id} -- must be an integer`);
+    throw new Error(`Invalid ${typeName}: ${id} -- must be an integer`);
   }
 
-  return id;
+  return id as T;
+}
+
+export function parseExperimentId(value: string): ExperimentId {
+  return parseIdGeneric<ExperimentId>(value, 'ExperimentId');
+}
+
+export function parseGoalId(value: string): GoalId {
+  return parseIdGeneric<GoalId>(value, 'GoalId');
+}
+
+export function parseSegmentId(value: string): SegmentId {
+  return parseIdGeneric<SegmentId>(value, 'SegmentId');
+}
+
+export function parseTeamId(value: string): TeamId {
+  return parseIdGeneric<TeamId>(value, 'TeamId');
+}
+
+export function parseUserId(value: string): UserId {
+  return parseIdGeneric<UserId>(value, 'UserId');
+}
+
+export function parseMetricId(value: string): MetricId {
+  return parseIdGeneric<MetricId>(value, 'MetricId');
+}
+
+export function parseApplicationId(value: string): ApplicationId {
+  return parseIdGeneric<ApplicationId>(value, 'ApplicationId');
+}
+
+export function parseEnvironmentId(value: string): EnvironmentId {
+  return parseIdGeneric<EnvironmentId>(value, 'EnvironmentId');
+}
+
+export function parseUnitTypeId(value: string): UnitTypeId {
+  return parseIdGeneric<UnitTypeId>(value, 'UnitTypeId');
+}
+
+export function parseNoteId(value: string): NoteId {
+  return parseIdGeneric<NoteId>(value, 'NoteId');
+}
+
+export function parseAlertId(value: string): AlertId {
+  return parseIdGeneric<AlertId>(value, 'AlertId');
+}
+
+export function parseTagId(value: string): TagId {
+  return parseIdGeneric<TagId>(value, 'TagId');
+}
+
+export function parseRoleId(value: string): RoleId {
+  return parseIdGeneric<RoleId>(value, 'RoleId');
+}
+
+export function parseApiKeyId(value: string): ApiKeyId {
+  return parseIdGeneric<ApiKeyId>(value, 'ApiKeyId');
+}
+
+export function parseWebhookId(value: string): WebhookId {
+  return parseIdGeneric<WebhookId>(value, 'WebhookId');
+}
+
+/** @deprecated Use specific type parser (e.g., parseExperimentId) */
+export function parseId(value: string): number {
+  return parseIdGeneric<number>(value, 'ID');
 }
 
 /**
