@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
+import { parseId, requireAtLeastOneField } from '../../lib/utils/validators.js';
 
 export const rolesCommand = new Command('roles').alias('role').description('Role commands');
 
@@ -18,7 +19,7 @@ const listCommand = new Command('list')
 
 const getCommand = new Command('get')
   .description('Get role details')
-  .argument('<id>', 'role ID', parseInt)
+  .argument('<id>', 'role ID', parseId)
   .action(withErrorHandling(async (id: number) => {
     const globalOptions = getGlobalOptions(getCommand);
     const client = await getAPIClientFromOptions(globalOptions);
@@ -45,7 +46,7 @@ const createCommand = new Command('create')
 
 const updateCommand = new Command('update')
   .description('Update a role')
-  .argument('<id>', 'role ID', parseInt)
+  .argument('<id>', 'role ID', parseId)
   .option('--name <name>', 'new name')
   .option('--description <text>', 'new description')
   .action(withErrorHandling(async (id: number, options) => {
@@ -56,13 +57,14 @@ const updateCommand = new Command('update')
     if (options.name) data.name = options.name;
     if (options.description) data.description = options.description;
 
+    requireAtLeastOneField(data, 'update field');
     await client.updateRole(id, data);
     console.log(chalk.green(`✓ Role ${id} updated`));
   }));
 
 const deleteCommand = new Command('delete')
   .description('Delete a role')
-  .argument('<id>', 'role ID', parseInt)
+  .argument('<id>', 'role ID', parseId)
   .action(withErrorHandling(async (id: number) => {
     const globalOptions = getGlobalOptions(deleteCommand);
     const client = await getAPIClientFromOptions(globalOptions);

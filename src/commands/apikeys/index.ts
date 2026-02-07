@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
+import { parseId, requireAtLeastOneField } from '../../lib/utils/validators.js';
 
 export const apiKeysCommand = new Command('api-keys')
   .aliases(['apikeys', 'apikey', 'api-key'])
@@ -20,7 +21,7 @@ const listCommand = new Command('list')
 
 const getCommand = new Command('get')
   .description('Get API key details')
-  .argument('<id>', 'API key ID', parseInt)
+  .argument('<id>', 'API key ID', parseId)
   .action(withErrorHandling(async (id: number) => {
     const globalOptions = getGlobalOptions(getCommand);
     const client = await getAPIClientFromOptions(globalOptions);
@@ -53,7 +54,7 @@ const createCommand = new Command('create')
 
 const updateCommand = new Command('update')
   .description('Update an API key')
-  .argument('<id>', 'API key ID', parseInt)
+  .argument('<id>', 'API key ID', parseId)
   .option('--name <name>', 'new name')
   .option('--description <text>', 'new description')
   .action(withErrorHandling(async (id: number, options) => {
@@ -64,13 +65,14 @@ const updateCommand = new Command('update')
     if (options.name) data.name = options.name;
     if (options.description) data.description = options.description;
 
+    requireAtLeastOneField(data, 'update field');
     await client.updateApiKey(id, data);
     console.log(chalk.green(`✓ API key ${id} updated`));
   }));
 
 const deleteCommand = new Command('delete')
   .description('Delete an API key')
-  .argument('<id>', 'API key ID', parseInt)
+  .argument('<id>', 'API key ID', parseId)
   .action(withErrorHandling(async (id: number) => {
     const globalOptions = getGlobalOptions(deleteCommand);
     const client = await getAPIClientFromOptions(globalOptions);

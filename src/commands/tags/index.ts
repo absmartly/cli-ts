@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
+import { parseId, requireAtLeastOneField } from '../../lib/utils/validators.js';
 
 export const tagsCommand = new Command('tags')
   .alias('tag')
@@ -21,7 +22,7 @@ const listCommand = new Command('list')
 
 const getCommand = new Command('get')
   .description('Get experiment tag details')
-  .argument('<id>', 'tag ID', parseInt)
+  .argument('<id>', 'tag ID', parseId)
   .action(withErrorHandling(async (id: number) => {
     const globalOptions = getGlobalOptions(getCommand);
     const client = await getAPIClientFromOptions(globalOptions);
@@ -45,7 +46,7 @@ const createCommand = new Command('create')
 
 const updateCommand = new Command('update')
   .description('Update an experiment tag')
-  .argument('<id>', 'tag ID', parseInt)
+  .argument('<id>', 'tag ID', parseId)
   .option('--tag <name>', 'new tag name')
   .action(withErrorHandling(async (id: number, options) => {
     const globalOptions = getGlobalOptions(updateCommand);
@@ -54,6 +55,7 @@ const updateCommand = new Command('update')
     const data: { tag?: string } = {};
     if (options.tag) data.tag = options.tag;
 
+    requireAtLeastOneField(data, 'update field');
     const tag = await client.updateExperimentTag(id, data as { tag: string });
 
     console.log(chalk.green('Experiment tag updated successfully'));
@@ -62,7 +64,7 @@ const updateCommand = new Command('update')
 
 const deleteCommand = new Command('delete')
   .description('Delete an experiment tag')
-  .argument('<id>', 'tag ID', parseInt)
+  .argument('<id>', 'tag ID', parseId)
   .action(withErrorHandling(async (id: number) => {
     const globalOptions = getGlobalOptions(deleteCommand);
     const client = await getAPIClientFromOptions(globalOptions);

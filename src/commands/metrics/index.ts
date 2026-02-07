@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
+import { parseId, requireAtLeastOneField } from '../../lib/utils/validators.js';
 
 export const metricsCommand = new Command('metrics')
   .alias('metric')
@@ -20,7 +21,7 @@ const listCommand = new Command('list')
 
 const getCommand = new Command('get')
   .description('Get metric details')
-  .argument('<id>', 'metric ID', parseInt)
+  .argument('<id>', 'metric ID', parseId)
   .action(withErrorHandling(async (id: number) => {
     const globalOptions = getGlobalOptions(getCommand);
     const client = await getAPIClientFromOptions(globalOptions);
@@ -51,7 +52,7 @@ const createCommand = new Command('create')
 
 const updateCommand = new Command('update')
   .description('Update a metric')
-  .argument('<id>', 'metric ID', parseInt)
+  .argument('<id>', 'metric ID', parseId)
   .option('--display-name <name>', 'new display name')
   .option('--description <text>', 'new description')
   .action(withErrorHandling(async (id: number, options) => {
@@ -62,13 +63,14 @@ const updateCommand = new Command('update')
     if (options.displayName) data.display_name = options.displayName;
     if (options.description) data.description = options.description;
 
+    requireAtLeastOneField(data, 'update field');
     await client.updateMetric(id, data);
     console.log(chalk.green(`✓ Metric ${id} updated`));
   }));
 
 const archiveCommand = new Command('archive')
   .description('Archive or unarchive a metric')
-  .argument('<id>', 'metric ID', parseInt)
+  .argument('<id>', 'metric ID', parseId)
   .option('--unarchive', 'unarchive the metric')
   .action(withErrorHandling(async (id: number, options) => {
     const globalOptions = getGlobalOptions(archiveCommand);

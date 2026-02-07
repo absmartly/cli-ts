@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
+import { parseId, requireAtLeastOneField } from '../../lib/utils/validators.js';
 
 export const webhooksCommand = new Command('webhooks')
   .alias('webhook')
@@ -20,7 +21,7 @@ const listCommand = new Command('list')
 
 const getCommand = new Command('get')
   .description('Get webhook details')
-  .argument('<id>', 'webhook ID', parseInt)
+  .argument('<id>', 'webhook ID', parseId)
   .action(withErrorHandling(async (id: number) => {
     const globalOptions = getGlobalOptions(getCommand);
     const client = await getAPIClientFromOptions(globalOptions);
@@ -56,7 +57,7 @@ const createCommand = new Command('create')
 
 const updateCommand = new Command('update')
   .description('Update a webhook')
-  .argument('<id>', 'webhook ID', parseInt)
+  .argument('<id>', 'webhook ID', parseId)
   .option('--name <name>', 'new name')
   .option('--url <url>', 'new URL')
   .option('--description <text>', 'new description')
@@ -75,13 +76,14 @@ const updateCommand = new Command('update')
     if (options.ordered !== undefined) data.ordered = options.ordered;
     if (options.maxRetries !== undefined) data.max_retries = options.maxRetries;
 
+    requireAtLeastOneField(data, 'update field');
     await client.updateWebhook(id, data);
     console.log(chalk.green(`✓ Webhook ${id} updated`));
   }));
 
 const deleteCommand = new Command('delete')
   .description('Delete a webhook')
-  .argument('<id>', 'webhook ID', parseInt)
+  .argument('<id>', 'webhook ID', parseId)
   .action(withErrorHandling(async (id: number) => {
     const globalOptions = getGlobalOptions(deleteCommand);
     const client = await getAPIClientFromOptions(globalOptions);

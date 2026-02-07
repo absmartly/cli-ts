@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
+import { parseId, requireAtLeastOneField } from '../../lib/utils/validators.js';
 
 export const metricCategoriesCommand = new Command('metric-categories')
   .alias('metriccategories')
@@ -23,7 +24,7 @@ const listCommand = new Command('list')
 
 const getCommand = new Command('get')
   .description('Get metric category details')
-  .argument('<id>', 'category ID', parseInt)
+  .argument('<id>', 'category ID', parseId)
   .action(withErrorHandling(async (id: number) => {
     const globalOptions = getGlobalOptions(getCommand);
     const client = await getAPIClientFromOptions(globalOptions);
@@ -53,7 +54,7 @@ const createCommand = new Command('create')
 
 const updateCommand = new Command('update')
   .description('Update a metric category')
-  .argument('<id>', 'category ID', parseInt)
+  .argument('<id>', 'category ID', parseId)
   .option('--name <name>', 'new category name')
   .option('--description <text>', 'new category description')
   .option('--color <color>', 'new category color')
@@ -66,6 +67,7 @@ const updateCommand = new Command('update')
     if (options.description) data.description = options.description;
     if (options.color) data.color = options.color;
 
+    requireAtLeastOneField(data, 'update field');
     const category = await client.updateMetricCategory(id, data);
 
     console.log(chalk.green('Metric category updated successfully'));
@@ -74,7 +76,7 @@ const updateCommand = new Command('update')
 
 const archiveCommand = new Command('archive')
   .description('Archive a metric category')
-  .argument('<id>', 'category ID', parseInt)
+  .argument('<id>', 'category ID', parseId)
   .action(withErrorHandling(async (id: number) => {
     const globalOptions = getGlobalOptions(archiveCommand);
     const client = await getAPIClientFromOptions(globalOptions);

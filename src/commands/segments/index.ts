@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
+import { parseId, requireAtLeastOneField } from '../../lib/utils/validators.js';
 
 export const segmentsCommand = new Command('segments')
   .alias('segment')
@@ -20,7 +21,7 @@ const listCommand = new Command('list')
 
 const getCommand = new Command('get')
   .description('Get segment details')
-  .argument('<id>', 'segment ID', parseInt)
+  .argument('<id>', 'segment ID', parseId)
   .action(withErrorHandling(async (id: number) => {
     const globalOptions = getGlobalOptions(getCommand);
     const client = await getAPIClientFromOptions(globalOptions);
@@ -49,7 +50,7 @@ const createCommand = new Command('create')
 
 const updateCommand = new Command('update')
   .description('Update a segment')
-  .argument('<id>', 'segment ID', parseInt)
+  .argument('<id>', 'segment ID', parseId)
   .option('--display-name <name>', 'new display name')
   .option('--description <text>', 'new description')
   .action(withErrorHandling(async (id: number, options) => {
@@ -60,13 +61,14 @@ const updateCommand = new Command('update')
     if (options.displayName) data.display_name = options.displayName;
     if (options.description) data.description = options.description;
 
+    requireAtLeastOneField(data, 'update field');
     await client.updateSegment(id, data);
     console.log(chalk.green(`✓ Segment ${id} updated`));
   }));
 
 const deleteCommand = new Command('delete')
   .description('Delete a segment')
-  .argument('<id>', 'segment ID', parseInt)
+  .argument('<id>', 'segment ID', parseId)
   .action(withErrorHandling(async (id: number) => {
     const globalOptions = getGlobalOptions(deleteCommand);
     const client = await getAPIClientFromOptions(globalOptions);

@@ -33,10 +33,24 @@ export const createCommand = new Command('create')
       };
 
       if (template.variants && template.variants.length > 0) {
-        data.variants = template.variants.map((v: VariantTemplate) => ({
-          name: v.name,
-          config: v.config ? JSON.parse(v.config) : {},
-        }));
+        data.variants = template.variants.map((v: VariantTemplate, index: number) => {
+          let parsedConfig = {};
+          if (v.config) {
+            try {
+              parsedConfig = JSON.parse(v.config);
+            } catch (error) {
+              throw new Error(
+                `Invalid JSON in variant "${v.name}" (variant ${index}):\n` +
+                `${error instanceof Error ? error.message : 'unknown error'}\n` +
+                `Config: ${v.config.substring(0, 100)}${v.config.length > 100 ? '...' : ''}`
+              );
+            }
+          }
+          return {
+            name: v.name,
+            config: parsedConfig,
+          };
+        });
       }
     } else {
       data = {

@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
+import { parseId, requireAtLeastOneField } from '../../lib/utils/validators.js';
 
 export const usersCommand = new Command('users').alias('user').description('User commands');
 
@@ -17,7 +18,7 @@ const listCommand = new Command('list')
 
 const getCommand = new Command('get')
   .description('Get user details')
-  .argument('<id>', 'user ID', parseInt)
+  .argument('<id>', 'user ID', parseId)
   .action(withErrorHandling(async (id: number) => {
     const globalOptions = getGlobalOptions(getCommand);
     const client = await getAPIClientFromOptions(globalOptions);
@@ -47,7 +48,7 @@ const createCommand = new Command('create')
 
 const updateCommand = new Command('update')
   .description('Update a user')
-  .argument('<id>', 'user ID', parseInt)
+  .argument('<id>', 'user ID', parseId)
   .option('--name <name>', 'new full name')
   .option('--role <role>', 'new role')
   .action(withErrorHandling(async (id: number, options) => {
@@ -61,13 +62,14 @@ const updateCommand = new Command('update')
       data.last_name = lastNameParts.join(' ');
     }
 
+    requireAtLeastOneField(data, 'update field');
     await client.updateUser(id, data);
     console.log(chalk.green(`✓ User ${id} updated`));
   }));
 
 const archiveCommand = new Command('archive')
   .description('Archive or unarchive a user')
-  .argument('<id>', 'user ID', parseInt)
+  .argument('<id>', 'user ID', parseId)
   .option('--unarchive', 'unarchive the user')
   .action(withErrorHandling(async (id: number, options) => {
     const globalOptions = getGlobalOptions(archiveCommand);
