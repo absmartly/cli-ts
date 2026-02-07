@@ -83,7 +83,7 @@ describe('Keyring', () => {
       (keytar.setPassword as any).mockRejectedValue(new Error('Access denied'));
 
       await expect(setPassword('test-key', 'value')).rejects.toThrow(
-        /Failed to save to system keychain.*Access denied.*keychain is unlocked/
+        /Failed to save "test-key" to system keychain: Access denied[\s\S]*keychain is unlocked and accessible/
       );
     });
 
@@ -91,7 +91,7 @@ describe('Keyring', () => {
       (keytar.getPassword as any).mockRejectedValue(new Error('Keyring not available'));
 
       await expect(getPassword('test-key')).rejects.toThrow(
-        /Failed to read from system keychain.*Keyring not available.*keychain is unlocked/
+        /Failed to read "test-key" from system keychain: Keyring not available[\s\S]*keychain is unlocked and accessible/
       );
     });
 
@@ -99,7 +99,7 @@ describe('Keyring', () => {
       (keytar.deletePassword as any).mockRejectedValue(new Error('Permission denied'));
 
       await expect(deletePassword('test-key')).rejects.toThrow(
-        /Failed to delete from system keychain.*Permission denied.*keychain is unlocked/
+        /Failed to delete "test-key" from system keychain: Permission denied[\s\S]*keychain is unlocked and accessible/
       );
     });
 
@@ -113,7 +113,7 @@ describe('Keyring', () => {
     it('should handle keychain locked error', async () => {
       (keytar.getPassword as any).mockRejectedValue(new Error('The user name or passphrase you entered is not correct'));
 
-      await expect(getAPIKey()).rejects.toThrow(/Failed to read from system keychain/);
+      await expect(getAPIKey()).rejects.toThrow(/Failed to read "api-key" from system keychain/);
     });
   });
 
