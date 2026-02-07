@@ -73,7 +73,12 @@ export function loadConfig(): Config {
   try {
     const content = readFileSync(path, 'utf8');
     const config = yaml.load(content) as Config;
-    return { ...defaultConfig(), ...config };
+    const defaults = defaultConfig();
+    return {
+      ...defaults,
+      ...config,
+      profiles: { ...defaults.profiles, ...(config.profiles || {}) },
+    };
   } catch (error) {
     if (error instanceof Error) {
       if (error.message.includes('EACCES')) {
@@ -166,18 +171,35 @@ export function listProfiles(): string[] {
   return Object.keys(config.profiles);
 }
 
+const ALLOWED_CONFIG_KEYS = ['output', 'analytics-opt-out', 'default-profile'] as const;
+type AllowedConfigKey = typeof ALLOWED_CONFIG_KEYS[number];
+
+function validateConfigKey(key: string): asserts key is AllowedConfigKey {
+  if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+    throw new Error(`Cannot set protected key: ${key}`);
+  }
+  if (!ALLOWED_CONFIG_KEYS.includes(key as AllowedConfigKey)) {
+    throw new Error(
+      `Invalid config key: '${key}'. Allowed keys: ${ALLOWED_CONFIG_KEYS.join(', ')}`
+    );
+  }
+}
+
 export function getConfigValue(key: string): string | boolean | undefined {
+  validateConfigKey(key);
   const config = loadConfig();
   return (config as unknown as Record<string, unknown>)[key] as string | boolean | undefined;
 }
 
 export function setConfigValue(key: string, value: string | boolean): void {
+  validateConfigKey(key);
   const config = loadConfig();
   (config as unknown as Record<string, unknown>)[key] = value;
   saveConfig(config);
 }
 
 export function unsetConfigValue(key: string): void {
+  validateConfigKey(key);
   const config = loadConfig();
   delete (config as unknown as Record<string, unknown>)[key];
   saveConfig(config);
