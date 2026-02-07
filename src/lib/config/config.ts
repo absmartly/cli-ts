@@ -41,7 +41,7 @@ export function getConfigPath(): string {
 export function ensureConfigDir(): void {
   const dir = getConfigDir();
   if (!existsSync(dir)) {
-    mkdirSync(dir, { recursive: true, mode: 0o755 });
+    mkdirSync(dir, { recursive: true, mode: 0o700 });
   }
 }
 
@@ -147,11 +147,27 @@ export function setProfile(name: string, profile: Profile): void {
 
 export function deleteProfile(name: string): void {
   const config = loadConfig();
+
+  // Prevent deleting last profile
+  const profileNames = Object.keys(config.profiles);
+  if (profileNames.length === 1 && profileNames[0] === name) {
+    throw new Error(
+      `Cannot delete the only remaining profile: ${name}\n` +
+      `Create another profile first, then delete this one.`
+    );
+  }
+
   delete config.profiles[name];
 
+  // If deleting default profile, switch to another one
   if (config['default-profile'] === name) {
     const remaining = Object.keys(config.profiles);
-    config['default-profile'] = remaining.length > 0 ? remaining[0]! : 'default';
+    if (remaining.length === 0) {
+      // This should be unreachable due to check above, but be safe
+      throw new Error('Cannot delete last profile');
+    }
+    config['default-profile'] = remaining[0]!;
+    console.log(`Default profile switched to: ${remaining[0]}`);
   }
 
   saveConfig(config);
@@ -194,7 +210,24 @@ export function getConfigValue(key: string): string | boolean | undefined {
 export function setConfigValue(key: string, value: string | boolean): void {
   validateConfigKey(key);
   const config = loadConfig();
-  (config as unknown as Record<string, unknown>)[key] = value;
+
+  // Convert string booleans for boolean keys
+  let finalValue: string | boolean = value;
+  if (key === 'analytics-opt-out' && typeof value === 'string') {
+    const normalized = value.toLowerCase();
+    if (['true', '1', 'yes'].includes(normalized)) {
+      finalValue = true;
+    } else if (['false', '0', 'no'].includes(normalized)) {
+      finalValue = false;
+    } else {
+      throw new Error(
+        `Invalid boolean value for ${key}: "${value}"\n` +
+        `Use: true, false, 1, 0, yes, or no`
+      );
+    }
+  }
+
+  (config as unknown as Record<string, unknown>)[key] = finalValue;
   saveConfig(config);
 }
 
