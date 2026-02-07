@@ -39,6 +39,7 @@ const loginCommand = new Command('login')
 const statusCommand = new Command('status')
   .description('Show current authentication status')
   .option('--profile <name>', 'profile name')
+  .option('--show-key', 'show last 4 characters of API key')
   .action(withErrorHandling(async (options) => {
     const config = loadConfig();
     const profileName = options.profile || config['default-profile'];
@@ -47,9 +48,13 @@ const statusCommand = new Command('status')
       const profile = getProfile(profileName);
       const apiKey = await getAPIKey(profileName);
 
+      const keyDisplay = apiKey
+        ? (options.showKey ? '***' + apiKey.slice(-4) : '***hidden***')
+        : 'not set';
+
       console.log(`Profile: ${profileName}`);
       console.log(`Endpoint: ${profile.api.endpoint}`);
-      console.log(`API Key: ${apiKey ? '***' + apiKey.slice(-4) : 'not set'}`);
+      console.log(`API Key: ${keyDisplay}`);
       if (profile.application) console.log(`Application: ${profile.application}`);
       if (profile.environment) console.log(`Environment: ${profile.environment}`);
     } catch (error) {

@@ -68,10 +68,14 @@ export class APIClient {
       retries: 3,
       retryDelay: axiosRetry.exponentialDelay,
       retryCondition: (error: AxiosError) => {
-        if (axiosRetry.isNetworkOrIdempotentRequestError(error)) return true;
         const method = error.config?.method?.toUpperCase();
         const isIdempotent = ['GET', 'HEAD', 'OPTIONS', 'PUT', 'DELETE'].includes(method ?? '');
-        return isIdempotent && (error.response?.status ?? 0) >= 500;
+
+        if (!isIdempotent) return false;
+
+        if (axiosRetry.isNetworkError(error)) return true;
+
+        return (error.response?.status ?? 0) >= 500;
       },
     });
 
@@ -658,6 +662,19 @@ export class APIClient {
     data?: unknown,
     headers?: Record<string, string>
   ): Promise<unknown> {
+    if (path.includes('://')) {
+      throw new Error(
+        'Invalid API path: Absolute URLs are not allowed.\n' +
+        'Paths must be relative to the API endpoint (e.g., /experiments, /goals).'
+      );
+    }
+
+    if (!path.startsWith('/')) {
+      throw new Error(
+        'Invalid API path: Must start with "/" (e.g., /experiments, not experiments).'
+      );
+    }
+
     const response = await this.client.request({
       url: path,
       method,
