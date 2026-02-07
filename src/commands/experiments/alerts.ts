@@ -1,12 +1,13 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
+import { parseId } from '../../lib/utils/validators.js';
 
 export const alertsCommand = new Command('alerts').description('Alert operations');
 
 const listAlertsCommand = new Command('list')
   .description('List alerts for an experiment')
-  .argument('<id>', 'experiment ID', parseInt)
+  .argument('<id>', 'experiment ID', parseId)
   .action(withErrorHandling(async (id: number) => {
     const globalOptions = getGlobalOptions(listAlertsCommand);
     const client = await getAPIClientFromOptions(globalOptions);
@@ -23,7 +24,7 @@ const listAlertsCommand = new Command('list')
 
 const deleteAllAlertsCommand = new Command('delete-all')
   .description('Delete all alerts for an experiment')
-  .argument('<id>', 'experiment ID', parseInt)
+  .argument('<id>', 'experiment ID', parseId)
   .action(withErrorHandling(async (id: number) => {
     const globalOptions = getGlobalOptions(deleteAllAlertsCommand);
     const client = await getAPIClientFromOptions(globalOptions);

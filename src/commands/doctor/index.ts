@@ -3,10 +3,11 @@ import chalk from 'chalk';
 import { getProfile, loadConfig } from '../../lib/config/config.js';
 import { getAPIKey } from '../../lib/config/keyring.js';
 import { createAPIClient } from '../../lib/api/client.js';
+import { withErrorHandling } from '../../lib/utils/api-helper.js';
 
 export const doctorCommand = new Command('doctor')
   .description('Diagnose configuration issues')
-  .action(async () => {
+  .action(withErrorHandling(async () => {
     console.log(chalk.bold('\n🔍 ABSmartly CLI Diagnostics\n'));
 
     let allGood = true;
@@ -71,4 +72,4 @@ export const doctorCommand = new Command('doctor')
       console.log(chalk.yellow('\n⚠ Some issues found. See messages above.'));
       process.exit(1);
     }
-  });
+  }));

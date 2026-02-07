@@ -1,9 +1,10 @@
 import { Command } from 'commander';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
+import { parseId } from '../../lib/utils/validators.js';
 
 export const getCommand = new Command('get')
   .description('Get experiment details')
-  .argument('<id>', 'experiment ID', parseInt)
+  .argument('<id>', 'experiment ID', parseId)
   .option('--activity', 'include activity notes in the output')
   .action(withErrorHandling(async (id: number, options) => {
     const globalOptions = getGlobalOptions(getCommand);

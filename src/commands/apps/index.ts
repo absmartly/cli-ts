@@ -1,5 +1,6 @@
 import { Command } from 'commander';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
+import { parseId } from '../../lib/utils/validators.js';
 
 export const appsCommand = new Command('apps')
   .alias('app')
@@ -18,7 +19,7 @@ const listCommand = new Command('list')
 
 const getCommand = new Command('get')
   .description('Get application details')
-  .argument('<id>', 'application ID', parseInt)
+  .argument('<id>', 'application ID', parseId)
   .action(withErrorHandling(async (id: number) => {
     const globalOptions = getGlobalOptions(getCommand);
     const client = await getAPIClientFromOptions(globalOptions);

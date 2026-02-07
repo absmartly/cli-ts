@@ -1,12 +1,13 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
+import { parseId } from '../../lib/utils/validators.js';
 
 export const notesCommand = new Command('notes').description('Experiment notes operations');
 
 const listNotesCommand = new Command('list')
   .description('List all notes for an experiment')
-  .argument('<id>', 'experiment ID', parseInt)
+  .argument('<id>', 'experiment ID', parseId)
   .action(withErrorHandling(async (id: number) => {
     const globalOptions = getGlobalOptions(listNotesCommand);
     const client = await getAPIClientFromOptions(globalOptions);
@@ -23,7 +24,7 @@ const listNotesCommand = new Command('list')
 
 const createNoteCommand = new Command('create')
   .description('Create a note for an experiment')
-  .argument('<id>', 'experiment ID', parseInt)
+  .argument('<id>', 'experiment ID', parseId)
   .requiredOption('--message <text>', 'note text')
   .action(withErrorHandling(async (id: number, options) => {
     const globalOptions = getGlobalOptions(createNoteCommand);

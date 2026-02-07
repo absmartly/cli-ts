@@ -5,10 +5,11 @@ import { stdin as input, stdout as output } from 'process';
 import { setProfile } from '../../lib/config/config.js';
 import { setAPIKey } from '../../lib/config/keyring.js';
 import { createAPIClient } from '../../lib/api/client.js';
+import { withErrorHandling } from '../../lib/utils/api-helper.js';
 
 export const setupCommand = new Command('setup')
   .description('Interactive onboarding wizard')
-  .action(async () => {
+  .action(withErrorHandling(async () => {
     const rl = readline.createInterface({ input, output });
 
     try {
@@ -85,4 +86,4 @@ export const setupCommand = new Command('setup')
     } finally {
       rl.close();
     }
-  });
+  }));

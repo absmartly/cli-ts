@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import { setProfile, getProfile, loadConfig } from '../../lib/config/config.js';
 import { setAPIKey, getAPIKey, deleteAPIKey } from '../../lib/config/keyring.js';
+import { withErrorHandling } from '../../lib/utils/api-helper.js';
 
 export const authCommand = new Command('auth').description('Authentication commands');
 
@@ -11,7 +12,7 @@ const loginCommand = new Command('login')
   .option('--app <name>', 'default application name')
   .option('--env <name>', 'default environment name')
   .option('--profile <name>', 'profile name to save credentials under')
-  .action(async (options) => {
+  .action(withErrorHandling(async (options) => {
     const profileName = options.profile || 'default';
 
     await setAPIKey(options.apiKey, profileName);
@@ -33,12 +34,12 @@ const loginCommand = new Command('login')
     console.log(`  Endpoint: ${options.endpoint}`);
     if (options.app) console.log(`  Application: ${options.app}`);
     if (options.env) console.log(`  Environment: ${options.env}`);
-  });
+  }));
 
 const statusCommand = new Command('status')
   .description('Show current authentication status')
   .option('--profile <name>', 'profile name')
-  .action(async (options) => {
+  .action(withErrorHandling(async (options) => {
     const config = loadConfig();
     const profileName = options.profile || config['default-profile'];
 
@@ -55,18 +56,18 @@ const statusCommand = new Command('status')
       console.error('Not authenticated. Run `abs auth login` to authenticate.');
       process.exit(1);
     }
-  });
+  }));
 
 const logoutCommand = new Command('logout')
   .description('Clear stored credentials')
   .option('--profile <name>', 'profile name')
-  .action(async (options) => {
+  .action(withErrorHandling(async (options) => {
     const config = loadConfig();
     const profileName = options.profile || config['default-profile'];
 
     await deleteAPIKey(profileName);
     console.log(`✓ Logged out (profile: ${profileName})`);
-  });
+  }));
 
 authCommand.addCommand(loginCommand);
 authCommand.addCommand(statusCommand);
