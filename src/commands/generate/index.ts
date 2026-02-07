@@ -42,7 +42,10 @@ const typesCommand = new Command('types')
 // Generated at: ${new Date().toISOString()}
 
 export type ExperimentName =
-${uniqueNames.map((name) => `  | '${name.replace(/'/g, "\\'")}'`).join('\n')};
+${uniqueNames.map((name) => {
+  const escaped = name.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+  return `  | '${escaped}'`;
+}).join('\n')};
 
 export type VariantName = 'control' | 'treatment';
 
