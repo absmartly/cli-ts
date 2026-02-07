@@ -25,6 +25,21 @@ import type {
   ApiKey,
   Webhook,
 } from './types.js';
+import type {
+  ExperimentId,
+  GoalId,
+  SegmentId,
+  TeamId,
+  UserId,
+  MetricId,
+  ApplicationId,
+  EnvironmentId,
+  UnitTypeId,
+  TagId,
+  RoleId,
+  ApiKeyId,
+  WebhookId,
+} from './branded-types.js';
 
 export interface ClientOptions {
   verbose?: boolean;
@@ -182,7 +197,7 @@ export class APIClient {
     return response.data.experiments;
   }
 
-  async getExperiment(id: number): Promise<Experiment> {
+  async getExperiment(id: ExperimentId): Promise<Experiment> {
     const response = await this.client.get<Experiment>(`/experiments/${id}`);
     return response.data;
   }
@@ -192,47 +207,47 @@ export class APIClient {
     return response.data;
   }
 
-  async updateExperiment(id: number, data: Partial<Experiment>): Promise<Experiment> {
+  async updateExperiment(id: ExperimentId, data: Partial<Experiment>): Promise<Experiment> {
     const response = await this.client.put<Experiment>(`/experiments/${id}`, data);
     return response.data;
   }
 
-  async deleteExperiment(id: number): Promise<void> {
+  async deleteExperiment(id: ExperimentId): Promise<void> {
     await this.client.delete(`/experiments/${id}`);
   }
 
-  async startExperiment(id: number): Promise<Experiment> {
+  async startExperiment(id: ExperimentId): Promise<Experiment> {
     const response = await this.client.post<Experiment>(`/experiments/${id}/start`);
     return response.data;
   }
 
-  async stopExperiment(id: number): Promise<Experiment> {
+  async stopExperiment(id: ExperimentId): Promise<Experiment> {
     const response = await this.client.post<Experiment>(`/experiments/${id}/stop`);
     return response.data;
   }
 
-  async archiveExperiment(id: number, unarchive = false): Promise<Experiment> {
+  async archiveExperiment(id: ExperimentId, unarchive = false): Promise<Experiment> {
     const response = await this.client.post<Experiment>(
       `/experiments/${id}/${unarchive ? 'unarchive' : 'archive'}`
     );
     return response.data;
   }
 
-  async listExperimentAlerts(id: number): Promise<Alert[]> {
+  async listExperimentAlerts(id: ExperimentId): Promise<Alert[]> {
     const response = await this.client.get<{ alerts: Alert[] }>(`/experiments/${id}/alerts`);
     return response.data.alerts;
   }
 
-  async deleteExperimentAlerts(id: number): Promise<void> {
+  async deleteExperimentAlerts(id: ExperimentId): Promise<void> {
     await this.client.delete(`/experiments/${id}/alerts`);
   }
 
-  async listExperimentNotes(id: number): Promise<Note[]> {
+  async listExperimentNotes(id: ExperimentId): Promise<Note[]> {
     const response = await this.client.get<{ notes: Note[] }>(`/experiments/${id}/notes`);
     return response.data.notes;
   }
 
-  async createExperimentNote(id: number, message: string): Promise<Note> {
+  async createExperimentNote(id: ExperimentId, message: string): Promise<Note> {
     const response = await this.client.post<Note>(`/experiments/${id}/notes`, { text: message });
     return response.data;
   }
@@ -248,7 +263,7 @@ export class APIClient {
     return response.data.goals;
   }
 
-  async getGoal(id: number): Promise<Goal> {
+  async getGoal(id: GoalId): Promise<Goal> {
     const response = await this.client.get<Goal>(`/goals/${id}`);
     return response.data;
   }
@@ -258,12 +273,12 @@ export class APIClient {
     return response.data;
   }
 
-  async updateGoal(id: number, data: Partial<Goal>): Promise<Goal> {
+  async updateGoal(id: GoalId, data: Partial<Goal>): Promise<Goal> {
     const response = await this.client.put<Goal>(`/goals/${id}`, data);
     return response.data;
   }
 
-  async deleteGoal(id: number): Promise<void> {
+  async deleteGoal(id: GoalId): Promise<void> {
     await this.client.delete(`/goals/${id}`);
   }
 
@@ -274,7 +289,7 @@ export class APIClient {
     return response.data.segments;
   }
 
-  async getSegment(id: number): Promise<Segment> {
+  async getSegment(id: SegmentId): Promise<Segment> {
     const response = await this.client.get<Segment>(`/segments/${id}`);
     return response.data;
   }
@@ -284,12 +299,12 @@ export class APIClient {
     return response.data;
   }
 
-  async updateSegment(id: number, data: Partial<Segment>): Promise<Segment> {
+  async updateSegment(id: SegmentId, data: Partial<Segment>): Promise<Segment> {
     const response = await this.client.put<Segment>(`/segments/${id}`, data);
     return response.data;
   }
 
-  async deleteSegment(id: number): Promise<void> {
+  async deleteSegment(id: SegmentId): Promise<void> {
     await this.client.delete(`/segments/${id}`);
   }
 
@@ -300,7 +315,7 @@ export class APIClient {
     return response.data.teams;
   }
 
-  async getTeam(id: number): Promise<Team> {
+  async getTeam(id: TeamId): Promise<Team> {
     const response = await this.client.get<Team>(`/teams/${id}`);
     return response.data;
   }
@@ -310,12 +325,12 @@ export class APIClient {
     return response.data;
   }
 
-  async updateTeam(id: number, data: Partial<Team>): Promise<Team> {
+  async updateTeam(id: TeamId, data: Partial<Team>): Promise<Team> {
     const response = await this.client.put<Team>(`/teams/${id}`, data);
     return response.data;
   }
 
-  async archiveTeam(id: number, unarchive = false): Promise<Team> {
+  async archiveTeam(id: TeamId, unarchive = false): Promise<Team> {
     const response = await this.client.post<Team>(
       `/teams/${id}/${unarchive ? 'unarchive' : 'archive'}`
     );
@@ -329,7 +344,7 @@ export class APIClient {
     return response.data.users;
   }
 
-  async getUser(id: number): Promise<User> {
+  async getUser(id: UserId): Promise<User> {
     const response = await this.client.get<User>(`/users/${id}`);
     return response.data;
   }
@@ -339,12 +354,12 @@ export class APIClient {
     return response.data;
   }
 
-  async updateUser(id: number, data: Partial<User>): Promise<User> {
+  async updateUser(id: UserId, data: Partial<User>): Promise<User> {
     const response = await this.client.put<User>(`/users/${id}`, data);
     return response.data;
   }
 
-  async archiveUser(id: number, unarchive = false): Promise<User> {
+  async archiveUser(id: UserId, unarchive = false): Promise<User> {
     const response = await this.client.post<User>(
       `/users/${id}/${unarchive ? 'unarchive' : 'archive'}`
     );
@@ -358,7 +373,7 @@ export class APIClient {
     return response.data.metrics;
   }
 
-  async getMetric(id: number): Promise<Metric> {
+  async getMetric(id: MetricId): Promise<Metric> {
     const response = await this.client.get<Metric>(`/metrics/${id}`);
     return response.data;
   }
@@ -368,12 +383,12 @@ export class APIClient {
     return response.data;
   }
 
-  async updateMetric(id: number, data: Partial<Metric>): Promise<Metric> {
+  async updateMetric(id: MetricId, data: Partial<Metric>): Promise<Metric> {
     const response = await this.client.put<Metric>(`/metrics/${id}`, data);
     return response.data;
   }
 
-  async archiveMetric(id: number, unarchive = false): Promise<Metric> {
+  async archiveMetric(id: MetricId, unarchive = false): Promise<Metric> {
     const response = await this.client.post<Metric>(
       `/metrics/${id}/${unarchive ? 'unarchive' : 'archive'}`
     );
@@ -385,7 +400,7 @@ export class APIClient {
     return response.data.applications;
   }
 
-  async getApplication(id: number): Promise<Application> {
+  async getApplication(id: ApplicationId): Promise<Application> {
     const response = await this.client.get<Application>(`/applications/${id}`);
     return response.data;
   }
@@ -395,7 +410,7 @@ export class APIClient {
     return response.data.environments;
   }
 
-  async getEnvironment(id: number): Promise<Environment> {
+  async getEnvironment(id: EnvironmentId): Promise<Environment> {
     const response = await this.client.get<Environment>(`/environments/${id}`);
     return response.data;
   }
@@ -405,7 +420,7 @@ export class APIClient {
     return response.data.unit_types;
   }
 
-  async getUnitType(id: number): Promise<UnitType> {
+  async getUnitType(id: UnitTypeId): Promise<UnitType> {
     const response = await this.client.get<UnitType>(`/unit-types/${id}`);
     return response.data;
   }
@@ -420,7 +435,7 @@ export class APIClient {
     return response.data.experiment_tags;
   }
 
-  async getExperimentTag(id: number): Promise<ExperimentTag> {
+  async getExperimentTag(id: TagId): Promise<ExperimentTag> {
     const response = await this.client.get<{ experiment_tag: ExperimentTag }>(
       `/experiment_tags/${id}`
     );
@@ -435,7 +450,7 @@ export class APIClient {
     return response.data.experiment_tag;
   }
 
-  async updateExperimentTag(id: number, data: { tag: string }): Promise<ExperimentTag> {
+  async updateExperimentTag(id: TagId, data: { tag: string }): Promise<ExperimentTag> {
     const response = await this.client.put<{ experiment_tag: ExperimentTag }>(
       `/experiment_tags/${id}`,
       data
@@ -443,7 +458,7 @@ export class APIClient {
     return response.data.experiment_tag;
   }
 
-  async deleteExperimentTag(id: number): Promise<void> {
+  async deleteExperimentTag(id: TagId): Promise<void> {
     await this.client.delete(`/experiment_tags/${id}`);
   }
 
@@ -454,7 +469,7 @@ export class APIClient {
     return response.data.goal_tags;
   }
 
-  async getGoalTag(id: number): Promise<GoalTag> {
+  async getGoalTag(id: TagId): Promise<GoalTag> {
     const response = await this.client.get<{ goal_tag: GoalTag }>(`/goal_tags/${id}`);
     return response.data.goal_tag;
   }
@@ -464,12 +479,12 @@ export class APIClient {
     return response.data.goal_tag;
   }
 
-  async updateGoalTag(id: number, data: { tag: string }): Promise<GoalTag> {
+  async updateGoalTag(id: TagId, data: { tag: string }): Promise<GoalTag> {
     const response = await this.client.put<{ goal_tag: GoalTag }>(`/goal_tags/${id}`, data);
     return response.data.goal_tag;
   }
 
-  async deleteGoalTag(id: number): Promise<void> {
+  async deleteGoalTag(id: TagId): Promise<void> {
     await this.client.delete(`/goal_tags/${id}`);
   }
 
@@ -480,7 +495,7 @@ export class APIClient {
     return response.data.metric_tags;
   }
 
-  async getMetricTag(id: number): Promise<MetricTag> {
+  async getMetricTag(id: TagId): Promise<MetricTag> {
     const response = await this.client.get<{ metric_tag: MetricTag }>(`/metric_tags/${id}`);
     return response.data.metric_tag;
   }
@@ -490,12 +505,12 @@ export class APIClient {
     return response.data.metric_tag;
   }
 
-  async updateMetricTag(id: number, data: { tag: string }): Promise<MetricTag> {
+  async updateMetricTag(id: TagId, data: { tag: string }): Promise<MetricTag> {
     const response = await this.client.put<{ metric_tag: MetricTag }>(`/metric_tags/${id}`, data);
     return response.data.metric_tag;
   }
 
-  async deleteMetricTag(id: number): Promise<void> {
+  async deleteMetricTag(id: TagId): Promise<void> {
     await this.client.delete(`/metric_tags/${id}`);
   }
 
@@ -509,7 +524,7 @@ export class APIClient {
     return response.data.metric_categories;
   }
 
-  async getMetricCategory(id: number): Promise<MetricCategory> {
+  async getMetricCategory(id: TagId): Promise<MetricCategory> {
     const response = await this.client.get<{ metric_category: MetricCategory }>(
       `/metric_categories/${id}`
     );
@@ -529,7 +544,7 @@ export class APIClient {
   }
 
   async updateMetricCategory(
-    id: number,
+    id: TagId,
     data: { name?: string; description?: string; color?: string }
   ): Promise<MetricCategory> {
     const response = await this.client.put<{ metric_category: MetricCategory }>(
@@ -539,7 +554,7 @@ export class APIClient {
     return response.data.metric_category;
   }
 
-  async archiveMetricCategory(id: number, archive = true): Promise<void> {
+  async archiveMetricCategory(id: TagId, archive = true): Promise<void> {
     await this.client.put(`/metric_categories/${id}/archive`, { archive });
   }
 
@@ -550,7 +565,7 @@ export class APIClient {
     return response.data.roles;
   }
 
-  async getRole(id: number): Promise<Role> {
+  async getRole(id: RoleId): Promise<Role> {
     const response = await this.client.get<Role>(`/roles/${id}`);
     return response.data;
   }
@@ -560,12 +575,12 @@ export class APIClient {
     return response.data;
   }
 
-  async updateRole(id: number, data: Partial<Role>): Promise<Role> {
+  async updateRole(id: RoleId, data: Partial<Role>): Promise<Role> {
     const response = await this.client.put<Role>(`/roles/${id}`, data);
     return response.data;
   }
 
-  async deleteRole(id: number): Promise<void> {
+  async deleteRole(id: RoleId): Promise<void> {
     await this.client.delete(`/roles/${id}`);
   }
 
@@ -588,7 +603,7 @@ export class APIClient {
     return response.data.api_keys;
   }
 
-  async getApiKey(id: number): Promise<ApiKey> {
+  async getApiKey(id: ApiKeyId): Promise<ApiKey> {
     const response = await this.client.get<ApiKey>(`/api_keys/${id}`);
     return response.data;
   }
@@ -598,12 +613,12 @@ export class APIClient {
     return response.data;
   }
 
-  async updateApiKey(id: number, data: Partial<ApiKey>): Promise<ApiKey> {
+  async updateApiKey(id: ApiKeyId, data: Partial<ApiKey>): Promise<ApiKey> {
     const response = await this.client.put<ApiKey>(`/api_keys/${id}`, data);
     return response.data;
   }
 
-  async deleteApiKey(id: number): Promise<void> {
+  async deleteApiKey(id: ApiKeyId): Promise<void> {
     await this.client.delete(`/api_keys/${id}`);
   }
 
@@ -614,7 +629,7 @@ export class APIClient {
     return response.data.webhooks;
   }
 
-  async getWebhook(id: number): Promise<Webhook> {
+  async getWebhook(id: WebhookId): Promise<Webhook> {
     const response = await this.client.get<Webhook>(`/webhooks/${id}`);
     return response.data;
   }
@@ -624,12 +639,12 @@ export class APIClient {
     return response.data;
   }
 
-  async updateWebhook(id: number, data: Partial<Webhook>): Promise<Webhook> {
+  async updateWebhook(id: WebhookId, data: Partial<Webhook>): Promise<Webhook> {
     const response = await this.client.put<Webhook>(`/webhooks/${id}`, data);
     return response.data;
   }
 
-  async deleteWebhook(id: number): Promise<void> {
+  async deleteWebhook(id: WebhookId): Promise<void> {
     await this.client.delete(`/webhooks/${id}`);
   }
 
