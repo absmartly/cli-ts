@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
-import { parseId } from '../../lib/utils/validators.js';
+import { parseExperimentId } from '../../lib/utils/validators.js';
+import type { ExperimentId } from '../../lib/api/branded-types.js';
 
 export const flagsCommand = new Command('flags')
   .alias('flag')
@@ -26,8 +27,8 @@ const listCommand = new Command('list')
 
 const getCommand = new Command('get')
   .description('Get feature flag details')
-  .argument('<id>', 'flag ID', parseId)
-  .action(withErrorHandling(async (id: number) => {
+  .argument('<id>', 'flag ID', parseExperimentId)
+  .action(withErrorHandling(async (id: ExperimentId) => {
     const globalOptions = getGlobalOptions(getCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 

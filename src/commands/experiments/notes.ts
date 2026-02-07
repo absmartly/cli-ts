@@ -1,14 +1,15 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
-import { parseId } from '../../lib/utils/validators.js';
+import { parseExperimentId } from '../../lib/utils/validators.js';
+import type { ExperimentId } from '../../lib/api/branded-types.js';
 
 export const notesCommand = new Command('notes').description('Experiment notes operations');
 
 const listNotesCommand = new Command('list')
   .description('List all notes for an experiment')
-  .argument('<id>', 'experiment ID', parseId)
-  .action(withErrorHandling(async (id: number) => {
+  .argument('<id>', 'experiment ID', parseExperimentId)
+  .action(withErrorHandling(async (id: ExperimentId) => {
     const globalOptions = getGlobalOptions(listNotesCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
@@ -24,9 +25,9 @@ const listNotesCommand = new Command('list')
 
 const createNoteCommand = new Command('create')
   .description('Create a note for an experiment')
-  .argument('<id>', 'experiment ID', parseId)
+  .argument('<id>', 'experiment ID', parseExperimentId)
   .requiredOption('--message <text>', 'note text')
-  .action(withErrorHandling(async (id: number, options) => {
+  .action(withErrorHandling(async (id: ExperimentId, options) => {
     const globalOptions = getGlobalOptions(createNoteCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 

@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
-import { parseId } from '../../lib/utils/validators.js';
+import { parseEnvironmentId } from '../../lib/utils/validators.js';
+import type { EnvironmentId } from '../../lib/api/branded-types.js';
 
 export const envsCommand = new Command('envs')
   .alias('env')
@@ -19,8 +20,8 @@ const listCommand = new Command('list')
 
 const getCommand = new Command('get')
   .description('Get environment details')
-  .argument('<id>', 'environment ID', parseId)
-  .action(withErrorHandling(async (id: number) => {
+  .argument('<id>', 'environment ID', parseEnvironmentId)
+  .action(withErrorHandling(async (id: EnvironmentId) => {
     const globalOptions = getGlobalOptions(getCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 

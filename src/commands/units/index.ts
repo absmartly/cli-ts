@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
-import { parseId } from '../../lib/utils/validators.js';
+import { parseUnitTypeId } from '../../lib/utils/validators.js';
+import type { UnitTypeId } from '../../lib/api/branded-types.js';
 
 export const unitsCommand = new Command('units')
   .alias('unit')
@@ -18,8 +19,8 @@ const listCommand = new Command('list')
 
 const getCommand = new Command('get')
   .description('Get unit type details')
-  .argument('<id>', 'unit type ID', parseId)
-  .action(withErrorHandling(async (id: number) => {
+  .argument('<id>', 'unit type ID', parseUnitTypeId)
+  .action(withErrorHandling(async (id: UnitTypeId) => {
     const globalOptions = getGlobalOptions(getCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 

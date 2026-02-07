@@ -1,7 +1,8 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
-import { parseId, requireAtLeastOneField } from '../../lib/utils/validators.js';
+import { parseSegmentId, requireAtLeastOneField } from '../../lib/utils/validators.js';
+import type { SegmentId } from '../../lib/api/branded-types.js';
 
 export const segmentsCommand = new Command('segments')
   .alias('segment')
@@ -21,8 +22,8 @@ const listCommand = new Command('list')
 
 const getCommand = new Command('get')
   .description('Get segment details')
-  .argument('<id>', 'segment ID', parseId)
-  .action(withErrorHandling(async (id: number) => {
+  .argument('<id>', 'segment ID', parseSegmentId)
+  .action(withErrorHandling(async (id: SegmentId) => {
     const globalOptions = getGlobalOptions(getCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
@@ -50,10 +51,10 @@ const createCommand = new Command('create')
 
 const updateCommand = new Command('update')
   .description('Update a segment')
-  .argument('<id>', 'segment ID', parseId)
+  .argument('<id>', 'segment ID', parseSegmentId)
   .option('--display-name <name>', 'new display name')
   .option('--description <text>', 'new description')
-  .action(withErrorHandling(async (id: number, options) => {
+  .action(withErrorHandling(async (id: SegmentId, options) => {
     const globalOptions = getGlobalOptions(updateCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
@@ -68,8 +69,8 @@ const updateCommand = new Command('update')
 
 const deleteCommand = new Command('delete')
   .description('Delete a segment')
-  .argument('<id>', 'segment ID', parseId)
-  .action(withErrorHandling(async (id: number) => {
+  .argument('<id>', 'segment ID', parseSegmentId)
+  .action(withErrorHandling(async (id: SegmentId) => {
     const globalOptions = getGlobalOptions(deleteCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 

@@ -1,7 +1,8 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
-import { parseId, requireAtLeastOneField } from '../../lib/utils/validators.js';
+import { parseTeamId, requireAtLeastOneField } from '../../lib/utils/validators.js';
+import type { TeamId } from '../../lib/api/branded-types.js';
 
 export const teamsCommand = new Command('teams').alias('team').description('Team commands');
 
@@ -18,8 +19,8 @@ const listCommand = new Command('list')
 
 const getCommand = new Command('get')
   .description('Get team details')
-  .argument('<id>', 'team ID', parseId)
-  .action(withErrorHandling(async (id: number) => {
+  .argument('<id>', 'team ID', parseTeamId)
+  .action(withErrorHandling(async (id: TeamId) => {
     const globalOptions = getGlobalOptions(getCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
@@ -45,9 +46,9 @@ const createCommand = new Command('create')
 
 const updateCommand = new Command('update')
   .description('Update a team')
-  .argument('<id>', 'team ID', parseId)
+  .argument('<id>', 'team ID', parseTeamId)
   .option('--description <text>', 'new description')
-  .action(withErrorHandling(async (id: number, options) => {
+  .action(withErrorHandling(async (id: TeamId, options) => {
     const globalOptions = getGlobalOptions(updateCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
@@ -61,9 +62,9 @@ const updateCommand = new Command('update')
 
 const archiveCommand = new Command('archive')
   .description('Archive or unarchive a team')
-  .argument('<id>', 'team ID', parseId)
+  .argument('<id>', 'team ID', parseTeamId)
   .option('--unarchive', 'unarchive the team')
-  .action(withErrorHandling(async (id: number, options) => {
+  .action(withErrorHandling(async (id: TeamId, options) => {
     const globalOptions = getGlobalOptions(archiveCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 

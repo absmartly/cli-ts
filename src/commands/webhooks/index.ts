@@ -1,7 +1,8 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
-import { parseId, requireAtLeastOneField } from '../../lib/utils/validators.js';
+import { parseWebhookId, requireAtLeastOneField } from '../../lib/utils/validators.js';
+import type { WebhookId } from '../../lib/api/branded-types.js';
 
 export const webhooksCommand = new Command('webhooks')
   .alias('webhook')
@@ -21,8 +22,8 @@ const listCommand = new Command('list')
 
 const getCommand = new Command('get')
   .description('Get webhook details')
-  .argument('<id>', 'webhook ID', parseId)
-  .action(withErrorHandling(async (id: number) => {
+  .argument('<id>', 'webhook ID', parseWebhookId)
+  .action(withErrorHandling(async (id: WebhookId) => {
     const globalOptions = getGlobalOptions(getCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
@@ -57,14 +58,14 @@ const createCommand = new Command('create')
 
 const updateCommand = new Command('update')
   .description('Update a webhook')
-  .argument('<id>', 'webhook ID', parseId)
+  .argument('<id>', 'webhook ID', parseWebhookId)
   .option('--name <name>', 'new name')
   .option('--url <url>', 'new URL')
   .option('--description <text>', 'new description')
   .option('--enabled <boolean>', 'enable/disable the webhook', (val) => val === 'true')
   .option('--ordered <boolean>', 'send events in order', (val) => val === 'true')
   .option('--max-retries <number>', 'maximum number of retries', parseInt)
-  .action(withErrorHandling(async (id: number, options) => {
+  .action(withErrorHandling(async (id: WebhookId, options) => {
     const globalOptions = getGlobalOptions(updateCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
@@ -83,8 +84,8 @@ const updateCommand = new Command('update')
 
 const deleteCommand = new Command('delete')
   .description('Delete a webhook')
-  .argument('<id>', 'webhook ID', parseId)
-  .action(withErrorHandling(async (id: number) => {
+  .argument('<id>', 'webhook ID', parseWebhookId)
+  .action(withErrorHandling(async (id: WebhookId) => {
     const globalOptions = getGlobalOptions(deleteCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 

@@ -1,7 +1,8 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
-import { parseId, requireAtLeastOneField } from '../../lib/utils/validators.js';
+import { parseUserId, requireAtLeastOneField } from '../../lib/utils/validators.js';
+import type { UserId } from '../../lib/api/branded-types.js';
 
 export const usersCommand = new Command('users').alias('user').description('User commands');
 
@@ -18,8 +19,8 @@ const listCommand = new Command('list')
 
 const getCommand = new Command('get')
   .description('Get user details')
-  .argument('<id>', 'user ID', parseId)
-  .action(withErrorHandling(async (id: number) => {
+  .argument('<id>', 'user ID', parseUserId)
+  .action(withErrorHandling(async (id: UserId) => {
     const globalOptions = getGlobalOptions(getCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
@@ -48,10 +49,10 @@ const createCommand = new Command('create')
 
 const updateCommand = new Command('update')
   .description('Update a user')
-  .argument('<id>', 'user ID', parseId)
+  .argument('<id>', 'user ID', parseUserId)
   .option('--name <name>', 'new full name')
   .option('--role <role>', 'new role')
-  .action(withErrorHandling(async (id: number, options) => {
+  .action(withErrorHandling(async (id: UserId, options) => {
     const globalOptions = getGlobalOptions(updateCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
@@ -69,9 +70,9 @@ const updateCommand = new Command('update')
 
 const archiveCommand = new Command('archive')
   .description('Archive or unarchive a user')
-  .argument('<id>', 'user ID', parseId)
+  .argument('<id>', 'user ID', parseUserId)
   .option('--unarchive', 'unarchive the user')
-  .action(withErrorHandling(async (id: number, options) => {
+  .action(withErrorHandling(async (id: UserId, options) => {
     const globalOptions = getGlobalOptions(archiveCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 

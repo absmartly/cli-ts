@@ -1,7 +1,8 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
-import { parseId, requireAtLeastOneField } from '../../lib/utils/validators.js';
+import { parseTagId, requireAtLeastOneField } from '../../lib/utils/validators.js';
+import type { TagId } from '../../lib/api/branded-types.js';
 
 export const tagsCommand = new Command('tags')
   .alias('tag')
@@ -22,8 +23,8 @@ const listCommand = new Command('list')
 
 const getCommand = new Command('get')
   .description('Get experiment tag details')
-  .argument('<id>', 'tag ID', parseId)
-  .action(withErrorHandling(async (id: number) => {
+  .argument('<id>', 'tag ID', parseTagId)
+  .action(withErrorHandling(async (id: TagId) => {
     const globalOptions = getGlobalOptions(getCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
@@ -46,9 +47,9 @@ const createCommand = new Command('create')
 
 const updateCommand = new Command('update')
   .description('Update an experiment tag')
-  .argument('<id>', 'tag ID', parseId)
+  .argument('<id>', 'tag ID', parseTagId)
   .option('--tag <name>', 'new tag name')
-  .action(withErrorHandling(async (id: number, options) => {
+  .action(withErrorHandling(async (id: TagId, options) => {
     const globalOptions = getGlobalOptions(updateCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
@@ -64,8 +65,8 @@ const updateCommand = new Command('update')
 
 const deleteCommand = new Command('delete')
   .description('Delete an experiment tag')
-  .argument('<id>', 'tag ID', parseId)
-  .action(withErrorHandling(async (id: number) => {
+  .argument('<id>', 'tag ID', parseTagId)
+  .action(withErrorHandling(async (id: TagId) => {
     const globalOptions = getGlobalOptions(deleteCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 

@@ -1,7 +1,8 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
-import { parseId, requireAtLeastOneField } from '../../lib/utils/validators.js';
+import { parseGoalId, requireAtLeastOneField } from '../../lib/utils/validators.js';
+import type { GoalId } from '../../lib/api/branded-types.js';
 
 export const goalsCommand = new Command('goals').alias('goal').description('Goal commands');
 
@@ -19,8 +20,8 @@ const listCommand = new Command('list')
 
 const getCommand = new Command('get')
   .description('Get goal details')
-  .argument('<id>', 'goal ID', parseId)
-  .action(withErrorHandling(async (id: number) => {
+  .argument('<id>', 'goal ID', parseGoalId)
+  .action(withErrorHandling(async (id: GoalId) => {
     const globalOptions = getGlobalOptions(getCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
@@ -46,9 +47,9 @@ const createCommand = new Command('create')
 
 const updateCommand = new Command('update')
   .description('Update a goal')
-  .argument('<id>', 'goal ID', parseId)
+  .argument('<id>', 'goal ID', parseGoalId)
   .option('--description <text>', 'new description')
-  .action(withErrorHandling(async (id: number, options) => {
+  .action(withErrorHandling(async (id: GoalId, options) => {
     const globalOptions = getGlobalOptions(updateCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
@@ -62,8 +63,8 @@ const updateCommand = new Command('update')
 
 const deleteCommand = new Command('delete')
   .description('Delete a goal')
-  .argument('<id>', 'goal ID', parseId)
-  .action(withErrorHandling(async (id: number) => {
+  .argument('<id>', 'goal ID', parseGoalId)
+  .action(withErrorHandling(async (id: GoalId) => {
     const globalOptions = getGlobalOptions(deleteCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 

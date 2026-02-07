@@ -1,7 +1,8 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
-import { parseId, requireAtLeastOneField } from '../../lib/utils/validators.js';
+import { parseTagId, requireAtLeastOneField } from '../../lib/utils/validators.js';
+import type { TagId } from '../../lib/api/branded-types.js';
 
 export const metricCategoriesCommand = new Command('metric-categories')
   .alias('metriccategories')
@@ -24,8 +25,8 @@ const listCommand = new Command('list')
 
 const getCommand = new Command('get')
   .description('Get metric category details')
-  .argument('<id>', 'category ID', parseId)
-  .action(withErrorHandling(async (id: number) => {
+  .argument('<id>', 'category ID', parseTagId)
+  .action(withErrorHandling(async (id: TagId) => {
     const globalOptions = getGlobalOptions(getCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
@@ -54,11 +55,11 @@ const createCommand = new Command('create')
 
 const updateCommand = new Command('update')
   .description('Update a metric category')
-  .argument('<id>', 'category ID', parseId)
+  .argument('<id>', 'category ID', parseTagId)
   .option('--name <name>', 'new category name')
   .option('--description <text>', 'new category description')
   .option('--color <color>', 'new category color')
-  .action(withErrorHandling(async (id: number, options) => {
+  .action(withErrorHandling(async (id: TagId, options) => {
     const globalOptions = getGlobalOptions(updateCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
@@ -76,8 +77,8 @@ const updateCommand = new Command('update')
 
 const archiveCommand = new Command('archive')
   .description('Archive a metric category')
-  .argument('<id>', 'category ID', parseId)
-  .action(withErrorHandling(async (id: number) => {
+  .argument('<id>', 'category ID', parseTagId)
+  .action(withErrorHandling(async (id: TagId) => {
     const globalOptions = getGlobalOptions(archiveCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 

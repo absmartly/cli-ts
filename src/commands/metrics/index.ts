@@ -1,7 +1,8 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
-import { parseId, requireAtLeastOneField } from '../../lib/utils/validators.js';
+import { parseMetricId, requireAtLeastOneField } from '../../lib/utils/validators.js';
+import type { MetricId } from '../../lib/api/branded-types.js';
 
 export const metricsCommand = new Command('metrics')
   .alias('metric')
@@ -21,8 +22,8 @@ const listCommand = new Command('list')
 
 const getCommand = new Command('get')
   .description('Get metric details')
-  .argument('<id>', 'metric ID', parseId)
-  .action(withErrorHandling(async (id: number) => {
+  .argument('<id>', 'metric ID', parseMetricId)
+  .action(withErrorHandling(async (id: MetricId) => {
     const globalOptions = getGlobalOptions(getCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
@@ -50,9 +51,9 @@ const createCommand = new Command('create')
 
 const updateCommand = new Command('update')
   .description('Update a metric')
-  .argument('<id>', 'metric ID', parseId)
+  .argument('<id>', 'metric ID', parseMetricId)
   .option('--description <text>', 'new description')
-  .action(withErrorHandling(async (id: number, options) => {
+  .action(withErrorHandling(async (id: MetricId, options) => {
     const globalOptions = getGlobalOptions(updateCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
@@ -66,9 +67,9 @@ const updateCommand = new Command('update')
 
 const archiveCommand = new Command('archive')
   .description('Archive or unarchive a metric')
-  .argument('<id>', 'metric ID', parseId)
+  .argument('<id>', 'metric ID', parseMetricId)
   .option('--unarchive', 'unarchive the metric')
-  .action(withErrorHandling(async (id: number, options) => {
+  .action(withErrorHandling(async (id: MetricId, options) => {
     const globalOptions = getGlobalOptions(archiveCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
