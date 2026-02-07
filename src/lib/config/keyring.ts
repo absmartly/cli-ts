@@ -58,13 +58,13 @@ export async function deletePassword(
 }
 
 export async function setAPIKey(apiKey: string, profile?: string): Promise<void> {
-  await setPassword('api-key', apiKey, { profile });
+  await setPassword('api-key', apiKey, profile ? { profile } : {});
 }
 
 export async function getAPIKey(profile?: string): Promise<string | null> {
-  return await getPassword('api-key', { profile });
+  return await getPassword('api-key', profile ? { profile } : {});
 }
 
 export async function deleteAPIKey(profile?: string): Promise<boolean> {
-  return await deletePassword('api-key', { profile });
+  return await deletePassword('api-key', profile ? { profile } : {});
 }

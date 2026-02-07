@@ -42,34 +42,41 @@ export const listCommand = new Command('list')
       ? (options.page - 1) * limit
       : options.offset;
 
+    const createdAfter = parseDateFlagOrUndefined(options.createdAfter);
+    const createdBefore = parseDateFlagOrUndefined(options.createdBefore);
+    const startedAfter = parseDateFlagOrUndefined(options.startedAfter);
+    const startedBefore = parseDateFlagOrUndefined(options.startedBefore);
+    const stoppedAfter = parseDateFlagOrUndefined(options.stoppedAfter);
+    const stoppedBefore = parseDateFlagOrUndefined(options.stoppedBefore);
+
     const listOptions: ListOptions = {
       limit,
       offset,
-      application: options.app,
-      state: options.state,
-      type: options.type,
-      search: options.search,
-      unit_types: options.unitTypes,
-      owners: options.owners,
-      teams: options.teams,
-      tags: options.tags,
-      created_after: parseDateFlagOrUndefined(options.createdAfter),
-      created_before: parseDateFlagOrUndefined(options.createdBefore),
-      started_after: parseDateFlagOrUndefined(options.startedAfter),
-      started_before: parseDateFlagOrUndefined(options.startedBefore),
-      stopped_after: parseDateFlagOrUndefined(options.stoppedAfter),
-      stopped_before: parseDateFlagOrUndefined(options.stoppedBefore),
-      analysis_type: options.analysisType,
-      running_type: options.runningType,
-      alert_srm: options.alertSrm,
-      alert_cleanup_needed: options.alertCleanupNeeded,
-      alert_audience_mismatch: options.alertAudienceMismatch,
-      alert_sample_size_reached: options.alertSampleSizeReached,
-      alert_experiments_interact: options.alertExperimentsInteract,
-      alert_group_sequential_updated: options.alertGroupSequentialUpdated,
-      alert_assignment_conflict: options.alertAssignmentConflict,
-      alert_metric_threshold_reached: options.alertMetricThresholdReached,
-      significance: options.significance,
+      ...(options.app && { application: options.app }),
+      ...(options.state && { state: options.state }),
+      ...(options.type && { type: options.type }),
+      ...(options.search && { search: options.search }),
+      ...(options.unitTypes && { unit_types: options.unitTypes }),
+      ...(options.owners && { owners: options.owners }),
+      ...(options.teams && { teams: options.teams }),
+      ...(options.tags && { tags: options.tags }),
+      ...(createdAfter !== undefined && { created_after: createdAfter }),
+      ...(createdBefore !== undefined && { created_before: createdBefore }),
+      ...(startedAfter !== undefined && { started_after: startedAfter }),
+      ...(startedBefore !== undefined && { started_before: startedBefore }),
+      ...(stoppedAfter !== undefined && { stopped_after: stoppedAfter }),
+      ...(stoppedBefore !== undefined && { stopped_before: stoppedBefore }),
+      ...(options.analysisType && { analysis_type: options.analysisType }),
+      ...(options.runningType && { running_type: options.runningType }),
+      ...(options.alertSrm !== undefined && { alert_srm: options.alertSrm }),
+      ...(options.alertCleanupNeeded !== undefined && { alert_cleanup_needed: options.alertCleanupNeeded }),
+      ...(options.alertAudienceMismatch !== undefined && { alert_audience_mismatch: options.alertAudienceMismatch }),
+      ...(options.alertSampleSizeReached !== undefined && { alert_sample_size_reached: options.alertSampleSizeReached }),
+      ...(options.alertExperimentsInteract !== undefined && { alert_experiments_interact: options.alertExperimentsInteract }),
+      ...(options.alertGroupSequentialUpdated !== undefined && { alert_group_sequential_updated: options.alertGroupSequentialUpdated }),
+      ...(options.alertAssignmentConflict !== undefined && { alert_assignment_conflict: options.alertAssignmentConflict }),
+      ...(options.alertMetricThresholdReached !== undefined && { alert_metric_threshold_reached: options.alertMetricThresholdReached }),
+      ...(options.significance && { significance: options.significance }),
     };
 
     const experiments = await client.listExperiments(listOptions);

@@ -101,11 +101,15 @@ export function parseExperimentFile(filePath: string): ExperimentTemplate {
     let match;
 
     while ((match = keyValuePattern.exec(sectionContent)) !== null) {
-      const key = match[1].toLowerCase();
-      const value = match[2].trim();
+      const matchedKey = match[1];
+      const matchedValue = match[2];
+      if (matchedKey && matchedValue) {
+        const key = matchedKey.toLowerCase();
+        const value = matchedValue.trim();
 
-      if (value) {
-        (template as Record<string, unknown>)[key] = value;
+        if (value) {
+          (template as Record<string, unknown>)[key] = value;
+        }
       }
     }
 
@@ -127,8 +131,13 @@ function parseVariants(content: string): VariantTemplate[] {
   let match;
 
   while ((match = variantPattern.exec(content)) !== null) {
-    const variantNum = parseInt(match[1]);
+    const variantNumStr = match[1];
     const variantContent = match[2];
+    if (!variantNumStr || !variantContent) {
+      continue;
+    }
+
+    const variantNum = parseInt(variantNumStr);
     const variant: VariantTemplate = {
       variant: variantNum,
       name: `variant_${variantNum}`,
@@ -138,11 +147,15 @@ function parseVariants(content: string): VariantTemplate[] {
     for (const line of lines) {
       const keyValueMatch = /^(\w+):\s*(.*)$/.exec(line);
       if (keyValueMatch) {
-        const key = keyValueMatch[1].toLowerCase();
-        const value = keyValueMatch[2].trim();
-        if (key === 'name') variant.name = value;
-        else if (key === 'config') variant.config = value;
-        else if (key === 'screenshot') variant.screenshot = value;
+        const matchedKey = keyValueMatch[1];
+        const matchedValue = keyValueMatch[2];
+        if (matchedKey && matchedValue) {
+          const key = matchedKey.toLowerCase();
+          const value = matchedValue.trim();
+          if (key === 'name') variant.name = value;
+          else if (key === 'config') variant.config = value;
+          else if (key === 'screenshot') variant.screenshot = value;
+        }
       }
     }
 
@@ -158,9 +171,13 @@ function parseCustomFields(content: string): Record<string, string> {
   let match;
 
   while ((match = fieldPattern.exec(content)) !== null) {
-    const fieldName = match[1].trim();
-    const fieldValue = match[2].trim();
-    fields[fieldName] = fieldValue;
+    const matchedName = match[1];
+    const matchedValue = match[2];
+    if (matchedName && matchedValue) {
+      const fieldName = matchedName.trim();
+      const fieldValue = matchedValue.trim();
+      fields[fieldName] = fieldValue;
+    }
   }
 
   return fields;

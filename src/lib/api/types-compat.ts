@@ -41,7 +41,7 @@ export type Note = Partial<OpenAPINote> & {
 
 export function toOpenAPIVariant(variant: Variant, variantNumber: number): OpenAPIVariant {
   return {
-    experiment_id: variant.experiment_id,
+    ...(variant.experiment_id !== undefined && { experiment_id: variant.experiment_id as number }),
     variant: variantNumber,
     name: variant.name,
     config: typeof variant.config === 'string' ? variant.config : JSON.stringify(variant.config || {}),
@@ -52,7 +52,7 @@ export function fromOpenAPIVariant(variant: OpenAPIVariant): Variant {
   return {
     name: variant.name,
     variant: variant.variant,
-    experiment_id: variant.experiment_id as ExperimentId | undefined,
+    ...(variant.experiment_id !== undefined && { experiment_id: variant.experiment_id as ExperimentId }),
     config: variant.config,
   };
 }

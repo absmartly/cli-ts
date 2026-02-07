@@ -2,7 +2,7 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import * as readline from 'readline/promises';
 import { stdin as input, stdout as output } from 'process';
-import { setProfile } from '../../lib/config/config.js';
+import { setProfile, type Profile } from '../../lib/config/config.js';
 import { setAPIKey } from '../../lib/config/keyring.js';
 import { createAPIClient } from '../../lib/api/client.js';
 import { withErrorHandling } from '../../lib/utils/api-helper.js';
@@ -48,8 +48,9 @@ export const setupCommand = new Command('setup')
 
           if (appChoice) {
             const idx = parseInt(appChoice) - 1;
-            if (idx >= 0 && idx < apps.length) {
-              application = apps[idx].name;
+            const selectedApp = apps[idx];
+            if (idx >= 0 && idx < apps.length && selectedApp) {
+              application = selectedApp.name;
             }
           }
         }
@@ -57,14 +58,14 @@ export const setupCommand = new Command('setup')
         const envChoice = await rl.question('\nDefault environment [production]: ');
         const environment = envChoice || 'production';
 
-        const profile = {
+        const profile: Profile = {
           api: {
             endpoint: finalEndpoint,
           },
           expctld: {
             endpoint: 'https://ctl.absmartly.io/v1',
           },
-          application,
+          ...(application && { application }),
           environment,
         };
 

@@ -10,7 +10,7 @@
     "declarationMap": true,
     "sourceMap": true,
 
-    // Strict Type Checking
+    // Strict Type Checking (Maximum Safety)
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
@@ -19,10 +19,8 @@
     "noImplicitOverride": true,
     "allowUnusedLabels": false,
     "allowUnreachableCode": false,
-
-    // Additional safety (enabled incrementally)
-    // "noUncheckedIndexedAccess": true,  // Future: makes array/object access return T | undefined
-    // "exactOptionalPropertyTypes": true,  // Future: stricter optional property handling
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
 
     // Module Resolution
     "esModuleInterop": true,

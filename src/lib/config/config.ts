@@ -151,7 +151,7 @@ export function deleteProfile(name: string): void {
 
   if (config['default-profile'] === name) {
     const remaining = Object.keys(config.profiles);
-    config['default-profile'] = remaining.length > 0 ? remaining[0] : 'default';
+    config['default-profile'] = remaining.length > 0 ? remaining[0]! : 'default';
   }
 
   saveConfig(config);

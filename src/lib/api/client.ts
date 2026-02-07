@@ -92,8 +92,12 @@ export class APIClient {
 
   private handleError(error: AxiosError): APIError {
     const apiError: APIError = new Error('API error');
-    apiError.statusCode = error.response?.status;
-    apiError.response = error.response?.data;
+    if (error.response?.status !== undefined) {
+      apiError.statusCode = error.response.status;
+    }
+    if (error.response?.data !== undefined) {
+      apiError.response = error.response.data;
+    }
 
     const endpoint = error.config?.url || 'unknown endpoint';
     const method = error.config?.method?.toUpperCase() || 'unknown method';
@@ -657,8 +661,8 @@ export class APIClient {
     const response = await this.client.request({
       url: path,
       method,
-      data,
-      headers,
+      ...(data !== undefined && { data }),
+      ...(headers && { headers }),
     });
     return response.data;
   }
