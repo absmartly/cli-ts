@@ -144,13 +144,17 @@ export function formatMarkdown(data: unknown, options: OutputOptions = {}): stri
   return String(data);
 }
 
+function isObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
 export function formatValue(value: unknown, options: OutputOptions = {}): string {
   if (value === null || value === undefined) return '';
   if (typeof value === 'boolean') return String(value);
   if (typeof value === 'number') return String(value);
   if (typeof value === 'string') return truncateText(value, options);
   if (Array.isArray(value)) return value.map((v) => formatValue(v, options)).join(', ');
-  if (typeof value === 'object') return JSON.stringify(value);
+  if (isObject(value)) return JSON.stringify(value);
   return String(value);
 }
 
@@ -167,9 +171,30 @@ export function truncateText(text: string, options: OutputOptions = {}): string 
   return text.substring(0, maxLength - 3) + '...';
 }
 
+type ChalkColor = 'red' | 'green' | 'yellow' | 'blue' | 'cyan' | 'magenta' | 'white' | 'gray' | 'grey';
+
+const CHALK_COLORS: Record<ChalkColor, (text: string) => string> = {
+  red: chalk.red,
+  green: chalk.green,
+  yellow: chalk.yellow,
+  blue: chalk.blue,
+  cyan: chalk.cyan,
+  magenta: chalk.magenta,
+  white: chalk.white,
+  gray: chalk.gray,
+  grey: chalk.grey,
+};
+
 export function colorize(text: string, color: string, noColor = false): string {
   if (noColor) return text;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const colorFn = (chalk as any)[color];
-  return typeof colorFn === 'function' ? (colorFn as (s: string) => string)(text) : text;
+
+  const colorFn = CHALK_COLORS[color as ChalkColor];
+  if (!colorFn) {
+    if (process.env.DEBUG) {
+      console.warn(`Unknown color: ${color}, using default`);
+    }
+    return text;
+  }
+
+  return colorFn(text);
 }

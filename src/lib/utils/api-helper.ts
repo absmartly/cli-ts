@@ -80,14 +80,14 @@ export function handleCommandError(error: unknown): never {
   process.exit(1);
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function withErrorHandling<T extends (...args: any[]) => Promise<void>>(fn: T): T {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return (async (...args: any[]) => {
+export function withErrorHandling<TArgs extends unknown[]>(
+  fn: (...args: TArgs) => Promise<void>
+): (...args: TArgs) => Promise<void> {
+  return async (...args: TArgs) => {
     try {
       await fn(...args);
     } catch (error) {
       handleCommandError(error);
     }
-  }) as T;
+  };
 }

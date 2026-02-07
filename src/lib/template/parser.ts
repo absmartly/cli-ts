@@ -93,7 +93,7 @@ export function parseExperimentFile(filePath: string): ExperimentTemplate {
   }
 
   for (const [key, value] of Object.entries(data)) {
-    (template as any)[key] = value;
+    (template as Record<string, unknown>)[key] = value;
   }
 
   for (const [sectionName, sectionContent] of Object.entries(sections)) {
@@ -105,7 +105,7 @@ export function parseExperimentFile(filePath: string): ExperimentTemplate {
       const value = match[2].trim();
 
       if (value) {
-        (template as any)[key] = value;
+        (template as Record<string, unknown>)[key] = value;
       }
     }
 
