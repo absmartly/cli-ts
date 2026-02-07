@@ -18,8 +18,10 @@ describe('Config Key Validation', () => {
   });
 
   afterEach(() => {
-    if (existsSync(testConfigPath)) {
+    try {
       unlinkSync(testConfigPath);
+    } catch (error) {
+      // Ignore ENOENT errors - file may already be deleted
     }
   });
 

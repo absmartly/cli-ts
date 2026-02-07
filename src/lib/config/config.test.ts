@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { unlinkSync, existsSync } from 'fs';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { unlinkSync, existsSync, writeFileSync, readdirSync } from 'fs';
 import {
   defaultConfig,
   loadConfig,
@@ -11,14 +11,31 @@ import {
   listProfiles,
   getConfigPath,
   ensureConfigDir,
+  getConfigDir,
 } from './config.js';
 
 describe('Config Management', () => {
   const testConfigPath = getConfigPath();
+  const testConfigDir = getConfigDir();
 
   afterEach(() => {
-    if (existsSync(testConfigPath)) {
+    try {
       unlinkSync(testConfigPath);
+    } catch {
+      // Ignore ENOENT errors - file may already be deleted
+    }
+
+    try {
+      const tempFiles = readdirSync(testConfigDir).filter(f => f.includes('.tmp.'));
+      for (const file of tempFiles) {
+        try {
+          unlinkSync(`${testConfigDir}/${file}`);
+        } catch {
+          // Ignore errors
+        }
+      }
+    } catch {
+      // Ignore if directory doesn't exist
     }
   });
 
@@ -196,6 +213,172 @@ describe('Config Management', () => {
 
       const profiles = listProfiles();
       expect(profiles).not.toContain('temp');
+    });
+  });
+
+  describe('Security: TOCTOU Fix', () => {
+    it('should handle missing config file without TOCTOU race', () => {
+      if (existsSync(testConfigPath)) {
+        unlinkSync(testConfigPath);
+      }
+
+      const loaded = loadConfig();
+      expect(loaded).toBeDefined();
+      expect(loaded['default-profile']).toBe('default');
+      expect(loaded.profiles.default).toBeDefined();
+    });
+
+    it('should return default config when file does not exist', () => {
+      if (existsSync(testConfigPath)) {
+        unlinkSync(testConfigPath);
+      }
+
+      const loaded = loadConfig();
+      const defaults = defaultConfig();
+
+      expect(loaded).toEqual(defaults);
+    });
+
+    it('should handle file that appears/disappears between operations', () => {
+      const config = defaultConfig();
+      saveConfig(config);
+
+      expect(existsSync(testConfigPath)).toBe(true);
+
+      unlinkSync(testConfigPath);
+
+      const loaded = loadConfig();
+      expect(loaded).toEqual(defaultConfig());
+    });
+  });
+
+  describe('Security: Atomic Writes', () => {
+    it('should use temp file during write', () => {
+      const config = defaultConfig();
+      saveConfig(config);
+
+      expect(existsSync(testConfigPath)).toBe(true);
+
+      const tempFiles = readdirSync(testConfigDir).filter(f => f.includes('.tmp.'));
+      expect(tempFiles.length).toBe(0);
+    });
+
+    it('should not leave temp files after successful write', () => {
+      const config = defaultConfig();
+      config.output = 'json';
+
+      saveConfig(config);
+
+      const tempFiles = readdirSync(testConfigDir).filter(f => f.includes('.tmp.'));
+      expect(tempFiles.length).toBe(0);
+
+      const loaded = loadConfig();
+      expect(loaded.output).toBe('json');
+    });
+
+    it('should preserve atomicity by using temp file pattern', () => {
+      const config1 = defaultConfig();
+      config1['default-profile'] = 'profile1';
+      saveConfig(config1);
+
+      const config2 = defaultConfig();
+      config2['default-profile'] = 'profile2';
+      saveConfig(config2);
+
+      const loaded = loadConfig();
+      expect(loaded['default-profile']).toBe('profile2');
+
+      const tempFiles = readdirSync(testConfigDir).filter(f => f.includes('.tmp.'));
+      expect(tempFiles.length).toBe(0);
+    });
+
+    it('should complete atomic rename successfully', () => {
+      const config = defaultConfig();
+      config['default-profile'] = 'atomic-test';
+
+      saveConfig(config);
+
+      expect(existsSync(testConfigPath)).toBe(true);
+
+      const loaded = loadConfig();
+      expect(loaded['default-profile']).toBe('atomic-test');
+
+      const tempFiles = readdirSync(testConfigDir).filter(f => f.includes('.tmp.'));
+      expect(tempFiles.length).toBe(0);
+    });
+  });
+
+  describe('Security: Empty YAML Handling', () => {
+    it('should handle empty config file', () => {
+      ensureConfigDir();
+      writeFileSync(testConfigPath, '', 'utf8');
+
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      const loaded = loadConfig();
+
+      expect(loaded).toEqual(defaultConfig());
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Warning: Empty or invalid config file')
+      );
+
+      consoleWarnSpy.mockRestore();
+    });
+
+    it('should handle config file with only whitespace', () => {
+      ensureConfigDir();
+      writeFileSync(testConfigPath, '   \n\n  \t  \n', 'utf8');
+
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      const loaded = loadConfig();
+
+      expect(loaded).toEqual(defaultConfig());
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Warning: Empty or invalid config file')
+      );
+
+      consoleWarnSpy.mockRestore();
+    });
+
+    it('should handle config file with only comments', () => {
+      ensureConfigDir();
+      writeFileSync(testConfigPath, '# This is a comment\n# Another comment\n', 'utf8');
+
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      const loaded = loadConfig();
+
+      expect(loaded).toEqual(defaultConfig());
+
+      consoleWarnSpy.mockRestore();
+    });
+
+    it('should handle config with null value', () => {
+      ensureConfigDir();
+      writeFileSync(testConfigPath, 'null', 'utf8');
+
+      const consoleWarnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      const loaded = loadConfig();
+
+      expect(loaded).toEqual(defaultConfig());
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Warning: Empty or invalid config file')
+      );
+
+      consoleWarnSpy.mockRestore();
+    });
+
+    it('should handle valid config file normally', () => {
+      const config = defaultConfig();
+      config.output = 'json';
+      saveConfig(config);
+
+      const loaded = loadConfig();
+
+      expect(loaded.output).toBe('json');
+      expect(loaded.profiles.default).toBeDefined();
     });
   });
 });

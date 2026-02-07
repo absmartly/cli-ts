@@ -1,6 +1,6 @@
 import { homedir } from 'os';
 import { join } from 'path';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync, renameSync, unlinkSync } from 'fs';
 import yaml from 'js-yaml';
 
 export const DEFAULT_CONFIG_DIR = '.config/absmartly';
@@ -63,24 +63,68 @@ export function defaultConfig(): Config {
   };
 }
 
+function deepMergeProfiles(
+  defaultProfiles: Record<string, Profile>,
+  userProfiles: Record<string, Profile> | undefined
+): Record<string, Profile> {
+  const result = { ...defaultProfiles };
+
+  if (!userProfiles) return result;
+
+  for (const [name, userProfile] of Object.entries(userProfiles)) {
+    const defaultProfile = defaultProfiles[name];
+
+    if (defaultProfile) {
+      const merged: Profile = {
+        api: { ...defaultProfile.api, ...userProfile.api },
+        expctld: { ...defaultProfile.expctld, ...userProfile.expctld },
+      };
+
+      if (userProfile.application !== undefined) {
+        merged.application = userProfile.application;
+      } else if (defaultProfile.application !== undefined) {
+        merged.application = defaultProfile.application;
+      }
+
+      if (userProfile.environment !== undefined) {
+        merged.environment = userProfile.environment;
+      } else if (defaultProfile.environment !== undefined) {
+        merged.environment = defaultProfile.environment;
+      }
+
+      result[name] = merged;
+    } else {
+      result[name] = userProfile;
+    }
+  }
+
+  return result;
+}
+
 export function loadConfig(): Config {
   const path = getConfigPath();
 
-  if (!existsSync(path)) {
-    return defaultConfig();
-  }
-
   try {
     const content = readFileSync(path, 'utf8');
-    const config = yaml.load(content) as Config;
+    const config = yaml.load(content);
+
+    if (!config || typeof config !== 'object') {
+      console.warn(`Warning: Empty or invalid config file at ${path}, using defaults`);
+      return defaultConfig();
+    }
+
+    const validConfig = config as Config;
     const defaults = defaultConfig();
     return {
       ...defaults,
-      ...config,
-      profiles: { ...defaults.profiles, ...(config.profiles || {}) },
+      ...validConfig,
+      profiles: deepMergeProfiles(defaults.profiles, validConfig.profiles),
     };
   } catch (error) {
     if (error instanceof Error) {
+      if (error.message.includes('ENOENT')) {
+        return defaultConfig();
+      }
       if (error.message.includes('EACCES')) {
         throw new Error(
           `Permission denied reading config file: ${path}\n` +
@@ -100,12 +144,25 @@ export function loadConfig(): Config {
 }
 
 export function saveConfig(config: Config): void {
+  const path = getConfigPath();
+  const tempPath = `${path}.tmp.${process.pid}`;
+
   try {
     ensureConfigDir();
-    const path = getConfigPath();
     const content = yaml.dump(config, { indent: 2, lineWidth: 120 });
-    writeFileSync(path, content, { encoding: 'utf8', mode: 0o600 });
+
+    writeFileSync(tempPath, content, { encoding: 'utf8', mode: 0o600 });
+
+    ensureConfigDir();
+    renameSync(tempPath, path);
+
   } catch (error) {
+    try {
+      unlinkSync(tempPath);
+    } catch {
+      // Ignore cleanup errors
+    }
+
     if (error instanceof Error) {
       if (error.message.includes('ENOSPC')) {
         throw new Error(
@@ -115,13 +172,13 @@ export function saveConfig(config: Config): void {
       }
       if (error.message.includes('EACCES')) {
         throw new Error(
-          `Permission denied writing config file: ${getConfigPath()}\n` +
+          `Permission denied writing config file: ${path}\n` +
           `Run: chmod u+w ${getConfigDir()}`
         );
       }
     }
     throw new Error(
-      `Failed to save config to ${getConfigPath()}: ${error instanceof Error ? error.message : error}\n` +
+      `Failed to save config to ${path}: ${error instanceof Error ? error.message : error}\n` +
       `Please check file permissions and available disk space.`
     );
   }
