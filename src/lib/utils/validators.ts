@@ -1,7 +1,3 @@
-/**
- * Common validation functions for CLI inputs
- */
-
 import {
   ExperimentId,
   GoalId,
@@ -103,10 +99,6 @@ export function parseId(value: string): number {
   return parseIdGeneric<number>(value, 'ID');
 }
 
-/**
- * Validate that at least one field is provided in an update object
- * @throws Error if object is empty
- */
 export function requireAtLeastOneField(
   data: Record<string, unknown>,
   fieldName = 'field'
@@ -121,10 +113,6 @@ export function requireAtLeastOneField(
   }
 }
 
-/**
- * Validate JSON string
- * @throws Error with helpful message if JSON is invalid
- */
 export function validateJSON(jsonString: string, context = 'JSON'): unknown {
   try {
     return JSON.parse(jsonString);

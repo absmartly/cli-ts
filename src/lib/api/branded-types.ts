@@ -1,8 +1,3 @@
-/**
- * Branded types for type-safe IDs
- * Prevents mixing different ID types (e.g., ExperimentId vs GoalId)
- */
-
 type Branded<T, Brand extends string> = T & { readonly __brand: Brand };
 
 export type ExperimentId = Branded<number, 'ExperimentId'>;
@@ -115,7 +110,8 @@ export function Timestamp(value: number): Timestamp {
   if (!Number.isInteger(value) || value < 0) {
     throw new Error(`Invalid Timestamp: ${value} must be a non-negative integer`);
   }
-  if (value > 32503680000000) {
+  const MAX_REASONABLE_TIMESTAMP_MS = 32503680000000; // year ~3000
+  if (value > MAX_REASONABLE_TIMESTAMP_MS) {
     throw new Error(`Timestamp out of reasonable range: ${value}`);
   }
   return value as Timestamp;

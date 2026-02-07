@@ -20,11 +20,10 @@ export interface TableColumn {
 
 export function formatOutput(
   data: unknown,
-  format: OutputFormat | undefined = 'table',
+  format: OutputFormat = 'table',
   options: OutputOptions = {}
 ): string {
-  const actualFormat = format || 'table';
-  switch (actualFormat) {
+  switch (format) {
     case 'json':
       return JSON.stringify(data, null, 2);
     case 'yaml':

@@ -39,7 +39,7 @@ export async function generateTemplate(
   parts.push('## Unit & Application\n\n');
 
   const firstUnit = units[0];
-  if (units.length > 0 && firstUnit) {
+  if (firstUnit) {
     parts.push(`unit_type: ${firstUnit.name}\n`);
     parts.push(`<!-- Available: ${units.map((u) => u.name).join(', ')} -->\n`);
   } else {
@@ -47,7 +47,7 @@ export async function generateTemplate(
   }
 
   const firstApp = apps[0];
-  if (apps.length > 0 && firstApp) {
+  if (firstApp) {
     parts.push(`application: ${firstApp.name}\n`);
     parts.push(`<!-- Available: ${apps.map((a) => a.name).join(', ')} -->\n`);
   } else {
@@ -57,7 +57,7 @@ export async function generateTemplate(
   parts.push('\n## Metrics\n\n');
 
   const firstMetric = metrics[0];
-  if (metrics.length > 0 && firstMetric) {
+  if (firstMetric) {
     parts.push(`primary_metric: ${firstMetric.name}\n`);
     const metricNames = metrics.slice(0, 5).map((m) => m.name);
     const suffix = metrics.length > 5 ? ', ...' : '';

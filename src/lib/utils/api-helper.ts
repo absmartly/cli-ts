@@ -2,7 +2,7 @@ import { createAPIClient, APIClient } from '../api/client.js';
 import { getProfile, loadConfig } from '../config/config.js';
 import { getAPIKey } from '../config/keyring.js';
 import { Command } from 'commander';
-import { formatOutput, type OutputFormat, type OutputOptions } from '../output/formatter.js';
+import { formatOutput, type OutputFormat } from '../output/formatter.js';
 
 export async function getAPIClientFromOptions(options: Record<string, unknown>): Promise<APIClient> {
   const config = loadConfig();
@@ -67,16 +67,15 @@ export function getGlobalOptions(cmd: Command): GlobalOptions {
 }
 
 export function printFormatted(data: unknown, globalOptions: GlobalOptions): void {
-  const outputOptions: OutputOptions = {};
-  if (globalOptions.noColor !== undefined) outputOptions.noColor = globalOptions.noColor;
-  if (globalOptions.full !== undefined) outputOptions.full = globalOptions.full;
-  if (globalOptions.terse !== undefined) outputOptions.terse = globalOptions.terse;
-
-  const output = formatOutput(data, globalOptions.output, outputOptions);
+  const output = formatOutput(data, globalOptions.output, {
+    noColor: globalOptions.noColor ?? false,
+    full: globalOptions.full ?? false,
+    terse: globalOptions.terse ?? false,
+  });
   console.log(output);
 }
 
-export function handleCommandError(error: unknown): never {
+function handleCommandError(error: unknown): never {
   console.error('Error:', error instanceof Error ? error.message : error);
   process.exit(1);
 }
