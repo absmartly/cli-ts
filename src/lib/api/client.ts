@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosError } from 'axios';
+import axios, { AxiosInstance, AxiosError, AxiosResponse } from 'axios';
 import axiosRetry from 'axios-retry';
 import { version } from '../utils/version.js';
 import type {
@@ -154,6 +154,39 @@ export class APIClient {
     return apiError;
   }
 
+  private validateListResponse<T>(
+    response: AxiosResponse,
+    expectedKey: string,
+    operation: string
+  ): T[] {
+    const data = response.data;
+
+    if (!data || typeof data !== 'object') {
+      throw new Error(
+        `Invalid API response for ${operation}: Expected object, got ${typeof data}\n` +
+        `This may indicate an API error or network proxy issue.`
+      );
+    }
+
+    const items = (data as Record<string, unknown>)[expectedKey];
+
+    if (items === undefined) {
+      throw new Error(
+        `Invalid API response for ${operation}: Missing "${expectedKey}" field\n` +
+        `Response keys: ${Object.keys(data).join(', ')}\n` +
+        `This may indicate an API version mismatch.`
+      );
+    }
+
+    if (!Array.isArray(items)) {
+      throw new Error(
+        `Invalid API response for ${operation}: "${expectedKey}" must be an array, got ${typeof items}`
+      );
+    }
+
+    return items as T[];
+  }
+
   async listExperiments(options: ListOptions = {}): Promise<Experiment[]> {
     const params: Record<string, string> = {};
 
@@ -199,10 +232,8 @@ export class APIClient {
 
     if (options.significance) params.significance = options.significance;
 
-    const response = await this.client.get<{ experiments: Experiment[] }>('/experiments', {
-      params,
-    });
-    return response.data.experiments;
+    const response = await this.client.get('/experiments', { params });
+    return this.validateListResponse<Experiment>(response, 'experiments', 'listExperiments');
   }
 
   async getExperiment(id: ExperimentId): Promise<Experiment> {
@@ -242,8 +273,8 @@ export class APIClient {
   }
 
   async listExperimentAlerts(id: ExperimentId): Promise<Alert[]> {
-    const response = await this.client.get<{ alerts: Alert[] }>(`/experiments/${id}/alerts`);
-    return response.data.alerts;
+    const response = await this.client.get(`/experiments/${id}/alerts`);
+    return this.validateListResponse<Alert>(response, 'alerts', 'listExperimentAlerts');
   }
 
   async deleteExperimentAlerts(id: ExperimentId): Promise<void> {
@@ -251,8 +282,8 @@ export class APIClient {
   }
 
   async listExperimentNotes(id: ExperimentId): Promise<Note[]> {
-    const response = await this.client.get<{ notes: Note[] }>(`/experiments/${id}/notes`);
-    return response.data.notes;
+    const response = await this.client.get(`/experiments/${id}/notes`);
+    return this.validateListResponse<Note>(response, 'notes', 'listExperimentNotes');
   }
 
   async createExperimentNote(id: ExperimentId, message: string): Promise<Note> {
@@ -265,10 +296,10 @@ export class APIClient {
   }
 
   async listGoals(limit = 100, offset = 0): Promise<Goal[]> {
-    const response = await this.client.get<{ goals: Goal[] }>('/goals', {
+    const response = await this.client.get('/goals', {
       params: { limit, offset },
     });
-    return response.data.goals;
+    return this.validateListResponse<Goal>(response, 'goals', 'listGoals');
   }
 
   async getGoal(id: GoalId): Promise<Goal> {
@@ -291,10 +322,10 @@ export class APIClient {
   }
 
   async listSegments(limit = 100, offset = 0): Promise<Segment[]> {
-    const response = await this.client.get<{ segments: Segment[] }>('/segments', {
+    const response = await this.client.get('/segments', {
       params: { limit, offset },
     });
-    return response.data.segments;
+    return this.validateListResponse<Segment>(response, 'segments', 'listSegments');
   }
 
   async getSegment(id: SegmentId): Promise<Segment> {
@@ -317,10 +348,10 @@ export class APIClient {
   }
 
   async listTeams(includeArchived = false): Promise<Team[]> {
-    const response = await this.client.get<{ teams: Team[] }>('/teams', {
+    const response = await this.client.get('/teams', {
       params: { include_archived: includeArchived ? '1' : '0' },
     });
-    return response.data.teams;
+    return this.validateListResponse<Team>(response, 'teams', 'listTeams');
   }
 
   async getTeam(id: TeamId): Promise<Team> {
@@ -346,10 +377,10 @@ export class APIClient {
   }
 
   async listUsers(includeArchived = false): Promise<User[]> {
-    const response = await this.client.get<{ users: User[] }>('/users', {
+    const response = await this.client.get('/users', {
       params: { include_archived: includeArchived ? '1' : '0' },
     });
-    return response.data.users;
+    return this.validateListResponse<User>(response, 'users', 'listUsers');
   }
 
   async getUser(id: UserId): Promise<User> {
@@ -375,10 +406,10 @@ export class APIClient {
   }
 
   async listMetrics(limit = 100, offset = 0): Promise<Metric[]> {
-    const response = await this.client.get<{ metrics: Metric[] }>('/metrics', {
+    const response = await this.client.get('/metrics', {
       params: { limit, offset },
     });
-    return response.data.metrics;
+    return this.validateListResponse<Metric>(response, 'metrics', 'listMetrics');
   }
 
   async getMetric(id: MetricId): Promise<Metric> {
@@ -404,8 +435,8 @@ export class APIClient {
   }
 
   async listApplications(): Promise<Application[]> {
-    const response = await this.client.get<{ applications: Application[] }>('/applications');
-    return response.data.applications;
+    const response = await this.client.get('/applications');
+    return this.validateListResponse<Application>(response, 'applications', 'listApplications');
   }
 
   async getApplication(id: ApplicationId): Promise<Application> {
@@ -414,8 +445,8 @@ export class APIClient {
   }
 
   async listEnvironments(): Promise<Environment[]> {
-    const response = await this.client.get<{ environments: Environment[] }>('/environments');
-    return response.data.environments;
+    const response = await this.client.get('/environments');
+    return this.validateListResponse<Environment>(response, 'environments', 'listEnvironments');
   }
 
   async getEnvironment(id: EnvironmentId): Promise<Environment> {
@@ -424,8 +455,8 @@ export class APIClient {
   }
 
   async listUnitTypes(): Promise<UnitType[]> {
-    const response = await this.client.get<{ unit_types: UnitType[] }>('/unit-types');
-    return response.data.unit_types;
+    const response = await this.client.get('/unit-types');
+    return this.validateListResponse<UnitType>(response, 'unit_types', 'listUnitTypes');
   }
 
   async getUnitType(id: UnitTypeId): Promise<UnitType> {
@@ -434,13 +465,10 @@ export class APIClient {
   }
 
   async listExperimentTags(limit = 100, offset = 0): Promise<ExperimentTag[]> {
-    const response = await this.client.get<{ experiment_tags: ExperimentTag[] }>(
-      '/experiment_tags',
-      {
-        params: { limit, offset },
-      }
-    );
-    return response.data.experiment_tags;
+    const response = await this.client.get('/experiment_tags', {
+      params: { limit, offset },
+    });
+    return this.validateListResponse<ExperimentTag>(response, 'experiment_tags', 'listExperimentTags');
   }
 
   async getExperimentTag(id: TagId): Promise<ExperimentTag> {
@@ -471,10 +499,10 @@ export class APIClient {
   }
 
   async listGoalTags(limit = 100, offset = 0): Promise<GoalTag[]> {
-    const response = await this.client.get<{ goal_tags: GoalTag[] }>('/goal_tags', {
+    const response = await this.client.get('/goal_tags', {
       params: { limit, offset },
     });
-    return response.data.goal_tags;
+    return this.validateListResponse<GoalTag>(response, 'goal_tags', 'listGoalTags');
   }
 
   async getGoalTag(id: TagId): Promise<GoalTag> {
@@ -497,10 +525,10 @@ export class APIClient {
   }
 
   async listMetricTags(limit = 100, offset = 0): Promise<MetricTag[]> {
-    const response = await this.client.get<{ metric_tags: MetricTag[] }>('/metric_tags', {
+    const response = await this.client.get('/metric_tags', {
       params: { limit, offset },
     });
-    return response.data.metric_tags;
+    return this.validateListResponse<MetricTag>(response, 'metric_tags', 'listMetricTags');
   }
 
   async getMetricTag(id: TagId): Promise<MetricTag> {
@@ -523,13 +551,10 @@ export class APIClient {
   }
 
   async listMetricCategories(limit = 100, offset = 0): Promise<MetricCategory[]> {
-    const response = await this.client.get<{ metric_categories: MetricCategory[] }>(
-      '/metric_categories',
-      {
-        params: { limit, offset },
-      }
-    );
-    return response.data.metric_categories;
+    const response = await this.client.get('/metric_categories', {
+      params: { limit, offset },
+    });
+    return this.validateListResponse<MetricCategory>(response, 'metric_categories', 'listMetricCategories');
   }
 
   async getMetricCategory(id: TagId): Promise<MetricCategory> {
@@ -567,10 +592,10 @@ export class APIClient {
   }
 
   async listRoles(limit = 20, offset = 0): Promise<Role[]> {
-    const response = await this.client.get<{ roles: Role[] }>('/roles', {
+    const response = await this.client.get('/roles', {
       params: { limit, offset },
     });
-    return response.data.roles;
+    return this.validateListResponse<Role>(response, 'roles', 'listRoles');
   }
 
   async getRole(id: RoleId): Promise<Role> {
@@ -593,22 +618,20 @@ export class APIClient {
   }
 
   async listPermissions(): Promise<Permission[]> {
-    const response = await this.client.get<{ permissions: Permission[] }>('/permissions');
-    return response.data.permissions;
+    const response = await this.client.get('/permissions');
+    return this.validateListResponse<Permission>(response, 'permissions', 'listPermissions');
   }
 
   async listPermissionCategories(): Promise<PermissionCategory[]> {
-    const response = await this.client.get<{ permission_categories: PermissionCategory[] }>(
-      '/permission_categories'
-    );
-    return response.data.permission_categories;
+    const response = await this.client.get('/permission_categories');
+    return this.validateListResponse<PermissionCategory>(response, 'permission_categories', 'listPermissionCategories');
   }
 
   async listApiKeys(limit = 20, offset = 0): Promise<ApiKey[]> {
-    const response = await this.client.get<{ api_keys: ApiKey[] }>('/api_keys', {
+    const response = await this.client.get('/api_keys', {
       params: { limit, offset },
     });
-    return response.data.api_keys;
+    return this.validateListResponse<ApiKey>(response, 'api_keys', 'listApiKeys');
   }
 
   async getApiKey(id: ApiKeyId): Promise<ApiKey> {
@@ -631,10 +654,10 @@ export class APIClient {
   }
 
   async listWebhooks(limit = 20, offset = 0): Promise<Webhook[]> {
-    const response = await this.client.get<{ webhooks: Webhook[] }>('/webhooks', {
+    const response = await this.client.get('/webhooks', {
       params: { limit, offset },
     });
-    return response.data.webhooks;
+    return this.validateListResponse<Webhook>(response, 'webhooks', 'listWebhooks');
   }
 
   async getWebhook(id: WebhookId): Promise<Webhook> {
@@ -662,20 +685,22 @@ export class APIClient {
     data?: unknown,
     headers?: Record<string, string>
   ): Promise<unknown> {
-    if (path.includes('://')) {
+    const decodedPath = decodeURIComponent(path);
+
+    if (decodedPath.includes('://')) {
       throw new Error(
         'Invalid API path: Absolute URLs are not allowed.\n' +
         'Paths must be relative to the API endpoint (e.g., /experiments, /goals).'
       );
     }
 
-    if (!path.startsWith('/')) {
+    if (!decodedPath.startsWith('/')) {
       throw new Error(
         'Invalid API path: Must start with "/" (e.g., /experiments, not experiments).'
       );
     }
 
-    if (path.includes('/../') || path.endsWith('/..') || path.includes('/./')) {
+    if (decodedPath.includes('/../') || decodedPath.endsWith('/..') || decodedPath.includes('/./') || decodedPath === '/..') {
       throw new Error(
         'Invalid API path: Path traversal sequences (../, ./) are not allowed.\n' +
         'Use absolute paths from API root (e.g., /experiments, /goals).'

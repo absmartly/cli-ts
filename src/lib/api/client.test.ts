@@ -220,5 +220,40 @@ describe('APIClient', () => {
         'Invalid API path: Path traversal sequences'
       );
     });
+
+    it('should reject URL-encoded path traversal (/%2e%2e/)', async () => {
+      await expect(client.rawRequest('/%2e%2e/admin', 'GET')).rejects.toThrow(
+        'Invalid API path: Path traversal sequences'
+      );
+    });
+
+    it('should reject URL-encoded path traversal (/..%2f)', async () => {
+      await expect(client.rawRequest('/api/..%2fadmin', 'GET')).rejects.toThrow(
+        'Invalid API path: Path traversal sequences'
+      );
+    });
+
+    it('should reject URL-encoded current directory (/%2e/)', async () => {
+      await expect(client.rawRequest('/%2e/endpoint', 'GET')).rejects.toThrow(
+        'Invalid API path: Path traversal sequences'
+      );
+    });
+
+    it('should reject path that is exactly /.. after decoding', async () => {
+      await expect(client.rawRequest('/%2e%2e', 'GET')).rejects.toThrow(
+        'Invalid API path: Path traversal sequences'
+      );
+    });
+
+    it('should accept URL-encoded regular characters', async () => {
+      server.use(
+        http.get(`${BASE_URL}/custom%20path`, () => {
+          return HttpResponse.json({ success: true });
+        })
+      );
+
+      const result = await client.rawRequest('/custom%20path', 'GET');
+      expect(result).toEqual({ success: true });
+    });
   });
 });
