@@ -70,9 +70,9 @@ const updateCommand = new Command('update')
     const client = await getAPIClientFromOptions(globalOptions);
 
     const data: Record<string, string | boolean | number> = {};
-    if (options.name) data.name = options.name;
-    if (options.url) data.url = options.url;
-    if (options.description) data.description = options.description;
+    if (options.name !== undefined) data.name = options.name;
+    if (options.url !== undefined) data.url = options.url;
+    if (options.description !== undefined) data.description = options.description;
     if (options.enabled !== undefined) data.enabled = options.enabled;
     if (options.ordered !== undefined) data.ordered = options.ordered;
     if (options.maxRetries !== undefined) data.max_retries = options.maxRetries;

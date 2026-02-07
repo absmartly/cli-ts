@@ -55,8 +55,8 @@ const updateCommand = new Command('update')
     const client = await getAPIClientFromOptions(globalOptions);
 
     const data: Record<string, string> = {};
-    if (options.name) data.name = options.name;
-    if (options.description) data.description = options.description;
+    if (options.name !== undefined) data.name = options.name;
+    if (options.description !== undefined) data.description = options.description;
 
     requireAtLeastOneField(data, 'update field');
     await client.updateRole(id, data);

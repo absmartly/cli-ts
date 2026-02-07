@@ -21,13 +21,13 @@ export const updateCommand = new Command('update')
     if (options.fromFile) {
       const template = parseExperimentFile(options.fromFile);
       data = {};
-      if (template.display_name) data.display_name = template.display_name;
-      if (template.percentage_of_traffic) data.traffic = template.percentage_of_traffic;
-      if (template.state) data.state = template.state;
+      if (template.display_name !== undefined) data.display_name = template.display_name;
+      if (template.percentage_of_traffic !== undefined) data.traffic = template.percentage_of_traffic;
+      if (template.state !== undefined) data.state = template.state;
     } else {
       data = {};
-      if (options.displayName) data.display_name = options.displayName;
-      if (options.traffic) data.traffic = options.traffic;
+      if (options.displayName !== undefined) data.display_name = options.displayName;
+      if (options.traffic !== undefined) data.traffic = options.traffic;
     }
 
     requireAtLeastOneField(data, 'update field');

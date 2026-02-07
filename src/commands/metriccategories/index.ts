@@ -64,9 +64,9 @@ const updateCommand = new Command('update')
     const client = await getAPIClientFromOptions(globalOptions);
 
     const data: { name?: string; description?: string; color?: string } = {};
-    if (options.name) data.name = options.name;
-    if (options.description) data.description = options.description;
-    if (options.color) data.color = options.color;
+    if (options.name !== undefined) data.name = options.name;
+    if (options.description !== undefined) data.description = options.description;
+    if (options.color !== undefined) data.color = options.color;
 
     requireAtLeastOneField(data, 'update field');
     const category = await client.updateMetricCategory(id, data);
