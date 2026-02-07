@@ -6,17 +6,14 @@ export function createMockExperiment(overrides?: Partial<Experiment>): Experimen
     id: faker.number.int({ min: 1, max: 10000 }),
     name: faker.helpers.slugify(faker.commerce.productName()).toLowerCase(),
     display_name: faker.commerce.productName(),
-    description: faker.lorem.sentence(),
-    type: faker.helpers.arrayElement(['test', 'feature']),
-    state: faker.helpers.arrayElement(['created', 'ready', 'running', 'stopped', 'archived']),
+    type: faker.helpers.arrayElement(['test', 'feature']) as 'test' | 'feature',
+    state: faker.helpers.arrayElement(['created', 'ready', 'running', 'stopped', 'archived']) as 'created' | 'ready' | 'running' | 'stopped' | 'archived',
     unit_type_id: faker.number.int({ min: 1, max: 10 }),
-    traffic: faker.number.int({ min: 0, max: 100 }),
     created_at: faker.date.past().toISOString(),
     updated_at: faker.date.recent().toISOString(),
-    owner_id: faker.number.int({ min: 1, max: 100 }),
     variants: [
-      { name: 'control', config: { description: 'Control variant' } },
-      { name: 'treatment', config: { description: 'Treatment variant' } },
+      { name: 'control', variant: 0, config: JSON.stringify({ description: 'Control variant' }) },
+      { name: 'treatment', variant: 1, config: JSON.stringify({ description: 'Treatment variant' }) },
     ],
     ...overrides,
   };
@@ -31,11 +28,11 @@ export function createMockGoal(overrides?: Partial<Goal>): Goal {
     id: faker.number.int({ min: 1, max: 10000 }),
     name: faker.helpers.slugify(faker.word.words(2)).toLowerCase(),
     description: faker.lorem.sentence(),
-    type: faker.helpers.arrayElement(['conversion', 'revenue']),
-    created_at: faker.date.past().toISOString(),
-    updated_at: faker.date.recent().toISOString(),
+    archived: false,
+    created_at: faker.date.past().toISOString() || null,
+    created_by_user_id: faker.number.int({ min: 1, max: 100 }) || null,
     ...overrides,
-  };
+  } as Goal;
 }
 
 export function createMockGoals(count: number): Goal[] {
@@ -46,12 +43,11 @@ export function createMockSegment(overrides?: Partial<Segment>): Segment {
   return {
     id: faker.number.int({ min: 1, max: 10000 }),
     name: faker.helpers.slugify(faker.word.words(2)).toLowerCase(),
-    description: faker.lorem.sentence(),
-    value_source_attribute: faker.helpers.arrayElement(['user_plan', 'user_type', 'country']),
-    created_at: faker.date.past().toISOString(),
-    updated_at: faker.date.recent().toISOString(),
+    archived: false,
+    created_at: faker.date.past().toISOString() || null,
+    created_by_user_id: faker.number.int({ min: 1, max: 100 }) || null,
     ...overrides,
-  };
+  } as Segment;
 }
 
 export function createMockSegments(count: number): Segment[] {
@@ -63,13 +59,12 @@ export function createMockTeam(overrides?: Partial<Team>): Team {
     id: faker.number.int({ min: 1, max: 10000 }),
     name: faker.company.buzzNoun(),
     initials: faker.string.alpha({ length: 2, casing: 'upper' }),
-    color: faker.color.rgb(),
-    description: faker.lorem.sentence(),
     archived: false,
-    created_at: faker.date.past().toISOString(),
-    updated_at: faker.date.recent().toISOString(),
+    is_global_team: false,
+    created_at: faker.date.past().toISOString() || null,
+    created_by_user_id: faker.number.int({ min: 1, max: 100 }) || null,
     ...overrides,
-  };
+  } as Team;
 }
 
 export function createMockTeams(count: number): Team[] {
@@ -82,12 +77,15 @@ export function createMockUser(overrides?: Partial<User>): User {
     email: faker.internet.email(),
     first_name: faker.person.firstName(),
     last_name: faker.person.lastName(),
-    job_title: faker.person.jobTitle(),
     archived: false,
     created_at: faker.date.past().toISOString(),
-    updated_at: faker.date.recent().toISOString(),
+    created_by: {
+      email: faker.internet.email(),
+      first_name: faker.person.firstName(),
+      last_name: faker.person.lastName(),
+    },
     ...overrides,
-  };
+  } as User;
 }
 
 export function createMockUsers(count: number): User[] {
@@ -98,13 +96,8 @@ export function createMockMetric(overrides?: Partial<Metric>): Metric {
   return {
     id: faker.number.int({ min: 1, max: 10000 }),
     name: faker.helpers.slugify(faker.word.words(2)).toLowerCase(),
-    description: faker.lorem.sentence(),
-    version: faker.number.int({ min: 1, max: 5 }),
-    archived: false,
-    created_at: faker.date.past().toISOString(),
-    updated_at: faker.date.recent().toISOString(),
     ...overrides,
-  };
+  } as Metric;
 }
 
 export function createMockMetrics(count: number): Metric[] {
@@ -115,8 +108,15 @@ export function createMockApplication(overrides?: Partial<Application>): Applica
   return {
     id: faker.number.int({ min: 1, max: 100 }),
     name: faker.helpers.arrayElement(['website', 'mobile', 'api']),
+    created_at: faker.date.past().toISOString(),
+    created_by: {
+      email: faker.internet.email(),
+      first_name: faker.person.firstName(),
+      last_name: faker.person.lastName(),
+    },
+    archived: false,
     ...overrides,
-  };
+  } as Application;
 }
 
 export function createMockApplications(count: number): Application[] {
@@ -127,9 +127,13 @@ export function createMockEnvironment(overrides?: Partial<Environment>): Environ
   return {
     id: faker.number.int({ min: 1, max: 10 }),
     name: faker.helpers.arrayElement(['production', 'staging', 'development']),
-    production: faker.datatype.boolean(),
+    description: faker.lorem.sentence(),
+    type: 'production',
+    archived: false,
+    created_at: faker.date.past().toISOString() || null,
+    created_by_user_id: faker.number.int({ min: 1, max: 100 }) || null,
     ...overrides,
-  };
+  } as Environment;
 }
 
 export function createMockEnvironments(count: number): Environment[] {
@@ -140,8 +144,12 @@ export function createMockUnitType(overrides?: Partial<UnitType>): UnitType {
   return {
     id: faker.number.int({ min: 1, max: 10 }),
     name: faker.helpers.arrayElement(['user_id', 'session_id', 'anonymous_id']),
+    description: faker.lorem.sentence(),
+    archived: false,
+    created_at: faker.date.past().toISOString() || null,
+    created_by_user_id: faker.number.int({ min: 1, max: 100 }) || null,
     ...overrides,
-  };
+  } as UnitType;
 }
 
 export function createMockUnitTypes(count: number): UnitType[] {
@@ -152,10 +160,10 @@ export function createMockExperimentTag(overrides?: Partial<ExperimentTag>): Exp
   return {
     id: faker.number.int({ min: 1, max: 1000 }),
     tag: faker.word.words(2),
-    created_at: faker.date.past().toISOString(),
-    updated_at: faker.date.recent().toISOString(),
+    created_at: faker.date.past().toISOString() || null,
+    created_by_user_id: faker.number.int({ min: 1, max: 100 }) || null,
     ...overrides,
-  };
+  } as ExperimentTag;
 }
 
 export function createMockExperimentTags(count: number): ExperimentTag[] {
@@ -166,10 +174,10 @@ export function createMockGoalTag(overrides?: Partial<GoalTag>): GoalTag {
   return {
     id: faker.number.int({ min: 1, max: 1000 }),
     tag: faker.word.words(2),
-    created_at: faker.date.past().toISOString(),
-    updated_at: faker.date.recent().toISOString(),
+    created_at: faker.date.past().toISOString() || null,
+    created_by_user_id: faker.number.int({ min: 1, max: 100 }) || null,
     ...overrides,
-  };
+  } as GoalTag;
 }
 
 export function createMockGoalTags(count: number): GoalTag[] {
@@ -180,10 +188,10 @@ export function createMockMetricTag(overrides?: Partial<MetricTag>): MetricTag {
   return {
     id: faker.number.int({ min: 1, max: 1000 }),
     tag: faker.word.words(2),
-    created_at: faker.date.past().toISOString(),
-    updated_at: faker.date.recent().toISOString(),
+    created_at: faker.date.past().toISOString() || null,
+    created_by_user_id: faker.number.int({ min: 1, max: 100 }) || null,
     ...overrides,
-  };
+  } as MetricTag;
 }
 
 export function createMockMetricTags(count: number): MetricTag[] {
@@ -194,13 +202,11 @@ export function createMockMetricCategory(overrides?: Partial<MetricCategory>): M
   return {
     id: faker.number.int({ min: 1, max: 1000 }),
     name: faker.word.words(2),
-    description: faker.lorem.sentence(),
-    color: faker.color.rgb(),
     archived: false,
-    created_at: faker.date.past().toISOString(),
-    updated_at: faker.date.recent().toISOString(),
+    created_at: faker.date.past().toISOString() || null,
+    created_by_user_id: faker.number.int({ min: 1, max: 100 }) || null,
     ...overrides,
-  };
+  } as MetricCategory;
 }
 
 export function createMockMetricCategories(count: number): MetricCategory[] {
@@ -211,11 +217,14 @@ export function createMockRole(overrides?: Partial<Role>): Role {
   return {
     id: faker.number.int({ min: 1, max: 100 }),
     name: faker.helpers.arrayElement(['Admin', 'Editor', 'Viewer']),
-    description: faker.lorem.sentence(),
     created_at: faker.date.past().toISOString(),
-    updated_at: faker.date.recent().toISOString(),
+    created_by: {
+      email: faker.internet.email(),
+      first_name: faker.person.firstName(),
+      last_name: faker.person.lastName(),
+    },
     ...overrides,
-  };
+  } as Role;
 }
 
 export function createMockRoles(count: number): Role[] {
@@ -226,9 +235,9 @@ export function createMockPermission(overrides?: Partial<Permission>): Permissio
   return {
     id: faker.number.int({ min: 1, max: 1000 }),
     name: faker.word.words(3),
-    description: faker.lorem.sentence(),
+    created_at: faker.date.past().toISOString(),
     ...overrides,
-  };
+  } as Permission;
 }
 
 export function createMockPermissions(count: number): Permission[] {

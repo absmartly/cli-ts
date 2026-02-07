@@ -52,7 +52,7 @@ const createCommand = new Command('create')
       max_retries: options.maxRetries,
     });
 
-    console.log(chalk.green(`✓ Webhook created with ID: ${webhook.id}`));
+    console.log(chalk.green(`✓ Webhook created with ID: ${(webhook as any).id || 'unknown'}`));
   }));
 
 const updateCommand = new Command('update')

@@ -33,7 +33,6 @@ const getCommand = new Command('get')
 const createCommand = new Command('create')
   .description('Create a new metric')
   .requiredOption('--name <name>', 'metric name')
-  .option('--display-name <name>', 'display name')
   .option('--type <type>', 'metric type')
   .option('--description <text>', 'metric description')
   .action(withErrorHandling(async (options) => {
@@ -42,7 +41,6 @@ const createCommand = new Command('create')
 
     const metric = await client.createMetric({
       name: options.name,
-      display_name: options.displayName,
       type: options.type,
       description: options.description,
     });
@@ -53,14 +51,12 @@ const createCommand = new Command('create')
 const updateCommand = new Command('update')
   .description('Update a metric')
   .argument('<id>', 'metric ID', parseId)
-  .option('--display-name <name>', 'new display name')
   .option('--description <text>', 'new description')
   .action(withErrorHandling(async (id: number, options) => {
     const globalOptions = getGlobalOptions(updateCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
     const data: Record<string, string> = {};
-    if (options.displayName) data.display_name = options.displayName;
     if (options.description) data.description = options.description;
 
     requireAtLeastOneField(data, 'update field');

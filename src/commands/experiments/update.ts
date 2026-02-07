@@ -2,7 +2,6 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseExperimentFile } from '../../lib/template/parser.js';
-import type { Experiment } from '../../lib/api/types.js';
 import { parseId, requireAtLeastOneField } from '../../lib/utils/validators.js';
 
 export const updateCommand = new Command('update')
@@ -16,19 +15,17 @@ export const updateCommand = new Command('update')
     const globalOptions = getGlobalOptions(updateCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
-    let data: Partial<Experiment>;
+    let data: Record<string, unknown>;
 
     if (options.fromFile) {
       const template = parseExperimentFile(options.fromFile);
       data = {};
       if (template.display_name) data.display_name = template.display_name;
-      if (template.description) data.description = template.description;
       if (template.percentage_of_traffic) data.traffic = template.percentage_of_traffic;
       if (template.state) data.state = template.state;
     } else {
       data = {};
       if (options.displayName) data.display_name = options.displayName;
-      if (options.description) data.description = options.description;
       if (options.traffic) data.traffic = options.traffic;
     }
 

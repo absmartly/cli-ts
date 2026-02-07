@@ -26,11 +26,10 @@ export const createCommand = new Command('create')
       data = {
         name: template.name,
         display_name: template.display_name,
-        type: template.type,
-        state: template.state,
+        type: template.type as 'test' | 'feature',
+        state: template.state as 'archived' | 'created' | 'ready' | 'running' | 'development' | 'full_on' | 'stopped' | 'scheduled',
         traffic: template.percentage_of_traffic,
-        description: template.description || template.hypothesis,
-      };
+      } as Partial<Experiment>;
 
       if (template.variants && template.variants.length > 0) {
         data.variants = template.variants.map((v: VariantTemplate, index: number) => {
@@ -48,7 +47,8 @@ export const createCommand = new Command('create')
           }
           return {
             name: v.name,
-            config: parsedConfig,
+            variant: index,
+            config: JSON.stringify(parsedConfig),
           };
         });
       }
@@ -56,14 +56,14 @@ export const createCommand = new Command('create')
       data = {
         name: options.name,
         display_name: options.displayName || options.name,
-        type: options.type || 'test',
-        description: options.description || options.hypothesis,
-      };
+        type: (options.type || 'test') as 'test' | 'feature',
+      } as Partial<Experiment>;
 
       if (options.variants) {
-        data.variants = options.variants.split(',').map((name: string) => ({
+        data.variants = options.variants.split(',').map((name: string, index: number) => ({
           name: name.trim(),
-          config: {},
+          variant: index,
+          config: JSON.stringify({}),
         }));
       }
     }

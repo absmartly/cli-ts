@@ -30,7 +30,6 @@ const getCommand = new Command('get')
 const createCommand = new Command('create')
   .description('Create a new team')
   .requiredOption('--name <name>', 'team name')
-  .option('--display-name <name>', 'display name')
   .option('--description <text>', 'team description')
   .action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(createCommand);
@@ -38,7 +37,6 @@ const createCommand = new Command('create')
 
     const team = await client.createTeam({
       name: options.name,
-      display_name: options.displayName,
       description: options.description,
     });
 
@@ -48,14 +46,12 @@ const createCommand = new Command('create')
 const updateCommand = new Command('update')
   .description('Update a team')
   .argument('<id>', 'team ID', parseId)
-  .option('--display-name <name>', 'new display name')
   .option('--description <text>', 'new description')
   .action(withErrorHandling(async (id: number, options) => {
     const globalOptions = getGlobalOptions(updateCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
     const data: Record<string, string> = {};
-    if (options.displayName) data.display_name = options.displayName;
     if (options.description) data.description = options.description;
 
     requireAtLeastOneField(data, 'update field');
