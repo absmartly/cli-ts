@@ -12,6 +12,10 @@ import { activityCommand } from './activity.js';
 import { generateTemplateCommand } from './generate-template.js';
 import { createCommand } from './create.js';
 import { updateCommand } from './update.js';
+import { developmentCommand } from './development.js';
+import { restartCommand } from './restart.js';
+import { fullOnCommand } from './full-on.js';
+import { scheduleCommand } from './schedule.js';
 
 export const experimentsCommand = new Command('experiments')
   .alias('exp')
@@ -31,3 +35,7 @@ experimentsCommand.addCommand(alertsCommand);
 experimentsCommand.addCommand(notesCommand);
 experimentsCommand.addCommand(activityCommand);
 experimentsCommand.addCommand(generateTemplateCommand);
+experimentsCommand.addCommand(developmentCommand);
+experimentsCommand.addCommand(restartCommand);
+experimentsCommand.addCommand(fullOnCommand);
+experimentsCommand.addCommand(scheduleCommand);
