@@ -15,6 +15,8 @@ export const createCommand = new Command('create')
   .option('--env <name>', 'environment name')
   .option('--description <text>', 'experiment description')
   .option('--hypothesis <text>', 'experiment hypothesis')
+  .option('--dry-run', 'show the request payload without making the API call')
+  .option('--as-curl', 'output as curl command instead of making the API call')
   .action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(createCommand);
     const client = await getAPIClientFromOptions(globalOptions);
@@ -73,6 +75,35 @@ export const createCommand = new Command('create')
           config: JSON.stringify({}),
         }));
       }
+    }
+
+    // Handle --dry-run and --as-curl flags
+    if (options.dryRun) {
+      console.log(chalk.blue('📋 Request Payload (dry-run):'));
+      console.log('');
+      console.log('POST /experiments');
+      console.log('');
+      console.log(JSON.stringify(data, null, 2));
+      console.log('');
+      return;
+    }
+
+    if (options.asCurl) {
+      const endpoint = globalOptions.endpoint || process.env.ABSMARTLY_API_ENDPOINT || 'https://demo-2.absmartly.com/v1';
+      const apiKey = globalOptions.apiKey || process.env.ABSMARTLY_API_KEY || '';
+
+      console.log(chalk.blue('🔧 cURL Command:'));
+      console.log('');
+      console.log(`curl -X POST '${endpoint}/experiments' \\`);
+      console.log(`  -H 'Authorization: Api-Key ${apiKey}' \\`);
+      console.log(`  -H 'Content-Type: application/json' \\`);
+      console.log(`  -H 'Accept: application/json' \\`);
+      console.log(`  -d '${JSON.stringify(data)}'`);
+      console.log('');
+      console.log(chalk.yellow('💡 Tip: Pipe to jq for formatted output:'));
+      console.log(`  ... | jq`);
+      console.log('');
+      return;
     }
 
     const experiment = await client.createExperiment(data);
