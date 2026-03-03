@@ -1,4 +1,3 @@
-import { setupServer } from 'msw/node';
-import { handlers } from './handlers.js';
+import { createServer } from 'absmartly-api-mocks/server';
 
-export const server = setupServer(...handlers);
+export const server = createServer('https://api.absmartly.com/v1');
