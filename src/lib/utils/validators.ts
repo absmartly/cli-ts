@@ -14,6 +14,7 @@ import {
   RoleId,
   ApiKeyId,
   WebhookId,
+  ScheduledActionId,
 } from '../api/branded-types.js';
 
 function parseIdGeneric<T extends number>(value: string, typeName: string): T {
@@ -105,6 +106,10 @@ export function parseApiKeyId(value: string): ApiKeyId {
 
 export function parseWebhookId(value: string): WebhookId {
   return parseIdGeneric<WebhookId>(value, 'WebhookId');
+}
+
+export function parseScheduledActionId(value: string): ScheduledActionId {
+  return parseIdGeneric<ScheduledActionId>(value, 'ScheduledActionId');
 }
 
 /** @deprecated Use specific type parser (e.g., parseExperimentId) */

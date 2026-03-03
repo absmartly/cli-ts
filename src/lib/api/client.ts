@@ -39,6 +39,7 @@ import type {
   RoleId,
   ApiKeyId,
   WebhookId,
+  ScheduledActionId,
 } from './branded-types.js';
 
 export interface ClientOptions {
@@ -270,6 +271,44 @@ export class APIClient {
       `/experiments/${id}/${unarchive ? 'unarchive' : 'archive'}`
     );
     return response.data;
+  }
+
+  async developmentExperiment(id: ExperimentId, note: string): Promise<Experiment> {
+    const response = await this.client.put<Experiment>(`/experiments/${id}/development`, { note });
+    return response.data;
+  }
+
+  async restartExperiment(
+    id: ExperimentId,
+    options: { note?: string; reason?: string; reshuffle?: boolean; state?: 'development' | 'running' } = {}
+  ): Promise<Experiment> {
+    const response = await this.client.put<Experiment>(`/experiments/${id}/restart`, options);
+    return response.data;
+  }
+
+  async fullOnExperiment(id: ExperimentId, fullOnVariant: number, note: string): Promise<Experiment> {
+    const response = await this.client.put<Experiment>(`/experiments/${id}/full_on`, {
+      full_on_variant: fullOnVariant,
+      note,
+    });
+    return response.data;
+  }
+
+  async createScheduledAction(
+    id: ExperimentId,
+    action: string,
+    scheduledAt: string,
+    note: string,
+    reason?: string
+  ): Promise<unknown> {
+    const body: Record<string, unknown> = { action, scheduled_at: scheduledAt, note };
+    if (reason) body.reason = reason;
+    const response = await this.client.post(`/experiments/${id}/scheduled_action`, body);
+    return response.data;
+  }
+
+  async deleteScheduledAction(id: ExperimentId, actionId: ScheduledActionId): Promise<void> {
+    await this.client.delete(`/experiments/${id}/scheduled_action/${actionId}`);
   }
 
   async listExperimentAlerts(id: ExperimentId): Promise<Alert[]> {

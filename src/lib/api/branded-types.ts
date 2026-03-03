@@ -15,6 +15,7 @@ export type TagId = Branded<number, 'TagId'>;
 export type RoleId = Branded<number, 'RoleId'>;
 export type ApiKeyId = Branded<number, 'ApiKeyId'>;
 export type WebhookId = Branded<number, 'WebhookId'>;
+export type ScheduledActionId = Branded<number, 'ScheduledActionId'>;
 
 export type Timestamp = Branded<number, 'Timestamp'>;
 export type TrafficPercentage = Branded<number, 'TrafficPercentage'>;
@@ -104,6 +105,11 @@ export function ApiKeyId(id: number): ApiKeyId {
 export function WebhookId(id: number): WebhookId {
   validatePositiveInteger(id, 'WebhookId');
   return id as WebhookId;
+}
+
+export function ScheduledActionId(id: number): ScheduledActionId {
+  validatePositiveInteger(id, 'ScheduledActionId');
+  return id as ScheduledActionId;
 }
 
 export function Timestamp(value: number): Timestamp {
