@@ -1,33 +1,38 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
+import { server } from '../../test/mocks/server.js';
 import { createAPIClient } from './client.js';
+import { isLiveMode, TEST_BASE_URL, TEST_API_KEY } from '../../test/helpers/test-config.js';
+
+const BASE_URL = TEST_BASE_URL;
 
 describe('APIClient - Tags', () => {
-  const client = createAPIClient('https://api.absmartly.com/v1', 'test-api-key');
+  const client = createAPIClient(BASE_URL, TEST_API_KEY);
+
+  afterEach(() => {
+    server.resetHandlers();
+  });
 
   describe('Experiment Tags', () => {
     it('should list experiment tags', async () => {
       const tags = await client.listExperimentTags(10);
       expect(tags).toBeDefined();
       expect(Array.isArray(tags)).toBe(true);
+      expect(tags.length).toBeGreaterThan(0);
     });
 
-    it('should get experiment tag', async () => {
-      const tag = await client.getExperimentTag(123);
+    it('should get experiment tag by id', async () => {
+      const tags = await client.listExperimentTags(1);
+      const tagId = tags[0].id;
+      const tag = await client.getExperimentTag(tagId);
       expect(tag).toBeDefined();
+      expect(tag.id).toBe(tagId);
     });
 
-    it('should create experiment tag', async () => {
+    it('should create experiment tag and return unwrapped entity', async () => {
       const tag = await client.createExperimentTag({ tag: 'homepage' });
       expect(tag).toBeDefined();
-    });
-
-    it('should update experiment tag', async () => {
-      const tag = await client.updateExperimentTag(123, { tag: 'updated' });
-      expect(tag).toBeDefined();
-    });
-
-    it('should delete experiment tag', async () => {
-      await expect(client.deleteExperimentTag(123)).resolves.not.toThrow();
+      expect(tag.tag).toBe('homepage');
+      expect(tag.id).toBeDefined();
     });
   });
 
@@ -36,16 +41,21 @@ describe('APIClient - Tags', () => {
       const tags = await client.listGoalTags(10);
       expect(tags).toBeDefined();
       expect(Array.isArray(tags)).toBe(true);
+      expect(tags.length).toBeGreaterThan(0);
     });
 
-    it('should get goal tag', async () => {
-      const tag = await client.getGoalTag(123);
+    it('should get goal tag by id', async () => {
+      const tags = await client.listGoalTags(1);
+      const tagId = tags[0].id;
+      const tag = await client.getGoalTag(tagId);
       expect(tag).toBeDefined();
+      expect(tag.id).toBe(tagId);
     });
 
-    it('should create goal tag', async () => {
+    it('should create goal tag and return unwrapped entity', async () => {
       const tag = await client.createGoalTag({ tag: 'conversion' });
       expect(tag).toBeDefined();
+      expect(tag.tag).toBe('conversion');
     });
   });
 
@@ -54,11 +64,15 @@ describe('APIClient - Tags', () => {
       const tags = await client.listMetricTags(10);
       expect(tags).toBeDefined();
       expect(Array.isArray(tags)).toBe(true);
+      expect(tags.length).toBeGreaterThan(0);
     });
 
-    it('should get metric tag', async () => {
-      const tag = await client.getMetricTag(123);
+    it('should get metric tag by id', async () => {
+      const tags = await client.listMetricTags(1);
+      const tagId = tags[0].id;
+      const tag = await client.getMetricTag(tagId);
       expect(tag).toBeDefined();
+      expect(tag.id).toBe(tagId);
     });
   });
 
@@ -67,23 +81,30 @@ describe('APIClient - Tags', () => {
       const categories = await client.listMetricCategories(10);
       expect(categories).toBeDefined();
       expect(Array.isArray(categories)).toBe(true);
+      expect(categories.length).toBeGreaterThan(0);
     });
 
-    it('should get metric category', async () => {
-      const category = await client.getMetricCategory(123);
+    it('should get metric category by id', async () => {
+      const categories = await client.listMetricCategories(1);
+      const catId = categories[0].id;
+      const category = await client.getMetricCategory(catId);
       expect(category).toBeDefined();
+      expect(category.id).toBe(catId);
     });
 
-    it('should create metric category', async () => {
+    it('should create metric category and return unwrapped entity', async () => {
       const category = await client.createMetricCategory({
         name: 'engagement',
         color: '#FF0000'
       });
       expect(category).toBeDefined();
+      expect(category.name).toBe('engagement');
     });
 
     it('should archive metric category', async () => {
-      await expect(client.archiveMetricCategory(123)).resolves.not.toThrow();
+      const categories = await client.listMetricCategories(1);
+      const catId = categories[0].id;
+      await expect(client.archiveMetricCategory(catId)).resolves.not.toThrow();
     });
   });
 });

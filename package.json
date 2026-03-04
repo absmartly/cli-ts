@@ -32,7 +32,9 @@
     "test:coverage": "vitest run --coverage",
     "lint": "eslint src --ext .ts",
     "format": "prettier --write 'src/**/*.ts'",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:live": "tsx src/test/live/run-live-tests.ts",
+    "test:live-api": "USE_LIVE_API=1 vitest run"
   },
   "keywords": [
     "absmartly",

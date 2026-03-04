@@ -2,11 +2,12 @@ import { describe, it, expect } from 'vitest';
 import { http, HttpResponse } from 'msw';
 import { server } from '../../test/mocks/server.js';
 import { createAPIClient } from '../../lib/api/client.js';
+import { isLiveMode, TEST_BASE_URL, TEST_API_KEY } from '../../test/helpers/test-config.js';
 
-const BASE_URL = 'https://api.absmartly.com/v1';
+const BASE_URL = TEST_BASE_URL;
 
-describe('experiments development command', () => {
-  const client = createAPIClient(BASE_URL, 'test-key');
+describe.skipIf(isLiveMode)('experiments development command', () => {
+  const client = createAPIClient(BASE_URL, TEST_API_KEY);
 
   it('should send PUT with note to /experiments/:id/development', async () => {
     let receivedBody: Record<string, unknown> | null = null;
@@ -42,6 +43,7 @@ describe('experiments development command', () => {
 
     const result = await client.developmentExperiment(42 as any, 'test note');
 
-    expect(result).toHaveProperty('ok', true);
+    expect(result).toHaveProperty('id', 42);
+    expect(result).toHaveProperty('state', 'development');
   });
 });

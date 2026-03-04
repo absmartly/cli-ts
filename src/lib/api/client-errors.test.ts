@@ -2,11 +2,12 @@ import { describe, it, expect, vi } from 'vitest';
 import { http, HttpResponse } from 'msw';
 import { server } from '../../test/mocks/server.js';
 import { createAPIClient } from './client.js';
+import { isLiveMode, TEST_BASE_URL, TEST_API_KEY } from '../../test/helpers/test-config.js';
 
-const BASE_URL = 'https://api.absmartly.com/v1';
+const BASE_URL = TEST_BASE_URL;
 
-describe('APIClient - Error Handling', () => {
-  const client = createAPIClient(BASE_URL, 'test-api-key');
+describe.skipIf(isLiveMode)('APIClient - Error Handling', () => {
+  const client = createAPIClient(BASE_URL, TEST_API_KEY);
 
   describe('HTTP Error Codes', () => {
     it('should handle 401 unauthorized with clear message', async () => {
@@ -132,7 +133,7 @@ describe('APIClient - Error Handling', () => {
           if (attempts < 2) {
             return HttpResponse.json({ error: 'Server error' }, { status: 500 });
           }
-          return HttpResponse.json({ id: 123, name: 'updated' });
+          return HttpResponse.json({ ok: true, experiment: { id: 123, name: 'updated' }, errors: [] });
         })
       );
 
@@ -144,7 +145,7 @@ describe('APIClient - Error Handling', () => {
     it('should retry DELETE requests on 500 errors (idempotent)', async () => {
       let attempts = 0;
       server.use(
-        http.delete(`${BASE_URL}/experiments/123`, () => {
+        http.delete(`${BASE_URL}/segments/123`, () => {
           attempts++;
           if (attempts < 2) {
             return HttpResponse.json({ error: 'Server error' }, { status: 500 });
@@ -153,7 +154,7 @@ describe('APIClient - Error Handling', () => {
         })
       );
 
-      await client.deleteExperiment(123);
+      await client.deleteSegment(123);
       expect(attempts).toBe(2);
     });
 
@@ -210,7 +211,7 @@ describe('APIClient - Error Handling', () => {
   describe('Specific Method Error Handling', () => {
     it('should handle error in startExperiment', async () => {
       server.use(
-        http.post(`${BASE_URL}/experiments/123/start`, () => {
+        http.put(`${BASE_URL}/experiments/123/start`, () => {
           return HttpResponse.json({ error: 'Already running' }, { status: 400 });
         })
       );

@@ -3,11 +3,12 @@ import { http, HttpResponse } from 'msw';
 import { server } from '../../test/mocks/server.js';
 import { errorHandlers } from '../../test/mocks/error-handlers.js';
 import { createAPIClient } from './client.js';
+import { isLiveMode, TEST_BASE_URL, TEST_API_KEY } from '../../test/helpers/test-config.js';
 
-const BASE_URL = 'https://api.absmartly.com/v1';
+const BASE_URL = TEST_BASE_URL;
 
-describe('APIClient - Validation and Error Scenarios', () => {
-  const client = createAPIClient(BASE_URL, 'test-key');
+describe.skipIf(isLiveMode)('APIClient - Validation and Error Scenarios', () => {
+  const client = createAPIClient(BASE_URL, TEST_API_KEY);
 
   describe('Experiment Creation Validation', () => {
     beforeEach(() => {
@@ -70,15 +71,6 @@ describe('APIClient - Validation and Error Scenarios', () => {
       }
     });
 
-    it('should reject deleting running experiment', async () => {
-      try {
-        await client.deleteExperiment(777);
-        expect.fail('Should have thrown');
-      } catch (error: any) {
-        expect(error.statusCode).toBe(409);
-        expect(error.response.message).toContain('currently running');
-      }
-    });
   });
 
   describe('Goal Validation', () => {

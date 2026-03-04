@@ -1,106 +1,176 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
+import { http, HttpResponse } from 'msw';
+import { server } from '../../test/mocks/server.js';
 import { createAPIClient } from './client.js';
+import { isLiveMode, TEST_BASE_URL, TEST_API_KEY } from '../../test/helpers/test-config.js';
+
+const BASE_URL = TEST_BASE_URL;
 
 describe('APIClient - Admin Resources', () => {
-  const client = createAPIClient('https://api.absmartly.com/v1', 'test-api-key');
+  const client = createAPIClient(BASE_URL, TEST_API_KEY);
+
+  afterEach(() => {
+    server.resetHandlers();
+  });
 
   describe('Roles', () => {
-    it('should list roles', async () => {
+    it('should list roles as an array', async () => {
       const roles = await client.listRoles();
-      expect(roles).toBeDefined();
       expect(Array.isArray(roles)).toBe(true);
+      expect(roles.length).toBeGreaterThan(0);
     });
 
-    it('should get role', async () => {
-      const role = await client.getRole(1);
-      expect(role).toBeDefined();
-      expect(role.id).toBe(1);
+    it('should get role and extract from wrapped response', async () => {
+      const roles = await client.listRoles();
+      const roleId = roles[0].id;
+      const role = await client.getRole(roleId);
+      expect(role.id).toBe(roleId);
+      expect(role).toHaveProperty('name');
+      expect(role).not.toHaveProperty('role');
     });
 
-    it('should create role', async () => {
+    it('should create role and return unwrapped entity', async () => {
       const role = await client.createRole({ name: 'Custom Role', description: 'Test' });
-      expect(role).toBeDefined();
+      expect(role.id).toBeDefined();
+      expect(role.name).toBe('Custom Role');
+      expect(role).not.toHaveProperty('ok');
     });
 
-    it('should update role', async () => {
+    it.skipIf(isLiveMode)('should update role and return unwrapped entity', async () => {
+      server.use(
+        http.put(`${BASE_URL}/roles/:id`, async ({ params, request }) => {
+          const body = await request.json() as Record<string, unknown>;
+          return HttpResponse.json({ ok: true, role: { id: Number(params.id), ...body }, errors: [] });
+        })
+      );
       const role = await client.updateRole(1, { description: 'Updated' });
-      expect(role).toBeDefined();
+      expect(role.id).toBe(1);
+      expect(role.description).toBe('Updated');
+      expect(role).not.toHaveProperty('ok');
     });
 
-    it('should delete role', async () => {
-      await expect(client.deleteRole(1)).resolves.not.toThrow();
+    it.skipIf(isLiveMode)('should delete role', async () => {
+      let deletedId: string | null = null;
+      server.use(
+        http.delete(`${BASE_URL}/roles/:id`, ({ params }) => {
+          deletedId = params.id as string;
+          return new HttpResponse(null, { status: 204 });
+        })
+      );
+      await client.deleteRole(1);
+      expect(deletedId).toBe('1');
     });
   });
 
   describe('Permissions', () => {
-    it('should list permissions', async () => {
+    it('should list permissions as an array', async () => {
       const permissions = await client.listPermissions();
-      expect(permissions).toBeDefined();
       expect(Array.isArray(permissions)).toBe(true);
     });
 
-    it('should list permission categories', async () => {
+    it('should list permission categories as an array', async () => {
       const categories = await client.listPermissionCategories();
-      expect(categories).toBeDefined();
       expect(Array.isArray(categories)).toBe(true);
     });
   });
 
   describe('API Keys', () => {
-    it('should list API keys', async () => {
+    it('should list API keys with expected fields', async () => {
       const keys = await client.listApiKeys(10);
-      expect(keys).toBeDefined();
       expect(Array.isArray(keys)).toBe(true);
+      expect(keys.length).toBeGreaterThan(0);
+      expect(keys[0]).toHaveProperty('id');
     });
 
-    it('should get API key', async () => {
-      const key = await client.getApiKey(1);
-      expect(key).toBeDefined();
+    it('should get API key and extract from wrapped response', async () => {
+      const keys = await client.listApiKeys(1);
+      const keyId = keys[0].id;
+      const key = await client.getApiKey(keyId);
+      expect(key.id).toBe(keyId);
+      expect(key).not.toHaveProperty('api_key');
     });
 
-    it('should create API key', async () => {
+    it('should create API key and return unwrapped entity', async () => {
       const key = await client.createApiKey({ name: 'Test Key', permissions: 'read' });
-      expect(key).toBeDefined();
-      expect(key.key).toBeDefined();
+      expect(key.id).toBeDefined();
+      expect(key.name).toBe('Test Key');
+      expect(key).not.toHaveProperty('ok');
     });
 
-    it('should update API key', async () => {
+    it.skipIf(isLiveMode)('should update API key and return unwrapped entity', async () => {
+      server.use(
+        http.put(`${BASE_URL}/api_keys/:id`, async ({ params, request }) => {
+          const body = await request.json() as Record<string, unknown>;
+          return HttpResponse.json({ ok: true, api_key: { id: Number(params.id), ...body }, errors: [] });
+        })
+      );
       const key = await client.updateApiKey(1, { description: 'Updated' });
-      expect(key).toBeDefined();
+      expect(key.id).toBe(1);
+      expect(key.description).toBe('Updated');
+      expect(key).not.toHaveProperty('ok');
     });
 
-    it('should delete API key', async () => {
-      await expect(client.deleteApiKey(1)).resolves.not.toThrow();
+    it.skipIf(isLiveMode)('should delete API key', async () => {
+      let deletedId: string | null = null;
+      server.use(
+        http.delete(`${BASE_URL}/api_keys/:id`, ({ params }) => {
+          deletedId = params.id as string;
+          return new HttpResponse(null, { status: 204 });
+        })
+      );
+      await client.deleteApiKey(1);
+      expect(deletedId).toBe('1');
     });
   });
 
   describe('Webhooks', () => {
-    it('should list webhooks', async () => {
+    it('should list webhooks with expected fields', async () => {
       const webhooks = await client.listWebhooks(10);
-      expect(webhooks).toBeDefined();
       expect(Array.isArray(webhooks)).toBe(true);
+      expect(webhooks.length).toBeGreaterThan(0);
+      expect(webhooks[0]).toHaveProperty('id');
     });
 
-    it('should get webhook', async () => {
-      const webhook = await client.getWebhook(1);
-      expect(webhook).toBeDefined();
+    it('should get webhook and extract from wrapped response', async () => {
+      const webhooks = await client.listWebhooks(1);
+      const webhookId = webhooks[0].id;
+      const webhook = await client.getWebhook(webhookId);
+      expect(webhook.id).toBe(webhookId);
+      expect(webhook).not.toHaveProperty('webhook');
     });
 
-    it('should create webhook', async () => {
+    it('should create webhook and return unwrapped entity', async () => {
       const webhook = await client.createWebhook({
         name: 'Test Webhook',
         url: 'https://example.com/webhook',
       });
-      expect(webhook).toBeDefined();
+      expect(webhook.id).toBeDefined();
+      expect(webhook.name).toBe('Test Webhook');
+      expect(webhook).not.toHaveProperty('ok');
     });
 
-    it('should update webhook', async () => {
+    it.skipIf(isLiveMode)('should update webhook and return unwrapped entity', async () => {
+      server.use(
+        http.put(`${BASE_URL}/webhooks/:id`, async ({ params, request }) => {
+          const body = await request.json() as Record<string, unknown>;
+          return HttpResponse.json({ ok: true, webhook: { id: Number(params.id), ...body }, errors: [] });
+        })
+      );
       const webhook = await client.updateWebhook(1, { enabled: false });
-      expect(webhook).toBeDefined();
+      expect(webhook.id).toBe(1);
+      expect(webhook).not.toHaveProperty('ok');
     });
 
-    it('should delete webhook', async () => {
-      await expect(client.deleteWebhook(1)).resolves.not.toThrow();
+    it.skipIf(isLiveMode)('should delete webhook', async () => {
+      let deletedId: string | null = null;
+      server.use(
+        http.delete(`${BASE_URL}/webhooks/:id`, ({ params }) => {
+          deletedId = params.id as string;
+          return new HttpResponse(null, { status: 204 });
+        })
+      );
+      await client.deleteWebhook(1);
+      expect(deletedId).toBe('1');
     });
   });
 });

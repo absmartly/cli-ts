@@ -1,75 +1,89 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeAll, beforeEach, afterEach, afterAll } from 'vitest';
 import { createAPIClient } from './client.js';
 import { server } from '../../test/mocks/server.js';
 import { http, HttpResponse } from 'msw';
+import { isLiveMode, TEST_BASE_URL, TEST_API_KEY } from '../../test/helpers/test-config.js';
+import { fetchLiveMetadata, buildExperimentData } from '../../test/helpers/live-helpers.js';
+import type { ExperimentId } from './branded-types.js';
 
-const BASE_URL = 'https://api.absmartly.com/v1';
+const BASE_URL = TEST_BASE_URL;
 
 describe('APIClient', () => {
-  const client = createAPIClient('https://api.absmartly.com/v1', 'test-api-key');
+  const client = createAPIClient(BASE_URL, TEST_API_KEY);
+
+  let expId: ExperimentId;
+
+  beforeAll(async () => {
+    const meta = await fetchLiveMetadata(client);
+    const data = buildExperimentData(meta, '_client');
+    const created = await client.createExperiment(data as any);
+    expId = created.id as ExperimentId;
+  });
+
+  afterAll(async () => {
+    if (!expId) return;
+    try {
+      await client.archiveExperiment(expId);
+    } catch {}
+  });
 
   describe('listExperiments', () => {
-    it('should fetch experiments', async () => {
-      const experiments = await client.listExperiments({ limit: 10 });
+    it('should return experiments array', async () => {
+      const experiments = await client.listExperiments();
 
-      expect(experiments).toBeDefined();
       expect(Array.isArray(experiments)).toBe(true);
-      expect(experiments.length).toBe(10);
+      expect(experiments.length).toBeGreaterThan(0);
+      for (const exp of experiments) {
+        expect(exp).toHaveProperty('id');
+        expect(typeof exp.id).toBe('number');
+        expect(exp).toHaveProperty('name');
+        expect(exp).toHaveProperty('state');
+      }
     });
 
-    it('should handle empty results', async () => {
+    it.skipIf(isLiveMode)('should handle empty results', async () => {
+      server.use(
+        http.get(`${BASE_URL}/experiments`, () => {
+          return HttpResponse.json({ experiments: [] });
+        })
+      );
+
       const experiments = await client.listExperiments({ limit: 0 });
 
-      expect(experiments).toBeDefined();
       expect(Array.isArray(experiments)).toBe(true);
+      expect(experiments).toHaveLength(0);
     });
   });
 
   describe('getExperiment', () => {
-    it('should fetch a single experiment', async () => {
-      const experiment = await client.getExperiment(123);
+    it('should extract experiment from wrapped response with correct id', async () => {
+      const experiment = await client.getExperiment(expId);
 
-      expect(experiment).toBeDefined();
-      expect(experiment.id).toBe(123);
+      expect(experiment.id).toBe(expId);
+      expect(experiment).toHaveProperty('name');
+      expect(experiment).toHaveProperty('state');
+      expect(experiment).not.toHaveProperty('ok');
     });
   });
 
   describe('createExperiment', () => {
-    it('should create an experiment', async () => {
-      const data = {
-        name: 'test_experiment',
-        display_name: 'Test Experiment',
-        type: 'test',
-      };
-
-      const experiment = await client.createExperiment(data);
-
-      expect(experiment).toBeDefined();
-      expect(experiment.name).toBe(data.name);
-      expect(experiment.id).toBeDefined();
+    it('should return unwrapped experiment with id and name', () => {
+      expect(expId).toBeDefined();
+      expect(typeof expId).toBe('number');
     });
   });
 
   describe('updateExperiment', () => {
-    it('should update an experiment', async () => {
-      const data = {
-        display_name: 'Updated Name',
-      };
+    it('should send update and return unwrapped experiment with merged fields', async () => {
+      const experiment = await client.updateExperiment(expId, { display_name: 'Updated Name' });
 
-      const experiment = await client.updateExperiment(123, data);
-
-      expect(experiment).toBeDefined();
-      expect(experiment.id).toBe(123);
+      expect(experiment.id).toBe(expId);
+      expect(experiment.display_name).toBe('Updated Name');
+      expect(experiment).not.toHaveProperty('ok');
     });
   });
 
-  describe('deleteExperiment', () => {
-    it('should delete an experiment', async () => {
-      await expect(client.deleteExperiment(123)).resolves.not.toThrow();
-    });
-  });
-
-  describe('retry behavior', () => {
+  describe.skipIf(isLiveMode)('retry behavior', () => {
     let requestCount = 0;
 
     beforeEach(() => {
@@ -124,13 +138,14 @@ describe('APIClient', () => {
           if (attemptCount < 3) {
             return new HttpResponse(null, { status: 503 });
           }
-          return HttpResponse.json({ id: 123, name: 'test' });
+          return HttpResponse.json({ experiment: { id: 123, name: 'test', state: 'running' } });
         })
       );
 
       const experiment = await client.getExperiment(123);
-      expect(experiment).toBeDefined();
-      expect(attemptCount).toBeGreaterThan(1);
+      expect(experiment.id).toBe(123);
+      expect(experiment.name).toBe('test');
+      expect(attemptCount).toBe(3);
     });
 
     it('should retry PUT requests on 5xx errors', async () => {
@@ -141,19 +156,20 @@ describe('APIClient', () => {
           if (attemptCount < 3) {
             return new HttpResponse(null, { status: 500 });
           }
-          return HttpResponse.json({ id: 123, name: 'updated' });
+          return HttpResponse.json({ ok: true, experiment: { id: 123, name: 'updated' }, errors: [] });
         })
       );
 
       const experiment = await client.updateExperiment(123, { name: 'updated' });
-      expect(experiment).toBeDefined();
-      expect(attemptCount).toBeGreaterThan(1);
+      expect(experiment.id).toBe(123);
+      expect(experiment.name).toBe('updated');
+      expect(attemptCount).toBe(3);
     });
 
     it('should retry DELETE requests on 5xx errors', async () => {
       let attemptCount = 0;
       server.use(
-        http.delete(`${BASE_URL}/experiments/:id`, () => {
+        http.delete(`${BASE_URL}/roles/:id`, () => {
           attemptCount++;
           if (attemptCount < 3) {
             return new HttpResponse(null, { status: 500 });
@@ -162,12 +178,12 @@ describe('APIClient', () => {
         })
       );
 
-      await client.deleteExperiment(123);
+      await client.deleteRole(1);
       expect(attemptCount).toBeGreaterThan(1);
     });
   });
 
-  describe('rawRequest security', () => {
+  describe.skipIf(isLiveMode)('rawRequest security', () => {
     it('should reject absolute URLs (SSRF protection)', async () => {
       await expect(client.rawRequest('https://evil.com/steal', 'GET')).rejects.toThrow(
         'Invalid API path: Absolute URLs are not allowed'

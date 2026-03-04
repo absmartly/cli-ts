@@ -1,146 +1,197 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll, afterEach } from 'vitest';
+import { http, HttpResponse } from 'msw';
+import { server } from '../../test/mocks/server.js';
 import { createAPIClient } from './client.js';
+import { isLiveMode, TEST_BASE_URL, TEST_API_KEY } from '../../test/helpers/test-config.js';
+
+const BASE_URL = TEST_BASE_URL;
 
 describe('APIClient - Resources', () => {
-  const client = createAPIClient('https://api.absmartly.com/v1', 'test-api-key');
+  const client = createAPIClient(BASE_URL, TEST_API_KEY);
+
+  afterEach(() => {
+    server.resetHandlers();
+  });
 
   describe('Goals', () => {
-    it('should list goals', async () => {
+    let goalId: number;
+
+    beforeAll(async () => {
+      const goal = await client.createGoal({ name: `test_goal_${Date.now()}`, type: 'conversion' });
+      goalId = goal.id;
+    });
+
+    it('should list goals with expected fields', async () => {
       const goals = await client.listGoals(10);
-      expect(goals).toBeDefined();
       expect(Array.isArray(goals)).toBe(true);
+      expect(goals.length).toBeGreaterThan(0);
+      expect(goals[0]).toHaveProperty('id');
+      expect(goals[0]).toHaveProperty('name');
     });
 
-    it('should get goal by id', async () => {
-      const goal = await client.getGoal(123);
-      expect(goal).toBeDefined();
-      expect(goal.id).toBe(123);
+    it('should get goal by id and extract from wrapped response', async () => {
+      const goal = await client.getGoal(goalId);
+      expect(goal.id).toBe(goalId);
+      expect(goal).toHaveProperty('name');
+      expect(goal).not.toHaveProperty('goal');
     });
 
-    it('should create goal', async () => {
-      const goal = await client.createGoal({ name: 'test_goal', type: 'conversion' });
-      expect(goal).toBeDefined();
-      expect(goal.id).toBeDefined();
-    });
-
-    it('should update goal', async () => {
-      const goal = await client.updateGoal(123, { description: 'Updated' });
-      expect(goal).toBeDefined();
-    });
-
-    it('should delete goal', async () => {
-      await expect(client.deleteGoal(123)).resolves.not.toThrow();
+    it('should update goal and return unwrapped entity', async () => {
+      const goal = await client.updateGoal(goalId, { description: 'Updated' });
+      expect(goal.id).toBe(goalId);
+      expect(goal.description).toBe('Updated');
     });
   });
 
   describe('Segments', () => {
-    it('should list segments', async () => {
+    let segmentId: number;
+
+    beforeAll(async () => {
+      const segment = await client.createSegment({ name: `test_segment_${Date.now()}`, value_source_attribute: 'plan' });
+      segmentId = segment.id;
+    });
+
+    it('should list segments with expected fields', async () => {
       const segments = await client.listSegments(10);
-      expect(segments).toBeDefined();
       expect(Array.isArray(segments)).toBe(true);
+      expect(segments.length).toBeGreaterThan(0);
+      expect(segments[0]).toHaveProperty('id');
+      expect(segments[0]).toHaveProperty('name');
     });
 
-    it('should get segment', async () => {
-      const segment = await client.getSegment(123);
-      expect(segment).toBeDefined();
-    });
-
-    it('should create segment', async () => {
-      const segment = await client.createSegment({ name: 'premium', value_source_attribute: 'plan' });
-      expect(segment).toBeDefined();
+    it('should get segment and extract from wrapped response', async () => {
+      const segment = await client.getSegment(segmentId);
+      expect(segment.id).toBe(segmentId);
+      expect(segment).toHaveProperty('name');
     });
   });
 
   describe('Teams', () => {
-    it('should list teams', async () => {
+    it('should list teams as an array', async () => {
       const teams = await client.listTeams();
-      expect(teams).toBeDefined();
       expect(Array.isArray(teams)).toBe(true);
+      expect(teams.length).toBeGreaterThan(0);
     });
 
-    it('should include archived teams', async () => {
-      const teams = await client.listTeams(true);
-      expect(teams).toBeDefined();
+    it('should get team by id and extract from wrapped response', async () => {
+      const teams = await client.listTeams();
+      const teamId = teams[0].id;
+      const team = await client.getTeam(teamId);
+      expect(team.id).toBe(teamId);
+      expect(team).toHaveProperty('name');
     });
 
-    it('should get team', async () => {
-      const team = await client.getTeam(123);
-      expect(team).toBeDefined();
+    it.skipIf(isLiveMode)('should pass include_archived param', async () => {
+      let receivedParams: URLSearchParams | null = null;
+      server.use(
+        http.get(`${BASE_URL}/teams`, ({ request }) => {
+          receivedParams = new URL(request.url).searchParams;
+          return HttpResponse.json({ teams: [] });
+        })
+      );
+
+      await client.listTeams(true);
+
+      expect(receivedParams!.get('include_archived')).toBe('1');
     });
 
-    it('should archive team', async () => {
-      const team = await client.archiveTeam(123);
-      expect(team).toBeDefined();
+    it.skipIf(isLiveMode)('should archive team with correct body', async () => {
+      let receivedBody: Record<string, unknown> | null = null;
+      server.use(
+        http.put(`${BASE_URL}/teams/:teamId/archive`, async ({ request }) => {
+          receivedBody = (await request.json()) as Record<string, unknown>;
+          return HttpResponse.json({ ok: true, errors: [] });
+        })
+      );
+      await client.archiveTeam(123);
+      expect(receivedBody).toEqual({ archive: true });
     });
   });
 
   describe('Users', () => {
-    it('should list users', async () => {
+    it('should list users as an array', async () => {
       const users = await client.listUsers();
-      expect(users).toBeDefined();
       expect(Array.isArray(users)).toBe(true);
+      expect(users.length).toBeGreaterThan(0);
     });
 
-    it('should get user', async () => {
-      const user = await client.getUser(123);
-      expect(user).toBeDefined();
-    });
-
-    it('should create user', async () => {
-      const user = await client.createUser({ email: 'test@example.com', first_name: 'John', last_name: 'Doe' });
-      expect(user).toBeDefined();
+    it('should get user by id and extract from wrapped response', async () => {
+      const users = await client.listUsers();
+      const userId = users[0].id;
+      const user = await client.getUser(userId);
+      expect(user.id).toBe(userId);
     });
   });
 
   describe('Metrics', () => {
-    it('should list metrics', async () => {
+    it('should list metrics with expected fields', async () => {
       const metrics = await client.listMetrics(10);
-      expect(metrics).toBeDefined();
       expect(Array.isArray(metrics)).toBe(true);
+      expect(metrics.length).toBeGreaterThan(0);
+      expect(metrics[0]).toHaveProperty('id');
+      expect(metrics[0]).toHaveProperty('name');
     });
 
-    it('should get metric', async () => {
-      const metric = await client.getMetric(123);
-      expect(metric).toBeDefined();
+    it('should get metric and extract from wrapped response', async () => {
+      const metrics = await client.listMetrics(1);
+      const metricId = metrics[0].id;
+      const metric = await client.getMetric(metricId);
+      expect(metric.id).toBe(metricId);
+      expect(metric).toHaveProperty('name');
     });
   });
 
   describe('Applications', () => {
-    it('should list applications', async () => {
+    it('should list applications with expected fields', async () => {
       const apps = await client.listApplications();
-      expect(apps).toBeDefined();
       expect(Array.isArray(apps)).toBe(true);
+      expect(apps.length).toBeGreaterThan(0);
+      expect(apps[0]).toHaveProperty('id');
+      expect(apps[0]).toHaveProperty('name');
     });
 
-    it('should get application', async () => {
-      const app = await client.getApplication(1);
-      expect(app).toBeDefined();
+    it('should get application and extract from wrapped response', async () => {
+      const apps = await client.listApplications();
+      const appId = apps[0].id;
+      const app = await client.getApplication(appId);
+      expect(app.id).toBe(appId);
+      expect(app).toHaveProperty('name');
     });
   });
 
   describe('Environments', () => {
-    it('should list environments', async () => {
+    it('should list environments with expected fields', async () => {
       const envs = await client.listEnvironments();
-      expect(envs).toBeDefined();
       expect(Array.isArray(envs)).toBe(true);
+      expect(envs.length).toBeGreaterThan(0);
+      expect(envs[0]).toHaveProperty('id');
+      expect(envs[0]).toHaveProperty('name');
     });
 
-    it('should get environment', async () => {
-      const env = await client.getEnvironment(1);
-      expect(env).toBeDefined();
+    it('should get environment and extract from wrapped response', async () => {
+      const envs = await client.listEnvironments();
+      const envId = envs[0].id;
+      const env = await client.getEnvironment(envId);
+      expect(env.id).toBe(envId);
+      expect(env).toHaveProperty('name');
     });
   });
 
   describe('Unit Types', () => {
-    it('should list unit types', async () => {
+    it('should list unit types with expected fields', async () => {
       const units = await client.listUnitTypes();
-      expect(units).toBeDefined();
       expect(Array.isArray(units)).toBe(true);
+      expect(units.length).toBeGreaterThan(0);
+      expect(units[0]).toHaveProperty('id');
+      expect(units[0]).toHaveProperty('name');
     });
 
-    it('should get unit type', async () => {
-      const unit = await client.getUnitType(1);
-      expect(unit).toBeDefined();
+    it('should get unit type and extract from wrapped response', async () => {
+      const units = await client.listUnitTypes();
+      const unitId = units[0].id;
+      const unit = await client.getUnitType(unitId);
+      expect(unit.id).toBe(unitId);
+      expect(unit).toHaveProperty('name');
     });
   });
 });

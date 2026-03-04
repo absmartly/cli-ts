@@ -2,11 +2,12 @@ import { describe, it, expect, vi } from 'vitest';
 import { http, HttpResponse } from 'msw';
 import { server } from '../../test/mocks/server.js';
 import { createAPIClient } from './client.js';
+import { isLiveMode, TEST_BASE_URL, TEST_API_KEY } from '../../test/helpers/test-config.js';
 
-const BASE_URL = 'https://api.absmartly.com/v1';
+const BASE_URL = TEST_BASE_URL;
 
-describe('APIClient - List Options', () => {
-  const client = createAPIClient(BASE_URL, 'test-api-key');
+describe.skipIf(isLiveMode)('APIClient - List Options', () => {
+  const client = createAPIClient(BASE_URL, TEST_API_KEY);
 
   describe('Date Range Filters', () => {
     it('should send correct date range format for created_at', async () => {
@@ -448,88 +449,88 @@ describe('APIClient - List Options', () => {
   });
 
   describe('Archive/Unarchive Toggle', () => {
-    it('should call archive endpoint by default', async () => {
-      let calledEndpoint: string | null = null;
+    it('should send archive=true by default', async () => {
+      let receivedBody: Record<string, unknown> | null = null;
       server.use(
-        http.post(`${BASE_URL}/experiments/:id/:action`, ({ params }) => {
-          calledEndpoint = params.action as string;
-          return HttpResponse.json({ id: 123, state: 'archived' });
+        http.put(`${BASE_URL}/experiments/:id/archive`, async ({ request }) => {
+          receivedBody = (await request.json()) as Record<string, unknown>;
+          return HttpResponse.json({ ok: true, errors: [] });
         })
       );
 
       await client.archiveExperiment(123);
 
-      expect(calledEndpoint).toBe('archive');
+      expect(receivedBody).toEqual({ archive: true });
     });
 
-    it('should call unarchive endpoint when unarchive=true', async () => {
-      let calledEndpoint: string | null = null;
+    it('should send archive=false when unarchive=true', async () => {
+      let receivedBody: Record<string, unknown> | null = null;
       server.use(
-        http.post(`${BASE_URL}/experiments/:id/:action`, ({ params }) => {
-          calledEndpoint = params.action as string;
-          return HttpResponse.json({ id: 123, state: 'ready' });
+        http.put(`${BASE_URL}/experiments/:id/archive`, async ({ request }) => {
+          receivedBody = (await request.json()) as Record<string, unknown>;
+          return HttpResponse.json({ ok: true, errors: [] });
         })
       );
 
       await client.archiveExperiment(123, true);
 
-      expect(calledEndpoint).toBe('unarchive');
+      expect(receivedBody).toEqual({ archive: false });
     });
 
     it('should archive team correctly', async () => {
-      let calledEndpoint: string | null = null;
+      let receivedBody: Record<string, unknown> | null = null;
       server.use(
-        http.post(`${BASE_URL}/teams/:id/:action`, ({ params }) => {
-          calledEndpoint = params.action as string;
-          return HttpResponse.json({ id: 10, archived: true });
+        http.put(`${BASE_URL}/teams/:id/archive`, async ({ request }) => {
+          receivedBody = (await request.json()) as Record<string, unknown>;
+          return HttpResponse.json({ ok: true, errors: [] });
         })
       );
 
       await client.archiveTeam(10);
 
-      expect(calledEndpoint).toBe('archive');
+      expect(receivedBody).toEqual({ archive: true });
     });
 
     it('should unarchive team correctly', async () => {
-      let calledEndpoint: string | null = null;
+      let receivedBody: Record<string, unknown> | null = null;
       server.use(
-        http.post(`${BASE_URL}/teams/:id/:action`, ({ params }) => {
-          calledEndpoint = params.action as string;
-          return HttpResponse.json({ id: 10, archived: false });
+        http.put(`${BASE_URL}/teams/:id/archive`, async ({ request }) => {
+          receivedBody = (await request.json()) as Record<string, unknown>;
+          return HttpResponse.json({ ok: true, errors: [] });
         })
       );
 
       await client.archiveTeam(10, true);
 
-      expect(calledEndpoint).toBe('unarchive');
+      expect(receivedBody).toEqual({ archive: false });
     });
 
     it('should archive user correctly', async () => {
-      let calledEndpoint: string | null = null;
+      let receivedBody: Record<string, unknown> | null = null;
       server.use(
-        http.post(`${BASE_URL}/users/:id/:action`, ({ params }) => {
-          calledEndpoint = params.action as string;
-          return HttpResponse.json({ id: 5, archived: true });
+        http.put(`${BASE_URL}/users/:id/archive`, async ({ request }) => {
+          receivedBody = (await request.json()) as Record<string, unknown>;
+          return HttpResponse.json({ ok: true, errors: [] });
         })
       );
 
       await client.archiveUser(5);
 
-      expect(calledEndpoint).toBe('archive');
+      expect(receivedBody).toEqual({ archive: true });
     });
 
     it('should archive metric correctly', async () => {
-      let calledEndpoint: string | null = null;
+      let receivedBody: Record<string, unknown> | null = null;
       server.use(
-        http.post(`${BASE_URL}/metrics/:id/:action`, ({ params }) => {
-          calledEndpoint = params.action as string;
-          return HttpResponse.json({ id: 15, archived: true });
+        http.put(`${BASE_URL}/metrics/:id/archive`, async ({ request }) => {
+          receivedBody = (await request.json()) as Record<string, unknown>;
+          return HttpResponse.json({ ok: true, errors: [] });
         })
       );
 
       await client.archiveMetric(15);
 
-      expect(calledEndpoint).toBe('archive');
+      expect(receivedBody).toEqual({ archive: true });
     });
   });
 });

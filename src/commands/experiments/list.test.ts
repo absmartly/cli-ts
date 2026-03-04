@@ -2,11 +2,12 @@ import { describe, it, expect } from 'vitest';
 import { http, HttpResponse } from 'msw';
 import { server } from '../../test/mocks/server.js';
 import { createAPIClient } from '../../lib/api/client.js';
+import { isLiveMode, TEST_BASE_URL, TEST_API_KEY } from '../../test/helpers/test-config.js';
 
-const BASE_URL = 'https://api.absmartly.com/v1';
+const BASE_URL = TEST_BASE_URL;
 
-describe('experiments list command integration', () => {
-  const client = createAPIClient(BASE_URL, 'test-key');
+describe.skipIf(isLiveMode)('experiments list command integration', () => {
+  const client = createAPIClient(BASE_URL, TEST_API_KEY);
 
   describe('pagination logic', () => {
     it('should calculate offset from page number correctly', async () => {
