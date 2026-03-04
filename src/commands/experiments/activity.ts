@@ -13,7 +13,7 @@ const listActivityCommand = new Command('list')
     const globalOptions = getGlobalOptions(listActivityCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
-    const notes = await client.listExperimentNotes(id);
+    const notes = await client.listExperimentActivity(id);
 
     if (notes.length === 0) {
       console.log(chalk.blue('ℹ No activity found'));

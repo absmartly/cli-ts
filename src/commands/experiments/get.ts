@@ -14,7 +14,7 @@ export const getCommand = new Command('get')
     const experiment = await client.getExperiment(id);
 
     if (options.activity) {
-      const notes = await client.listExperimentNotes(id);
+      const notes = await client.listExperimentActivity(id);
       printFormatted({ ...experiment, activity: notes }, globalOptions);
     } else {
       printFormatted(experiment, globalOptions);

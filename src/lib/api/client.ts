@@ -12,9 +12,8 @@ import type {
   Application,
   Environment,
   UnitType,
-  Alert,
-  Note,
   APIError,
+  Note,
   ExperimentTag,
   GoalTag,
   MetricTag,
@@ -188,6 +187,19 @@ export class APIClient {
     return items as T[];
   }
 
+  private validateOkResponse(response: AxiosResponse, operation: string): void {
+    const data = response.data;
+    if (data && typeof data === 'object' && 'ok' in data && data.ok === false) {
+      const errors: string[] = Array.isArray(data.errors) ? data.errors : [];
+      const apiError: APIError = new Error(
+        `${operation} failed: ${errors.join(', ') || 'unknown error'}`
+      );
+      apiError.statusCode = response.status;
+      apiError.response = data;
+      throw apiError;
+    }
+  }
+
   async listExperiments(options: ListOptions = {}): Promise<Experiment[]> {
     const params: Record<string, string> = {};
 
@@ -238,60 +250,62 @@ export class APIClient {
   }
 
   async getExperiment(id: ExperimentId): Promise<Experiment> {
-    const response = await this.client.get<Experiment>(`/experiments/${id}`);
-    return response.data;
+    const response = await this.client.get(`/experiments/${id}`);
+    return response.data.experiment;
   }
 
   async createExperiment(data: Partial<Experiment>): Promise<Experiment> {
-    const response = await this.client.post<Experiment>('/experiments', data);
-    return response.data;
+    const response = await this.client.post('/experiments', data);
+    this.validateOkResponse(response, 'createExperiment');
+    return response.data.experiment;
   }
 
   async updateExperiment(id: ExperimentId, data: Partial<Experiment>): Promise<Experiment> {
-    const response = await this.client.put<Experiment>(`/experiments/${id}`, data);
-    return response.data;
-  }
-
-  async deleteExperiment(id: ExperimentId): Promise<void> {
-    await this.client.delete(`/experiments/${id}`);
+    const response = await this.client.put(`/experiments/${id}`, data);
+    return response.data.experiment;
   }
 
   async startExperiment(id: ExperimentId): Promise<Experiment> {
-    const response = await this.client.post<Experiment>(`/experiments/${id}/start`);
-    return response.data;
+    const response = await this.client.put(`/experiments/${id}/start`);
+    return response.data.experiment;
   }
 
-  async stopExperiment(id: ExperimentId): Promise<Experiment> {
-    const response = await this.client.post<Experiment>(`/experiments/${id}/stop`);
-    return response.data;
+  async stopExperiment(id: ExperimentId, reason?: string): Promise<Experiment> {
+    const response = await this.client.put(`/experiments/${id}/stop`, {
+      ...(reason !== undefined && { reason }),
+    });
+    return response.data.experiment;
   }
 
-  async archiveExperiment(id: ExperimentId, unarchive = false): Promise<Experiment> {
-    const response = await this.client.post<Experiment>(
-      `/experiments/${id}/${unarchive ? 'unarchive' : 'archive'}`
-    );
-    return response.data;
+  async archiveExperiment(id: ExperimentId, unarchive = false): Promise<void> {
+    await this.client.put(`/experiments/${id}/archive`, { archive: !unarchive });
   }
 
   async developmentExperiment(id: ExperimentId, note: string): Promise<Experiment> {
-    const response = await this.client.put<Experiment>(`/experiments/${id}/development`, { note });
-    return response.data;
+    const response = await this.client.put(`/experiments/${id}/development`, { note });
+    return response.data.experiment;
   }
 
   async restartExperiment(
     id: ExperimentId,
-    options: { note?: string; reason?: string; reshuffle?: boolean; state?: 'development' | 'running' } = {}
+    options: {
+      note?: string;
+      reason?: string;
+      reshuffle?: boolean;
+      state?: 'development' | 'running';
+      data?: Partial<Experiment>;
+    } = {}
   ): Promise<Experiment> {
-    const response = await this.client.put<Experiment>(`/experiments/${id}/restart`, options);
-    return response.data;
+    const response = await this.client.put(`/experiments/${id}/restart`, options);
+    return response.data.experiment;
   }
 
   async fullOnExperiment(id: ExperimentId, fullOnVariant: number, note: string): Promise<Experiment> {
-    const response = await this.client.put<Experiment>(`/experiments/${id}/full_on`, {
+    const response = await this.client.put(`/experiments/${id}/full_on`, {
       full_on_variant: fullOnVariant,
       note,
     });
-    return response.data;
+    return response.data.experiment;
   }
 
   async createScheduledAction(
@@ -311,23 +325,14 @@ export class APIClient {
     await this.client.delete(`/experiments/${id}/scheduled_action/${actionId}`);
   }
 
-  async listExperimentAlerts(id: ExperimentId): Promise<Alert[]> {
-    const response = await this.client.get(`/experiments/${id}/alerts`);
-    return this.validateListResponse<Alert>(response, 'alerts', 'listExperimentAlerts');
+  async listExperimentActivity(id: ExperimentId): Promise<Note[]> {
+    const response = await this.client.get(`/experiments/${id}/activity`);
+    return this.validateListResponse<Note>(response, 'experiment_notes', 'listExperimentActivity');
   }
 
-  async deleteExperimentAlerts(id: ExperimentId): Promise<void> {
-    await this.client.delete(`/experiments/${id}/alerts`);
-  }
-
-  async listExperimentNotes(id: ExperimentId): Promise<Note[]> {
-    const response = await this.client.get(`/experiments/${id}/notes`);
-    return this.validateListResponse<Note>(response, 'notes', 'listExperimentNotes');
-  }
-
-  async createExperimentNote(id: ExperimentId, message: string): Promise<Note> {
-    const response = await this.client.post<Note>(`/experiments/${id}/notes`, { text: message });
-    return response.data;
+  async createExperimentNote(id: ExperimentId, note: string): Promise<Note> {
+    const response = await this.client.post(`/experiments/${id}/activity`, { note });
+    return response.data.experiment_note;
   }
 
   async searchExperiments(query: string, limit = 50): Promise<Experiment[]> {
@@ -342,22 +347,18 @@ export class APIClient {
   }
 
   async getGoal(id: GoalId): Promise<Goal> {
-    const response = await this.client.get<Goal>(`/goals/${id}`);
-    return response.data;
+    const response = await this.client.get(`/goals/${id}`);
+    return response.data.goal;
   }
 
   async createGoal(data: Partial<Goal>): Promise<Goal> {
-    const response = await this.client.post<Goal>('/goals', data);
-    return response.data;
+    const response = await this.client.post('/goals', data);
+    return response.data.goal;
   }
 
   async updateGoal(id: GoalId, data: Partial<Goal>): Promise<Goal> {
-    const response = await this.client.put<Goal>(`/goals/${id}`, data);
-    return response.data;
-  }
-
-  async deleteGoal(id: GoalId): Promise<void> {
-    await this.client.delete(`/goals/${id}`);
+    const response = await this.client.put(`/goals/${id}`, data);
+    return response.data.goal;
   }
 
   async listSegments(limit = 100, offset = 0): Promise<Segment[]> {
@@ -368,18 +369,18 @@ export class APIClient {
   }
 
   async getSegment(id: SegmentId): Promise<Segment> {
-    const response = await this.client.get<Segment>(`/segments/${id}`);
-    return response.data;
+    const response = await this.client.get(`/segments/${id}`);
+    return response.data.segment;
   }
 
   async createSegment(data: Partial<Segment>): Promise<Segment> {
-    const response = await this.client.post<Segment>('/segments', data);
-    return response.data;
+    const response = await this.client.post('/segments', data);
+    return response.data.segment;
   }
 
   async updateSegment(id: SegmentId, data: Partial<Segment>): Promise<Segment> {
-    const response = await this.client.put<Segment>(`/segments/${id}`, data);
-    return response.data;
+    const response = await this.client.put(`/segments/${id}`, data);
+    return response.data.segment;
   }
 
   async deleteSegment(id: SegmentId): Promise<void> {
@@ -394,25 +395,22 @@ export class APIClient {
   }
 
   async getTeam(id: TeamId): Promise<Team> {
-    const response = await this.client.get<Team>(`/teams/${id}`);
-    return response.data;
+    const response = await this.client.get(`/teams/${id}`);
+    return response.data.team;
   }
 
   async createTeam(data: Partial<Team>): Promise<Team> {
-    const response = await this.client.post<Team>('/teams', data);
-    return response.data;
+    const response = await this.client.post('/teams', data);
+    return response.data.team;
   }
 
   async updateTeam(id: TeamId, data: Partial<Team>): Promise<Team> {
-    const response = await this.client.put<Team>(`/teams/${id}`, data);
-    return response.data;
+    const response = await this.client.put(`/teams/${id}`, data);
+    return response.data.team;
   }
 
-  async archiveTeam(id: TeamId, unarchive = false): Promise<Team> {
-    const response = await this.client.post<Team>(
-      `/teams/${id}/${unarchive ? 'unarchive' : 'archive'}`
-    );
-    return response.data;
+  async archiveTeam(id: TeamId, unarchive = false): Promise<void> {
+    await this.client.put(`/teams/${id}/archive`, { archive: !unarchive });
   }
 
   async listUsers(includeArchived = false): Promise<User[]> {
@@ -423,25 +421,22 @@ export class APIClient {
   }
 
   async getUser(id: UserId): Promise<User> {
-    const response = await this.client.get<User>(`/users/${id}`);
-    return response.data;
+    const response = await this.client.get(`/users/${id}`);
+    return response.data.user;
   }
 
   async createUser(data: Partial<User>): Promise<User> {
-    const response = await this.client.post<User>('/users', data);
-    return response.data;
+    const response = await this.client.post('/users', data);
+    return response.data.user;
   }
 
   async updateUser(id: UserId, data: Partial<User>): Promise<User> {
-    const response = await this.client.put<User>(`/users/${id}`, data);
-    return response.data;
+    const response = await this.client.put(`/users/${id}`, data);
+    return response.data.user;
   }
 
-  async archiveUser(id: UserId, unarchive = false): Promise<User> {
-    const response = await this.client.post<User>(
-      `/users/${id}/${unarchive ? 'unarchive' : 'archive'}`
-    );
-    return response.data;
+  async archiveUser(id: UserId, unarchive = false): Promise<void> {
+    await this.client.put(`/users/${id}/archive`, { archive: !unarchive });
   }
 
   async listMetrics(limit = 100, offset = 0): Promise<Metric[]> {
@@ -452,25 +447,22 @@ export class APIClient {
   }
 
   async getMetric(id: MetricId): Promise<Metric> {
-    const response = await this.client.get<Metric>(`/metrics/${id}`);
-    return response.data;
+    const response = await this.client.get(`/metrics/${id}`);
+    return response.data.metric;
   }
 
   async createMetric(data: Partial<Metric>): Promise<Metric> {
-    const response = await this.client.post<Metric>('/metrics', data);
-    return response.data;
+    const response = await this.client.post('/metrics', data);
+    return response.data.metric;
   }
 
   async updateMetric(id: MetricId, data: Partial<Metric>): Promise<Metric> {
-    const response = await this.client.put<Metric>(`/metrics/${id}`, data);
-    return response.data;
+    const response = await this.client.put(`/metrics/${id}`, data);
+    return response.data.metric;
   }
 
-  async archiveMetric(id: MetricId, unarchive = false): Promise<Metric> {
-    const response = await this.client.post<Metric>(
-      `/metrics/${id}/${unarchive ? 'unarchive' : 'archive'}`
-    );
-    return response.data;
+  async archiveMetric(id: MetricId, unarchive = false): Promise<void> {
+    await this.client.put(`/metrics/${id}/archive`, { archive: !unarchive });
   }
 
   async listApplications(): Promise<Application[]> {
@@ -479,8 +471,8 @@ export class APIClient {
   }
 
   async getApplication(id: ApplicationId): Promise<Application> {
-    const response = await this.client.get<Application>(`/applications/${id}`);
-    return response.data;
+    const response = await this.client.get(`/applications/${id}`);
+    return response.data.application;
   }
 
   async listEnvironments(): Promise<Environment[]> {
@@ -489,18 +481,18 @@ export class APIClient {
   }
 
   async getEnvironment(id: EnvironmentId): Promise<Environment> {
-    const response = await this.client.get<Environment>(`/environments/${id}`);
-    return response.data;
+    const response = await this.client.get(`/environments/${id}`);
+    return response.data.environment;
   }
 
   async listUnitTypes(): Promise<UnitType[]> {
-    const response = await this.client.get('/unit-types');
+    const response = await this.client.get('/unit_types');
     return this.validateListResponse<UnitType>(response, 'unit_types', 'listUnitTypes');
   }
 
   async getUnitType(id: UnitTypeId): Promise<UnitType> {
-    const response = await this.client.get<UnitType>(`/unit-types/${id}`);
-    return response.data;
+    const response = await this.client.get(`/unit_types/${id}`);
+    return response.data.unit_type;
   }
 
   async listExperimentTags(limit = 100, offset = 0): Promise<ExperimentTag[]> {
@@ -638,18 +630,18 @@ export class APIClient {
   }
 
   async getRole(id: RoleId): Promise<Role> {
-    const response = await this.client.get<Role>(`/roles/${id}`);
-    return response.data;
+    const response = await this.client.get(`/roles/${id}`);
+    return response.data.role;
   }
 
   async createRole(data: Partial<Role>): Promise<Role> {
-    const response = await this.client.post<Role>('/roles', data);
-    return response.data;
+    const response = await this.client.post('/roles', data);
+    return response.data.role;
   }
 
   async updateRole(id: RoleId, data: Partial<Role>): Promise<Role> {
-    const response = await this.client.put<Role>(`/roles/${id}`, data);
-    return response.data;
+    const response = await this.client.put(`/roles/${id}`, data);
+    return response.data.role;
   }
 
   async deleteRole(id: RoleId): Promise<void> {
@@ -674,18 +666,18 @@ export class APIClient {
   }
 
   async getApiKey(id: ApiKeyId): Promise<ApiKey> {
-    const response = await this.client.get<ApiKey>(`/api_keys/${id}`);
-    return response.data;
+    const response = await this.client.get(`/api_keys/${id}`);
+    return response.data.api_key;
   }
 
   async createApiKey(data: Partial<ApiKey>): Promise<ApiKey> {
-    const response = await this.client.post<ApiKey>('/api_keys', data);
-    return response.data;
+    const response = await this.client.post('/api_keys', data);
+    return response.data.api_key;
   }
 
   async updateApiKey(id: ApiKeyId, data: Partial<ApiKey>): Promise<ApiKey> {
-    const response = await this.client.put<ApiKey>(`/api_keys/${id}`, data);
-    return response.data;
+    const response = await this.client.put(`/api_keys/${id}`, data);
+    return response.data.api_key;
   }
 
   async deleteApiKey(id: ApiKeyId): Promise<void> {
@@ -700,18 +692,18 @@ export class APIClient {
   }
 
   async getWebhook(id: WebhookId): Promise<Webhook> {
-    const response = await this.client.get<Webhook>(`/webhooks/${id}`);
-    return response.data;
+    const response = await this.client.get(`/webhooks/${id}`);
+    return response.data.webhook;
   }
 
   async createWebhook(data: Partial<Webhook>): Promise<Webhook> {
-    const response = await this.client.post<Webhook>('/webhooks', data);
-    return response.data;
+    const response = await this.client.post('/webhooks', data);
+    return response.data.webhook;
   }
 
   async updateWebhook(id: WebhookId, data: Partial<Webhook>): Promise<Webhook> {
-    const response = await this.client.put<Webhook>(`/webhooks/${id}`, data);
-    return response.data;
+    const response = await this.client.put(`/webhooks/${id}`, data);
+    return response.data.webhook;
   }
 
   async deleteWebhook(id: WebhookId): Promise<void> {

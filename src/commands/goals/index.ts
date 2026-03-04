@@ -61,19 +61,7 @@ const updateCommand = new Command('update')
     console.log(chalk.green(`✓ Goal ${id} updated`));
   }));
 
-const deleteCommand = new Command('delete')
-  .description('Delete a goal')
-  .argument('<id>', 'goal ID', parseGoalId)
-  .action(withErrorHandling(async (id: GoalId) => {
-    const globalOptions = getGlobalOptions(deleteCommand);
-    const client = await getAPIClientFromOptions(globalOptions);
-
-    await client.deleteGoal(id);
-    console.log(chalk.green(`✓ Goal ${id} deleted`));
-  }));
-
 goalsCommand.addCommand(listCommand);
 goalsCommand.addCommand(getCommand);
 goalsCommand.addCommand(createCommand);
 goalsCommand.addCommand(updateCommand);
-goalsCommand.addCommand(deleteCommand);
