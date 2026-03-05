@@ -261,7 +261,7 @@ export class APIClient {
   }
 
   async updateExperiment(id: ExperimentId, data: Partial<Experiment>): Promise<Experiment> {
-    const response = await this.client.put(`/experiments/${id}`, data);
+    const response = await this.client.put(`/experiments/${id}`, { data });
     return response.data.experiment;
   }
 
@@ -357,7 +357,7 @@ export class APIClient {
   }
 
   async updateGoal(id: GoalId, data: Partial<Goal>): Promise<Goal> {
-    const response = await this.client.put(`/goals/${id}`, data);
+    const response = await this.client.put(`/goals/${id}`, { data });
     return response.data.goal;
   }
 
@@ -379,7 +379,7 @@ export class APIClient {
   }
 
   async updateSegment(id: SegmentId, data: Partial<Segment>): Promise<Segment> {
-    const response = await this.client.put(`/segments/${id}`, data);
+    const response = await this.client.put(`/segments/${id}`, { data });
     return response.data.segment;
   }
 
@@ -457,7 +457,7 @@ export class APIClient {
   }
 
   async updateMetric(id: MetricId, data: Partial<Metric>): Promise<Metric> {
-    const response = await this.client.put(`/metrics/${id}`, data);
+    const response = await this.client.put(`/metrics/${id}`, { data });
     return response.data.metric;
   }
 
@@ -520,7 +520,7 @@ export class APIClient {
   async updateExperimentTag(id: TagId, data: { tag: string }): Promise<ExperimentTag> {
     const response = await this.client.put<{ experiment_tag: ExperimentTag }>(
       `/experiment_tags/${id}`,
-      data
+      { data }
     );
     return response.data.experiment_tag;
   }
@@ -547,7 +547,7 @@ export class APIClient {
   }
 
   async updateGoalTag(id: TagId, data: { tag: string }): Promise<GoalTag> {
-    const response = await this.client.put<{ goal_tag: GoalTag }>(`/goal_tags/${id}`, data);
+    const response = await this.client.put<{ goal_tag: GoalTag }>(`/goal_tags/${id}`, { data });
     return response.data.goal_tag;
   }
 
@@ -573,7 +573,7 @@ export class APIClient {
   }
 
   async updateMetricTag(id: TagId, data: { tag: string }): Promise<MetricTag> {
-    const response = await this.client.put<{ metric_tag: MetricTag }>(`/metric_tags/${id}`, data);
+    const response = await this.client.put<{ metric_tag: MetricTag }>(`/metric_tags/${id}`, { data });
     return response.data.metric_tag;
   }
 
@@ -613,7 +613,7 @@ export class APIClient {
   ): Promise<MetricCategory> {
     const response = await this.client.put<{ metric_category: MetricCategory }>(
       `/metric_categories/${id}`,
-      data
+      { data }
     );
     return response.data.metric_category;
   }
@@ -640,7 +640,7 @@ export class APIClient {
   }
 
   async updateRole(id: RoleId, data: Partial<Role>): Promise<Role> {
-    const response = await this.client.put(`/roles/${id}`, data);
+    const response = await this.client.put(`/roles/${id}`, { data });
     return response.data.role;
   }
 
@@ -676,7 +676,7 @@ export class APIClient {
   }
 
   async updateApiKey(id: ApiKeyId, data: Partial<ApiKey>): Promise<ApiKey> {
-    const response = await this.client.put(`/api_keys/${id}`, data);
+    const response = await this.client.put(`/api_keys/${id}`, { data });
     return response.data.api_key;
   }
 
@@ -702,7 +702,7 @@ export class APIClient {
   }
 
   async updateWebhook(id: WebhookId, data: Partial<Webhook>): Promise<Webhook> {
-    const response = await this.client.put(`/webhooks/${id}`, data);
+    const response = await this.client.put(`/webhooks/${id}`, { data });
     return response.data.webhook;
   }
 
