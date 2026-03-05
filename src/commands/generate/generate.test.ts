@@ -1,81 +1,121 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { generateCommand } from './index.js';
+import { getAPIClientFromOptions, getGlobalOptions } from '../../lib/utils/api-helper.js';
+import { writeFileSync } from 'fs';
+import { resetCommand } from '../../test/helpers/command-reset.js';
 
-describe('Generate Command Utilities', () => {
-  describe('backslash and quote escaping', () => {
-    it('should escape single quotes in experiment names', () => {
-      const name = "User's Test";
-      const escaped = name.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-      expect(escaped).toBe("User\\'s Test");
-    });
+vi.mock('../../lib/utils/api-helper.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../lib/utils/api-helper.js')>();
+  return { ...actual, getAPIClientFromOptions: vi.fn(), getGlobalOptions: vi.fn() };
+});
+vi.mock('fs', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('fs')>();
+  return { ...actual, writeFileSync: vi.fn() };
+});
 
-    it('should escape backslashes in experiment names', () => {
-      const name = "Test\\Name";
-      const escaped = name.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-      expect(escaped).toBe("Test\\\\Name");
-    });
+describe('generate types command', () => {
+  let consoleSpy: ReturnType<typeof vi.spyOn>;
+  let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+  let processExitSpy: ReturnType<typeof vi.spyOn>;
 
-    it('should escape both backslashes and quotes', () => {
-      const name = "User's\\Test";
-      const escaped = name.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-      expect(escaped).toBe("User\\'s\\\\Test");
-    });
+  const mockClient = {
+    listExperiments: vi.fn(),
+  };
 
-    it('should handle multiple backslashes', () => {
-      const name = "Path\\to\\file";
-      const escaped = name.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-      expect(escaped).toBe("Path\\\\to\\\\file");
-    });
-
-    it('should handle complex mixed content', () => {
-      const name = "Test\\name's\\feature";
-      const escaped = name.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-      expect(escaped).toBe("Test\\\\name\\'s\\\\feature");
-    });
-
-    it('should escape backslash before quote correctly', () => {
-      const name = "\\'test";
-      const escaped = name.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-      expect(escaped).toBe("\\\\\\'test");
-    });
-
-    it('should produce correctly escaped strings for TypeScript', () => {
-      const testCases = [
-        { input: "Normal Name", expected: "Normal Name" },
-        { input: "User's Test", expected: "User\\'s Test" },
-        { input: "Test\\Path", expected: "Test\\\\Path" },
-        { input: "Mixed\\test's", expected: "Mixed\\\\test\\'s" },
-        { input: "'quoted'", expected: "\\'quoted\\'" },
-        { input: "\\backslash\\", expected: "\\\\backslash\\\\" },
-      ];
-
-      for (const { input, expected } of testCases) {
-        const escaped = input.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
-        expect(escaped).toBe(expected);
-      }
-    });
-
-    it('should properly escape for template literal construction', () => {
-      const names = ["User's Test", "Test\\Name", "Normal"];
-      const escaped = names.map(name => name.replace(/\\/g, '\\\\').replace(/'/g, "\\'"));
-
-      expect(escaped).toEqual([
-        "User\\'s Test",
-        "Test\\\\Name",
-        "Normal"
-      ]);
+  beforeEach(() => {
+    vi.clearAllMocks();
+    resetCommand(generateCommand);
+    vi.mocked(getAPIClientFromOptions).mockResolvedValue(mockClient as any);
+    vi.mocked(getGlobalOptions).mockReturnValue({ output: 'table' } as any);
+    consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    processExitSpy = vi.spyOn(process, 'exit').mockImplementation((code?) => {
+      throw new Error(`process.exit: ${code}`);
     });
   });
 
-  describe('parseInt with radix', () => {
-    it('should correctly parse numbers with leading zeros', () => {
-      expect(parseInt('08', 10)).toBe(8);
-      expect(parseInt('09', 10)).toBe(9);
-      expect(parseInt('010', 10)).toBe(10);
-    });
+  afterEach(() => {
+    consoleSpy.mockRestore();
+    consoleErrorSpy.mockRestore();
+    processExitSpy.mockRestore();
+  });
 
-    it('should not interpret as octal', () => {
-      expect(parseInt('08', 10)).not.toBe(0);
-      expect(parseInt('09', 10)).not.toBe(0);
-    });
+  it('should generate TypeScript types from experiments', async () => {
+    mockClient.listExperiments.mockResolvedValueOnce([
+      { name: 'exp_one' },
+      { name: 'exp_two' },
+    ]);
+
+    await generateCommand.parseAsync(['node', 'test', 'types']);
+
+    const output = consoleSpy.mock.calls.flat().join('\n');
+    expect(output).toContain("| 'exp_one'");
+    expect(output).toContain("| 'exp_two'");
+    expect(output).toContain('export type ExperimentName');
+  });
+
+  it('should write to file with --output', async () => {
+    mockClient.listExperiments.mockResolvedValueOnce([{ name: 'file_exp' }]);
+
+    await generateCommand.parseAsync(['node', 'test', 'types', '--output', 'types.ts']);
+
+    expect(writeFileSync).toHaveBeenCalledWith(
+      'types.ts',
+      expect.stringContaining("| 'file_exp'"),
+      'utf8'
+    );
+  });
+
+  it('should handle pagination across multiple pages', async () => {
+    const page1 = Array.from({ length: 100 }, (_, i) => ({ name: `exp_${i}` }));
+    const page2 = Array.from({ length: 50 }, (_, i) => ({ name: `exp_${100 + i}` }));
+
+    mockClient.listExperiments
+      .mockResolvedValueOnce(page1)
+      .mockResolvedValueOnce(page2);
+
+    await generateCommand.parseAsync(['node', 'test', 'types']);
+
+    expect(mockClient.listExperiments).toHaveBeenCalledTimes(2);
+    const output = consoleSpy.mock.calls.flat().join('\n');
+    expect(output).toContain("| 'exp_0'");
+    expect(output).toContain("| 'exp_149'");
+  });
+
+  it('should handle empty experiment list', async () => {
+    mockClient.listExperiments.mockResolvedValueOnce([]);
+
+    await generateCommand.parseAsync(['node', 'test', 'types']);
+
+    const output = consoleSpy.mock.calls.flat().join('\n');
+    expect(output).toContain('export type ExperimentName');
+  });
+
+  it('should escape backslashes and quotes in names', async () => {
+    mockClient.listExperiments.mockResolvedValueOnce([
+      { name: "User's\\Test" },
+    ]);
+
+    await generateCommand.parseAsync(['node', 'test', 'types']);
+
+    const output = consoleSpy.mock.calls.flat().join('\n');
+    expect(output).toContain("User\\'s\\\\Test");
+  });
+
+  it('should error on invalid API response', async () => {
+    mockClient.listExperiments.mockResolvedValueOnce('not-an-array');
+
+    try {
+      await generateCommand.parseAsync(['node', 'test', 'types']);
+      throw new Error('Should have thrown');
+    } catch (error) {
+      if ((error as Error).message.startsWith('process.exit')) {
+        const output = consoleErrorSpy.mock.calls.flat().join(' ');
+        expect(output).toContain('Invalid API response');
+        expect(output).toContain('Expected array');
+      } else {
+        throw error;
+      }
+    }
   });
 });

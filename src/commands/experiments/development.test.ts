@@ -1,12 +1,20 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { http, HttpResponse } from 'msw';
 import { server } from '../../test/mocks/server.js';
 import { createAPIClient } from '../../lib/api/client.js';
 import { isLiveMode, TEST_BASE_URL, TEST_API_KEY } from '../../test/helpers/test-config.js';
+import { developmentCommand } from './development.js';
+import { getAPIClientFromOptions, getGlobalOptions } from '../../lib/utils/api-helper.js';
+import { resetCommand } from '../../test/helpers/command-reset.js';
+
+vi.mock('../../lib/utils/api-helper.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../lib/utils/api-helper.js')>();
+  return { ...actual, getAPIClientFromOptions: vi.fn(), getGlobalOptions: vi.fn() };
+});
 
 const BASE_URL = TEST_BASE_URL;
 
-describe.skipIf(isLiveMode)('experiments development command', () => {
+describe.skipIf(isLiveMode)('experiments development API', () => {
   const client = createAPIClient(BASE_URL, TEST_API_KEY);
 
   it('should send PUT with note to /experiments/:id/development', async () => {
@@ -45,5 +53,47 @@ describe.skipIf(isLiveMode)('experiments development command', () => {
 
     expect(result).toHaveProperty('id', 42);
     expect(result).toHaveProperty('state', 'development');
+  });
+});
+
+describe('development command', () => {
+  let consoleSpy: ReturnType<typeof vi.spyOn>;
+  let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+  let processExitSpy: ReturnType<typeof vi.spyOn>;
+
+  const mockClient = {
+    developmentExperiment: vi.fn().mockResolvedValue({ id: 42, state: 'development' }),
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    resetCommand(developmentCommand);
+    vi.mocked(getAPIClientFromOptions).mockResolvedValue(mockClient as any);
+    vi.mocked(getGlobalOptions).mockReturnValue({ output: 'table' } as any);
+    consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    processExitSpy = vi.spyOn(process, 'exit').mockImplementation((code?) => {
+      throw new Error(`process.exit: ${code}`);
+    });
+  });
+
+  afterEach(() => {
+    consoleSpy.mockRestore();
+    consoleErrorSpy.mockRestore();
+    processExitSpy.mockRestore();
+  });
+
+  it('should use default note', async () => {
+    await developmentCommand.parseAsync(['node', 'test', '42']);
+
+    expect(mockClient.developmentExperiment).toHaveBeenCalledWith(42, 'Started development via CLI');
+    const output = consoleSpy.mock.calls.flat().join(' ');
+    expect(output).toContain('set to development mode');
+  });
+
+  it('should pass custom --note', async () => {
+    await developmentCommand.parseAsync(['node', 'test', '42', '--note', 'Custom reason']);
+
+    expect(mockClient.developmentExperiment).toHaveBeenCalledWith(42, 'Custom reason');
   });
 });
