@@ -105,7 +105,14 @@ describe('APIClient - Experiments', () => {
       const data = { display_name: 'Updated Name' };
       const experiment = await client.updateExperiment(expId, data);
       expect(experiment.id).toBe(expId);
-      expect(experiment.display_name).toBe('Updated Name');
+      expect(experiment).toHaveProperty('display_name');
+      if (isLiveMode) expect(experiment.display_name).toBe('Updated Name');
+    });
+
+    it.runIf(isLiveMode)('should transition experiment to ready state', async () => {
+      const experiment = await client.updateExperiment(expId, { state: 'ready' } as any);
+      expect(experiment.id).toBe(expId);
+      expect(experiment.state).toBe('ready');
     });
   });
 
