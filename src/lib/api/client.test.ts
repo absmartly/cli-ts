@@ -187,19 +187,25 @@ describe('APIClient', () => {
   describe.skipIf(isLiveMode)('rawRequest security', () => {
     it('should reject absolute URLs (SSRF protection)', async () => {
       await expect(client.rawRequest('https://evil.com/steal', 'GET')).rejects.toThrow(
-        'Invalid API path: Absolute URLs are not allowed'
+        'Invalid API path: Absolute or protocol-relative URLs are not allowed'
       );
     });
 
     it('should reject http URLs (SSRF protection)', async () => {
       await expect(client.rawRequest('http://evil.com/steal', 'POST')).rejects.toThrow(
-        'Invalid API path: Absolute URLs are not allowed'
+        'Invalid API path: Absolute or protocol-relative URLs are not allowed'
       );
     });
 
     it('should reject file:// URLs (SSRF protection)', async () => {
       await expect(client.rawRequest('file:///etc/passwd', 'GET')).rejects.toThrow(
-        'Invalid API path: Absolute URLs are not allowed'
+        'Invalid API path: Absolute or protocol-relative URLs are not allowed'
+      );
+    });
+
+    it('should reject protocol-relative URLs (SSRF protection)', async () => {
+      await expect(client.rawRequest('//evil.com/steal', 'GET')).rejects.toThrow(
+        'Invalid API path: Absolute or protocol-relative URLs are not allowed'
       );
     });
 

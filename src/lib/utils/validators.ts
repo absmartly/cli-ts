@@ -136,9 +136,7 @@ export function validateJSON(jsonString: string, context = 'JSON'): unknown {
     return JSON.parse(jsonString);
   } catch (error) {
     throw new Error(
-      `Invalid JSON in ${context}: ${error instanceof Error ? error.message : 'unknown error'}\n` +
-        `\n` +
-        `Input: ${jsonString.substring(0, 100)}${jsonString.length > 100 ? '...' : ''}`
+      `Invalid JSON in ${context}: ${error instanceof Error ? error.message : 'unknown error'}`
     );
   }
 }

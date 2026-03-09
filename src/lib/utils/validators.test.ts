@@ -262,28 +262,13 @@ describe('validateJSON', () => {
       }
     });
 
-    it('should include input snippet (first 100 chars)', () => {
+    it('should not include raw input in error message', () => {
       try {
         validateJSON('{ invalid json }');
         throw new Error('Should have thrown');
       } catch (error) {
-        expect((error as Error).message).toContain('Input: { invalid json }');
-      }
-    });
-
-    it('should truncate long input with ellipsis', () => {
-      const longJson = '{ "key": "' + 'x'.repeat(200);
-      expect(() => validateJSON(longJson)).toThrow(/\.\.\./);
-      expect(() => validateJSON(longJson)).toThrow(/Input: .{100}/);
-    });
-
-    it('should not truncate short input', () => {
-      try {
-        validateJSON('{ bad }');
-        throw new Error('Should have thrown');
-      } catch (error) {
-        expect((error as Error).message).toContain('Input: { bad }');
-        expect((error as Error).message).not.toContain('...');
+        expect((error as Error).message).toContain('Invalid JSON in JSON');
+        expect((error as Error).message).not.toContain('Input:');
       }
     });
   });

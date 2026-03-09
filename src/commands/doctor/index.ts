@@ -3,11 +3,12 @@ import chalk from 'chalk';
 import { getProfile, loadConfig } from '../../lib/config/config.js';
 import { getAPIKey } from '../../lib/config/keyring.js';
 import { createAPIClient } from '../../lib/api/client.js';
-import { withErrorHandling } from '../../lib/utils/api-helper.js';
+import { withErrorHandling, getGlobalOptions } from '../../lib/utils/api-helper.js';
 
 export const doctorCommand = new Command('doctor')
   .description('Diagnose configuration issues')
   .action(withErrorHandling(async () => {
+    const globalOptions = getGlobalOptions(doctorCommand);
     console.log(chalk.bold('\n🔍 ABSmartly CLI Diagnostics\n'));
 
     let allGood = true;
@@ -16,7 +17,7 @@ export const doctorCommand = new Command('doctor')
       const config = loadConfig();
       console.log(chalk.green('✓') + ' Configuration file loaded');
 
-      const profileName = config['default-profile'];
+      const profileName = (globalOptions.profile as string) || config['default-profile'];
       console.log(chalk.green('✓') + ` Default profile: ${profileName}`);
 
       const profile = getProfile(profileName);

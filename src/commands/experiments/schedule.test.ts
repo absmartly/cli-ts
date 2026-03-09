@@ -151,18 +151,18 @@ describe('schedule command', () => {
       }
     });
 
-    it('should reject invalid datetime', async () => {
+    it('should reject datetime without timezone', async () => {
       try {
         await scheduleCommand.parseAsync([
           'node', 'test', 'create', '42',
           '--action', 'start',
-          '--at', 'not-a-date',
+          '--at', '2026-04-01T10:00:00',
         ]);
         throw new Error('Should have thrown');
       } catch (error) {
         if ((error as Error).message.startsWith('process.exit')) {
           const output = consoleErrorSpy.mock.calls.flat().join(' ');
-          expect(output).toContain('Invalid datetime');
+          expect(output).toContain('Missing timezone');
         } else {
           throw error;
         }

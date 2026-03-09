@@ -27,6 +27,13 @@ const createScheduleCommand = new Command('create')
       );
     }
 
+    if (!/(?:Z|[+-]\d{2}:\d{2})$/.test(options.at)) {
+      throw new Error(
+        `Missing timezone in datetime: "${options.at}"\n` +
+        `Provide an ISO 8601 timestamp with Z or an offset (e.g., 2026-04-01T10:00:00Z)`
+      );
+    }
+
     const date = new Date(options.at);
     if (isNaN(date.getTime())) {
       throw new Error(

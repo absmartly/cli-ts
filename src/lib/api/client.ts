@@ -64,13 +64,22 @@ export class APIClient {
       },
     });
 
+    const NON_IDEMPOTENT_PUT_PATHS = [
+      '/start', '/stop', '/restart', '/development', '/full_on',
+    ];
+
     axiosRetry(this.client, {
       retries: 3,
       retryDelay: axiosRetry.exponentialDelay,
       retryCondition: (error: AxiosError) => {
         const method = error.config?.method?.toUpperCase();
-        const isIdempotent = ['GET', 'HEAD', 'OPTIONS', 'PUT', 'DELETE'].includes(method ?? '');
+        const url = error.config?.url ?? '';
 
+        if (method === 'PUT' && NON_IDEMPOTENT_PUT_PATHS.some((p) => url.endsWith(p))) {
+          return false;
+        }
+
+        const isIdempotent = ['GET', 'HEAD', 'OPTIONS', 'PUT', 'DELETE'].includes(method ?? '');
         if (!isIdempotent) return false;
 
         if (axiosRetry.isNetworkError(error)) return true;
@@ -297,7 +306,7 @@ export class APIClient {
     } = {}
   ): Promise<Experiment> {
     const response = await this.client.put(`/experiments/${id}/restart`, options);
-    return response.data.experiment;
+    return response.data.new_experiment ?? response.data.experiment;
   }
 
   async fullOnExperiment(id: ExperimentId, fullOnVariant: number, note: string): Promise<Experiment> {
@@ -718,9 +727,9 @@ export class APIClient {
   ): Promise<unknown> {
     const decodedPath = decodeURIComponent(path);
 
-    if (decodedPath.includes('://')) {
+    if (decodedPath.includes('://') || decodedPath.startsWith('//')) {
       throw new Error(
-        'Invalid API path: Absolute URLs are not allowed.\n' +
+        'Invalid API path: Absolute or protocol-relative URLs are not allowed.\n' +
         'Paths must be relative to the API endpoint (e.g., /experiments, /goals).'
       );
     }

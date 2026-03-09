@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { resolve } from 'node:path';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   loadOpenAPISpec,
   getSchemaForEndpoint,
@@ -26,7 +27,9 @@ import {
   createMockWebhooks,
 } from 'absmartly-api-mocks/factories';
 
-const specPath = resolve('node_modules/absmartly-api-mocks/openapi/openapi.bundle.yaml');
+const validationEntry = fileURLToPath(import.meta.resolve('absmartly-api-mocks/validation'));
+const mocksDir = resolve(dirname(validationEntry), '..', '..');
+const specPath = resolve(mocksDir, 'openapi/openapi.bundle.yaml');
 
 interface ValidationError {
   instancePath?: string;

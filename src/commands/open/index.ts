@@ -1,7 +1,7 @@
 import { Command } from 'commander';
 import open from 'open';
 import { getProfile, loadConfig } from '../../lib/config/config.js';
-import { withErrorHandling } from '../../lib/utils/api-helper.js';
+import { withErrorHandling, getGlobalOptions } from '../../lib/utils/api-helper.js';
 
 const VALID_RESOURCES = [
   'experiments', 'experiment', 'metrics', 'metric', 'goals', 'goal',
@@ -13,8 +13,10 @@ export const openCommand = new Command('open')
   .argument('[resource]', 'resource to open (experiment, experiments, metrics, goals, teams, etc.)')
   .argument('[id]', 'resource ID')
   .action(withErrorHandling(async (resource?: string, id?: string) => {
+    const globalOptions = getGlobalOptions(openCommand);
     const config = loadConfig();
-    const profile = getProfile(config['default-profile']);
+    const profileName = (globalOptions.profile as string) || config['default-profile'];
+    const profile = getProfile(profileName);
 
     let webURL = profile.api.endpoint.replace(/\/v1$/, '');
 

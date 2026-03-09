@@ -81,4 +81,4 @@ program.addCommand(setupCommand);
 process.on('unhandledRejection', (reason) => handleFatalError('unhandled promise rejection', reason));
 process.on('uncaughtException', (error) => handleFatalError('uncaught exception', error));
 
-program.parse();
+program.parseAsync();

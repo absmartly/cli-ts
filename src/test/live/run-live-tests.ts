@@ -175,15 +175,14 @@ async function main() {
 
     // 8. Restart
     await runTest('Restart experiment', async () => {
-      const result = (await client.rawRequest(
-        `/experiments/${experimentId}/restart`,
-        'PUT',
-        { reason: 'other', state: 'running', data: experimentData }
-      )) as { ok: boolean; new_experiment?: { id: number; state: string }; errors: string[] };
-      assert(result.ok === true, `Expected ok=true, errors: ${result.errors?.join(', ')}`);
-      assert(result.new_experiment !== undefined, 'Restart returned no new_experiment');
-      experimentId = ExperimentId(result.new_experiment!.id);
-      console.log(`    new experimentId=${experimentId} state=${result.new_experiment!.state}`);
+      const newExperiment = await client.restartExperiment(experimentId!, {
+        reason: 'other',
+        state: 'running',
+        data: experimentData,
+      });
+      assert(newExperiment.id !== undefined, 'Restart returned no experiment');
+      experimentId = ExperimentId(newExperiment.id);
+      console.log(`    new experimentId=${experimentId} state=${newExperiment.state}`);
     });
 
     // 9. Full-on (variant 1)
