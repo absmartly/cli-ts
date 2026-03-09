@@ -121,23 +121,21 @@ export function loadConfig(): Config {
       profiles: deepMergeProfiles(defaults.profiles, validConfig.profiles),
     };
   } catch (error) {
-    if (error instanceof Error) {
-      if (error.message.includes('ENOENT')) {
-        return defaultConfig();
-      }
-      if (error.message.includes('EACCES')) {
-        throw new Error(
-          `Permission denied reading config file: ${path}\n` +
-          `Run: chmod 600 ${path}`
-        );
-      }
-      if (error.message.includes('YAMLException') || error.name === 'YAMLException') {
-        throw new Error(
-          `Invalid YAML syntax in config file: ${path}\n` +
-          `${error.message}\n` +
-          `Please fix the syntax or delete the file to reset to defaults.`
-        );
-      }
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      return defaultConfig();
+    }
+    if ((error as NodeJS.ErrnoException).code === 'EACCES') {
+      throw new Error(
+        `Permission denied reading config file: ${path}\n` +
+        `Run: chmod 600 ${path}`
+      );
+    }
+    if (error instanceof Error && error.name === 'YAMLException') {
+      throw new Error(
+        `Invalid YAML syntax in config file: ${path}\n` +
+        `${error.message}\n` +
+        `Please fix the syntax or delete the file to reset to defaults.`
+      );
     }
     throw new Error(`Failed to load config from ${path}: ${error instanceof Error ? error.message : error}`);
   }
@@ -159,9 +157,7 @@ export function saveConfig(config: Config): void {
   } catch (error) {
     try {
       unlinkSync(tempPath);
-    } catch {
-      // Ignore cleanup errors
-    }
+    } catch {}
 
     if (error instanceof Error) {
       if (error.message.includes('ENOSPC')) {
@@ -205,7 +201,6 @@ export function setProfile(name: string, profile: Profile): void {
 export function deleteProfile(name: string): void {
   const config = loadConfig();
 
-  // Prevent deleting last profile
   const profileNames = Object.keys(config.profiles);
   if (profileNames.length === 1 && profileNames[0] === name) {
     throw new Error(
@@ -216,7 +211,6 @@ export function deleteProfile(name: string): void {
 
   delete config.profiles[name];
 
-  // If deleting default profile, switch to another one
   if (config['default-profile'] === name) {
     const remaining = Object.keys(config.profiles);
     if (remaining.length === 0) {
@@ -268,7 +262,6 @@ export function setConfigValue(key: string, value: string | boolean): void {
   validateConfigKey(key);
   const config = loadConfig();
 
-  // Convert string booleans for boolean keys
   let finalValue: string | boolean = value;
   if (key === 'analytics-opt-out' && typeof value === 'string') {
     const normalized = value.toLowerCase();

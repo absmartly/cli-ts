@@ -11,11 +11,9 @@ function getPackageInfo(): { version: string; buildDate: string } {
       buildDate: packageJson.buildDate || new Date().toISOString(),
     };
   } catch (error) {
-    if (process.env.DEBUG) {
-      console.error(
-        `Warning: Failed to read version from package.json: ${error instanceof Error ? error.message : 'unknown error'}`
-      );
-    }
+    console.error(
+      `Warning: Failed to read version from package.json: ${error instanceof Error ? error.message : 'unknown error'}`
+    );
     return { version: '0.0.0-dev', buildDate: new Date().toISOString() };
   }
 }
