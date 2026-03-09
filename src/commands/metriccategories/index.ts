@@ -76,14 +76,15 @@ const updateCommand = new Command('update')
   }));
 
 const archiveCommand = new Command('archive')
-  .description('Archive a metric category')
+  .description('Archive or unarchive a metric category')
   .argument('<id>', 'category ID', parseTagId)
-  .action(withErrorHandling(async (id: TagId) => {
+  .option('--unarchive', 'Unarchive the metric category')
+  .action(withErrorHandling(async (id: TagId, options) => {
     const globalOptions = getGlobalOptions(archiveCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
-    await client.archiveMetricCategory(id, true);
-    console.log(chalk.green('Metric category archived successfully'));
+    await client.archiveMetricCategory(id, !options.unarchive);
+    console.log(chalk.green(`Metric category ${options.unarchive ? 'unarchived' : 'archived'} successfully`));
   }));
 
 metricCategoriesCommand.addCommand(listCommand);
