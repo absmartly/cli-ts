@@ -112,11 +112,6 @@ export function parseScheduledActionId(value: string): ScheduledActionId {
   return parseIdGeneric<ScheduledActionId>(value, 'ScheduledActionId');
 }
 
-/** @deprecated Use specific type parser (e.g., parseExperimentId) */
-export function parseId(value: string): number {
-  return parseIdGeneric<number>(value, 'ID');
-}
-
 export function requireAtLeastOneField(
   data: Record<string, unknown>,
   fieldName = 'field'

@@ -160,9 +160,8 @@ describe('Open Command Validation', () => {
 
     it('should reject negative ID', async () => {
       // Note: Can't test '-5' directly as Commander interprets it as a flag
-      // Testing the validation logic directly via the validator instead
-      const { parseId } = await import('../../lib/utils/validators.js');
-      expect(() => parseId('-5')).toThrow('must be a positive integer');
+      const { parseExperimentId } = await import('../../lib/utils/validators.js');
+      expect(() => parseExperimentId('-5')).toThrow('must be a positive integer');
     });
 
     it('should reject zero ID', async () => {

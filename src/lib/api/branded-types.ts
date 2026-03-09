@@ -174,21 +174,3 @@ export function ProfileName(name: string): ProfileName {
   return trimmed as ProfileName;
 }
 
-export function APIKeyValue(key: string): APIKey {
-  const trimmed = key.trim();
-
-  if (trimmed.length === 0) {
-    throw new Error('API key cannot be empty');
-  }
-
-  if (trimmed.length < 20) {
-    throw new Error('API key appears too short to be valid');
-  }
-
-  const testPatterns = ['test', 'example', 'dummy', 'fake', 'xxx'];
-  if (testPatterns.some(pattern => trimmed.toLowerCase().includes(pattern))) {
-    console.warn('Warning: API key appears to be a test key');
-  }
-
-  return trimmed as APIKey;
-}

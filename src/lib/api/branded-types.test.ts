@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import {
   ExperimentId,
   GoalId,
@@ -19,7 +19,6 @@ import {
   TrafficPercentage,
   JSONConfig,
   ProfileName,
-  APIKeyValue,
 } from './branded-types.js';
 
 describe('Branded ID Types', () => {
@@ -287,49 +286,6 @@ describe('ProfileName', () => {
     expect(() => ProfileName('constructor')).toThrow('Reserved profile name');
     expect(() => ProfileName('prototype')).toThrow('Reserved profile name');
     expect(() => ProfileName('__PROTO__')).toThrow('Reserved profile name');
-  });
-});
-
-describe('APIKeyValue', () => {
-  it('should accept valid API keys', () => {
-    const validKey = 'abcdefghijklmnopqrst';
-    expect(() => APIKeyValue(validKey)).not.toThrow();
-
-    const longKey = 'sk_live_' + 'a'.repeat(30);
-    expect(() => APIKeyValue(longKey)).not.toThrow();
-  });
-
-  it('should trim whitespace', () => {
-    const key = '  abcdefghijklmnopqrst  ';
-    const result = APIKeyValue(key);
-    expect(result).toBe('abcdefghijklmnopqrst');
-  });
-
-  it('should reject empty keys', () => {
-    expect(() => APIKeyValue('')).toThrow('cannot be empty');
-    expect(() => APIKeyValue('   ')).toThrow('cannot be empty');
-  });
-
-  it('should reject keys that are too short', () => {
-    expect(() => APIKeyValue('short')).toThrow('appears too short');
-  });
-
-  it('should warn about test keys', () => {
-    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-
-    APIKeyValue('test_key_abcdefghijklmnop');
-    expect(consoleWarn).toHaveBeenCalledWith(expect.stringContaining('appears to be a test key'));
-
-    consoleWarn.mockRestore();
-  });
-
-  it('should warn about example keys', () => {
-    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-
-    APIKeyValue('example_abcdefghijklmnop');
-    expect(consoleWarn).toHaveBeenCalledWith(expect.stringContaining('appears to be a test key'));
-
-    consoleWarn.mockRestore();
   });
 });
 
