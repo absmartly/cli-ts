@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Command } from 'commander';
 
 vi.mock('../config/config', () => ({
@@ -18,7 +18,7 @@ vi.mock('../output/formatter', () => ({
   formatOutput: vi.fn((data) => JSON.stringify(data)),
 }));
 
-import { getAPIClientFromOptions, getGlobalOptions, printFormatted } from './api-helper.js';
+import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from './api-helper.js';
 import { loadConfig, getProfile } from '../config/config.js';
 import { getAPIKey } from '../config/keyring.js';
 import { createAPIClient } from '../api/client.js';
@@ -262,6 +262,60 @@ describe('API Helper', () => {
           terse: false,
         })
       );
+    });
+  });
+
+  describe('withErrorHandling', () => {
+    let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+    let processExitSpy: ReturnType<typeof vi.spyOn>;
+
+    beforeEach(() => {
+      consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      processExitSpy = vi.spyOn(process, 'exit').mockImplementation((code?) => {
+        throw new Error(`process.exit: ${code}`);
+      });
+    });
+
+    afterEach(() => {
+      consoleErrorSpy.mockRestore();
+      processExitSpy.mockRestore();
+    });
+
+    it('should catch async errors and call handleCommandError', async () => {
+      const wrapped = withErrorHandling(async () => {
+        throw new Error('test async error');
+      });
+
+      await expect(wrapped()).rejects.toThrow('process.exit: 1');
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Error:', 'test async error');
+    });
+
+    it('should exit with code 1', async () => {
+      const wrapped = withErrorHandling(async () => {
+        throw new Error('fail');
+      });
+
+      await expect(wrapped()).rejects.toThrow('process.exit: 1');
+      expect(processExitSpy).toHaveBeenCalledWith(1);
+    });
+
+    it('should handle non-Error throws', async () => {
+      const wrapped = withErrorHandling(async () => {
+        throw 'string error';
+      });
+
+      await expect(wrapped()).rejects.toThrow('process.exit: 1');
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Error:', 'string error');
+    });
+
+    it('should not interfere with successful execution', async () => {
+      const fn = vi.fn().mockResolvedValue(undefined);
+      const wrapped = withErrorHandling(fn);
+
+      await wrapped();
+      expect(fn).toHaveBeenCalled();
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
+      expect(processExitSpy).not.toHaveBeenCalled();
     });
   });
 });

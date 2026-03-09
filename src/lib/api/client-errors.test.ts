@@ -208,6 +208,46 @@ describe.skipIf(isLiveMode)('APIClient - Error Handling', () => {
     });
   });
 
+  describe('Rate Limiting', () => {
+    it('should handle 429 rate limit error', async () => {
+      server.use(
+        http.get(`${BASE_URL}/experiments`, () => {
+          return HttpResponse.json(
+            { error: 'Rate limit exceeded' },
+            { status: 429, headers: { 'retry-after': '30' } }
+          );
+        })
+      );
+
+      try {
+        await client.listExperiments();
+        expect.fail('Should have thrown');
+      } catch (error: any) {
+        expect(error.statusCode).toBe(429);
+        expect(error.message).toContain('Rate limit exceeded');
+      }
+    });
+
+    it('should handle 429 without retry-after header', async () => {
+      server.use(
+        http.get(`${BASE_URL}/experiments`, () => {
+          return HttpResponse.json(
+            { error: 'Rate limit exceeded' },
+            { status: 429 }
+          );
+        })
+      );
+
+      try {
+        await client.listExperiments();
+        expect.fail('Should have thrown');
+      } catch (error: any) {
+        expect(error.statusCode).toBe(429);
+        expect(error.message).toContain('Rate limit exceeded');
+      }
+    });
+  });
+
   describe('Specific Method Error Handling', () => {
     it('should handle error in startExperiment', async () => {
       server.use(

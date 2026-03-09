@@ -86,4 +86,12 @@ describe('metric-categories command', () => {
     const output = consoleSpy.mock.calls.flat().join(' ');
     expect(output).toContain('archived');
   });
+
+  it('should unarchive a metric category with --unarchive', async () => {
+    await metricCategoriesCommand.parseAsync(['node', 'test', 'archive', '1', '--unarchive']);
+
+    expect(mockClient.archiveMetricCategory).toHaveBeenCalledWith(1, false);
+    const output = consoleSpy.mock.calls.flat().join(' ');
+    expect(output).toContain('unarchived');
+  });
 });

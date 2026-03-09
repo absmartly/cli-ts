@@ -167,6 +167,42 @@ describe('APIClient', () => {
       expect(attemptCount).toBe(3);
     });
 
+    it('should NOT retry PUT to /start on 5xx errors', async () => {
+      server.use(
+        http.put(`${BASE_URL}/experiments/:id/start`, () => {
+          requestCount++;
+          return new HttpResponse(null, { status: 500 });
+        })
+      );
+
+      await expect(client.startExperiment(123)).rejects.toThrow();
+      expect(requestCount).toBe(1);
+    });
+
+    it('should NOT retry PUT to /stop on 5xx errors', async () => {
+      server.use(
+        http.put(`${BASE_URL}/experiments/:id/stop`, () => {
+          requestCount++;
+          return new HttpResponse(null, { status: 500 });
+        })
+      );
+
+      await expect(client.stopExperiment(123, 'other')).rejects.toThrow();
+      expect(requestCount).toBe(1);
+    });
+
+    it('should NOT retry PUT to /restart on 5xx errors', async () => {
+      server.use(
+        http.put(`${BASE_URL}/experiments/:id/restart`, () => {
+          requestCount++;
+          return new HttpResponse(null, { status: 500 });
+        })
+      );
+
+      await expect(client.restartExperiment(123)).rejects.toThrow();
+      expect(requestCount).toBe(1);
+    });
+
     it('should retry DELETE requests on 5xx errors', async () => {
       let attemptCount = 0;
       server.use(
@@ -181,6 +217,47 @@ describe('APIClient', () => {
 
       await client.deleteRole(1);
       expect(attemptCount).toBeGreaterThan(1);
+    });
+  });
+
+  describe.skipIf(isLiveMode)('validateOkResponse', () => {
+    afterEach(() => {
+      server.resetHandlers();
+    });
+
+    it('should throw on { ok: false } response with errors', async () => {
+      server.use(
+        http.post(`${BASE_URL}/experiments`, () => {
+          return HttpResponse.json({
+            ok: false,
+            errors: ['name is required', 'unit_type is missing'],
+          });
+        })
+      );
+
+      try {
+        await client.createExperiment({ name: '' });
+        expect.fail('Should have thrown');
+      } catch (error: any) {
+        expect(error.message).toContain('createExperiment failed');
+        expect(error.message).toContain('name is required');
+        expect(error.message).toContain('unit_type is missing');
+      }
+    });
+
+    it('should not throw on { ok: true } response', async () => {
+      server.use(
+        http.post(`${BASE_URL}/experiments`, () => {
+          return HttpResponse.json({
+            ok: true,
+            experiment: { id: 1, name: 'test', state: 'draft' },
+            errors: [],
+          });
+        })
+      );
+
+      const result = await client.createExperiment({ name: 'test' });
+      expect(result.id).toBe(1);
     });
   });
 
