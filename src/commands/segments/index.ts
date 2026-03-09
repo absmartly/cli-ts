@@ -1,0 +1,85 @@
+import { Command } from 'commander';
+import chalk from 'chalk';
+import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
+import { parseSegmentId, requireAtLeastOneField } from '../../lib/utils/validators.js';
+import type { SegmentId } from '../../lib/api/branded-types.js';
+
+export const segmentsCommand = new Command('segments')
+  .alias('segment')
+  .description('Segment commands');
+
+const listCommand = new Command('list')
+  .description('List all segments')
+  .option('--limit <number>', 'maximum number of results', parseInt, 100)
+  .option('--offset <number>', 'offset for pagination', parseInt, 0)
+  .action(withErrorHandling(async (options) => {
+    const globalOptions = getGlobalOptions(listCommand);
+    const client = await getAPIClientFromOptions(globalOptions);
+
+    const segments = await client.listSegments(options.limit, options.offset);
+    printFormatted(segments, globalOptions);
+  }));
+
+const getCommand = new Command('get')
+  .description('Get segment details')
+  .argument('<id>', 'segment ID', parseSegmentId)
+  .action(withErrorHandling(async (id: SegmentId) => {
+    const globalOptions = getGlobalOptions(getCommand);
+    const client = await getAPIClientFromOptions(globalOptions);
+
+    const segment = await client.getSegment(id);
+    printFormatted(segment, globalOptions);
+  }));
+
+const createCommand = new Command('create')
+  .description('Create a new segment')
+  .argument('<name>', 'segment name')
+  .requiredOption('--attribute <attr>', 'value source attribute name')
+  .option('--description <text>', 'segment description')
+  .action(withErrorHandling(async (name: string, options) => {
+    const globalOptions = getGlobalOptions(createCommand);
+    const client = await getAPIClientFromOptions(globalOptions);
+
+    const segment = await client.createSegment({
+      name,
+      value_source_attribute: options.attribute,
+      description: options.description,
+    });
+
+    console.log(chalk.green(`✓ Segment created with ID: ${segment.id}`));
+  }));
+
+const updateCommand = new Command('update')
+  .description('Update a segment')
+  .argument('<id>', 'segment ID', parseSegmentId)
+  .option('--display-name <name>', 'new display name')
+  .option('--description <text>', 'new description')
+  .action(withErrorHandling(async (id: SegmentId, options) => {
+    const globalOptions = getGlobalOptions(updateCommand);
+    const client = await getAPIClientFromOptions(globalOptions);
+
+    const data: Record<string, string> = {};
+    if (options.displayName !== undefined) data.display_name = options.displayName;
+    if (options.description !== undefined) data.description = options.description;
+
+    requireAtLeastOneField(data, 'update field');
+    await client.updateSegment(id, data);
+    console.log(chalk.green(`✓ Segment ${id} updated`));
+  }));
+
+const deleteCommand = new Command('delete')
+  .description('Delete a segment')
+  .argument('<id>', 'segment ID', parseSegmentId)
+  .action(withErrorHandling(async (id: SegmentId) => {
+    const globalOptions = getGlobalOptions(deleteCommand);
+    const client = await getAPIClientFromOptions(globalOptions);
+
+    await client.deleteSegment(id);
+    console.log(chalk.green(`✓ Segment ${id} deleted`));
+  }));
+
+segmentsCommand.addCommand(listCommand);
+segmentsCommand.addCommand(getCommand);
+segmentsCommand.addCommand(createCommand);
+segmentsCommand.addCommand(updateCommand);
+segmentsCommand.addCommand(deleteCommand);

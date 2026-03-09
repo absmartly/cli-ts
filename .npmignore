@@ -1,0 +1,34 @@
+# Source files
+src/
+tsconfig.json
+vitest.config.ts
+
+# Tests
+**/*.test.ts
+**/*.spec.ts
+src/test/
+
+# Documentation (keep README only)
+GETTING_STARTED.md
+MIGRATION_GUIDE.md
+PORTING_SUMMARY.md
+PROJECT_STATUS.md
+FINAL_SUMMARY.md
+PORT_COMPLETE.md
+TEST_REPORT.md
+
+# Development
+.prettierrc
+.eslintrc*
+*.log
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+
+# Git
+.git/
+.gitignore
