@@ -40,5 +40,9 @@ yarn-error.log*
 *.temp
 .cache
 
+# Docs
+docs/tmp/
+docs/plans/
+
 # Claude
 .claude/tasks/
