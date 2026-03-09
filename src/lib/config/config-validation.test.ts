@@ -20,9 +20,7 @@ describe('Config Key Validation', () => {
   afterEach(() => {
     try {
       unlinkSync(testConfigPath);
-    } catch (error) {
-      // Ignore ENOENT errors - file may already be deleted
-    }
+    } catch {}
   });
 
   describe('validateConfigKey - prototype pollution protection', () => {

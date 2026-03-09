@@ -118,7 +118,6 @@ async function main() {
   };
 
   try {
-    // 1. Create
     await runTest('Create experiment', async () => {
       const created = await client.createExperiment(experimentData as never);
       assert(created.id !== undefined, 'Missing experiment id');
@@ -128,19 +127,16 @@ async function main() {
 
     if (!experimentId) throw new Error('Create failed — skipping remaining tests');
 
-    // 2. Get
     await runTest('Get experiment', async () => {
       const exp = await client.getExperiment(experimentId!);
       assert(exp.name === experimentName, `Expected name ${experimentName}, got ${exp.name}`);
     });
 
-    // 3. Development mode
     await runTest('Development mode', async () => {
       const exp = await client.developmentExperiment(experimentId!, 'live test: development');
       assert(exp.state === 'development', `Expected state development, got ${exp.state}`);
     });
 
-    // 4. Create scheduled action (must be in development/ready state)
     await runTest('Create scheduled action', async () => {
       const scheduledAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
       const result = (await client.createScheduledAction(
@@ -155,25 +151,21 @@ async function main() {
       console.log(`    scheduledActionId=${scheduledActionId}`);
     });
 
-    // 5. Delete scheduled action
     await runTest('Delete scheduled action', async () => {
       assert(scheduledActionId !== undefined, 'No scheduled action to delete');
       await client.deleteScheduledAction(experimentId!, scheduledActionId!);
     });
 
-    // 6. Start
     await runTest('Start experiment', async () => {
       const exp = await client.startExperiment(experimentId!);
       assert(exp.state === 'running', `Expected state running, got ${exp.state}`);
     });
 
-    // 7. Stop
     await runTest('Stop experiment', async () => {
       const exp = await client.stopExperiment(experimentId!, 'other');
       assert(exp.state === 'stopped', `Expected state stopped, got ${exp.state}`);
     });
 
-    // 8. Restart
     await runTest('Restart experiment', async () => {
       const newExperiment = await client.restartExperiment(experimentId!, {
         reason: 'other',
@@ -185,34 +177,30 @@ async function main() {
       console.log(`    new experimentId=${experimentId} state=${newExperiment.state}`);
     });
 
-    // 9. Full-on (variant 1)
     await runTest('Full-on (variant 1)', async () => {
       const exp = await client.fullOnExperiment(experimentId!, 1, 'live test: full-on');
       const fetched = await client.getExperiment(experimentId!);
       assert(fetched.full_on_variant === 1, `Expected full_on_variant=1, got ${fetched.full_on_variant}`);
     });
 
-    // 10. Stop (prepare for archive)
     await runTest('Stop (prepare for archive)', async () => {
       const exp = await client.stopExperiment(experimentId!, 'other');
       assert(exp.state === 'stopped', `Expected state stopped, got ${exp.state}`);
     });
 
-    // 11. Archive
     await runTest('Archive experiment', async () => {
       await client.archiveExperiment(experimentId!);
       const exp = await client.getExperiment(experimentId!);
       assert(exp.archived === true, `Expected archived=true, got ${exp.archived}`);
     });
 
-    // 12. Unarchive
     await runTest('Unarchive experiment', async () => {
       await client.archiveExperiment(experimentId!, true);
       const exp = await client.getExperiment(experimentId!);
       assert(exp.archived !== true, `Expected unarchived, got archived=${exp.archived}`);
     });
 
-    // 13. Archive experiment (cleanup — deleteExperiment does not exist in the API)
+    // deleteExperiment does not exist in the API, so we archive instead
     await runTest('Archive experiment (final cleanup)', async () => {
       await client.archiveExperiment(experimentId!);
       experimentId = undefined;

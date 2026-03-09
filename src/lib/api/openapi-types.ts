@@ -1,37 +1,25 @@
-/**
- * OpenAPI-generated types from the ABSmartly API specification
- * This provides type-safe access to all API endpoints and schemas
- */
-
 import type { paths, components } from 'absmartly-api-mocks/src/generated/schema';
 
-// Response types for experiments
 export type ExperimentsListResponse = paths['/experiments']['get']['responses']['200']['content']['application/json'];
 export type ExperimentDetailResponse = paths['/experiments/{experimentId}']['get']['responses']['200']['content']['application/json'];
 export type ExperimentCreateRequest = paths['/experiments']['post']['requestBody']['content']['application/json'];
 export type ExperimentUpdateRequest = paths['/experiments/{experimentId}']['put']['requestBody']['content']['application/json'];
 
-// Response types for goals
 export type GoalsListResponse = paths['/goals']['get']['responses']['200']['content']['application/json'];
 export type GoalDetailResponse = paths['/goals/{goalId}']['get']['responses']['200']['content']['application/json'];
 
-// Response types for segments
 export type SegmentsListResponse = paths['/segments']['get']['responses']['200']['content']['application/json'];
 export type SegmentDetailResponse = paths['/segments/{segmentId}']['get']['responses']['200']['content']['application/json'];
 
-// Response types for teams
 export type TeamsListResponse = paths['/teams']['get']['responses']['200']['content']['application/json'];
 export type TeamDetailResponse = paths['/teams/{teamId}']['get']['responses']['200']['content']['application/json'];
 
-// Response types for users
 export type UsersListResponse = paths['/users']['get']['responses']['200']['content']['application/json'];
 export type UserDetailResponse = paths['/users/{userId}']['get']['responses']['200']['content']['application/json'];
 
-// Response types for metrics
 export type MetricsListResponse = paths['/metrics']['get']['responses']['200']['content']['application/json'];
 export type MetricDetailResponse = paths['/metrics/{metricId}']['get']['responses']['200']['content']['application/json'];
 
-// Schema components
 export type Experiment = components['schemas']['Experiment'];
 export type ExperimentShort = components['schemas']['ExperimentShort'];
 export type ExperimentVariant = components['schemas']['ExperimentVariant'];
@@ -53,5 +41,4 @@ export type Role = components['schemas']['Role'];
 export type Permission = components['schemas']['Permission'];
 export type Webhook = components['schemas']['Webhook'];
 
-// Export all schemas for convenience
 export type { paths, components };

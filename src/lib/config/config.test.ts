@@ -21,22 +21,16 @@ describe('Config Management', () => {
   afterEach(() => {
     try {
       unlinkSync(testConfigPath);
-    } catch {
-      // Ignore ENOENT errors - file may already be deleted
-    }
+    } catch {}
 
     try {
       const tempFiles = readdirSync(testConfigDir).filter(f => f.includes('.tmp.'));
       for (const file of tempFiles) {
         try {
           unlinkSync(`${testConfigDir}/${file}`);
-        } catch {
-          // Ignore errors
-        }
+        } catch {}
       }
-    } catch {
-      // Ignore if directory doesn't exist
-    }
+    } catch {}
   });
 
   describe('defaultConfig', () => {
