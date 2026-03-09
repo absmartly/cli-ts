@@ -1,8 +1,12 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
-import { getAPIClientFromOptions, getGlobalOptions, withErrorHandling } from '../../lib/utils/api-helper.js';
+import { getAPIClientFromOptions, getGlobalOptions, resolveAPIKey, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseExperimentFile, type VariantTemplate } from '../../lib/template/parser.js';
 import type { Experiment } from '../../lib/api/types.js';
+
+function shellEscape(s: string): string {
+  return "'" + s.replace(/'/g, "'\\''") + "'";
+}
 
 export const createCommand = new Command('create')
   .description('Create a new experiment')
@@ -10,11 +14,18 @@ export const createCommand = new Command('create')
   .option('--name <name>', 'experiment name')
   .option('--display-name <name>', 'display name')
   .option('--type <type>', 'experiment type (test, feature)')
+  .option('--state <state>', 'initial state (created, ready, running)', 'ready')
   .option('--variants <names>', 'comma-separated variant names')
-  .option('--app <name>', 'application name')
+  .option('--variant-config <json...>', 'variant config JSON (one per variant, in order)')
+  .option('--application-id <id>', 'application ID', parseInt)
+  .option('--unit-type <id>', 'unit type ID', parseInt)
+  .option('--primary-metric <id>', 'primary metric ID', parseInt)
+  .option('--percentages <values>', 'comma-separated traffic split per variant (e.g. 50,50)')
+  .option('--percentage-of-traffic <pct>', 'percentage of total traffic (0-100)', parseInt, 100)
   .option('--env <name>', 'environment name')
   .option('--description <text>', 'experiment description')
   .option('--hypothesis <text>', 'experiment hypothesis')
+  .option('--owner <user_id>', 'owner user ID (can specify multiple)', (val: string, prev: string[]) => [...prev, val], [] as string[])
   .option('--dry-run', 'show the request payload without making the API call')
   .option('--as-curl', 'output as curl command instead of making the API call')
   .action(withErrorHandling(async (options) => {
@@ -32,6 +43,10 @@ export const createCommand = new Command('create')
         state: template.state as 'archived' | 'created' | 'ready' | 'running' | 'development' | 'full_on' | 'stopped' | 'scheduled',
         traffic: template.percentage_of_traffic,
       } as Partial<Experiment>;
+
+      if (template.owner_id) {
+        (data as any).owners = [{ user_id: Number(template.owner_id) }];
+      }
 
       if (template.variants && template.variants.length > 0) {
         data.variants = template.variants.map((v: VariantTemplate, index: number) => {
@@ -62,22 +77,78 @@ export const createCommand = new Command('create')
         );
       }
 
+      const variantNames = options.variants ? options.variants.split(',').map((n: string) => n.trim()) : ['control', 'treatment'];
+      const variantConfigs: string[] = options.variantConfig || [];
+      const variants = variantNames.map((name: string, index: number) => ({
+        name,
+        variant: index,
+        config: variantConfigs[index] || JSON.stringify({}),
+      }));
+
+      const percentages = options.percentages
+        ? options.percentages.split(',').map((p: string) => parseInt(p.trim(), 10))
+        : variantNames.map(() => Math.floor(100 / variantNames.length));
+
       data = {
         name: options.name,
         display_name: options.displayName || options.name,
         type: (options.type || 'test') as 'test' | 'feature',
-      } as Partial<Experiment>;
+        state: options.state,
+        percentages: percentages.join('/'),
+        percentage_of_traffic: options.percentageOfTraffic,
+        audience: '{"filter":[{"and":[]}]}',
+        audience_strict: false,
+        analysis_type: 'group_sequential',
+        required_alpha: '0.1',
+        required_power: '0.8',
+        group_sequential_futility_type: 'binding',
+        group_sequential_min_analysis_interval: '1d',
+        group_sequential_first_analysis_interval: '7d',
+        group_sequential_max_duration_interval: '6w',
+        baseline_participants_per_day: '33',
+        nr_variants: variants.length,
+        variants,
+        variant_screenshots: [],
+        secondary_metrics: [],
+        teams: [],
+        experiment_tags: [],
+      } as any;
 
-      if (options.variants) {
-        data.variants = options.variants.split(',').map((name: string, index: number) => ({
-          name: name.trim(),
-          variant: index,
-          config: JSON.stringify({}),
-        }));
+      if (options.unitType) {
+        (data as any).unit_type = { unit_type_id: options.unitType };
+      }
+      if (options.applicationId) {
+        (data as any).applications = [{ application_id: options.applicationId, application_version: '0' }];
+      }
+      if (options.primaryMetric) {
+        (data as any).primary_metric = { metric_id: options.primaryMetric };
       }
     }
 
-    // Handle --dry-run and --as-curl flags
+    if (options.owner && options.owner.length > 0) {
+      (data as any).owners = options.owner.map((id: string) => ({ user_id: parseInt(id, 10) }));
+    }
+
+    if (!(data as any).custom_section_field_values) {
+      const customFields = await client.listCustomSectionFields();
+      const expType = (data as any).type || 'test';
+      const allFields = customFields.filter(
+        (f: any) => !f.archived && f.custom_section?.type === expType && !f.custom_section?.archived
+      );
+      if (allFields.length > 0) {
+        const ownerId = (data as any).owners?.[0]?.user_id;
+        const fieldValues: Record<string, { type: string; value: string }> = {};
+        for (const f of allFields) {
+          let value = f.default_value ?? '';
+          if (f.type === 'user' && ownerId) {
+            value = String(ownerId);
+          }
+          fieldValues[f.id] = { type: f.type, value };
+        }
+        (data as any).custom_section_field_values = fieldValues;
+      }
+    }
+
     if (options.dryRun) {
       console.log(chalk.blue('📋 Request Payload (dry-run):'));
       console.log('');
@@ -90,17 +161,17 @@ export const createCommand = new Command('create')
 
     if (options.asCurl) {
       const endpoint = globalOptions.endpoint || process.env.ABSMARTLY_API_ENDPOINT || 'https://demo-2.absmartly.com/v1';
-      const apiKey = globalOptions.apiKey || process.env.ABSMARTLY_API_KEY || '';
+      const apiKey = await resolveAPIKey(globalOptions);
 
-      console.log(chalk.blue('🔧 cURL Command:'));
+      console.log(chalk.blue('cURL Command:'));
       console.log('');
-      console.log(`curl -X POST '${endpoint}/experiments' \\`);
-      console.log(`  -H 'Authorization: Api-Key ${apiKey}' \\`);
+      console.log(`curl -X POST ${shellEscape(endpoint + '/experiments')} \\`);
+      console.log(`  -H ${shellEscape('Authorization: Api-Key ' + apiKey)} \\`);
       console.log(`  -H 'Content-Type: application/json' \\`);
       console.log(`  -H 'Accept: application/json' \\`);
-      console.log(`  -d '${JSON.stringify(data)}'`);
+      console.log(`  -d ${shellEscape(JSON.stringify(data))}`);
       console.log('');
-      console.log(chalk.yellow('💡 Tip: Pipe to jq for formatted output:'));
+      console.log(chalk.yellow('Tip: Pipe to jq for formatted output:'));
       console.log(`  ... | jq`);
       console.log('');
       return;

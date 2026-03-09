@@ -2,12 +2,12 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { writeFileSync, unlinkSync, existsSync } from 'fs';
 import { join } from 'path';
 import { createCommand } from './create.js';
-import { getAPIClientFromOptions, getGlobalOptions } from '../../lib/utils/api-helper.js';
+import { getAPIClientFromOptions, getGlobalOptions, resolveAPIKey } from '../../lib/utils/api-helper.js';
 import { resetCommand } from '../../test/helpers/command-reset.js';
 
 vi.mock('../../lib/utils/api-helper.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../lib/utils/api-helper.js')>();
-  return { ...actual, getAPIClientFromOptions: vi.fn(), getGlobalOptions: vi.fn() };
+  return { ...actual, getAPIClientFromOptions: vi.fn(), getGlobalOptions: vi.fn(), resolveAPIKey: vi.fn() };
 });
 
 describe('create command', () => {
@@ -17,6 +17,7 @@ describe('create command', () => {
 
   const mockClient = {
     createExperiment: vi.fn().mockResolvedValue({ id: 99, name: 'test-exp', type: 'test' }),
+    listCustomSectionFields: vi.fn().mockResolvedValue([]),
   };
 
   beforeEach(() => {
@@ -24,6 +25,7 @@ describe('create command', () => {
     resetCommand(createCommand);
     vi.mocked(getAPIClientFromOptions).mockResolvedValue(mockClient as any);
     vi.mocked(getGlobalOptions).mockReturnValue({ output: 'table' } as any);
+    vi.mocked(resolveAPIKey).mockResolvedValue('test-api-key');
     consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     processExitSpy = vi.spyOn(process, 'exit').mockImplementation((code?) => {

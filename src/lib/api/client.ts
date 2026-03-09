@@ -23,6 +23,7 @@ import type {
   PermissionCategory,
   ApiKey,
   Webhook,
+  ScheduledAction,
 } from './types.js';
 import type {
   ExperimentId,
@@ -209,6 +210,31 @@ export class APIClient {
     }
   }
 
+  private validateEntityResponse<T>(
+    response: AxiosResponse,
+    expectedKey: string,
+    operation: string
+  ): T {
+    const data = response.data;
+
+    if (!data || typeof data !== 'object') {
+      throw new Error(
+        `Invalid API response for ${operation}: Expected object, got ${typeof data}`
+      );
+    }
+
+    const entity = (data as Record<string, unknown>)[expectedKey];
+
+    if (entity === undefined) {
+      throw new Error(
+        `Invalid API response for ${operation}: Missing "${expectedKey}" field\n` +
+        `Response keys: ${Object.keys(data).join(', ')}`
+      );
+    }
+
+    return entity as T;
+  }
+
   async listExperiments(options: ListOptions = {}): Promise<Experiment[]> {
     const params: Record<string, string> = {};
 
@@ -260,30 +286,30 @@ export class APIClient {
 
   async getExperiment(id: ExperimentId): Promise<Experiment> {
     const response = await this.client.get(`/experiments/${id}`);
-    return response.data.experiment;
+    return this.validateEntityResponse<Experiment>(response, 'experiment', 'getExperiment');
   }
 
   async createExperiment(data: Partial<Experiment>): Promise<Experiment> {
     const response = await this.client.post('/experiments', data);
     this.validateOkResponse(response, 'createExperiment');
-    return response.data.experiment;
+    return this.validateEntityResponse<Experiment>(response, 'experiment', 'createExperiment');
   }
 
   async updateExperiment(id: ExperimentId, data: Partial<Experiment>): Promise<Experiment> {
     const response = await this.client.put(`/experiments/${id}`, { data });
-    return response.data.experiment;
+    return this.validateEntityResponse<Experiment>(response, 'experiment', 'updateExperiment');
   }
 
   async startExperiment(id: ExperimentId): Promise<Experiment> {
     const response = await this.client.put(`/experiments/${id}/start`);
-    return response.data.experiment;
+    return this.validateEntityResponse<Experiment>(response, 'experiment', 'startExperiment');
   }
 
   async stopExperiment(id: ExperimentId, reason?: string): Promise<Experiment> {
     const response = await this.client.put(`/experiments/${id}/stop`, {
       ...(reason !== undefined && { reason }),
     });
-    return response.data.experiment;
+    return this.validateEntityResponse<Experiment>(response, 'experiment', 'stopExperiment');
   }
 
   async archiveExperiment(id: ExperimentId, unarchive = false): Promise<void> {
@@ -292,7 +318,7 @@ export class APIClient {
 
   async developmentExperiment(id: ExperimentId, note: string): Promise<Experiment> {
     const response = await this.client.put(`/experiments/${id}/development`, { note });
-    return response.data.experiment;
+    return this.validateEntityResponse<Experiment>(response, 'experiment', 'developmentExperiment');
   }
 
   async restartExperiment(
@@ -306,7 +332,14 @@ export class APIClient {
     } = {}
   ): Promise<Experiment> {
     const response = await this.client.put(`/experiments/${id}/restart`, options);
-    return response.data.new_experiment ?? response.data.experiment;
+    const experiment = response.data.new_experiment ?? response.data.experiment;
+    if (!experiment) {
+      throw new Error(
+        `Invalid API response for restartExperiment: Missing "new_experiment" or "experiment" field\n` +
+        `Response keys: ${Object.keys(response.data).join(', ')}`
+      );
+    }
+    return experiment;
   }
 
   async fullOnExperiment(id: ExperimentId, fullOnVariant: number, note: string): Promise<Experiment> {
@@ -314,7 +347,7 @@ export class APIClient {
       full_on_variant: fullOnVariant,
       note,
     });
-    return response.data.experiment;
+    return this.validateEntityResponse<Experiment>(response, 'experiment', 'fullOnExperiment');
   }
 
   async createScheduledAction(
@@ -323,11 +356,11 @@ export class APIClient {
     scheduledAt: string,
     note: string,
     reason?: string
-  ): Promise<unknown> {
+  ): Promise<ScheduledAction> {
     const body: Record<string, unknown> = { action, scheduled_at: scheduledAt, note };
     if (reason) body.reason = reason;
     const response = await this.client.post(`/experiments/${id}/scheduled_action`, body);
-    return response.data;
+    return this.validateEntityResponse<ScheduledAction>(response, 'scheduled_action', 'createScheduledAction');
   }
 
   async deleteScheduledAction(id: ExperimentId, actionId: ScheduledActionId): Promise<void> {
@@ -341,7 +374,7 @@ export class APIClient {
 
   async createExperimentNote(id: ExperimentId, note: string): Promise<Note> {
     const response = await this.client.post(`/experiments/${id}/activity`, { note });
-    return response.data.experiment_note;
+    return this.validateEntityResponse<Note>(response, 'experiment_note', 'createExperimentNote');
   }
 
   async searchExperiments(query: string, limit = 50): Promise<Experiment[]> {
@@ -357,17 +390,17 @@ export class APIClient {
 
   async getGoal(id: GoalId): Promise<Goal> {
     const response = await this.client.get(`/goals/${id}`);
-    return response.data.goal;
+    return this.validateEntityResponse<Goal>(response, 'goal', 'getGoal');
   }
 
   async createGoal(data: Partial<Goal>): Promise<Goal> {
     const response = await this.client.post('/goals', data);
-    return response.data.goal;
+    return this.validateEntityResponse<Goal>(response, 'goal', 'createGoal');
   }
 
   async updateGoal(id: GoalId, data: Partial<Goal>): Promise<Goal> {
     const response = await this.client.put(`/goals/${id}`, { data });
-    return response.data.goal;
+    return this.validateEntityResponse<Goal>(response, 'goal', 'updateGoal');
   }
 
   async listSegments(limit = 100, offset = 0): Promise<Segment[]> {
@@ -379,17 +412,17 @@ export class APIClient {
 
   async getSegment(id: SegmentId): Promise<Segment> {
     const response = await this.client.get(`/segments/${id}`);
-    return response.data.segment;
+    return this.validateEntityResponse<Segment>(response, 'segment', 'getSegment');
   }
 
   async createSegment(data: Partial<Segment>): Promise<Segment> {
     const response = await this.client.post('/segments', data);
-    return response.data.segment;
+    return this.validateEntityResponse<Segment>(response, 'segment', 'createSegment');
   }
 
   async updateSegment(id: SegmentId, data: Partial<Segment>): Promise<Segment> {
     const response = await this.client.put(`/segments/${id}`, { data });
-    return response.data.segment;
+    return this.validateEntityResponse<Segment>(response, 'segment', 'updateSegment');
   }
 
   async deleteSegment(id: SegmentId): Promise<void> {
@@ -405,17 +438,17 @@ export class APIClient {
 
   async getTeam(id: TeamId): Promise<Team> {
     const response = await this.client.get(`/teams/${id}`);
-    return response.data.team;
+    return this.validateEntityResponse<Team>(response, 'team', 'getTeam');
   }
 
   async createTeam(data: Partial<Team>): Promise<Team> {
     const response = await this.client.post('/teams', data);
-    return response.data.team;
+    return this.validateEntityResponse<Team>(response, 'team', 'createTeam');
   }
 
   async updateTeam(id: TeamId, data: Partial<Team>): Promise<Team> {
-    const response = await this.client.put(`/teams/${id}`, data);
-    return response.data.team;
+    const response = await this.client.put(`/teams/${id}`, { data });
+    return this.validateEntityResponse<Team>(response, 'team', 'updateTeam');
   }
 
   async archiveTeam(id: TeamId, unarchive = false): Promise<void> {
@@ -431,17 +464,17 @@ export class APIClient {
 
   async getUser(id: UserId): Promise<User> {
     const response = await this.client.get(`/users/${id}`);
-    return response.data.user;
+    return this.validateEntityResponse<User>(response, 'user', 'getUser');
   }
 
   async createUser(data: Partial<User>): Promise<User> {
     const response = await this.client.post('/users', data);
-    return response.data.user;
+    return this.validateEntityResponse<User>(response, 'user', 'createUser');
   }
 
   async updateUser(id: UserId, data: Partial<User>): Promise<User> {
-    const response = await this.client.put(`/users/${id}`, data);
-    return response.data.user;
+    const response = await this.client.put(`/users/${id}`, { data });
+    return this.validateEntityResponse<User>(response, 'user', 'updateUser');
   }
 
   async archiveUser(id: UserId, unarchive = false): Promise<void> {
@@ -457,21 +490,41 @@ export class APIClient {
 
   async getMetric(id: MetricId): Promise<Metric> {
     const response = await this.client.get(`/metrics/${id}`);
-    return response.data.metric;
+    return this.validateEntityResponse<Metric>(response, 'metric', 'getMetric');
   }
 
   async createMetric(data: Partial<Metric>): Promise<Metric> {
     const response = await this.client.post('/metrics', data);
-    return response.data.metric;
+    return this.validateEntityResponse<Metric>(response, 'metric', 'createMetric');
   }
 
   async updateMetric(id: MetricId, data: Partial<Metric>): Promise<Metric> {
     const response = await this.client.put(`/metrics/${id}`, { data });
-    return response.data.metric;
+    return this.validateEntityResponse<Metric>(response, 'metric', 'updateMetric');
+  }
+
+  async createUserApiKey(name: string, description?: string): Promise<{ id: number; name: string; key: string }> {
+    const baseURL = this.client.defaults.baseURL || '';
+    const origin = new URL(baseURL).origin;
+    const response = await this.client.post(`${origin}/auth/current-user/api_keys`, {
+      name,
+      description: description || '',
+    });
+    return this.validateEntityResponse<{ id: number; name: string; key: string }>(response, 'user_api_key', 'createUserApiKey');
+  }
+
+  async activateMetric(id: MetricId, reason: string): Promise<Metric> {
+    const response = await this.client.put(`/metrics/${id}/activate`, { reason });
+    return this.validateEntityResponse<Metric>(response, 'metric', 'activateMetric');
   }
 
   async archiveMetric(id: MetricId, unarchive = false): Promise<void> {
     await this.client.put(`/metrics/${id}/archive`, { archive: !unarchive });
+  }
+
+  async listCustomSectionFields(): Promise<any[]> {
+    const response = await this.client.get('/experiment_custom_section_fields');
+    return response.data.experiment_custom_section_fields ?? response.data.items ?? response.data;
   }
 
   async listApplications(): Promise<Application[]> {
@@ -481,7 +534,7 @@ export class APIClient {
 
   async getApplication(id: ApplicationId): Promise<Application> {
     const response = await this.client.get(`/applications/${id}`);
-    return response.data.application;
+    return this.validateEntityResponse<Application>(response, 'application', 'getApplication');
   }
 
   async listEnvironments(): Promise<Environment[]> {
@@ -491,7 +544,7 @@ export class APIClient {
 
   async getEnvironment(id: EnvironmentId): Promise<Environment> {
     const response = await this.client.get(`/environments/${id}`);
-    return response.data.environment;
+    return this.validateEntityResponse<Environment>(response, 'environment', 'getEnvironment');
   }
 
   async listUnitTypes(): Promise<UnitType[]> {
@@ -501,7 +554,7 @@ export class APIClient {
 
   async getUnitType(id: UnitTypeId): Promise<UnitType> {
     const response = await this.client.get(`/unit_types/${id}`);
-    return response.data.unit_type;
+    return this.validateEntityResponse<UnitType>(response, 'unit_type', 'getUnitType');
   }
 
   async listExperimentTags(limit = 100, offset = 0): Promise<ExperimentTag[]> {
@@ -512,26 +565,18 @@ export class APIClient {
   }
 
   async getExperimentTag(id: TagId): Promise<ExperimentTag> {
-    const response = await this.client.get<{ experiment_tag: ExperimentTag }>(
-      `/experiment_tags/${id}`
-    );
-    return response.data.experiment_tag;
+    const response = await this.client.get(`/experiment_tags/${id}`);
+    return this.validateEntityResponse<ExperimentTag>(response, 'experiment_tag', 'getExperimentTag');
   }
 
   async createExperimentTag(data: { tag: string }): Promise<ExperimentTag> {
-    const response = await this.client.post<{ experiment_tag: ExperimentTag }>(
-      '/experiment_tags',
-      data
-    );
-    return response.data.experiment_tag;
+    const response = await this.client.post('/experiment_tags', data);
+    return this.validateEntityResponse<ExperimentTag>(response, 'experiment_tag', 'createExperimentTag');
   }
 
   async updateExperimentTag(id: TagId, data: { tag: string }): Promise<ExperimentTag> {
-    const response = await this.client.put<{ experiment_tag: ExperimentTag }>(
-      `/experiment_tags/${id}`,
-      { data }
-    );
-    return response.data.experiment_tag;
+    const response = await this.client.put(`/experiment_tags/${id}`, { data });
+    return this.validateEntityResponse<ExperimentTag>(response, 'experiment_tag', 'updateExperimentTag');
   }
 
   async deleteExperimentTag(id: TagId): Promise<void> {
@@ -546,18 +591,18 @@ export class APIClient {
   }
 
   async getGoalTag(id: TagId): Promise<GoalTag> {
-    const response = await this.client.get<{ goal_tag: GoalTag }>(`/goal_tags/${id}`);
-    return response.data.goal_tag;
+    const response = await this.client.get(`/goal_tags/${id}`);
+    return this.validateEntityResponse<GoalTag>(response, 'goal_tag', 'getGoalTag');
   }
 
   async createGoalTag(data: { tag: string }): Promise<GoalTag> {
-    const response = await this.client.post<{ goal_tag: GoalTag }>('/goal_tags', data);
-    return response.data.goal_tag;
+    const response = await this.client.post('/goal_tags', data);
+    return this.validateEntityResponse<GoalTag>(response, 'goal_tag', 'createGoalTag');
   }
 
   async updateGoalTag(id: TagId, data: { tag: string }): Promise<GoalTag> {
-    const response = await this.client.put<{ goal_tag: GoalTag }>(`/goal_tags/${id}`, { data });
-    return response.data.goal_tag;
+    const response = await this.client.put(`/goal_tags/${id}`, { data });
+    return this.validateEntityResponse<GoalTag>(response, 'goal_tag', 'updateGoalTag');
   }
 
   async deleteGoalTag(id: TagId): Promise<void> {
@@ -572,18 +617,18 @@ export class APIClient {
   }
 
   async getMetricTag(id: TagId): Promise<MetricTag> {
-    const response = await this.client.get<{ metric_tag: MetricTag }>(`/metric_tags/${id}`);
-    return response.data.metric_tag;
+    const response = await this.client.get(`/metric_tags/${id}`);
+    return this.validateEntityResponse<MetricTag>(response, 'metric_tag', 'getMetricTag');
   }
 
   async createMetricTag(data: { tag: string }): Promise<MetricTag> {
-    const response = await this.client.post<{ metric_tag: MetricTag }>('/metric_tags', data);
-    return response.data.metric_tag;
+    const response = await this.client.post('/metric_tags', data);
+    return this.validateEntityResponse<MetricTag>(response, 'metric_tag', 'createMetricTag');
   }
 
   async updateMetricTag(id: TagId, data: { tag: string }): Promise<MetricTag> {
-    const response = await this.client.put<{ metric_tag: MetricTag }>(`/metric_tags/${id}`, { data });
-    return response.data.metric_tag;
+    const response = await this.client.put(`/metric_tags/${id}`, { data });
+    return this.validateEntityResponse<MetricTag>(response, 'metric_tag', 'updateMetricTag');
   }
 
   async deleteMetricTag(id: TagId): Promise<void> {
@@ -598,10 +643,8 @@ export class APIClient {
   }
 
   async getMetricCategory(id: TagId): Promise<MetricCategory> {
-    const response = await this.client.get<{ metric_category: MetricCategory }>(
-      `/metric_categories/${id}`
-    );
-    return response.data.metric_category;
+    const response = await this.client.get(`/metric_categories/${id}`);
+    return this.validateEntityResponse<MetricCategory>(response, 'metric_category', 'getMetricCategory');
   }
 
   async createMetricCategory(data: {
@@ -609,22 +652,16 @@ export class APIClient {
     description?: string;
     color: string;
   }): Promise<MetricCategory> {
-    const response = await this.client.post<{ metric_category: MetricCategory }>(
-      '/metric_categories',
-      data
-    );
-    return response.data.metric_category;
+    const response = await this.client.post('/metric_categories', data);
+    return this.validateEntityResponse<MetricCategory>(response, 'metric_category', 'createMetricCategory');
   }
 
   async updateMetricCategory(
     id: TagId,
     data: { name?: string; description?: string; color?: string }
   ): Promise<MetricCategory> {
-    const response = await this.client.put<{ metric_category: MetricCategory }>(
-      `/metric_categories/${id}`,
-      { data }
-    );
-    return response.data.metric_category;
+    const response = await this.client.put(`/metric_categories/${id}`, { data });
+    return this.validateEntityResponse<MetricCategory>(response, 'metric_category', 'updateMetricCategory');
   }
 
   async archiveMetricCategory(id: TagId, archive = true): Promise<void> {
@@ -640,17 +677,17 @@ export class APIClient {
 
   async getRole(id: RoleId): Promise<Role> {
     const response = await this.client.get(`/roles/${id}`);
-    return response.data.role;
+    return this.validateEntityResponse<Role>(response, 'role', 'getRole');
   }
 
   async createRole(data: Partial<Role>): Promise<Role> {
     const response = await this.client.post('/roles', data);
-    return response.data.role;
+    return this.validateEntityResponse<Role>(response, 'role', 'createRole');
   }
 
   async updateRole(id: RoleId, data: Partial<Role>): Promise<Role> {
     const response = await this.client.put(`/roles/${id}`, { data });
-    return response.data.role;
+    return this.validateEntityResponse<Role>(response, 'role', 'updateRole');
   }
 
   async deleteRole(id: RoleId): Promise<void> {
@@ -676,17 +713,17 @@ export class APIClient {
 
   async getApiKey(id: ApiKeyId): Promise<ApiKey> {
     const response = await this.client.get(`/api_keys/${id}`);
-    return response.data.api_key;
+    return this.validateEntityResponse<ApiKey>(response, 'api_key', 'getApiKey');
   }
 
   async createApiKey(data: Partial<ApiKey>): Promise<ApiKey> {
     const response = await this.client.post('/api_keys', data);
-    return response.data.api_key;
+    return this.validateEntityResponse<ApiKey>(response, 'api_key', 'createApiKey');
   }
 
   async updateApiKey(id: ApiKeyId, data: Partial<ApiKey>): Promise<ApiKey> {
     const response = await this.client.put(`/api_keys/${id}`, { data });
-    return response.data.api_key;
+    return this.validateEntityResponse<ApiKey>(response, 'api_key', 'updateApiKey');
   }
 
   async deleteApiKey(id: ApiKeyId): Promise<void> {
@@ -702,17 +739,17 @@ export class APIClient {
 
   async getWebhook(id: WebhookId): Promise<Webhook> {
     const response = await this.client.get(`/webhooks/${id}`);
-    return response.data.webhook;
+    return this.validateEntityResponse<Webhook>(response, 'webhook', 'getWebhook');
   }
 
   async createWebhook(data: Partial<Webhook>): Promise<Webhook> {
     const response = await this.client.post('/webhooks', data);
-    return response.data.webhook;
+    return this.validateEntityResponse<Webhook>(response, 'webhook', 'createWebhook');
   }
 
   async updateWebhook(id: WebhookId, data: Partial<Webhook>): Promise<Webhook> {
     const response = await this.client.put(`/webhooks/${id}`, { data });
-    return response.data.webhook;
+    return this.validateEntityResponse<Webhook>(response, 'webhook', 'updateWebhook');
   }
 
   async deleteWebhook(id: WebhookId): Promise<void> {

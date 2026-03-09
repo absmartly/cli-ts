@@ -4,11 +4,10 @@ import { getAPIKey } from '../config/keyring.js';
 import { Command } from 'commander';
 import { formatOutput, type OutputFormat } from '../output/formatter.js';
 
-export async function getAPIClientFromOptions(options: Record<string, unknown>): Promise<APIClient> {
+export async function resolveAPIKey(options: Record<string, unknown>): Promise<string> {
   const config = loadConfig();
   const profileName = (options.profile as string) || config['default-profile'];
   const profile = getProfile(profileName);
-
   const endpoint = (options.endpoint as string) || profile.api.endpoint;
   const apiKey = (options.apiKey as string) || (await getAPIKey(profileName));
 
@@ -19,6 +18,16 @@ export async function getAPIClientFromOptions(options: Record<string, unknown>):
       `Or: abs setup  # for interactive configuration`
     );
   }
+
+  return apiKey;
+}
+
+export async function getAPIClientFromOptions(options: Record<string, unknown>): Promise<APIClient> {
+  const config = loadConfig();
+  const profileName = (options.profile as string) || config['default-profile'];
+  const profile = getProfile(profileName);
+  const endpoint = (options.endpoint as string) || profile.api.endpoint;
+  const apiKey = await resolveAPIKey(options);
 
   return createAPIClient(endpoint, apiKey, { verbose: options.verbose as boolean });
 }

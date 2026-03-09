@@ -14,6 +14,7 @@ describe('start command', () => {
   let processExitSpy: ReturnType<typeof vi.spyOn>;
 
   const mockClient = {
+    getExperiment: vi.fn().mockResolvedValue({ id: 42, state: 'ready' }),
     startExperiment: vi.fn().mockResolvedValue({ id: 42, state: 'running' }),
   };
 

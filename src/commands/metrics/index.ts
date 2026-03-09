@@ -79,8 +79,21 @@ const archiveCommand = new Command('archive')
     console.log(chalk.green(`✓ Metric ${id} ${action}`));
   }));
 
+const activateCommand = new Command('activate')
+  .description('Activate a metric version')
+  .argument('<id>', 'metric ID', parseMetricId)
+  .requiredOption('--reason <text>', 'reason for activation')
+  .action(withErrorHandling(async (id: MetricId, options) => {
+    const globalOptions = getGlobalOptions(activateCommand);
+    const client = await getAPIClientFromOptions(globalOptions);
+
+    await client.activateMetric(id, options.reason);
+    console.log(chalk.green(`✓ Metric ${id} activated`));
+  }));
+
 metricsCommand.addCommand(listCommand);
 metricsCommand.addCommand(getCommand);
 metricsCommand.addCommand(createCommand);
 metricsCommand.addCommand(updateCommand);
 metricsCommand.addCommand(archiveCommand);
+metricsCommand.addCommand(activateCommand);

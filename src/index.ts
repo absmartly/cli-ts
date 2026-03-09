@@ -29,6 +29,7 @@ import { apiKeysCommand } from './commands/apikeys/index.js';
 import { webhooksCommand } from './commands/webhooks/index.js';
 import { generateCommand } from './commands/generate/index.js';
 import { setupCommand } from './commands/setup/index.js';
+import { customFieldsCommand } from './commands/customfields/index.js';
 import { handleFatalError } from './lib/utils/error-handler.js';
 
 const program = new Command();
@@ -77,8 +78,9 @@ program.addCommand(apiKeysCommand);
 program.addCommand(webhooksCommand);
 program.addCommand(generateCommand);
 program.addCommand(setupCommand);
+program.addCommand(customFieldsCommand);
 
 process.on('unhandledRejection', (reason) => handleFatalError('unhandled promise rejection', reason));
 process.on('uncaughtException', (error) => handleFatalError('uncaught exception', error));
 
-program.parseAsync();
+program.parseAsync().catch((error) => handleFatalError('command parsing', error));
