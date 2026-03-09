@@ -36,11 +36,11 @@ export const restartCommand = new Command('restart')
       );
     }
 
-    const restartOptions: Record<string, unknown> = { note: options.note };
+    const restartOptions: Parameters<typeof client.restartExperiment>[1] = { note: options.note };
     if (options.reason) restartOptions.reason = options.reason;
     if (options.reshuffle) restartOptions.reshuffle = true;
     if (options.state) restartOptions.state = options.state;
 
-    await client.restartExperiment(id, restartOptions as any);
+    await client.restartExperiment(id, restartOptions);
     console.log(chalk.green(`✓ Experiment ${id} restarted`));
   }));

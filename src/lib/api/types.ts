@@ -35,6 +35,7 @@ import type {
   RoleId,
   ApiKeyId,
   WebhookId,
+  ScheduledActionId,
 } from './branded-types.js';
 
 export type ExperimentStrict = OpenAPIExperiment;
@@ -135,6 +136,17 @@ export type Permission = OpenAPIPermission;
 export type Webhook = Partial<OpenAPIWebhook> & {
   id: WebhookId;
 };
+
+export interface ScheduledAction {
+  id: ScheduledActionId;
+  experiment_id: ExperimentId;
+  action: string;
+  scheduled_at: string;
+  note?: string;
+  reason?: string;
+  created_at?: string;
+  executed_at?: string;
+}
 
 export interface Alert {
   id: AlertId;

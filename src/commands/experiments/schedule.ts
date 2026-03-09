@@ -20,7 +20,7 @@ const createScheduleCommand = new Command('create')
     const globalOptions = getGlobalOptions(createScheduleCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
-    if (!VALID_ACTIONS.includes(options.action as any)) {
+    if (!(VALID_ACTIONS as readonly string[]).includes(options.action)) {
       throw new Error(
         `Invalid action: "${options.action}"\n` +
         `Valid actions: ${VALID_ACTIONS.join(', ')}`
@@ -49,7 +49,7 @@ const createScheduleCommand = new Command('create')
       );
     }
 
-    const result = await client.createScheduledAction(
+    const scheduledAction = await client.createScheduledAction(
       id,
       options.action,
       date.toISOString(),
@@ -57,10 +57,9 @@ const createScheduleCommand = new Command('create')
       options.reason
     );
 
-    const actionData = (result as any)?.scheduled_action;
     console.log(chalk.green(`✓ Scheduled "${options.action}" for experiment ${id}`));
-    if (actionData?.id) {
-      console.log(`  Scheduled action ID: ${actionData.id}`);
+    if (scheduledAction.id) {
+      console.log(`  Scheduled action ID: ${scheduledAction.id}`);
     }
     console.log(`  Scheduled at: ${date.toISOString()}`);
   }));
