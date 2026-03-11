@@ -5,6 +5,21 @@
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./api-client": {
+      "types": "./dist/api-client/index.d.ts",
+      "default": "./dist/api-client/index.js"
+    }
+  },
+  "typesVersions": {
+    "*": {
+      "api-client": ["./dist/api-client/index.d.ts"]
+    }
+  },
   "files": [
     "dist",
     "README.md",

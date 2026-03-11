@@ -2,7 +2,7 @@ import { Command } from 'commander';
 import { writeFileSync } from 'fs';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, withErrorHandling } from '../../lib/utils/api-helper.js';
-import { generateTemplate } from '../../lib/template/generator.js';
+import { generateTemplateFromClient } from '../../lib/template/generator.js';
 
 export const generateTemplateCommand = new Command('generate-template')
   .aliases(['gen-template', 'template'])
@@ -14,7 +14,7 @@ export const generateTemplateCommand = new Command('generate-template')
     const globalOptions = getGlobalOptions(generateTemplateCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
-    const content = await generateTemplate(client, {
+    const content = await generateTemplateFromClient(client, {
       name: options.name,
       type: options.type,
     });

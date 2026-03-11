@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { generateTemplateCommand } from './generate-template.js';
 import { getAPIClientFromOptions, getGlobalOptions } from '../../lib/utils/api-helper.js';
-import { generateTemplate } from '../../lib/template/generator.js';
+import { generateTemplateFromClient } from '../../lib/template/generator.js';
 import { writeFileSync } from 'fs';
 import { resetCommand } from '../../test/helpers/command-reset.js';
 
@@ -9,9 +9,10 @@ vi.mock('../../lib/utils/api-helper.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../lib/utils/api-helper.js')>();
   return { ...actual, getAPIClientFromOptions: vi.fn(), getGlobalOptions: vi.fn() };
 });
-vi.mock('../../lib/template/generator.js', () => ({
-  generateTemplate: vi.fn().mockResolvedValue('# Template Content'),
-}));
+vi.mock('../../lib/template/generator.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../lib/template/generator.js')>();
+  return { ...actual, generateTemplateFromClient: vi.fn().mockResolvedValue('# Template Content') };
+});
 vi.mock('fs', async (importOriginal) => {
   const actual = await importOriginal<typeof import('fs')>();
   return { ...actual, writeFileSync: vi.fn() };
@@ -45,7 +46,7 @@ describe('generate-template command', () => {
   it('should output template to stdout', async () => {
     await generateTemplateCommand.parseAsync(['node', 'test']);
 
-    expect(generateTemplate).toHaveBeenCalledWith(mockClient, { name: 'My Experiment', type: 'test' });
+    expect(generateTemplateFromClient).toHaveBeenCalledWith(mockClient, { name: 'My Experiment', type: 'test' });
     const output = consoleSpy.mock.calls.flat().join('\n');
     expect(output).toContain('Template Content');
   });
@@ -59,6 +60,6 @@ describe('generate-template command', () => {
   it('should pass custom name and type', async () => {
     await generateTemplateCommand.parseAsync(['node', 'test', '--name', 'X', '--type', 'feature']);
 
-    expect(generateTemplate).toHaveBeenCalledWith(mockClient, { name: 'X', type: 'feature' });
+    expect(generateTemplateFromClient).toHaveBeenCalledWith(mockClient, { name: 'X', type: 'feature' });
   });
 });

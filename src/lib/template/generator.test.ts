@@ -1,12 +1,16 @@
 import { describe, it, expect } from 'vitest';
-import { generateTemplate } from './generator.js';
-import { createAPIClient } from '../api/client.js';
+import { generateTemplate } from '../../api-client/template/generator.js';
+import type { GeneratorContext } from '../../api-client/template/generator.js';
+
+const DEFAULT_CONTEXT: GeneratorContext = {
+  applications: [{ name: 'www' }, { name: 'mobile' }],
+  unitTypes: [{ name: 'user_id' }, { name: 'session_id' }],
+  metrics: [{ name: 'conversion' }, { name: 'revenue' }],
+};
 
 describe('Template Generator', () => {
-  const client = createAPIClient('https://api.absmartly.com/v1', 'test-key');
-
-  it('should generate a basic template', async () => {
-    const template = await generateTemplate(client);
+  it('should generate a basic template', () => {
+    const template = generateTemplate(DEFAULT_CONTEXT);
 
     expect(template).toContain('# Experiment Template');
     expect(template).toContain('name: my_experiment');
@@ -16,8 +20,8 @@ describe('Template Generator', () => {
     expect(template).toContain('variant_1');
   });
 
-  it('should use custom name and type', async () => {
-    const template = await generateTemplate(client, {
+  it('should use custom name and type', () => {
+    const template = generateTemplate(DEFAULT_CONTEXT, {
       name: 'custom_test',
       type: 'feature',
     });
@@ -26,22 +30,22 @@ describe('Template Generator', () => {
     expect(template).toContain('type: feature');
   });
 
-  it('should include available applications', async () => {
-    const template = await generateTemplate(client);
+  it('should include available applications', () => {
+    const template = generateTemplate(DEFAULT_CONTEXT);
     expect(template).toContain('## Unit & Application');
     expect(template).toContain('application:');
   });
 
-  it('should include metrics section', async () => {
-    const template = await generateTemplate(client);
+  it('should include metrics section', () => {
+    const template = generateTemplate(DEFAULT_CONTEXT);
     expect(template).toContain('## Metrics');
     expect(template).toContain('primary_metric:');
     expect(template).toContain('secondary_metrics:');
     expect(template).toContain('guardrail_metrics:');
   });
 
-  it('should include description section', async () => {
-    const template = await generateTemplate(client);
+  it('should include description section', () => {
+    const template = generateTemplate(DEFAULT_CONTEXT);
     expect(template).toContain('## Description');
     expect(template).toContain('**Hypothesis:**');
     expect(template).toContain('**Expected Impact:**');
