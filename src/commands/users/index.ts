@@ -3,6 +3,7 @@ import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseUserId, requireAtLeastOneField } from '../../lib/utils/validators.js';
 import type { UserId } from '../../lib/api/branded-types.js';
+import { resetPasswordCommand } from './reset-password.js';
 
 export const usersCommand = new Command('users').alias('user').description('User commands');
 
@@ -87,3 +88,4 @@ usersCommand.addCommand(getCommand);
 usersCommand.addCommand(createCommand);
 usersCommand.addCommand(updateCommand);
 usersCommand.addCommand(archiveCommand);
+usersCommand.addCommand(resetPasswordCommand);

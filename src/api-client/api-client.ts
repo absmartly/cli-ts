@@ -41,6 +41,7 @@ import type {
   ScheduledActionId,
   CustomSectionField,
   CustomSectionFieldId,
+  AnnotationId,
   AssetRole,
   AssetRoleId,
 } from './types.js';
@@ -542,6 +543,11 @@ export class APIClient {
 
   async archiveUser(id: UserId, unarchive = false): Promise<void> {
     await this.request('PUT', `/users/${id}/archive`, { data: { archive: !unarchive } });
+  }
+
+  async resetUserPassword(id: UserId): Promise<void> {
+    const response = await this.request('PUT', `/users/${id}/reset-password`);
+    this.validateOkResponse(response, 'resetUserPassword');
   }
 
   async listMetrics(limit = 100, offset = 0): Promise<Metric[]> {
