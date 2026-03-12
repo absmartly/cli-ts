@@ -3,6 +3,9 @@ import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseMetricId, requireAtLeastOneField } from '../../lib/utils/validators.js';
 import type { MetricId } from '../../lib/api/branded-types.js';
+import { accessCommand } from './access.js';
+import { reviewCommand } from './review.js';
+import { followCommand, unfollowCommand } from './follow.js';
 
 export const metricsCommand = new Command('metrics')
   .alias('metric')
@@ -97,3 +100,7 @@ metricsCommand.addCommand(createCommand);
 metricsCommand.addCommand(updateCommand);
 metricsCommand.addCommand(archiveCommand);
 metricsCommand.addCommand(activateCommand);
+metricsCommand.addCommand(accessCommand);
+metricsCommand.addCommand(reviewCommand);
+metricsCommand.addCommand(followCommand);
+metricsCommand.addCommand(unfollowCommand);

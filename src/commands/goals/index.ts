@@ -3,6 +3,8 @@ import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseGoalId, requireAtLeastOneField } from '../../lib/utils/validators.js';
 import type { GoalId } from '../../lib/api/branded-types.js';
+import { accessCommand } from './access.js';
+import { followCommand, unfollowCommand } from './follow.js';
 
 export const goalsCommand = new Command('goals').alias('goal').description('Goal commands');
 
@@ -65,3 +67,6 @@ goalsCommand.addCommand(listCommand);
 goalsCommand.addCommand(getCommand);
 goalsCommand.addCommand(createCommand);
 goalsCommand.addCommand(updateCommand);
+goalsCommand.addCommand(accessCommand);
+goalsCommand.addCommand(followCommand);
+goalsCommand.addCommand(unfollowCommand);
