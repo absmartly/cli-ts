@@ -109,6 +109,8 @@ abs experiments development 123                           # enter development mo
 abs experiments start 123                                 # start experiment
 abs experiments stop 123                                  # stop experiment
 abs experiments restart 123 --reason other --reshuffle    # restart stopped experiment
+abs experiments restart 123 --as-type feature             # restart as feature flag
+abs experiments restart 123 --as-type experiment --state development  # restart as experiment
 abs experiments full-on 123 --variant 1                   # set full-on variant
 
 # Archive
@@ -117,6 +119,48 @@ abs experiments archive 123 --unarchive
 
 # Activity log
 abs experiments activity list 123
+abs experiments activity create 123 --note "Deployed to staging"
+abs experiments activity edit 123 456 --note "Updated note"
+abs experiments activity reply 123 456 --note "Looks good"
+
+# Delete and parent
+abs experiments delete 123
+abs experiments parent 123                                # get parent experiment
+
+# Follow/unfollow
+abs experiments follow 123
+abs experiments unfollow 123
+
+# Metrics management
+abs experiments metrics list 123
+abs experiments metrics add 123 --metrics 1,2,3
+abs experiments metrics confirm-impact 123 456
+abs experiments metrics exclude 123 456
+abs experiments metrics include 123 456
+
+# Annotations
+abs experiments annotations list 123
+abs experiments annotations create 123 --type global
+abs experiments annotations update 456 --type local
+abs experiments annotations archive 456
+
+# Alerts and recommendations
+abs experiments alerts list 123
+abs experiments alerts dismiss 456
+abs experiments recommendations list 123
+abs experiments recommendations dismiss 456
+
+# Access control
+abs experiments access list-users 123
+abs experiments access grant-user 123 --user 1 --role 2
+abs experiments access revoke-user 123 --user 1 --role 2
+abs experiments access list-teams 123
+abs experiments access grant-team 123 --team 1 --role 2
+abs experiments access revoke-team 123 --team 1 --role 2
+
+# Export data and request update
+abs experiments export 123
+abs experiments request-update 123
 
 # Schedule future actions
 abs experiments schedule create 123 --action start --at 2026-04-01T10:00:00Z
@@ -171,6 +215,15 @@ abs goals list
 abs goals get 123
 abs goals create --name "Purchase completed"
 abs goals update 123 --description "Updated description"
+
+# Follow/unfollow
+abs goals follow 123
+abs goals unfollow 123
+
+# Access control
+abs goals access list-users 123
+abs goals access grant-user 123 --user 1 --role 2
+abs goals access revoke-user 123 --user 1 --role 2
 ```
 
 ### Segments
@@ -196,6 +249,23 @@ abs metrics create --name "Revenue" --type count
 abs metrics update 123 --description "Updated"
 abs metrics archive 123
 abs metrics archive 123 --unarchive
+
+# Follow/unfollow
+abs metrics follow 123
+abs metrics unfollow 123
+
+# Reviews
+abs metrics review status 123
+abs metrics review request 123
+abs metrics review approve 123
+abs metrics review comments 123
+abs metrics review comment 123 --message "Looks correct"
+abs metrics review reply 123 456 --message "Thanks"
+
+# Access control
+abs metrics access list-users 123
+abs metrics access grant-user 123 --user 1 --role 2
+abs metrics access revoke-user 123 --user 1 --role 2
 ```
 
 ### Teams
@@ -210,6 +280,12 @@ abs teams create --name "Growth"
 abs teams update 123 --description "Updated"
 abs teams archive 123
 abs teams archive 123 --unarchive
+
+# Team members
+abs teams members list 123
+abs teams members add 123 --users 1,2,3 --roles 1,2
+abs teams members edit-roles 123 --users 1,2 --roles 3,4
+abs teams members remove 123 --users 1,2
 ```
 
 ### Users
@@ -224,6 +300,9 @@ abs users create --email user@example.com --name "Jane Doe"
 abs users update 123 --name "Jane Smith"
 abs users archive 123
 abs users archive 123 --unarchive
+
+# Reset password
+abs users reset-password 123
 ```
 
 ### Tags
@@ -268,6 +347,10 @@ Aliases: `apps`, `app`, `application`
 ```bash
 abs apps list
 abs apps get 1
+abs apps create --name "Mobile App"
+abs apps update 1 --name "Mobile App v2"
+abs apps archive 1
+abs apps archive 1 --unarchive
 ```
 
 ### Environments
@@ -277,6 +360,10 @@ Aliases: `envs`, `env`, `environment`
 ```bash
 abs envs list
 abs envs get 1
+abs envs create --name "staging"
+abs envs update 1 --name "production"
+abs envs archive 1
+abs envs archive 1 --unarchive
 ```
 
 ### Unit types
@@ -286,6 +373,10 @@ Aliases: `units`, `unit`
 ```bash
 abs units list
 abs units get 1
+abs units create --name "device_id"
+abs units update 1 --name "user_id"
+abs units archive 1
+abs units archive 1 --unarchive
 ```
 
 ### Administration
@@ -309,6 +400,7 @@ Aliases: `permissions`, `permission`, `perms`, `perm`
 ```bash
 abs permissions list
 abs permissions categories
+abs permissions policies
 ```
 
 #### API keys
@@ -333,6 +425,148 @@ abs webhooks get 1
 abs webhooks create --name "Slack" --url https://hooks.slack.com/... --max-retries 5
 abs webhooks update 1 --enabled false
 abs webhooks delete 1
+
+# Webhook event types
+abs webhooks events
+```
+
+### Favorites
+
+Manage favorite experiments and metrics.
+
+Aliases: `favorites`, `favorite`, `fav`
+
+```bash
+abs favorites add experiment 123
+abs favorites add metric 456
+abs favorites remove experiment 123
+abs favorites remove metric 456
+```
+
+### Notifications
+
+View and manage notifications.
+
+Aliases: `notifications`, `notification`, `notif`
+
+```bash
+abs notifications list
+abs notifications list --cursor 100
+abs notifications mark-seen
+abs notifications mark-read --ids 1,2,3
+abs notifications check
+```
+
+### Asset roles
+
+Manage global asset roles for access control.
+
+Aliases: `asset-roles`, `assetroles`
+
+```bash
+abs asset-roles list
+abs asset-roles get 1
+abs asset-roles create --name "Reviewer"
+abs asset-roles update 1 --name "Lead Reviewer"
+abs asset-roles delete 1
+```
+
+### Custom sections
+
+Manage experiment custom sections.
+
+Aliases: `custom-sections`, `customsections`
+
+```bash
+abs custom-sections list
+abs custom-sections create --name "Launch Checklist" --type test
+abs custom-sections update 1 --name "Updated Checklist"
+abs custom-sections archive 1
+abs custom-sections archive 1 --unarchive
+abs custom-sections reorder --sections "1:0,2:1,3:2"
+```
+
+### Insights
+
+View experiment velocity and decision analytics.
+
+Aliases: `insights`, `insight`
+
+```bash
+abs insights velocity --from 2026-01-01 --to 2026-03-01 --aggregation month
+abs insights decisions --from 2026-01-01 --to 2026-03-01 --aggregation week
+abs insights velocity --from 2026-01-01 --to 2026-03-01 --aggregation day --teams 1,2
+```
+
+### Platform configuration
+
+Manage server-side platform settings (not local CLI config).
+
+Aliases: `platform-config`, `platformconfig`, `platform-configs`
+
+```bash
+abs platform-config list
+abs platform-config get 1
+abs platform-config update 1 --value '{"key": "value"}'
+```
+
+### CORS origins
+
+Manage allowed CORS origins.
+
+```bash
+abs cors list
+abs cors get 1
+abs cors create --origin "https://app.example.com"
+abs cors update 1 --origin "https://new.example.com"
+abs cors delete 1
+```
+
+### Datasources
+
+Manage event data source configurations.
+
+Aliases: `datasources`, `datasource`, `ds`
+
+```bash
+abs datasources list
+abs datasources get 1
+abs datasources create --config '{"type": "postgres", ...}'
+abs datasources update 1 --config '{"host": "new-host"}'
+abs datasources archive 1
+abs datasources test --config '{"type": "postgres", ...}'
+abs datasources introspect --config '{"type": "postgres", ...}'
+abs datasources validate-query --config '{"query": "SELECT ..."}'
+```
+
+### Export configurations
+
+Manage scheduled data export configurations.
+
+Aliases: `export-configs`, `exportconfigs`, `export-config`
+
+```bash
+abs export-configs list
+abs export-configs get 1
+abs export-configs create --config '{"destination": "s3", ...}'
+abs export-configs update 1 --config '{"schedule": "daily"}'
+abs export-configs archive 1
+abs export-configs pause 1
+abs export-configs histories 1
+```
+
+### Update schedules
+
+Manage experiment analysis update schedules.
+
+Aliases: `update-schedules`, `updateschedules`
+
+```bash
+abs update-schedules list
+abs update-schedules get 1
+abs update-schedules create --config '{"interval": "1h"}'
+abs update-schedules update 1 --config '{"interval": "30m"}'
+abs update-schedules delete 1
 ```
 
 ### Raw API access
