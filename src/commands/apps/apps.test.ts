@@ -16,6 +16,9 @@ describe('apps command', () => {
   const mockClient = {
     listApplications: vi.fn().mockResolvedValue([{ id: 1, name: 'web' }]),
     getApplication: vi.fn().mockResolvedValue({ id: 1, name: 'web' }),
+    createApplication: vi.fn().mockResolvedValue({ id: 3, name: 'new-app' }),
+    updateApplication: vi.fn().mockResolvedValue({ id: 1, name: 'updated' }),
+    archiveApplication: vi.fn().mockResolvedValue(undefined),
   };
 
   beforeEach(() => {
@@ -61,5 +64,25 @@ describe('apps command', () => {
     await expect(
       appsCommand.parseAsync(['node', 'test', 'get', 'abc'])
     ).rejects.toThrow('must be a valid number');
+  });
+
+  it('should create application', async () => {
+    await appsCommand.parseAsync(['node', 'test', 'create', '--name', 'new-app']);
+    expect(mockClient.createApplication).toHaveBeenCalledWith({ name: 'new-app' });
+  });
+
+  it('should update application', async () => {
+    await appsCommand.parseAsync(['node', 'test', 'update', '1', '--name', 'updated']);
+    expect(mockClient.updateApplication).toHaveBeenCalledWith(1, { name: 'updated' });
+  });
+
+  it('should archive application', async () => {
+    await appsCommand.parseAsync(['node', 'test', 'archive', '1']);
+    expect(mockClient.archiveApplication).toHaveBeenCalledWith(1, undefined);
+  });
+
+  it('should unarchive application', async () => {
+    await appsCommand.parseAsync(['node', 'test', 'archive', '1', '--unarchive']);
+    expect(mockClient.archiveApplication).toHaveBeenCalledWith(1, true);
   });
 });
