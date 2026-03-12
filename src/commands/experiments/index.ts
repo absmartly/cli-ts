@@ -21,6 +21,8 @@ import { followCommand, unfollowCommand } from './follow.js';
 import { annotationsCommand } from './annotations.js';
 import { alertsCommand } from './alerts.js';
 import { recommendationsCommand } from './recommendations.js';
+import { exportCommand } from './export.js';
+import { requestUpdateCommand } from './request-update.js';
 
 export const experimentsCommand = new Command('experiments')
   .alias('exp')
@@ -50,3 +52,5 @@ experimentsCommand.addCommand(unfollowCommand);
 experimentsCommand.addCommand(annotationsCommand);
 experimentsCommand.addCommand(alertsCommand);
 experimentsCommand.addCommand(recommendationsCommand);
+experimentsCommand.addCommand(exportCommand);
+experimentsCommand.addCommand(requestUpdateCommand);
