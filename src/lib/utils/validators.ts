@@ -16,9 +16,11 @@ import {
   WebhookId,
   ScheduledActionId,
   CustomSectionFieldId,
+  CustomSectionId,
   AnnotationId,
   AssetRoleId,
   NotificationId,
+  RecommendedActionId,
 } from '../api/branded-types.js';
 
 function parseIdGeneric<T extends number>(value: string, typeName: string): T {
@@ -120,6 +122,10 @@ export function parseCustomSectionFieldId(value: string): CustomSectionFieldId {
   return parseIdGeneric<CustomSectionFieldId>(value, 'CustomSectionFieldId');
 }
 
+export function parseCustomSectionId(value: string): CustomSectionId {
+  return parseIdGeneric<CustomSectionId>(value, 'CustomSectionId');
+}
+
 export function parseAnnotationId(value: string): AnnotationId {
   return parseIdGeneric<AnnotationId>(value, 'AnnotationId');
 }
@@ -130,6 +136,10 @@ export function parseAssetRoleId(value: string): AssetRoleId {
 
 export function parseNotificationId(value: string): NotificationId {
   return parseIdGeneric<NotificationId>(value, 'NotificationId');
+}
+
+export function parseRecommendedActionId(value: string): RecommendedActionId {
+  return parseIdGeneric<RecommendedActionId>(value, 'RecommendedActionId');
 }
 
 export function requireAtLeastOneField(

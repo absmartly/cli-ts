@@ -40,6 +40,7 @@ export type ApiKeyId = Branded<number, 'ApiKeyId'>;
 export type WebhookId = Branded<number, 'WebhookId'>;
 export type ScheduledActionId = Branded<number, 'ScheduledActionId'>;
 export type CustomSectionFieldId = Branded<number, 'CustomSectionFieldId'>;
+export type CustomSectionId = Branded<number, 'CustomSectionId'>;
 export type AnnotationId = Branded<number, 'AnnotationId'>;
 export type AssetRoleId = Branded<number, 'AssetRoleId'>;
 export type CorsOriginId = Branded<number, 'CorsOriginId'>;
@@ -48,6 +49,7 @@ export type ExportConfigId = Branded<number, 'ExportConfigId'>;
 export type UpdateScheduleId = Branded<number, 'UpdateScheduleId'>;
 
 export type NotificationId = Branded<number, 'NotificationId'>;
+export type RecommendedActionId = Branded<number, 'RecommendedActionId'>;
 export type Timestamp = Branded<number, 'Timestamp'>;
 export type TrafficPercentage = Branded<number, 'TrafficPercentage'>;
 export type JSONConfig = Branded<string, 'JSONConfig'>;
@@ -148,6 +150,11 @@ export function CustomSectionFieldId(id: number): CustomSectionFieldId {
   return id as CustomSectionFieldId;
 }
 
+export function CustomSectionId(id: number): CustomSectionId {
+  validatePositiveInteger(id, 'CustomSectionId');
+  return id as CustomSectionId;
+}
+
 export function AnnotationId(id: number): AnnotationId {
   validatePositiveInteger(id, 'AnnotationId');
   return id as AnnotationId;
@@ -181,6 +188,11 @@ export function UpdateScheduleId(id: number): UpdateScheduleId {
 export function NotificationId(id: number): NotificationId {
   validatePositiveInteger(id, 'NotificationId');
   return id as NotificationId;
+}
+
+export function RecommendedActionId(id: number): RecommendedActionId {
+  validatePositiveInteger(id, 'RecommendedActionId');
+  return id as RecommendedActionId;
 }
 
 export function Timestamp(value: number): Timestamp {

@@ -49,6 +49,8 @@ import type {
   DatasourceId,
   ExportConfigId,
   UpdateScheduleId,
+  Alert,
+  RecommendedActionId,
 } from './types.js';
 
 function createAPIError(message: string, response?: HttpResponse): APIError {
@@ -460,6 +462,18 @@ export class APIClient {
   async dismissAlert(id: AlertId): Promise<void> {
     const response = await this.request('PUT', `/experiment_alerts/${id}/dismiss`);
     this.validateOkResponse(response, 'dismissAlert');
+  }
+
+  async listRecommendedActions(experimentId?: ExperimentId): Promise<unknown[]> {
+    const params: Record<string, string> = {};
+    if (experimentId !== undefined) params.experiment_id = String(experimentId);
+    const response = await this.request('GET', '/experiment_recommended_actions', { params });
+    return this.validateListResponse<unknown>(response, 'experiment_recommended_actions', 'listRecommendedActions');
+  }
+
+  async dismissRecommendedAction(id: RecommendedActionId): Promise<void> {
+    const response = await this.request('PUT', `/experiment_recommended_actions/${id}/dismiss`);
+    this.validateOkResponse(response, 'dismissRecommendedAction');
   }
 
   async listGoals(limit = 100, offset = 0): Promise<Goal[]> {
