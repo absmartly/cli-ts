@@ -13,6 +13,9 @@ import { developmentCommand } from './development.js';
 import { restartCommand } from './restart.js';
 import { fullOnCommand } from './full-on.js';
 import { scheduleCommand } from './schedule.js';
+import { metricsCommand } from './metrics.js';
+import { deleteCommand } from './delete.js';
+import { parentCommand } from './parent.js';
 
 export const experimentsCommand = new Command('experiments')
   .alias('exp')
@@ -33,3 +36,4 @@ experimentsCommand.addCommand(developmentCommand);
 experimentsCommand.addCommand(restartCommand);
 experimentsCommand.addCommand(fullOnCommand);
 experimentsCommand.addCommand(scheduleCommand);
+experimentsCommand.addCommand(metricsCommand);
