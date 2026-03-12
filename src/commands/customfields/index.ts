@@ -1,15 +1,9 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
-import { requireAtLeastOneField } from '../../lib/utils/validators.js';
-
-function parseFieldId(value: string): number {
-  const id = parseInt(value, 10);
-  if (isNaN(id) || id <= 0) {
-    throw new Error(`Invalid custom field ID: ${value}`);
-  }
-  return id;
-}
+import { parseCustomSectionFieldId, requireAtLeastOneField } from '../../lib/utils/validators.js';
+import type { CustomSectionFieldId } from '../../lib/api/branded-types.js';
+import type { CustomSectionField } from '../../api-client/types.js';
 
 export const customFieldsCommand = new Command('custom-fields')
   .alias('customfields')
@@ -19,18 +13,20 @@ export const customFieldsCommand = new Command('custom-fields')
 
 const listCommand = new Command('list')
   .description('List all experiment custom section fields')
-  .action(withErrorHandling(async () => {
+  .option('--limit <number>', 'maximum number of results', parseInt, 100)
+  .option('--offset <number>', 'offset for pagination', parseInt, 0)
+  .action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(listCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
-    const fields = await client.listCustomSectionFields();
+    const fields = await client.listCustomSectionFields(options.limit, options.offset);
     printFormatted(fields, globalOptions);
   }));
 
 const getCommand = new Command('get')
   .description('Get custom section field details')
-  .argument('<id>', 'field ID', parseFieldId)
-  .action(withErrorHandling(async (id: number) => {
+  .argument('<id>', 'field ID', parseCustomSectionFieldId)
+  .action(withErrorHandling(async (id: CustomSectionFieldId) => {
     const globalOptions = getGlobalOptions(getCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
@@ -47,50 +43,50 @@ const createCommand = new Command('create')
     const globalOptions = getGlobalOptions(createCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
-    const data: Record<string, unknown> = {
+    const data: Partial<CustomSectionField> = {
       name: options.name,
       type: options.type,
     };
     if (options.defaultValue !== undefined) data.default_value = options.defaultValue;
 
-    const field = await client.createCustomSectionField(data as any);
+    const field = await client.createCustomSectionField(data);
 
-    console.log(chalk.green('Custom section field created successfully'));
+    console.log(chalk.green(`✓ Custom section field created with ID: ${field.id}`));
     printFormatted(field, globalOptions);
   }));
 
 const updateCommand = new Command('update')
   .description('Update a custom section field')
-  .argument('<id>', 'field ID', parseFieldId)
+  .argument('<id>', 'field ID', parseCustomSectionFieldId)
   .option('--name <name>', 'new field name')
   .option('--type <type>', 'new field type (string, number, boolean, json)')
   .option('--default-value <value>', 'new default value')
-  .action(withErrorHandling(async (id: number, options) => {
+  .action(withErrorHandling(async (id: CustomSectionFieldId, options) => {
     const globalOptions = getGlobalOptions(updateCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
-    const data: Record<string, unknown> = {};
+    const data: Partial<CustomSectionField> = {};
     if (options.name !== undefined) data.name = options.name;
     if (options.type !== undefined) data.type = options.type;
     if (options.defaultValue !== undefined) data.default_value = options.defaultValue;
 
-    requireAtLeastOneField(data, 'update field');
-    const field = await client.updateCustomSectionField(id, data as any);
+    requireAtLeastOneField(data as Record<string, unknown>, 'update field');
+    const field = await client.updateCustomSectionField(id, data);
 
-    console.log(chalk.green('Custom section field updated successfully'));
+    console.log(chalk.green(`✓ Custom section field ${id} updated`));
     printFormatted(field, globalOptions);
   }));
 
 const archiveCommand = new Command('archive')
   .description('Archive or unarchive a custom section field')
-  .argument('<id>', 'field ID', parseFieldId)
+  .argument('<id>', 'field ID', parseCustomSectionFieldId)
   .option('--unarchive', 'Unarchive the field')
-  .action(withErrorHandling(async (id: number, options) => {
+  .action(withErrorHandling(async (id: CustomSectionFieldId, options) => {
     const globalOptions = getGlobalOptions(archiveCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
-    await client.archiveCustomSectionField(id, !options.unarchive);
-    console.log(chalk.green(`Custom section field ${options.unarchive ? 'unarchived' : 'archived'} successfully`));
+    await client.archiveCustomSectionField(id, !!options.unarchive);
+    console.log(chalk.green(`✓ Custom section field ${id} ${options.unarchive ? 'unarchived' : 'archived'}`));
   }));
 
 customFieldsCommand.addCommand(listCommand);

@@ -15,6 +15,7 @@ import {
   ApiKeyId,
   WebhookId,
   ScheduledActionId,
+  CustomSectionFieldId,
 } from '../api/branded-types.js';
 
 function parseIdGeneric<T extends number>(value: string, typeName: string): T {
@@ -110,6 +111,10 @@ export function parseWebhookId(value: string): WebhookId {
 
 export function parseScheduledActionId(value: string): ScheduledActionId {
   return parseIdGeneric<ScheduledActionId>(value, 'ScheduledActionId');
+}
+
+export function parseCustomSectionFieldId(value: string): CustomSectionFieldId {
+  return parseIdGeneric<CustomSectionFieldId>(value, 'CustomSectionFieldId');
 }
 
 export function requireAtLeastOneField(

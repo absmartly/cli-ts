@@ -39,6 +39,7 @@ export type RoleId = Branded<number, 'RoleId'>;
 export type ApiKeyId = Branded<number, 'ApiKeyId'>;
 export type WebhookId = Branded<number, 'WebhookId'>;
 export type ScheduledActionId = Branded<number, 'ScheduledActionId'>;
+export type CustomSectionFieldId = Branded<number, 'CustomSectionFieldId'>;
 export type Timestamp = Branded<number, 'Timestamp'>;
 export type TrafficPercentage = Branded<number, 'TrafficPercentage'>;
 export type JSONConfig = Branded<string, 'JSONConfig'>;
@@ -132,6 +133,11 @@ export function WebhookId(id: number): WebhookId {
 export function ScheduledActionId(id: number): ScheduledActionId {
   validatePositiveInteger(id, 'ScheduledActionId');
   return id as ScheduledActionId;
+}
+
+export function CustomSectionFieldId(id: number): CustomSectionFieldId {
+  validatePositiveInteger(id, 'CustomSectionFieldId');
+  return id as CustomSectionFieldId;
 }
 
 export function Timestamp(value: number): Timestamp {
@@ -318,7 +324,7 @@ export interface ExperimentApplication {
 
 export interface ExperimentCustomFieldValue {
   experiment_id?: ExperimentId;
-  experiment_custom_section_field_id: number;
+  experiment_custom_section_field_id: CustomSectionFieldId;
   type: string;
   value: string;
   updated_at?: string;
@@ -326,7 +332,7 @@ export interface ExperimentCustomFieldValue {
 }
 
 export interface CustomSectionField {
-  id: number;
+  id: CustomSectionFieldId;
   name: string;
   type: string;
   default_value?: string;

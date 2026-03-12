@@ -36,6 +36,7 @@ import type {
   WebhookId,
   ScheduledActionId,
   CustomSectionField,
+  CustomSectionFieldId,
 } from './types.js';
 
 function createAPIError(message: string, response?: HttpResponse): APIError {
@@ -466,13 +467,15 @@ export class APIClient {
     await this.request('PUT', `/metrics/${id}/archive`, { data: { archive: !unarchive } });
   }
 
-  async listCustomSectionFields(): Promise<CustomSectionField[]> {
-    const response = await this.request<Record<string, unknown>>('GET', '/experiment_custom_section_fields');
+  async listCustomSectionFields(limit = 100, offset = 0): Promise<CustomSectionField[]> {
+    const response = await this.request<Record<string, unknown>>('GET', '/experiment_custom_section_fields', {
+      params: { limit: String(limit), offset: String(offset) },
+    });
     const data = response.data;
     return (data.experiment_custom_section_fields ?? data.items ?? data) as CustomSectionField[];
   }
 
-  async getCustomSectionField(id: number): Promise<CustomSectionField> {
+  async getCustomSectionField(id: CustomSectionFieldId): Promise<CustomSectionField> {
     const response = await this.request('GET', `/experiment_custom_section_fields/${id}`);
     return this.validateEntityResponse<CustomSectionField>(response, 'experiment_custom_section_field', 'getCustomSectionField');
   }
@@ -482,13 +485,13 @@ export class APIClient {
     return this.validateEntityResponse<CustomSectionField>(response, 'experiment_custom_section_field', 'createCustomSectionField');
   }
 
-  async updateCustomSectionField(id: number, data: Partial<CustomSectionField>): Promise<CustomSectionField> {
+  async updateCustomSectionField(id: CustomSectionFieldId, data: Partial<CustomSectionField>): Promise<CustomSectionField> {
     const response = await this.request('PUT', `/experiment_custom_section_fields/${id}`, { data });
     return this.validateEntityResponse<CustomSectionField>(response, 'experiment_custom_section_field', 'updateCustomSectionField');
   }
 
-  async archiveCustomSectionField(id: number, archive = true): Promise<void> {
-    await this.request('PUT', `/experiment_custom_section_fields/${id}`, { data: { archived: archive } });
+  async archiveCustomSectionField(id: CustomSectionFieldId, unarchive = false): Promise<void> {
+    await this.request('PUT', `/experiment_custom_section_fields/${id}/archive`, { data: { archive: !unarchive } });
   }
 
   async listApplications(): Promise<Application[]> {

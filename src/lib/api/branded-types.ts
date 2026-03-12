@@ -15,6 +15,7 @@ export {
   ApiKeyId,
   WebhookId,
   ScheduledActionId,
+  CustomSectionFieldId,
   Timestamp,
   TrafficPercentage,
   JSONConfig,
