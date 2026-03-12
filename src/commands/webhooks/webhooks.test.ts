@@ -19,6 +19,7 @@ describe('webhooks command', () => {
     createWebhook: vi.fn().mockResolvedValue({ id: 99 }),
     updateWebhook: vi.fn().mockResolvedValue({}),
     deleteWebhook: vi.fn().mockResolvedValue({}),
+    listWebhookEvents: vi.fn().mockResolvedValue([{ id: 'experiment.started', name: 'Experiment Started' }]),
   };
 
   beforeEach(() => {
@@ -89,5 +90,12 @@ describe('webhooks command', () => {
     await webhooksCommand.parseAsync(['node', 'test', 'delete', '1']);
 
     expect(mockClient.deleteWebhook).toHaveBeenCalledWith(1);
+  });
+
+  it('should list webhook events', async () => {
+    await webhooksCommand.parseAsync(['node', 'test', 'events']);
+
+    expect(mockClient.listWebhookEvents).toHaveBeenCalled();
+    expect(printFormatted).toHaveBeenCalled();
   });
 });

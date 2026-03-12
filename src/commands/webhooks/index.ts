@@ -93,8 +93,19 @@ const deleteCommand = new Command('delete')
     console.log(chalk.green(`✓ Webhook ${id} deleted`));
   }));
 
+
+const eventsCommand = new Command('events')
+  .description('List webhook event types')
+  .action(withErrorHandling(async () => {
+    const globalOptions = getGlobalOptions(eventsCommand);
+    const client = await getAPIClientFromOptions(globalOptions);
+    const events = await client.listWebhookEvents();
+    printFormatted(events, globalOptions);
+  }));
+
 webhooksCommand.addCommand(listCommand);
 webhooksCommand.addCommand(getCommand);
 webhooksCommand.addCommand(createCommand);
 webhooksCommand.addCommand(updateCommand);
 webhooksCommand.addCommand(deleteCommand);
+webhooksCommand.addCommand(eventsCommand);
