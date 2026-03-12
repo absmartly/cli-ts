@@ -1402,6 +1402,8 @@ export class APIClient {
   }
 
   async rawRequest(
+    path: string,
+    method = 'GET',
     data?: unknown,
     headers?: Record<string, string>
   ): Promise<unknown> {
