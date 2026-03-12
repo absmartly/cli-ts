@@ -472,6 +472,25 @@ export class APIClient {
     return (data.experiment_custom_section_fields ?? data.items ?? data) as CustomSectionField[];
   }
 
+  async getCustomSectionField(id: number): Promise<CustomSectionField> {
+    const response = await this.request('GET', `/experiment_custom_section_fields/${id}`);
+    return this.validateEntityResponse<CustomSectionField>(response, 'experiment_custom_section_field', 'getCustomSectionField');
+  }
+
+  async createCustomSectionField(data: Partial<CustomSectionField>): Promise<CustomSectionField> {
+    const response = await this.request('POST', '/experiment_custom_section_fields', { data });
+    return this.validateEntityResponse<CustomSectionField>(response, 'experiment_custom_section_field', 'createCustomSectionField');
+  }
+
+  async updateCustomSectionField(id: number, data: Partial<CustomSectionField>): Promise<CustomSectionField> {
+    const response = await this.request('PUT', `/experiment_custom_section_fields/${id}`, { data });
+    return this.validateEntityResponse<CustomSectionField>(response, 'experiment_custom_section_field', 'updateCustomSectionField');
+  }
+
+  async archiveCustomSectionField(id: number, archive = true): Promise<void> {
+    await this.request('PUT', `/experiment_custom_section_fields/${id}`, { data: { archived: archive } });
+  }
+
   async listApplications(): Promise<Application[]> {
     const response = await this.request('GET', '/applications');
     return this.validateListResponse<Application>(response, 'applications', 'listApplications');
