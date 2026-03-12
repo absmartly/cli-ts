@@ -74,8 +74,11 @@ const archiveCommand = new Command('archive')
     console.log(chalk.green(`✓ Team ${id} ${action}`));
   }));
 
+import { membersCommand } from './members.js';
+
 teamsCommand.addCommand(listCommand);
 teamsCommand.addCommand(getCommand);
 teamsCommand.addCommand(createCommand);
 teamsCommand.addCommand(updateCommand);
 teamsCommand.addCommand(archiveCommand);
+teamsCommand.addCommand(membersCommand);
