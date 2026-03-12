@@ -23,6 +23,10 @@ export {
   TrafficPercentage,
   JSONConfig,
   ProfileName,
+  CorsOriginId,
+  DatasourceId,
+  ExportConfigId,
+  UpdateScheduleId,
 } from '../../api-client/types.js';
 
 export type { APIKey } from '../../api-client/types.js';

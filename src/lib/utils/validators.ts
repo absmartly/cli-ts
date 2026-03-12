@@ -16,6 +16,7 @@ import {
   WebhookId,
   ScheduledActionId,
   CustomSectionFieldId,
+  AnnotationId,
   AssetRoleId,
   NotificationId,
 } from '../api/branded-types.js';
@@ -119,6 +120,10 @@ export function parseCustomSectionFieldId(value: string): CustomSectionFieldId {
   return parseIdGeneric<CustomSectionFieldId>(value, 'CustomSectionFieldId');
 }
 
+export function parseAnnotationId(value: string): AnnotationId {
+  return parseIdGeneric<AnnotationId>(value, 'AnnotationId');
+}
+
 export function parseAssetRoleId(value: string): AssetRoleId {
   return parseIdGeneric<AssetRoleId>(value, 'AssetRoleId');
 }
@@ -149,4 +154,20 @@ export function validateJSON(jsonString: string, context = 'JSON'): unknown {
       `Invalid JSON in ${context}: ${error instanceof Error ? error.message : 'unknown error'}`
     );
   }
+}
+
+export function parseCorsOriginId(value: string): CorsOriginId {
+  return parseIdGeneric<CorsOriginId>(value, 'CorsOriginId');
+}
+
+export function parseDatasourceId(value: string): DatasourceId {
+  return parseIdGeneric<DatasourceId>(value, 'DatasourceId');
+}
+
+export function parseExportConfigId(value: string): ExportConfigId {
+  return parseIdGeneric<ExportConfigId>(value, 'ExportConfigId');
+}
+
+export function parseUpdateScheduleId(value: string): UpdateScheduleId {
+  return parseIdGeneric<UpdateScheduleId>(value, 'UpdateScheduleId');
 }

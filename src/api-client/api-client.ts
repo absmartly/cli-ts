@@ -44,6 +44,10 @@ import type {
   AnnotationId,
   AssetRole,
   AssetRoleId,
+  CorsOriginId,
+  DatasourceId,
+  ExportConfigId,
+  UpdateScheduleId,
 } from './types.js';
 
 function createAPIError(message: string, response?: HttpResponse): APIError {
@@ -443,6 +447,18 @@ export class APIClient {
 
   async searchExperiments(query: string, limit = 50): Promise<Experiment[]> {
     return this.listExperiments({ search: query, limit });
+  }
+
+  async listExperimentAlerts(experimentId?: ExperimentId): Promise<Alert[]> {
+    const params: Record<string, string> = {};
+    if (experimentId !== undefined) params.experiment_id = String(experimentId);
+    const response = await this.request('GET', '/experiment_alerts', { params });
+    return this.validateListResponse<Alert>(response, 'experiment_alerts', 'listExperimentAlerts');
+  }
+
+  async dismissAlert(id: AlertId): Promise<void> {
+    const response = await this.request('PUT', `/experiment_alerts/${id}/dismiss`);
+    this.validateOkResponse(response, 'dismissAlert');
   }
 
   async listGoals(limit = 100, offset = 0): Promise<Goal[]> {
@@ -1126,9 +1142,215 @@ export class APIClient {
     await this.request('PUT', `/unit_types/${id}/archive`, { data: { archive: !unarchive } });
   }
 
+  async listAnnotations(experimentId?: ExperimentId): Promise<unknown[]> {
+    const params: Record<string, string | number> = {};
+    if (experimentId !== undefined) params.experiment_id = experimentId;
+    const response = await this.request('GET', '/experiment_annotations', { params });
+    return this.validateListResponse<unknown>(response, 'experiment_annotations', 'listAnnotations');
+  }
+
+  async createAnnotation(data: { experiment_id: number; type?: string; [key: string]: unknown }): Promise<unknown> {
+    const response = await this.request('POST', '/experiment_annotations', { data });
+    return this.validateEntityResponse<unknown>(response, 'experiment_annotation', 'createAnnotation');
+  }
+
+  async updateAnnotation(id: AnnotationId, data: Record<string, unknown>): Promise<unknown> {
+    const response = await this.request('PUT', `/experiment_annotations/${id}`, { data: { data } });
+    return this.validateEntityResponse<unknown>(response, 'experiment_annotation', 'updateAnnotation');
+  }
+
+  async archiveAnnotation(id: AnnotationId, unarchive = false): Promise<void> {
+    await this.request('PUT', `/experiment_annotations/${id}/archive`, { data: { archive: !unarchive } });
+  }
+
+  async getVelocityInsights(params: {
+    from: number;
+    to: number;
+    aggregation: string;
+    unit_type_ids?: string;
+    team_ids?: string;
+    owner_ids?: string;
+  }): Promise<unknown> {
+    const queryParams: Record<string, string> = {
+      from: String(params.from),
+      to: String(params.to),
+      aggregation: params.aggregation,
+    };
+    if (params.unit_type_ids) queryParams.unit_type_ids = params.unit_type_ids;
+    if (params.team_ids) queryParams.team_ids = params.team_ids;
+    if (params.owner_ids) queryParams.owner_ids = params.owner_ids;
+    const response = await this.request('GET', '/insights/velocity/summary', { params: queryParams });
+    return response.data;
+  }
+
+  async getDecisionInsights(params: {
+    from: number;
+    to: number;
+    aggregation: string;
+    unit_type_ids?: string;
+    team_ids?: string;
+    owner_ids?: string;
+  }): Promise<unknown> {
+    const queryParams: Record<string, string> = {
+      from: String(params.from),
+      to: String(params.to),
+      aggregation: params.aggregation,
+    };
+    if (params.unit_type_ids) queryParams.unit_type_ids = params.unit_type_ids;
+    if (params.team_ids) queryParams.team_ids = params.team_ids;
+    if (params.owner_ids) queryParams.owner_ids = params.owner_ids;
+    const response = await this.request('GET', '/insights/decisions/widgets', { params: queryParams });
+    return response.data;
+  }
+
+  async listWebhookEvents(): Promise<unknown[]> {
+    const response = await this.request('GET', '/webhook_events');
+    return this.validateListResponse<unknown>(response, 'webhook_events', 'listWebhookEvents');
+  }
+
+  async listAccessControlPolicies(): Promise<unknown[]> {
+    const response = await this.request('GET', '/access_control_policies');
+    return this.validateListResponse<unknown>(response, 'access_control_policies', 'listAccessControlPolicies');
+  }
+
+  async listPlatformConfigs(): Promise<unknown[]> {
+    const response = await this.request('GET', '/configs');
+    return this.validateListResponse<unknown>(response, 'configs', 'listPlatformConfigs');
+  }
+
+  async getPlatformConfig(id: number): Promise<unknown> {
+    const response = await this.request('GET', `/configs/${id}`);
+    return this.validateEntityResponse<unknown>(response, 'config', 'getPlatformConfig');
+  }
+
+  async updatePlatformConfig(id: number, data: Record<string, unknown>): Promise<unknown> {
+    const response = await this.request('PUT', `/configs/${id}`, { data: { data } });
+    return this.validateEntityResponse<unknown>(response, 'config', 'updatePlatformConfig');
+  }
+
+  async listCorsOrigins(): Promise<unknown[]> {
+    const response = await this.request('GET', '/cors');
+    return this.validateListResponse<unknown>(response, 'cors_allowed_origins', 'listCorsOrigins');
+  }
+
+  async getCorsOrigin(id: CorsOriginId): Promise<unknown> {
+    const response = await this.request('GET', `/cors/${id}`);
+    return this.validateEntityResponse<unknown>(response, 'cors_allowed_origin', 'getCorsOrigin');
+  }
+
+  async createCorsOrigin(data: { origin: string }): Promise<unknown> {
+    const response = await this.request('POST', '/cors', { data });
+    return this.validateEntityResponse<unknown>(response, 'cors_allowed_origin', 'createCorsOrigin');
+  }
+
+  async updateCorsOrigin(id: CorsOriginId, data: Record<string, unknown>): Promise<unknown> {
+    const response = await this.request('PUT', `/cors/${id}`, { data: { data } });
+    return this.validateEntityResponse<unknown>(response, 'cors_allowed_origin', 'updateCorsOrigin');
+  }
+
+  async deleteCorsOrigin(id: CorsOriginId): Promise<void> {
+    const response = await this.request('DELETE', `/cors/${id}`);
+    this.validateOkResponse(response, 'deleteCorsOrigin');
+  }
+
+  async listDatasources(): Promise<unknown[]> {
+    const response = await this.request('GET', '/datasources');
+    return this.validateListResponse<unknown>(response, 'event_datasource_configs', 'listDatasources');
+  }
+
+  async getDatasource(id: DatasourceId): Promise<unknown> {
+    const response = await this.request('GET', `/datasources/${id}`);
+    return this.validateEntityResponse<unknown>(response, 'event_datasource_config', 'getDatasource');
+  }
+
+  async createDatasource(data: Record<string, unknown>): Promise<unknown> {
+    const response = await this.request('POST', '/datasources', { data });
+    return this.validateEntityResponse<unknown>(response, 'event_datasource_config', 'createDatasource');
+  }
+
+  async updateDatasource(id: DatasourceId, data: Record<string, unknown>): Promise<unknown> {
+    const response = await this.request('PUT', `/datasources/${id}`, { data: { data } });
+    return this.validateEntityResponse<unknown>(response, 'event_datasource_config', 'updateDatasource');
+  }
+
+  async archiveDatasource(id: DatasourceId, unarchive = false): Promise<void> {
+    await this.request('PUT', `/datasources/${id}/archive`, { data: { archive: !unarchive } });
+  }
+
+  async testDatasource(data: Record<string, unknown>): Promise<void> {
+    const response = await this.request('POST', '/datasources/test', { data });
+    this.validateOkResponse(response, 'testDatasource');
+  }
+
+  async introspectDatasource(data: Record<string, unknown>): Promise<unknown> {
+    const response = await this.request('POST', '/datasources/introspect', { data });
+    return response.data;
+  }
+
+  async validateDatasourceQuery(data: Record<string, unknown>): Promise<void> {
+    const response = await this.request('POST', '/datasources/validate_query', { data });
+    this.validateOkResponse(response, 'validateDatasourceQuery');
+  }
+
+  async listExportConfigs(): Promise<unknown[]> {
+    const response = await this.request('GET', '/export_configs');
+    return this.validateListResponse<unknown>(response, 'export_configs', 'listExportConfigs');
+  }
+
+  async getExportConfig(id: ExportConfigId): Promise<unknown> {
+    const response = await this.request('GET', `/export_configs/${id}`);
+    return this.validateEntityResponse<unknown>(response, 'export_config', 'getExportConfig');
+  }
+
+  async createExportConfig(data: Record<string, unknown>): Promise<unknown> {
+    const response = await this.request('POST', '/export_configs', { data });
+    return this.validateEntityResponse<unknown>(response, 'export_config', 'createExportConfig');
+  }
+
+  async updateExportConfig(id: ExportConfigId, data: Record<string, unknown>): Promise<unknown> {
+    const response = await this.request('PUT', `/export_configs/${id}`, { data: { data } });
+    return this.validateEntityResponse<unknown>(response, 'export_config', 'updateExportConfig');
+  }
+
+  async archiveExportConfig(id: ExportConfigId, unarchive = false): Promise<void> {
+    await this.request('PUT', `/export_configs/${id}/archive`, { data: { archive: !unarchive } });
+  }
+
+  async pauseExportConfig(id: ExportConfigId): Promise<void> {
+    const response = await this.request('PUT', `/export_configs/${id}/pause`);
+    this.validateOkResponse(response, 'pauseExportConfig');
+  }
+
+  async listExportHistories(id: ExportConfigId): Promise<unknown[]> {
+    const response = await this.request('GET', `/export_configs/${id}/export_histories`);
+    return this.validateListResponse<unknown>(response, 'export_histories', 'listExportHistories');
+  }
+
+  async listUpdateSchedules(): Promise<unknown[]> {
+    const response = await this.request('GET', '/experiment_update_schedules');
+    return this.validateListResponse<unknown>(response, 'experiment_update_schedules', 'listUpdateSchedules');
+  }
+
+  async getUpdateSchedule(id: UpdateScheduleId): Promise<unknown> {
+    const response = await this.request('GET', `/experiment_update_schedules/${id}`);
+    return this.validateEntityResponse<unknown>(response, 'experiment_update_schedule', 'getUpdateSchedule');
+  }
+
+  async createUpdateSchedule(data: Record<string, unknown>): Promise<unknown> {
+    const response = await this.request('POST', '/experiment_update_schedules', { data });
+    return this.validateEntityResponse<unknown>(response, 'experiment_update_schedule', 'createUpdateSchedule');
+  }
+
+  async updateUpdateSchedule(id: UpdateScheduleId, data: Record<string, unknown>): Promise<unknown> {
+    const response = await this.request('PUT', `/experiment_update_schedules/${id}`, { data: { data } });
+    return this.validateEntityResponse<unknown>(response, 'experiment_update_schedule', 'updateUpdateSchedule');
+  }
+
+  async deleteUpdateSchedule(id: UpdateScheduleId): Promise<void> {
+    await this.request('DELETE', `/experiment_update_schedules/${id}`);
+  }
+
   async rawRequest(
-    path: string,
-    method = 'GET',
     data?: unknown,
     headers?: Record<string, string>
   ): Promise<unknown> {

@@ -42,6 +42,11 @@ export type ScheduledActionId = Branded<number, 'ScheduledActionId'>;
 export type CustomSectionFieldId = Branded<number, 'CustomSectionFieldId'>;
 export type AnnotationId = Branded<number, 'AnnotationId'>;
 export type AssetRoleId = Branded<number, 'AssetRoleId'>;
+export type CorsOriginId = Branded<number, 'CorsOriginId'>;
+export type DatasourceId = Branded<number, 'DatasourceId'>;
+export type ExportConfigId = Branded<number, 'ExportConfigId'>;
+export type UpdateScheduleId = Branded<number, 'UpdateScheduleId'>;
+
 export type NotificationId = Branded<number, 'NotificationId'>;
 export type Timestamp = Branded<number, 'Timestamp'>;
 export type TrafficPercentage = Branded<number, 'TrafficPercentage'>;
@@ -152,6 +157,26 @@ export function AssetRoleId(id: number): AssetRoleId {
   validatePositiveInteger(id, 'AssetRoleId');
   return id as AssetRoleId;
 }
+export function CorsOriginId(id: number): CorsOriginId {
+  validatePositiveInteger(id, 'CorsOriginId');
+  return id as CorsOriginId;
+}
+
+export function DatasourceId(id: number): DatasourceId {
+  validatePositiveInteger(id, 'DatasourceId');
+  return id as DatasourceId;
+}
+
+export function ExportConfigId(id: number): ExportConfigId {
+  validatePositiveInteger(id, 'ExportConfigId');
+  return id as ExportConfigId;
+}
+
+export function UpdateScheduleId(id: number): UpdateScheduleId {
+  validatePositiveInteger(id, 'UpdateScheduleId');
+  return id as UpdateScheduleId;
+}
+
 
 export function NotificationId(id: number): NotificationId {
   validatePositiveInteger(id, 'NotificationId');
