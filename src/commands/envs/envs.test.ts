@@ -16,6 +16,9 @@ describe('envs command', () => {
   const mockClient = {
     listEnvironments: vi.fn().mockResolvedValue([{ id: 1, name: 'production' }]),
     getEnvironment: vi.fn().mockResolvedValue({ id: 1, name: 'production' }),
+    createEnvironment: vi.fn().mockResolvedValue({ id: 2, name: 'staging' }),
+    updateEnvironment: vi.fn().mockResolvedValue({ id: 1, name: 'updated' }),
+    archiveEnvironment: vi.fn().mockResolvedValue(undefined),
   };
 
   beforeEach(() => {
@@ -55,5 +58,25 @@ describe('envs command', () => {
       expect.objectContaining({ id: 1 }),
       expect.anything()
     );
+  });
+
+  it('should create environment', async () => {
+    await envsCommand.parseAsync(['node', 'test', 'create', '--name', 'staging']);
+    expect(mockClient.createEnvironment).toHaveBeenCalledWith({ name: 'staging' });
+  });
+
+  it('should update environment', async () => {
+    await envsCommand.parseAsync(['node', 'test', 'update', '1', '--name', 'updated']);
+    expect(mockClient.updateEnvironment).toHaveBeenCalledWith(1, { name: 'updated' });
+  });
+
+  it('should archive environment', async () => {
+    await envsCommand.parseAsync(['node', 'test', 'archive', '1']);
+    expect(mockClient.archiveEnvironment).toHaveBeenCalledWith(1, undefined);
+  });
+
+  it('should unarchive environment', async () => {
+    await envsCommand.parseAsync(['node', 'test', 'archive', '1', '--unarchive']);
+    expect(mockClient.archiveEnvironment).toHaveBeenCalledWith(1, true);
   });
 });
