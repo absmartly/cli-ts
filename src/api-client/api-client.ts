@@ -1,4 +1,6 @@
 import type { HttpClient, HttpRequestConfig, HttpResponse, APIError } from './http-client.js';
+import { experimentToInput } from './experiment-transform.js';
+import type { ExperimentInput } from './experiment-transform.js';
 import type {
   Experiment,
   ListOptions,
@@ -30,6 +32,8 @@ import type {
   ApplicationId,
   EnvironmentId,
   UnitTypeId,
+  NoteId,
+  AlertId,
   TagId,
   RoleId,
   ApiKeyId,
@@ -243,8 +247,22 @@ export class APIClient {
     return this.validateEntityResponse<Experiment>(response, 'experiment', 'createExperiment');
   }
 
-  async updateExperiment(id: ExperimentId, data: Partial<Experiment>): Promise<Experiment> {
-    const response = await this.request('PUT', `/experiments/${id}`, { data: { data } });
+  async updateExperiment(
+    id: ExperimentId,
+    changes: Partial<ExperimentInput>,
+    options?: { note?: string; update_metric_versions?: boolean }
+  ): Promise<Experiment> {
+    const experiment = await this.getExperiment(id);
+    const input = experimentToInput(experiment);
+    const merged = { ...input, ...changes };
+    const payload: Record<string, unknown> = {
+      id: experiment.id,
+      data: merged,
+    };
+    if (options?.note !== undefined) payload.note = options.note;
+    if (options?.update_metric_versions !== undefined) payload.update_metric_versions = options.update_metric_versions;
+    const response = await this.request('PUT', `/experiments/${id}`, { data: payload });
+    this.validateOkResponse(response, 'updateExperiment');
     return this.validateEntityResponse<Experiment>(response, 'experiment', 'updateExperiment');
   }
 
@@ -276,10 +294,53 @@ export class APIClient {
       reason?: string;
       reshuffle?: boolean;
       state?: 'development' | 'running';
-      data?: Partial<Experiment>;
+      restart_as_type?: 'feature' | 'experiment';
+      changes?: Partial<ExperimentInput>;
     } = {}
   ): Promise<Experiment> {
-    const response = await this.request<Record<string, unknown>>('PUT', `/experiments/${id}/restart`, { data: options });
+    const current = await this.getExperiment(id);
+    const input = experimentToInput(current);
+    const data: Record<string, unknown> = options.changes ? { ...input, ...options.changes } : { ...input };
+
+    if (options.restart_as_type) {
+      const dbType = options.restart_as_type === 'experiment' ? 'test' : options.restart_as_type;
+      data.type = dbType;
+      if (dbType === 'feature') {
+        data.analysis_type = null;
+        data.required_alpha = null;
+        data.required_power = null;
+        data.group_sequential_futility_type = null;
+        data.group_sequential_analysis_count = null;
+        data.group_sequential_min_analysis_interval = null;
+        data.group_sequential_first_analysis_interval = null;
+        data.group_sequential_max_duration_interval = null;
+        data.minimum_detectable_effect = null;
+        data.baseline_primary_metric_mean = null;
+        data.baseline_primary_metric_stdev = null;
+        data.baseline_participants_per_day = null;
+      } else if (dbType === 'test' && !data.analysis_type) {
+        data.analysis_type = 'group_sequential';
+        data.required_alpha = '0.1';
+        data.required_power = '0.8';
+        data.group_sequential_futility_type = 'binding';
+        data.group_sequential_min_analysis_interval = '1d';
+        data.group_sequential_first_analysis_interval = '7d';
+        data.group_sequential_max_duration_interval = '6w';
+      }
+    }
+
+    const payload: Record<string, unknown> = {
+      data,
+      version: Date.now(),
+      state: options.state ?? 'running',
+      reshuffle: options.reshuffle ?? false,
+    };
+    if (options.note !== undefined) payload.note = options.note;
+    if (options.reason !== undefined) payload.reason = options.reason;
+    if (options.restart_as_type !== undefined) payload.restart_as_type = options.restart_as_type;
+
+    const response = await this.request<Record<string, unknown>>('PUT', `/experiments/${id}/restart`, { data: payload });
+    this.validateOkResponse(response, 'restartExperiment');
     const responseData = response.data;
     const experiment = responseData.new_experiment ?? responseData.experiment;
     if (!experiment) {
@@ -315,6 +376,36 @@ export class APIClient {
     await this.request('DELETE', `/experiments/${id}/scheduled_action/${actionId}`);
   }
 
+  async listExperimentMetrics(id: ExperimentId): Promise<unknown[]> {
+    const response = await this.request('GET', `/experiments/${id}/metrics`);
+    return this.validateListResponse<unknown>(response, 'experiment_metrics', 'listExperimentMetrics');
+  }
+
+  async addExperimentMetrics(id: ExperimentId, metricIds: MetricId[]): Promise<void> {
+    const response = await this.request('POST', `/experiments/${id}/metrics`, { data: { metric_ids: metricIds } });
+    this.validateOkResponse(response, 'addExperimentMetrics');
+  }
+
+  async confirmMetricImpact(experimentId: ExperimentId, metricId: MetricId): Promise<void> {
+    const response = await this.request('POST', `/experiments/${experimentId}/metrics/${metricId}/confirm_impact`);
+    this.validateOkResponse(response, 'confirmMetricImpact');
+  }
+
+  async excludeExperimentMetric(experimentId: ExperimentId, metricId: MetricId): Promise<void> {
+    const response = await this.request('POST', `/experiments/${experimentId}/metrics/${metricId}/exclude`);
+    this.validateOkResponse(response, 'excludeExperimentMetric');
+  }
+
+  async includeExperimentMetric(experimentId: ExperimentId, metricId: MetricId): Promise<void> {
+    const response = await this.request('POST', `/experiments/${experimentId}/metrics/${metricId}/include`);
+    this.validateOkResponse(response, 'includeExperimentMetric');
+  }
+
+  async removeMetricImpact(experimentId: ExperimentId, metricId: MetricId): Promise<void> {
+    const response = await this.request('POST', `/experiments/${experimentId}/metrics/${metricId}/remove_impact`);
+    this.validateOkResponse(response, 'removeMetricImpact');
+  }
+
   async listExperimentActivity(id: ExperimentId): Promise<Note[]> {
     const response = await this.request('GET', `/experiments/${id}/activity`);
     return this.validateListResponse<Note>(response, 'experiment_notes', 'listExperimentActivity');
@@ -323,6 +414,18 @@ export class APIClient {
   async createExperimentNote(id: ExperimentId, note: string): Promise<Note> {
     const response = await this.request('POST', `/experiments/${id}/activity`, { data: { note } });
     return this.validateEntityResponse<Note>(response, 'experiment_note', 'createExperimentNote');
+  }
+
+  async editExperimentNote(id: ExperimentId, noteId: NoteId, note: string): Promise<Note> {
+    const response = await this.request('PUT', `/experiments/${id}/activity/${noteId}`, { data: { note } });
+    this.validateOkResponse(response, 'editExperimentNote');
+    return this.validateEntityResponse<Note>(response, 'experiment_note', 'editExperimentNote');
+  }
+
+  async replyToExperimentNote(id: ExperimentId, noteId: NoteId, note: string): Promise<Note> {
+    const response = await this.request('POST', `/experiments/${id}/activity/${noteId}/reply`, { data: { note } });
+    this.validateOkResponse(response, 'replyToExperimentNote');
+    return this.validateEntityResponse<Note>(response, 'experiment_note', 'replyToExperimentNote');
   }
 
   async searchExperiments(query: string, limit = 50): Promise<Experiment[]> {
@@ -721,6 +824,112 @@ export class APIClient {
 
   async deleteWebhook(id: WebhookId): Promise<void> {
     await this.request('DELETE', `/webhooks/${id}`);
+  }
+
+  async listTeamMembers(id: TeamId): Promise<User[]> {
+    const response = await this.request('GET', `/teams/${id}/members`);
+    return this.validateListResponse<User>(response, 'team_members', 'listTeamMembers');
+  }
+
+  async addTeamMembers(id: TeamId, userIds: UserId[], roleIds?: RoleId[]): Promise<void> {
+    const body: Record<string, unknown> = { user_ids: userIds };
+    if (roleIds) body.role_ids = roleIds;
+    const response = await this.request('PUT', `/teams/${id}/members/add`, { data: body });
+    this.validateOkResponse(response, 'addTeamMembers');
+  }
+
+  async editTeamMemberRoles(id: TeamId, userIds: UserId[], roleIds: RoleId[]): Promise<void> {
+    const response = await this.request('PUT', `/teams/${id}/members/edit_roles`, {
+      data: { user_ids: userIds, role_ids: roleIds },
+    });
+    this.validateOkResponse(response, 'editTeamMemberRoles');
+  }
+
+  async removeTeamMembers(id: TeamId, userIds: UserId[]): Promise<void> {
+    const response = await this.request('PUT', `/teams/${id}/members/remove`, {
+      data: { user_ids: userIds },
+    });
+    this.validateOkResponse(response, 'removeTeamMembers');
+  }
+
+  async followExperiment(id: ExperimentId): Promise<void> {
+    const response = await this.request('POST', `/experiments/${id}/follow`);
+    this.validateOkResponse(response, 'followExperiment');
+  }
+
+  async unfollowExperiment(id: ExperimentId): Promise<void> {
+    const response = await this.request('DELETE', `/experiments/${id}/follow`);
+    this.validateOkResponse(response, 'unfollowExperiment');
+  }
+
+  async followMetric(id: MetricId): Promise<void> {
+    const response = await this.request('POST', `/metrics/${id}/follow`);
+    this.validateOkResponse(response, 'followMetric');
+  }
+
+  async unfollowMetric(id: MetricId): Promise<void> {
+    const response = await this.request('DELETE', `/metrics/${id}/follow`);
+    this.validateOkResponse(response, 'unfollowMetric');
+  }
+
+  async followGoal(id: GoalId): Promise<void> {
+    const response = await this.request('POST', `/goals/${id}/follow`);
+    this.validateOkResponse(response, 'followGoal');
+  }
+
+  async unfollowGoal(id: GoalId): Promise<void> {
+    const response = await this.request('DELETE', `/goals/${id}/follow`);
+    this.validateOkResponse(response, 'unfollowGoal');
+  }
+
+  async favoriteExperiment(id: ExperimentId, favorite: boolean): Promise<void> {
+    await this.request('PUT', '/favorites/experiment', {
+      params: { id: String(id), favorite: String(favorite) },
+    });
+  }
+
+  async favoriteMetric(id: MetricId, favorite: boolean): Promise<void> {
+    await this.request('PUT', '/favorites/metric', {
+      params: { id: String(id), favorite: String(favorite) },
+    });
+  }
+
+  async getNotifications(cursor?: number): Promise<unknown[]> {
+    const params: Record<string, string | number> = {};
+    if (cursor !== undefined) params.cursor = cursor;
+    const response = await this.request<Record<string, unknown>>('GET', '/notifications/summary', { params });
+    const data = response.data;
+    if (!data || typeof data !== 'object') {
+      throw new Error('Invalid API response for getNotifications: Expected object');
+    }
+    const notifications = (data as Record<string, unknown>).notifications;
+    if (!Array.isArray(notifications)) {
+      throw new Error('Invalid API response for getNotifications: Missing "notifications" array');
+    }
+    return notifications;
+  }
+
+  async markNotificationsSeen(): Promise<void> {
+    const response = await this.request('PUT', '/notifications/see');
+    this.validateOkResponse(response, 'markNotificationsSeen');
+  }
+
+  async markNotificationsRead(ids?: number[]): Promise<void> {
+    const body: Record<string, unknown> = {};
+    if (ids) body.ids = ids;
+    const response = await this.request('PUT', '/notifications/read', { data: body });
+    this.validateOkResponse(response, 'markNotificationsRead');
+  }
+
+  async hasNewNotifications(lastNotificationId?: number): Promise<boolean> {
+    const params: Record<string, string | number> = {};
+    if (lastNotificationId !== undefined) params.last_notification_id = lastNotificationId;
+    const response = await this.request<Record<string, unknown>>('GET', '/notifications/has-new', { params });
+    const data = response.data;
+    if (!data || typeof data !== 'object') {
+      throw new Error('Invalid API response for hasNewNotifications: Expected object');
+    }
+    return Boolean((data as Record<string, unknown>).has_new);
   }
 
   async rawRequest(
