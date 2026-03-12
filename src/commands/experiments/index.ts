@@ -20,6 +20,7 @@ import { accessCommand } from './access.js';
 import { followCommand, unfollowCommand } from './follow.js';
 import { annotationsCommand } from './annotations.js';
 import { alertsCommand } from './alerts.js';
+import { recommendationsCommand } from './recommendations.js';
 
 export const experimentsCommand = new Command('experiments')
   .alias('exp')
@@ -48,3 +49,4 @@ experimentsCommand.addCommand(followCommand);
 experimentsCommand.addCommand(unfollowCommand);
 experimentsCommand.addCommand(annotationsCommand);
 experimentsCommand.addCommand(alertsCommand);
+experimentsCommand.addCommand(recommendationsCommand);

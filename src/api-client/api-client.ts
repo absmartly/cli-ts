@@ -448,6 +448,16 @@ export class APIClient {
     return this.validateEntityResponse<Note>(response, 'experiment_note', 'replyToExperimentNote');
   }
 
+  async exportExperimentData(id: ExperimentId): Promise<void> {
+    const response = await this.request('POST', `/experiments/${id}/export_data`, { data: {} });
+    this.validateOkResponse(response, 'exportExperimentData');
+  }
+
+  async requestExperimentUpdate(id: ExperimentId): Promise<void> {
+    const response = await this.request('POST', `/experiments/${id}/request_update`, { data: {} });
+    this.validateOkResponse(response, 'requestExperimentUpdate');
+  }
+
   async searchExperiments(query: string, limit = 50): Promise<Experiment[]> {
     return this.listExperiments({ search: query, limit });
   }
