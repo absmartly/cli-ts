@@ -637,4 +637,300 @@ describe.skipIf(isLiveMode)('APIClient core', () => {
       expect(await client.listWebhookEvents()).toContain('experiment.started');
     });
   });
+
+  describe('follow/unfollow', () => {
+    it('should follow experiment', async () => {
+      server.use(http.post(`${BASE_URL}/experiments/1/follow`, () => HttpResponse.json({ ok: true, errors: [] })));
+      await client.followExperiment(1);
+    });
+
+    it('should unfollow experiment', async () => {
+      server.use(http.delete(`${BASE_URL}/experiments/1/follow`, () => HttpResponse.json({ ok: true, errors: [] })));
+      await client.unfollowExperiment(1);
+    });
+
+    it('should follow/unfollow metric', async () => {
+      server.use(http.post(`${BASE_URL}/metrics/1/follow`, () => HttpResponse.json({ ok: true, errors: [] })));
+      await client.followMetric(1 as any);
+      server.use(http.delete(`${BASE_URL}/metrics/1/follow`, () => HttpResponse.json({ ok: true, errors: [] })));
+      await client.unfollowMetric(1 as any);
+    });
+
+    it('should follow/unfollow goal', async () => {
+      server.use(http.post(`${BASE_URL}/goals/1/follow`, () => HttpResponse.json({ ok: true, errors: [] })));
+      await client.followGoal(1 as any);
+      server.use(http.delete(`${BASE_URL}/goals/1/follow`, () => HttpResponse.json({ ok: true, errors: [] })));
+      await client.unfollowGoal(1 as any);
+    });
+  });
+
+  describe('favorites', () => {
+    it('should favorite experiment', async () => {
+      server.use(http.put(`${BASE_URL}/favorites/experiment`, () => HttpResponse.json({})));
+      await client.favoriteExperiment(1, true);
+    });
+
+    it('should favorite metric', async () => {
+      server.use(http.put(`${BASE_URL}/favorites/metric`, () => HttpResponse.json({})));
+      await client.favoriteMetric(1 as any, false);
+    });
+  });
+
+  describe('notifications', () => {
+    it('should get notifications', async () => {
+      server.use(http.get(`${BASE_URL}/notifications/summary`, () =>
+        HttpResponse.json({ notifications: [{ id: 1 }] })
+      ));
+      expect(await client.getNotifications()).toHaveLength(1);
+    });
+
+    it('should handle missing notifications array', async () => {
+      server.use(http.get(`${BASE_URL}/notifications/summary`, () => HttpResponse.json({})));
+      await expect(client.getNotifications()).rejects.toThrow(/Missing "notifications"/);
+    });
+
+    it('should mark notifications seen', async () => {
+      server.use(http.put(`${BASE_URL}/notifications/see`, () => HttpResponse.json({ ok: true, errors: [] })));
+      await client.markNotificationsSeen();
+    });
+
+    it('should mark notifications read', async () => {
+      server.use(http.put(`${BASE_URL}/notifications/read`, () => HttpResponse.json({ ok: true, errors: [] })));
+      await client.markNotificationsRead([1, 2]);
+    });
+
+    it('should check for new notifications', async () => {
+      server.use(http.get(`${BASE_URL}/notifications/has-new`, () => HttpResponse.json({ has_new: true })));
+      expect(await client.hasNewNotifications()).toBe(true);
+    });
+  });
+
+  describe('access control', () => {
+    it('should list/grant/revoke experiment access users', async () => {
+      server.use(http.get(`${BASE_URL}/experiments/1/asset_role_users`, () =>
+        HttpResponse.json({ asset_role_experiment_users: [{ user_id: 1 }] })
+      ));
+      expect(await client.listExperimentAccessUsers(1)).toHaveLength(1);
+
+      server.use(http.post(`${BASE_URL}/experiments/1/asset_role_users`, () => new HttpResponse(null, { status: 201 })));
+      await client.grantExperimentAccessUser(1, 1 as any, 1 as any);
+
+      server.use(http.delete(`${BASE_URL}/experiments/1/asset_role_users/1/1`, () => new HttpResponse(null, { status: 204 })));
+      await client.revokeExperimentAccessUser(1, 1 as any, 1 as any);
+    });
+
+    it('should list/grant/revoke experiment access teams', async () => {
+      server.use(http.get(`${BASE_URL}/experiments/1/asset_role_teams`, () =>
+        HttpResponse.json({ asset_role_experiment_teams: [] })
+      ));
+      expect(await client.listExperimentAccessTeams(1)).toEqual([]);
+    });
+
+    it('should list metric access users', async () => {
+      server.use(http.get(`${BASE_URL}/metrics/1/asset_role_users`, () =>
+        HttpResponse.json({ asset_role_metric_users: [] })
+      ));
+      expect(await client.listMetricAccessUsers(1 as any)).toEqual([]);
+    });
+
+    it('should list goal access users', async () => {
+      server.use(http.get(`${BASE_URL}/goals/1/asset_role_users`, () =>
+        HttpResponse.json({ asset_role_goal_users: [] })
+      ));
+      expect(await client.listGoalAccessUsers(1 as any)).toEqual([]);
+    });
+  });
+
+  describe('asset roles', () => {
+    it('should list asset roles', async () => {
+      server.use(http.get(`${BASE_URL}/asset_roles`, () => HttpResponse.json({ asset_roles: [] })));
+      expect(await client.listAssetRoles()).toEqual([]);
+    });
+
+    it('should create and delete asset role', async () => {
+      server.use(http.post(`${BASE_URL}/asset_roles`, () => HttpResponse.json({ asset_role: { id: 1, name: 'Reviewer' } })));
+      expect((await client.createAssetRole({ name: 'Reviewer' })).name).toBe('Reviewer');
+
+      server.use(http.delete(`${BASE_URL}/asset_roles/1`, () => HttpResponse.json({ ok: true, errors: [] })));
+      await client.deleteAssetRole(1 as any);
+    });
+  });
+
+  describe('metric reviews', () => {
+    it('should request/get/approve metric review', async () => {
+      server.use(http.post(`${BASE_URL}/metrics/1/review/request`, () => HttpResponse.json({ ok: true, errors: [] })));
+      await client.requestMetricReview(1 as any);
+
+      server.use(http.get(`${BASE_URL}/metrics/1/review`, () => HttpResponse.json({ ok: true, status: 'pending' })));
+      const review = await client.getMetricReview(1 as any);
+      expect(review).toBeDefined();
+
+      server.use(http.post(`${BASE_URL}/metrics/1/review/approve`, () => HttpResponse.json({ ok: true, errors: [] })));
+      await client.approveMetricReview(1 as any);
+    });
+
+    it('should list/add/reply review comments', async () => {
+      server.use(http.get(`${BASE_URL}/metrics/1/review/comments`, () => HttpResponse.json({ comments: [] })));
+      expect(await client.listMetricReviewComments(1 as any)).toEqual([]);
+
+      server.use(http.post(`${BASE_URL}/metrics/1/review/comments`, () => HttpResponse.json({ comment: { id: 1 } })));
+      await client.addMetricReviewComment(1 as any, 'looks good');
+
+      server.use(http.post(`${BASE_URL}/metrics/1/review/comments/1/reply`, () => HttpResponse.json({ comment: { id: 2 } })));
+      await client.replyToMetricReviewComment(1 as any, 1, 'thanks');
+    });
+  });
+
+  describe('annotations', () => {
+    it('should list annotations', async () => {
+      server.use(http.get(`${BASE_URL}/experiment_annotations`, () => HttpResponse.json({ experiment_annotations: [] })));
+      expect(await client.listAnnotations()).toEqual([]);
+    });
+
+    it('should create annotation', async () => {
+      server.use(http.post(`${BASE_URL}/experiment_annotations`, () =>
+        HttpResponse.json({ experiment_annotation: { id: 1 } })
+      ));
+      await client.createAnnotation({ experiment_id: 1 });
+    });
+
+    it('should archive annotation', async () => {
+      server.use(http.put(`${BASE_URL}/experiment_annotations/1/archive`, () => HttpResponse.json({ ok: true })));
+      await client.archiveAnnotation(1 as any);
+    });
+  });
+
+  describe('custom sections and fields', () => {
+    it('should list custom section fields', async () => {
+      server.use(http.get(`${BASE_URL}/experiment_custom_section_fields`, () =>
+        HttpResponse.json({ experiment_custom_section_fields: [{ id: 1, name: 'f1' }] })
+      ));
+      expect(await client.listCustomSectionFields()).toHaveLength(1);
+    });
+
+    it('should list custom sections', async () => {
+      server.use(http.get(`${BASE_URL}/experiment_custom_sections`, () =>
+        HttpResponse.json({ experiment_custom_sections: [] })
+      ));
+      expect(await client.listCustomSections()).toEqual([]);
+    });
+
+    it('should reorder custom sections', async () => {
+      server.use(http.put(`${BASE_URL}/experiment_custom_sections/order`, () =>
+        HttpResponse.json({ ok: true, errors: [] })
+      ));
+      await client.reorderCustomSections([{ id: 1, order_index: 0 }]);
+    });
+  });
+
+  describe('insights', () => {
+    it('should get velocity insights', async () => {
+      server.use(http.get(`${BASE_URL}/insights/velocity/summary`, () => HttpResponse.json({ data: [] })));
+      const result = await client.getVelocityInsights({ from: 1000, to: 2000, aggregation: 'month' });
+      expect(result).toBeDefined();
+    });
+
+    it('should get decision insights', async () => {
+      server.use(http.get(`${BASE_URL}/insights/decisions/widgets`, () => HttpResponse.json({ data: [] })));
+      const result = await client.getDecisionInsights({ from: 1000, to: 2000, aggregation: 'week' });
+      expect(result).toBeDefined();
+    });
+  });
+
+  describe('platform config', () => {
+    it('should list/get/update platform configs', async () => {
+      server.use(http.get(`${BASE_URL}/configs`, () => HttpResponse.json({ configs: [] })));
+      expect(await client.listPlatformConfigs()).toEqual([]);
+
+      server.use(http.get(`${BASE_URL}/configs/1`, () => HttpResponse.json({ config: { id: 1 } })));
+      expect(await client.getPlatformConfig(1)).toBeDefined();
+
+      server.use(http.put(`${BASE_URL}/configs/1`, () => HttpResponse.json({ config: { id: 1 } })));
+      await client.updatePlatformConfig(1, { key: 'val' });
+    });
+  });
+
+  describe('CORS origins', () => {
+    it('should list/create/delete CORS origins', async () => {
+      server.use(http.get(`${BASE_URL}/cors`, () => HttpResponse.json({ cors_allowed_origins: [] })));
+      expect(await client.listCorsOrigins()).toEqual([]);
+
+      server.use(http.post(`${BASE_URL}/cors`, () => HttpResponse.json({ cors_allowed_origin: { id: 1, origin: 'https://a.com' } })));
+      await client.createCorsOrigin({ origin: 'https://a.com' });
+
+      server.use(http.delete(`${BASE_URL}/cors/1`, () => HttpResponse.json({ ok: true, errors: [] })));
+      await client.deleteCorsOrigin(1 as any);
+    });
+  });
+
+  describe('datasources', () => {
+    it('should list/create datasources', async () => {
+      server.use(http.get(`${BASE_URL}/datasources`, () => HttpResponse.json({ event_datasource_configs: [] })));
+      expect(await client.listDatasources()).toEqual([]);
+
+      server.use(http.post(`${BASE_URL}/datasources`, () => HttpResponse.json({ event_datasource_config: { id: 1 } })));
+      await client.createDatasource({ type: 'pg' });
+    });
+
+    it('should test/introspect/validate datasource', async () => {
+      server.use(http.post(`${BASE_URL}/datasources/test`, () => HttpResponse.json({ ok: true, errors: [] })));
+      await client.testDatasource({ type: 'pg' });
+
+      server.use(http.post(`${BASE_URL}/datasources/introspect`, () => HttpResponse.json({ tables: [] })));
+      await client.introspectDatasource({ type: 'pg' });
+
+      server.use(http.post(`${BASE_URL}/datasources/validate_query`, () => HttpResponse.json({ ok: true, errors: [] })));
+      await client.validateDatasourceQuery({ query: 'SELECT 1' });
+    });
+
+    it('should archive datasource', async () => {
+      server.use(http.put(`${BASE_URL}/datasources/1/archive`, () => HttpResponse.json({ ok: true })));
+      await client.archiveDatasource(1 as any);
+    });
+  });
+
+  describe('export configs', () => {
+    it('should list/create/archive export configs', async () => {
+      server.use(http.get(`${BASE_URL}/export_configs`, () => HttpResponse.json({ export_configs: [] })));
+      expect(await client.listExportConfigs()).toEqual([]);
+
+      server.use(http.post(`${BASE_URL}/export_configs`, () => HttpResponse.json({ export_config: { id: 1 } })));
+      await client.createExportConfig({ dest: 's3' });
+
+      server.use(http.put(`${BASE_URL}/export_configs/1/archive`, () => HttpResponse.json({ ok: true })));
+      await client.archiveExportConfig(1 as any);
+    });
+
+    it('should pause export config', async () => {
+      server.use(http.put(`${BASE_URL}/export_configs/1/pause`, () => HttpResponse.json({ ok: true, errors: [] })));
+      await client.pauseExportConfig(1 as any);
+    });
+
+    it('should list export histories', async () => {
+      server.use(http.get(`${BASE_URL}/export_configs/1/export_histories`, () => HttpResponse.json({ export_histories: [] })));
+      expect(await client.listExportHistories(1 as any)).toEqual([]);
+    });
+  });
+
+  describe('update schedules', () => {
+    it('should list/create/delete update schedules', async () => {
+      server.use(http.get(`${BASE_URL}/experiment_update_schedules`, () => HttpResponse.json({ experiment_update_schedules: [] })));
+      expect(await client.listUpdateSchedules()).toEqual([]);
+
+      server.use(http.post(`${BASE_URL}/experiment_update_schedules`, () =>
+        HttpResponse.json({ experiment_update_schedule: { id: 1 } })
+      ));
+      await client.createUpdateSchedule({ interval: '1h' });
+
+      server.use(http.delete(`${BASE_URL}/experiment_update_schedules/1`, () => new HttpResponse(null, { status: 204 })));
+      await client.deleteUpdateSchedule(1 as any);
+    });
+  });
+
+  describe('access control policies', () => {
+    it('should list access control policies', async () => {
+      server.use(http.get(`${BASE_URL}/access_control_policies`, () => HttpResponse.json({ access_control_policies: [] })));
+      expect(await client.listAccessControlPolicies()).toEqual([]);
+    });
+  });
 });
