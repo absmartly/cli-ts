@@ -16,6 +16,9 @@ describe('units command', () => {
   const mockClient = {
     listUnitTypes: vi.fn().mockResolvedValue([{ id: 1, name: 'user_id' }]),
     getUnitType: vi.fn().mockResolvedValue({ id: 1, name: 'user_id' }),
+    createUnitType: vi.fn().mockResolvedValue({ id: 2, name: 'session_id' }),
+    updateUnitType: vi.fn().mockResolvedValue({ id: 1, name: 'updated' }),
+    archiveUnitType: vi.fn().mockResolvedValue(undefined),
   };
 
   beforeEach(() => {
@@ -55,5 +58,25 @@ describe('units command', () => {
       expect.objectContaining({ id: 1 }),
       expect.anything()
     );
+  });
+
+  it('should create unit type', async () => {
+    await unitsCommand.parseAsync(['node', 'test', 'create', '--name', 'session_id']);
+    expect(mockClient.createUnitType).toHaveBeenCalledWith({ name: 'session_id' });
+  });
+
+  it('should update unit type', async () => {
+    await unitsCommand.parseAsync(['node', 'test', 'update', '1', '--name', 'updated']);
+    expect(mockClient.updateUnitType).toHaveBeenCalledWith(1, { name: 'updated' });
+  });
+
+  it('should archive unit type', async () => {
+    await unitsCommand.parseAsync(['node', 'test', 'archive', '1']);
+    expect(mockClient.archiveUnitType).toHaveBeenCalledWith(1, undefined);
+  });
+
+  it('should unarchive unit type', async () => {
+    await unitsCommand.parseAsync(['node', 'test', 'archive', '1', '--unarchive']);
+    expect(mockClient.archiveUnitType).toHaveBeenCalledWith(1, true);
   });
 });
