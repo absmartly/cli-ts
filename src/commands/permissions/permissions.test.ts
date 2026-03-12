@@ -16,6 +16,7 @@ describe('permissions command', () => {
   const mockClient = {
     listPermissions: vi.fn().mockResolvedValue([{ id: 1, name: 'read' }]),
     listPermissionCategories: vi.fn().mockResolvedValue([{ id: 1, name: 'experiments' }]),
+    listAccessControlPolicies: vi.fn().mockResolvedValue([{ id: 1, name: 'policy1' }]),
   };
 
   beforeEach(() => {
@@ -55,5 +56,12 @@ describe('permissions command', () => {
       [{ id: 1, name: 'experiments' }],
       expect.anything()
     );
+  });
+
+  it('should list access control policies', async () => {
+    await permissionsCommand.parseAsync(['node', 'test', 'policies']);
+
+    expect(mockClient.listAccessControlPolicies).toHaveBeenCalled();
+    expect(printFormatted).toHaveBeenCalled();
   });
 });

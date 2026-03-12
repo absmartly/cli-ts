@@ -26,5 +26,16 @@ const categoriesCommand = new Command('categories')
     printFormatted(categories, globalOptions);
   }));
 
+
+const policiesCommand = new Command('policies')
+  .description('List access control policies')
+  .action(withErrorHandling(async () => {
+    const globalOptions = getGlobalOptions(policiesCommand);
+    const client = await getAPIClientFromOptions(globalOptions);
+    const policies = await client.listAccessControlPolicies();
+    printFormatted(policies, globalOptions);
+  }));
+
 permissionsCommand.addCommand(listCommand);
 permissionsCommand.addCommand(categoriesCommand);
+permissionsCommand.addCommand(policiesCommand);
