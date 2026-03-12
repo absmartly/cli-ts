@@ -944,6 +944,182 @@ export class APIClient {
     return Boolean((data as Record<string, unknown>).has_new);
   }
 
+  async listExperimentAccessUsers(id: ExperimentId): Promise<unknown[]> {
+    const response = await this.request('GET', `/experiments/${id}/asset_role_users`);
+    return this.validateListResponse<unknown>(response, 'asset_role_experiment_users', 'listExperimentAccessUsers');
+  }
+
+  async grantExperimentAccessUser(id: ExperimentId, userId: UserId, assetRoleId: AssetRoleId): Promise<void> {
+    await this.request('POST', `/experiments/${id}/asset_role_users`, { data: { user_id: userId, asset_role_id: assetRoleId } });
+  }
+
+  async revokeExperimentAccessUser(id: ExperimentId, userId: UserId, assetRoleId: AssetRoleId): Promise<void> {
+    await this.request('DELETE', `/experiments/${id}/asset_role_users/${userId}/${assetRoleId}`);
+  }
+
+  async listExperimentAccessTeams(id: ExperimentId): Promise<unknown[]> {
+    const response = await this.request('GET', `/experiments/${id}/asset_role_teams`);
+    return this.validateListResponse<unknown>(response, 'asset_role_experiment_teams', 'listExperimentAccessTeams');
+  }
+
+  async grantExperimentAccessTeam(id: ExperimentId, teamId: TeamId, assetRoleId: AssetRoleId): Promise<void> {
+    await this.request('POST', `/experiments/${id}/asset_role_teams`, { data: { team_id: teamId, asset_role_id: assetRoleId } });
+  }
+
+  async revokeExperimentAccessTeam(id: ExperimentId, teamId: TeamId, assetRoleId: AssetRoleId): Promise<void> {
+    await this.request('DELETE', `/experiments/${id}/asset_role_teams/${teamId}/${assetRoleId}`);
+  }
+
+  async listMetricAccessUsers(id: MetricId): Promise<unknown[]> {
+    const response = await this.request('GET', `/metrics/${id}/asset_role_users`);
+    return this.validateListResponse<unknown>(response, 'asset_role_metric_users', 'listMetricAccessUsers');
+  }
+
+  async grantMetricAccessUser(id: MetricId, userId: UserId, assetRoleId: AssetRoleId): Promise<void> {
+    await this.request('POST', `/metrics/${id}/asset_role_users`, { data: { user_id: userId, asset_role_id: assetRoleId } });
+  }
+
+  async revokeMetricAccessUser(id: MetricId, userId: UserId, assetRoleId: AssetRoleId): Promise<void> {
+    await this.request('DELETE', `/metrics/${id}/asset_role_users/${userId}/${assetRoleId}`);
+  }
+
+  async listMetricAccessTeams(id: MetricId): Promise<unknown[]> {
+    const response = await this.request('GET', `/metrics/${id}/asset_role_teams`);
+    return this.validateListResponse<unknown>(response, 'asset_role_metric_teams', 'listMetricAccessTeams');
+  }
+
+  async grantMetricAccessTeam(id: MetricId, teamId: TeamId, assetRoleId: AssetRoleId): Promise<void> {
+    await this.request('POST', `/metrics/${id}/asset_role_teams`, { data: { team_id: teamId, asset_role_id: assetRoleId } });
+  }
+
+  async revokeMetricAccessTeam(id: MetricId, teamId: TeamId, assetRoleId: AssetRoleId): Promise<void> {
+    await this.request('DELETE', `/metrics/${id}/asset_role_teams/${teamId}/${assetRoleId}`);
+  }
+
+  async listGoalAccessUsers(id: GoalId): Promise<unknown[]> {
+    const response = await this.request('GET', `/goals/${id}/asset_role_users`);
+    return this.validateListResponse<unknown>(response, 'asset_role_goal_users', 'listGoalAccessUsers');
+  }
+
+  async grantGoalAccessUser(id: GoalId, userId: UserId, assetRoleId: AssetRoleId): Promise<void> {
+    await this.request('POST', `/goals/${id}/asset_role_users`, { data: { user_id: userId, asset_role_id: assetRoleId } });
+  }
+
+  async revokeGoalAccessUser(id: GoalId, userId: UserId, assetRoleId: AssetRoleId): Promise<void> {
+    await this.request('DELETE', `/goals/${id}/asset_role_users/${userId}/${assetRoleId}`);
+  }
+
+  async listGoalAccessTeams(id: GoalId): Promise<unknown[]> {
+    const response = await this.request('GET', `/goals/${id}/asset_role_teams`);
+    return this.validateListResponse<unknown>(response, 'asset_role_goal_teams', 'listGoalAccessTeams');
+  }
+
+  async grantGoalAccessTeam(id: GoalId, teamId: TeamId, assetRoleId: AssetRoleId): Promise<void> {
+    await this.request('POST', `/goals/${id}/asset_role_teams`, { data: { team_id: teamId, asset_role_id: assetRoleId } });
+  }
+
+  async revokeGoalAccessTeam(id: GoalId, teamId: TeamId, assetRoleId: AssetRoleId): Promise<void> {
+    await this.request('DELETE', `/goals/${id}/asset_role_teams/${teamId}/${assetRoleId}`);
+  }
+
+  async listAssetRoles(): Promise<AssetRole[]> {
+    const response = await this.request('GET', '/asset_roles');
+    return this.validateListResponse<AssetRole>(response, 'asset_roles', 'listAssetRoles');
+  }
+
+  async getAssetRole(id: AssetRoleId): Promise<AssetRole> {
+    const response = await this.request('GET', `/asset_roles/${id}`);
+    return this.validateEntityResponse<AssetRole>(response, 'asset_role', 'getAssetRole');
+  }
+
+  async createAssetRole(data: { name: string; [key: string]: unknown }): Promise<AssetRole> {
+    const response = await this.request('POST', '/asset_roles', { data });
+    return this.validateEntityResponse<AssetRole>(response, 'asset_role', 'createAssetRole');
+  }
+
+  async updateAssetRole(id: AssetRoleId, data: Record<string, unknown>): Promise<AssetRole> {
+    const response = await this.request('PUT', `/asset_roles/${id}`, { data: { data } });
+    return this.validateEntityResponse<AssetRole>(response, 'asset_role', 'updateAssetRole');
+  }
+
+  async deleteAssetRole(id: AssetRoleId): Promise<void> {
+    const response = await this.request('DELETE', `/asset_roles/${id}`);
+    this.validateOkResponse(response, 'deleteAssetRole');
+  }
+
+  async requestMetricReview(id: MetricId): Promise<void> {
+    const response = await this.request('POST', `/metrics/${id}/review/request`);
+    this.validateOkResponse(response, 'requestMetricReview');
+  }
+
+  async getMetricReview(id: MetricId): Promise<unknown> {
+    const response = await this.request('GET', `/metrics/${id}/review`);
+    this.validateOkResponse(response, 'getMetricReview');
+    return response.data;
+  }
+
+  async approveMetricReview(id: MetricId): Promise<void> {
+    const response = await this.request('POST', `/metrics/${id}/review/approve`);
+    this.validateOkResponse(response, 'approveMetricReview');
+  }
+
+  async listMetricReviewComments(id: MetricId): Promise<unknown[]> {
+    const response = await this.request('GET', `/metrics/${id}/review/comments`);
+    return this.validateListResponse<unknown>(response, 'comments', 'listMetricReviewComments');
+  }
+
+  async addMetricReviewComment(id: MetricId, message: string): Promise<unknown> {
+    const response = await this.request('POST', `/metrics/${id}/review/comments`, { data: { message } });
+    return response.data;
+  }
+
+  async replyToMetricReviewComment(id: MetricId, commentId: number, message: string): Promise<unknown> {
+    const response = await this.request('POST', `/metrics/${id}/review/comments/${commentId}/reply`, { data: { message } });
+    return response.data;
+  }
+
+  async createApplication(data: { name: string; [key: string]: unknown }): Promise<Application> {
+    const response = await this.request('POST', '/applications', { data });
+    return this.validateEntityResponse<Application>(response, 'application', 'createApplication');
+  }
+
+  async updateApplication(id: ApplicationId, data: Record<string, unknown>): Promise<Application> {
+    const response = await this.request('PUT', `/applications/${id}`, { data: { data } });
+    return this.validateEntityResponse<Application>(response, 'application', 'updateApplication');
+  }
+
+  async archiveApplication(id: ApplicationId, unarchive = false): Promise<void> {
+    await this.request('PUT', `/applications/${id}/archive`, { data: { archive: !unarchive } });
+  }
+
+  async createEnvironment(data: { name: string; [key: string]: unknown }): Promise<Environment> {
+    const response = await this.request('POST', '/environments', { data });
+    return this.validateEntityResponse<Environment>(response, 'environment', 'createEnvironment');
+  }
+
+  async updateEnvironment(id: EnvironmentId, data: Record<string, unknown>): Promise<Environment> {
+    const response = await this.request('PUT', `/environments/${id}`, { data: { data } });
+    return this.validateEntityResponse<Environment>(response, 'environment', 'updateEnvironment');
+  }
+
+  async archiveEnvironment(id: EnvironmentId, unarchive = false): Promise<void> {
+    await this.request('PUT', `/environments/${id}/archive`, { data: { archive: !unarchive } });
+  }
+
+  async createUnitType(data: { name: string; [key: string]: unknown }): Promise<UnitType> {
+    const response = await this.request('POST', '/unit_types', { data });
+    return this.validateEntityResponse<UnitType>(response, 'unit_type', 'createUnitType');
+  }
+
+  async updateUnitType(id: UnitTypeId, data: Record<string, unknown>): Promise<UnitType> {
+    const response = await this.request('PUT', `/unit_types/${id}`, { data: { data } });
+    return this.validateEntityResponse<UnitType>(response, 'unit_type', 'updateUnitType');
+  }
+
+  async archiveUnitType(id: UnitTypeId, unarchive = false): Promise<void> {
+    await this.request('PUT', `/unit_types/${id}/archive`, { data: { archive: !unarchive } });
+  }
+
   async rawRequest(
     path: string,
     method = 'GET',

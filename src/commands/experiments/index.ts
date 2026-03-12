@@ -37,3 +37,5 @@ experimentsCommand.addCommand(restartCommand);
 experimentsCommand.addCommand(fullOnCommand);
 experimentsCommand.addCommand(scheduleCommand);
 experimentsCommand.addCommand(metricsCommand);
+experimentsCommand.addCommand(deleteCommand);
+experimentsCommand.addCommand(parentCommand);
