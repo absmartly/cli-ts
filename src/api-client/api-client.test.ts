@@ -500,4 +500,141 @@ describe.skipIf(isLiveMode)('APIClient core', () => {
       await client.deleteScheduledAction(1, 2 as any);
     });
   });
+
+  describe('applications, environments, unit types', () => {
+    it('should list applications', async () => {
+      server.use(http.get(`${BASE_URL}/applications`, () => HttpResponse.json({ applications: [{ id: 1, name: 'web' }] })));
+      expect(await client.listApplications()).toHaveLength(1);
+    });
+
+    it('should create application', async () => {
+      server.use(http.post(`${BASE_URL}/applications`, () => HttpResponse.json({ application: { id: 1, name: 'web' } })));
+      expect((await client.createApplication({ name: 'web' })).name).toBe('web');
+    });
+
+    it('should archive application', async () => {
+      server.use(http.put(`${BASE_URL}/applications/1/archive`, () => HttpResponse.json({ ok: true })));
+      await client.archiveApplication(1);
+    });
+
+    it('should list environments', async () => {
+      server.use(http.get(`${BASE_URL}/environments`, () => HttpResponse.json({ environments: [{ id: 1, name: 'prod' }] })));
+      expect(await client.listEnvironments()).toHaveLength(1);
+    });
+
+    it('should create environment', async () => {
+      server.use(http.post(`${BASE_URL}/environments`, () => HttpResponse.json({ environment: { id: 1, name: 'staging' } })));
+      expect((await client.createEnvironment({ name: 'staging' })).name).toBe('staging');
+    });
+
+    it('should list unit types', async () => {
+      server.use(http.get(`${BASE_URL}/unit_types`, () => HttpResponse.json({ unit_types: [{ id: 1, name: 'user_id' }] })));
+      expect(await client.listUnitTypes()).toHaveLength(1);
+    });
+
+    it('should create unit type', async () => {
+      server.use(http.post(`${BASE_URL}/unit_types`, () => HttpResponse.json({ unit_type: { id: 1, name: 'device' } })));
+      expect((await client.createUnitType({ name: 'device' })).name).toBe('device');
+    });
+  });
+
+  describe('tags (experiment, goal, metric)', () => {
+    it('should CRUD experiment tags', async () => {
+      server.use(http.get(`${BASE_URL}/experiment_tags`, () => HttpResponse.json({ experiment_tags: [] })));
+      expect(await client.listExperimentTags()).toEqual([]);
+
+      server.use(http.post(`${BASE_URL}/experiment_tags`, () => HttpResponse.json({ experiment_tag: { id: 1, tag: 'v1' } })));
+      expect((await client.createExperimentTag({ tag: 'v1' })).tag).toBe('v1');
+
+      server.use(http.delete(`${BASE_URL}/experiment_tags/1`, () => new HttpResponse(null, { status: 204 })));
+      await client.deleteExperimentTag(1 as any);
+    });
+
+    it('should CRUD goal tags', async () => {
+      server.use(http.get(`${BASE_URL}/goal_tags`, () => HttpResponse.json({ goal_tags: [] })));
+      expect(await client.listGoalTags()).toEqual([]);
+
+      server.use(http.post(`${BASE_URL}/goal_tags`, () => HttpResponse.json({ goal_tag: { id: 1, tag: 'rev' } })));
+      expect((await client.createGoalTag({ tag: 'rev' })).tag).toBe('rev');
+    });
+
+    it('should CRUD metric tags', async () => {
+      server.use(http.get(`${BASE_URL}/metric_tags`, () => HttpResponse.json({ metric_tags: [] })));
+      expect(await client.listMetricTags()).toEqual([]);
+    });
+  });
+
+  describe('metric categories', () => {
+    it('should list and create', async () => {
+      server.use(http.get(`${BASE_URL}/metric_categories`, () => HttpResponse.json({ metric_categories: [] })));
+      expect(await client.listMetricCategories()).toEqual([]);
+
+      server.use(http.post(`${BASE_URL}/metric_categories`, () => HttpResponse.json({ metric_category: { id: 1, name: 'Rev', color: '#ff0000' } })));
+      expect((await client.createMetricCategory({ name: 'Rev', color: '#ff0000' })).name).toBe('Rev');
+    });
+
+    it('should archive metric category', async () => {
+      server.use(http.put(`${BASE_URL}/metric_categories/1/archive`, () => HttpResponse.json({ ok: true })));
+      await client.archiveMetricCategory(1 as any);
+    });
+  });
+
+  describe('roles and permissions', () => {
+    it('should list roles', async () => {
+      server.use(http.get(`${BASE_URL}/roles`, () => HttpResponse.json({ roles: [{ id: 1, name: 'Admin' }] })));
+      expect(await client.listRoles()).toHaveLength(1);
+    });
+
+    it('should create role', async () => {
+      server.use(http.post(`${BASE_URL}/roles`, () => HttpResponse.json({ role: { id: 1, name: 'Editor' } })));
+      expect((await client.createRole({ name: 'Editor' } as any)).name).toBe('Editor');
+    });
+
+    it('should delete role', async () => {
+      server.use(http.delete(`${BASE_URL}/roles/1`, () => new HttpResponse(null, { status: 204 })));
+      await client.deleteRole(1 as any);
+    });
+
+    it('should list permissions', async () => {
+      server.use(http.get(`${BASE_URL}/permissions`, () => HttpResponse.json({ permissions: [] })));
+      expect(await client.listPermissions()).toEqual([]);
+    });
+
+    it('should list permission categories', async () => {
+      server.use(http.get(`${BASE_URL}/permission_categories`, () => HttpResponse.json({ permission_categories: [] })));
+      expect(await client.listPermissionCategories()).toEqual([]);
+    });
+  });
+
+  describe('api keys', () => {
+    it('should list api keys', async () => {
+      server.use(http.get(`${BASE_URL}/api_keys`, () => HttpResponse.json({ api_keys: [] })));
+      expect(await client.listApiKeys()).toEqual([]);
+    });
+
+    it('should create and delete api key', async () => {
+      server.use(http.post(`${BASE_URL}/api_keys`, () => HttpResponse.json({ api_key: { id: 1 } })));
+      expect((await client.createApiKey({} as any)).id).toBe(1);
+
+      server.use(http.delete(`${BASE_URL}/api_keys/1`, () => new HttpResponse(null, { status: 204 })));
+      await client.deleteApiKey(1 as any);
+    });
+  });
+
+  describe('webhooks', () => {
+    it('should list webhooks', async () => {
+      server.use(http.get(`${BASE_URL}/webhooks`, () => HttpResponse.json({ webhooks: [] })));
+      expect(await client.listWebhooks()).toEqual([]);
+    });
+
+    it('should create webhook', async () => {
+      server.use(http.post(`${BASE_URL}/webhooks`, () => HttpResponse.json({ webhook: { id: 1 } })));
+      expect((await client.createWebhook({} as any)).id).toBe(1);
+    });
+
+    it('should list webhook events', async () => {
+      server.use(http.get(`${BASE_URL}/webhook_events`, () => HttpResponse.json({ webhook_events: ['experiment.started'] })));
+      expect(await client.listWebhookEvents()).toContain('experiment.started');
+    });
+  });
 });
