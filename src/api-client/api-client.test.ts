@@ -344,4 +344,160 @@ describe.skipIf(isLiveMode)('APIClient core', () => {
       await client.archiveMetric(1);
     });
   });
+
+  describe('experiment sub-resources', () => {
+    it('should list experiment activity', async () => {
+      server.use(
+        http.get(`${BASE_URL}/experiments/1/activity`, () =>
+          HttpResponse.json({ experiment_notes: [{ id: 1, note: 'hello' }] })
+        )
+      );
+      expect(await client.listExperimentActivity(1)).toHaveLength(1);
+    });
+
+    it('should create experiment note', async () => {
+      server.use(
+        http.post(`${BASE_URL}/experiments/1/activity`, () =>
+          HttpResponse.json({ experiment_note: { id: 1, note: 'new' } })
+        )
+      );
+      expect((await client.createExperimentNote(1, 'new')).note).toBe('new');
+    });
+
+    it('should edit experiment note', async () => {
+      server.use(
+        http.put(`${BASE_URL}/experiments/1/activity/2`, () =>
+          HttpResponse.json({ ok: true, experiment_note: { id: 2, note: 'edited' }, errors: [] })
+        )
+      );
+      expect((await client.editExperimentNote(1, 2 as any, 'edited')).note).toBe('edited');
+    });
+
+    it('should reply to experiment note', async () => {
+      server.use(
+        http.post(`${BASE_URL}/experiments/1/activity/2/reply`, () =>
+          HttpResponse.json({ ok: true, experiment_note: { id: 3, note: 'reply' }, errors: [] })
+        )
+      );
+      expect((await client.replyToExperimentNote(1, 2 as any, 'reply')).note).toBe('reply');
+    });
+
+    it('should list experiment metrics', async () => {
+      server.use(
+        http.get(`${BASE_URL}/experiments/1/metrics`, () =>
+          HttpResponse.json({ experiment_metrics: [{ metric_id: 1 }] })
+        )
+      );
+      expect(await client.listExperimentMetrics(1)).toHaveLength(1);
+    });
+
+    it('should add experiment metrics', async () => {
+      server.use(
+        http.post(`${BASE_URL}/experiments/1/metrics`, () =>
+          HttpResponse.json({ ok: true, errors: [] })
+        )
+      );
+      await client.addExperimentMetrics(1, [1, 2] as any);
+    });
+
+    it('should confirm metric impact', async () => {
+      server.use(
+        http.post(`${BASE_URL}/experiments/1/metrics/2/confirm_impact`, () =>
+          HttpResponse.json({ ok: true, errors: [] })
+        )
+      );
+      await client.confirmMetricImpact(1, 2 as any);
+    });
+
+    it('should exclude experiment metric', async () => {
+      server.use(
+        http.post(`${BASE_URL}/experiments/1/metrics/2/exclude`, () =>
+          HttpResponse.json({ ok: true, errors: [] })
+        )
+      );
+      await client.excludeExperimentMetric(1, 2 as any);
+    });
+
+    it('should include experiment metric', async () => {
+      server.use(
+        http.post(`${BASE_URL}/experiments/1/metrics/2/include`, () =>
+          HttpResponse.json({ ok: true, errors: [] })
+        )
+      );
+      await client.includeExperimentMetric(1, 2 as any);
+    });
+
+    it('should export experiment data', async () => {
+      server.use(
+        http.post(`${BASE_URL}/experiments/1/export_data`, () =>
+          HttpResponse.json({ ok: true, errors: [] })
+        )
+      );
+      await client.exportExperimentData(1);
+    });
+
+    it('should request experiment update', async () => {
+      server.use(
+        http.post(`${BASE_URL}/experiments/1/request_update`, () =>
+          HttpResponse.json({ ok: true, errors: [] })
+        )
+      );
+      await client.requestExperimentUpdate(1);
+    });
+
+    it('should list experiment alerts', async () => {
+      server.use(
+        http.get(`${BASE_URL}/experiment_alerts`, () =>
+          HttpResponse.json({ experiment_alerts: [{ id: 1, type: 'srm' }] })
+        )
+      );
+      expect(await client.listExperimentAlerts(1)).toHaveLength(1);
+    });
+
+    it('should dismiss alert', async () => {
+      server.use(
+        http.put(`${BASE_URL}/experiment_alerts/1/dismiss`, () =>
+          HttpResponse.json({ ok: true, errors: [] })
+        )
+      );
+      await client.dismissAlert(1 as any);
+    });
+
+    it('should list recommended actions', async () => {
+      server.use(
+        http.get(`${BASE_URL}/experiment_recommended_actions`, () =>
+          HttpResponse.json({ experiment_recommended_actions: [] })
+        )
+      );
+      expect(await client.listRecommendedActions()).toEqual([]);
+    });
+
+    it('should dismiss recommended action', async () => {
+      server.use(
+        http.put(`${BASE_URL}/experiment_recommended_actions/1/dismiss`, () =>
+          HttpResponse.json({ ok: true, errors: [] })
+        )
+      );
+      await client.dismissRecommendedAction(1 as any);
+    });
+
+    it('should create scheduled action', async () => {
+      server.use(
+        http.post(`${BASE_URL}/experiments/1/scheduled_action`, () =>
+          HttpResponse.json({ scheduled_action: { id: 1, action: 'start' } })
+        )
+      );
+      const result = await client.createScheduledAction(1, 'start', '2026-04-01', 'test');
+      expect(result.action).toBe('start');
+    });
+
+    it('should delete scheduled action', async () => {
+      server.use(
+        http.delete(`${BASE_URL}/experiments/1/scheduled_action/2`, () =>
+          new HttpResponse(null, { status: 204 })
+        )
+      );
+      await client.deleteScheduledAction(1, 2 as any);
+    });
+  });
 });
