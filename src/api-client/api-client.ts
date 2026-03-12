@@ -41,6 +41,7 @@ import type {
   ScheduledActionId,
   CustomSectionField,
   CustomSectionFieldId,
+  CustomSectionId,
   AnnotationId,
   AssetRole,
   AssetRoleId,
@@ -629,6 +630,32 @@ export class APIClient {
 
   async archiveCustomSectionField(id: CustomSectionFieldId, unarchive = false): Promise<void> {
     await this.request('PUT', `/experiment_custom_section_fields/${id}/archive`, { data: { archive: !unarchive } });
+  }
+
+  async listCustomSections(): Promise<unknown[]> {
+    const response = await this.request('GET', '/experiment_custom_sections');
+    return this.validateListResponse<unknown>(response, 'experiment_custom_sections', 'listCustomSections');
+  }
+
+  async createCustomSection(data: { name: string; type: string }): Promise<unknown> {
+    const response = await this.request('POST', '/experiment_custom_sections', { data });
+    return this.validateEntityResponse<unknown>(response, 'experiment_custom_section', 'createCustomSection');
+  }
+
+  async updateCustomSection(id: CustomSectionId, data: Record<string, unknown>): Promise<unknown> {
+    const response = await this.request('PUT', `/experiment_custom_sections/${id}`, { data: { data } });
+    return this.validateEntityResponse<unknown>(response, 'experiment_custom_section', 'updateCustomSection');
+  }
+
+  async archiveCustomSection(id: CustomSectionId, unarchive = false): Promise<void> {
+    await this.request('PUT', `/experiment_custom_sections/${id}/archive`, { data: { archive: !unarchive } });
+  }
+
+  async reorderCustomSections(sections: Array<{ id: number; order_index: number }>): Promise<void> {
+    const response = await this.request('PUT', '/experiment_custom_sections/order', {
+      data: { experiment_custom_sections: sections },
+    });
+    this.validateOkResponse(response, 'reorderCustomSections');
   }
 
   async listApplications(): Promise<Application[]> {

@@ -30,6 +30,14 @@ import { webhooksCommand } from './commands/webhooks/index.js';
 import { generateCommand } from './commands/generate/index.js';
 import { setupCommand } from './commands/setup/index.js';
 import { customFieldsCommand } from './commands/customfields/index.js';
+import { assetRolesCommand } from './commands/assetroles/index.js';
+import { favoritesCommand } from './commands/favorites/index.js';
+import { insightsCommand } from './commands/insights/index.js';
+import { platformConfigCommand } from './commands/platformconfig/index.js';
+import { corsCommand } from './commands/cors/index.js';
+import { datasourcesCommand } from './commands/datasources/index.js';
+import { exportConfigsCommand } from './commands/exportconfigs/index.js';
+import { updateSchedulesCommand } from './commands/updateschedules/index.js';
 import { handleFatalError } from './lib/utils/error-handler.js';
 
 const program = new Command();
@@ -79,7 +87,15 @@ program.addCommand(webhooksCommand);
 program.addCommand(generateCommand);
 program.addCommand(setupCommand);
 program.addCommand(customFieldsCommand);
+program.addCommand(assetRolesCommand);
+program.addCommand(favoritesCommand);
 
+program.addCommand(insightsCommand);
+program.addCommand(platformConfigCommand);
+program.addCommand(corsCommand);
+program.addCommand(datasourcesCommand);
+program.addCommand(exportConfigsCommand);
+program.addCommand(updateSchedulesCommand);
 process.on('unhandledRejection', (reason) => handleFatalError('unhandled promise rejection', reason));
 process.on('uncaughtException', (error) => handleFatalError('uncaught exception', error));
 
