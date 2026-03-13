@@ -206,6 +206,42 @@ describe.skipIf(isLiveMode)('APIClient core', () => {
       const result = await client.fullOnExperiment(1, 1, 'winner');
       expect(result.id).toBe(1);
     });
+
+    it('should pass date range filters including timestamp 0', async () => {
+      let receivedParams: URLSearchParams | null = null;
+      server.use(
+        http.get(`${BASE_URL}/experiments`, ({ request }) => {
+          receivedParams = new URL(request.url).searchParams;
+          return HttpResponse.json({ experiments: [] });
+        })
+      );
+      await client.listExperiments({ created_after: 0 });
+      expect(receivedParams?.get('created_at')).toBe('0,0');
+    });
+
+    it('should pass started_at with only started_before', async () => {
+      let receivedParams: URLSearchParams | null = null;
+      server.use(
+        http.get(`${BASE_URL}/experiments`, ({ request }) => {
+          receivedParams = new URL(request.url).searchParams;
+          return HttpResponse.json({ experiments: [] });
+        })
+      );
+      await client.listExperiments({ started_before: 1000 });
+      expect(receivedParams?.get('started_at')).toBe('0,1000');
+    });
+
+    it('should pass stopped_at with timestamp 0 for stopped_after', async () => {
+      let receivedParams: URLSearchParams | null = null;
+      server.use(
+        http.get(`${BASE_URL}/experiments`, ({ request }) => {
+          receivedParams = new URL(request.url).searchParams;
+          return HttpResponse.json({ experiments: [] });
+        })
+      );
+      await client.listExperiments({ stopped_after: 0, stopped_before: 5000 });
+      expect(receivedParams?.get('stopped_at')).toBe('0,5000');
+    });
   });
 
   describe('goals CRUD', () => {
