@@ -63,7 +63,7 @@ describe('apps command', () => {
   it('should reject invalid id', async () => {
     await expect(
       appsCommand.parseAsync(['node', 'test', 'get', 'abc'])
-    ).rejects.toThrow('must be a valid number');
+    ).rejects.toThrow('is not a valid number');
   });
 
   it('should create application', async () => {

@@ -76,6 +76,6 @@ describe('asset-roles command', () => {
   it('should reject invalid id', async () => {
     await expect(
       assetRolesCommand.parseAsync(['node', 'test', 'get', 'abc'])
-    ).rejects.toThrow('must be a valid number');
+    ).rejects.toThrow('is not a valid number');
   });
 });

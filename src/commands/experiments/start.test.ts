@@ -46,6 +46,6 @@ describe('start command', () => {
 
   it('should reject invalid ID', async () => {
     await expect(startCommand.parseAsync(['node', 'test', 'abc']))
-      .rejects.toThrow('must be a valid number');
+      .rejects.toThrow('is not a valid number');
   });
 });

@@ -21,23 +21,23 @@ import {
   AssetRoleId,
   NotificationId,
   RecommendedActionId,
-} from '../api/branded-types.js';
+  CorsOriginId,
+  DatasourceId,
+  ExportConfigId,
+  UpdateScheduleId,
+} from '../../api-client/types.js';
 
-function parseIdGeneric<T extends number>(value: string, typeName: string): T {
+function parseStringToPositiveInt(value: string, typeName: string): number {
   const trimmed = value.trim();
 
   if (trimmed === '') {
-    throw new Error(`Invalid ${typeName}: "${value}" must be a valid number`);
+    throw new Error(`Invalid ${typeName}: value cannot be empty`);
   }
 
   const id = Number(trimmed);
 
   if (!Number.isFinite(id)) {
-    throw new Error(`Invalid ${typeName}: "${value}" must be a valid number`);
-  }
-
-  if (!Number.isInteger(id)) {
-    throw new Error(`Invalid ${typeName}: "${value}" must be an integer (got ${id})`);
+    throw new Error(`Invalid ${typeName}: "${value}" is not a valid number`);
   }
 
   if (id.toString() !== trimmed) {
@@ -47,99 +47,95 @@ function parseIdGeneric<T extends number>(value: string, typeName: string): T {
     );
   }
 
-  if (id <= 0) {
-    throw new Error(`Invalid ${typeName}: ${id} must be a positive integer`);
-  }
-
-  return id as T;
+  return id;
 }
 
 export function parseExperimentId(value: string): ExperimentId {
-  return parseIdGeneric<ExperimentId>(value, 'ExperimentId');
+  return ExperimentId(parseStringToPositiveInt(value, 'ExperimentId'));
 }
 
 export function parseGoalId(value: string): GoalId {
-  return parseIdGeneric<GoalId>(value, 'GoalId');
+  return GoalId(parseStringToPositiveInt(value, 'GoalId'));
 }
 
 export function parseSegmentId(value: string): SegmentId {
-  return parseIdGeneric<SegmentId>(value, 'SegmentId');
+  return SegmentId(parseStringToPositiveInt(value, 'SegmentId'));
 }
 
 export function parseTeamId(value: string): TeamId {
-  return parseIdGeneric<TeamId>(value, 'TeamId');
+  return TeamId(parseStringToPositiveInt(value, 'TeamId'));
 }
 
 export function parseUserId(value: string): UserId {
-  return parseIdGeneric<UserId>(value, 'UserId');
+  return UserId(parseStringToPositiveInt(value, 'UserId'));
 }
 
 export function parseMetricId(value: string): MetricId {
-  return parseIdGeneric<MetricId>(value, 'MetricId');
+  return MetricId(parseStringToPositiveInt(value, 'MetricId'));
 }
 
 export function parseApplicationId(value: string): ApplicationId {
-  return parseIdGeneric<ApplicationId>(value, 'ApplicationId');
+  return ApplicationId(parseStringToPositiveInt(value, 'ApplicationId'));
 }
 
 export function parseEnvironmentId(value: string): EnvironmentId {
-  return parseIdGeneric<EnvironmentId>(value, 'EnvironmentId');
+  return EnvironmentId(parseStringToPositiveInt(value, 'EnvironmentId'));
 }
 
 export function parseUnitTypeId(value: string): UnitTypeId {
-  return parseIdGeneric<UnitTypeId>(value, 'UnitTypeId');
+  return UnitTypeId(parseStringToPositiveInt(value, 'UnitTypeId'));
 }
 
 export function parseNoteId(value: string): NoteId {
-  return parseIdGeneric<NoteId>(value, 'NoteId');
+  return NoteId(parseStringToPositiveInt(value, 'NoteId'));
 }
 
 export function parseAlertId(value: string): AlertId {
-  return parseIdGeneric<AlertId>(value, 'AlertId');
+  return AlertId(parseStringToPositiveInt(value, 'AlertId'));
 }
 
 export function parseTagId(value: string): TagId {
-  return parseIdGeneric<TagId>(value, 'TagId');
+  return TagId(parseStringToPositiveInt(value, 'TagId'));
 }
 
 export function parseRoleId(value: string): RoleId {
-  return parseIdGeneric<RoleId>(value, 'RoleId');
+  return RoleId(parseStringToPositiveInt(value, 'RoleId'));
 }
 
 export function parseApiKeyId(value: string): ApiKeyId {
-  return parseIdGeneric<ApiKeyId>(value, 'ApiKeyId');
+  return ApiKeyId(parseStringToPositiveInt(value, 'ApiKeyId'));
 }
 
 export function parseWebhookId(value: string): WebhookId {
-  return parseIdGeneric<WebhookId>(value, 'WebhookId');
+  return WebhookId(parseStringToPositiveInt(value, 'WebhookId'));
 }
 
 export function parseScheduledActionId(value: string): ScheduledActionId {
-  return parseIdGeneric<ScheduledActionId>(value, 'ScheduledActionId');
+  return ScheduledActionId(parseStringToPositiveInt(value, 'ScheduledActionId'));
 }
 
 export function parseCustomSectionFieldId(value: string): CustomSectionFieldId {
-  return parseIdGeneric<CustomSectionFieldId>(value, 'CustomSectionFieldId');
+  return CustomSectionFieldId(parseStringToPositiveInt(value, 'CustomSectionFieldId'));
 }
 
 export function parseCustomSectionId(value: string): CustomSectionId {
-  return parseIdGeneric<CustomSectionId>(value, 'CustomSectionId');
+  return CustomSectionId(parseStringToPositiveInt(value, 'CustomSectionId'));
 }
 
 export function parseAnnotationId(value: string): AnnotationId {
-  return parseIdGeneric<AnnotationId>(value, 'AnnotationId');
+  return AnnotationId(parseStringToPositiveInt(value, 'AnnotationId'));
 }
 
 export function parseAssetRoleId(value: string): AssetRoleId {
-  return parseIdGeneric<AssetRoleId>(value, 'AssetRoleId');
+  return AssetRoleId(parseStringToPositiveInt(value, 'AssetRoleId'));
 }
 
 export function parseNotificationId(value: string): NotificationId {
-  return parseIdGeneric<NotificationId>(value, 'NotificationId');
+  return NotificationId(parseStringToPositiveInt(value, 'NotificationId'));
 }
 
 export function parseRecommendedActionId(value: string): RecommendedActionId {
-  return parseIdGeneric<RecommendedActionId>(value, 'RecommendedActionId');
+  return RecommendedActionId(parseStringToPositiveInt(value, 'RecommendedActionId'));
 }
 
 export function requireAtLeastOneField(
@@ -167,17 +163,17 @@ export function validateJSON(jsonString: string, context = 'JSON'): unknown {
 }
 
 export function parseCorsOriginId(value: string): CorsOriginId {
-  return parseIdGeneric<CorsOriginId>(value, 'CorsOriginId');
+  return CorsOriginId(parseStringToPositiveInt(value, 'CorsOriginId'));
 }
 
 export function parseDatasourceId(value: string): DatasourceId {
-  return parseIdGeneric<DatasourceId>(value, 'DatasourceId');
+  return DatasourceId(parseStringToPositiveInt(value, 'DatasourceId'));
 }
 
 export function parseExportConfigId(value: string): ExportConfigId {
-  return parseIdGeneric<ExportConfigId>(value, 'ExportConfigId');
+  return ExportConfigId(parseStringToPositiveInt(value, 'ExportConfigId'));
 }
 
 export function parseUpdateScheduleId(value: string): UpdateScheduleId {
-  return parseIdGeneric<UpdateScheduleId>(value, 'UpdateScheduleId');
+  return UpdateScheduleId(parseStringToPositiveInt(value, 'UpdateScheduleId'));
 }
