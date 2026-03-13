@@ -39,4 +39,12 @@ describe('generateTemplate', () => {
     expect(result).toContain('...');
     expect(result).toContain('m0, m1, m2, m3, m4');
   });
+
+  it('should generate end_date in the future', () => {
+    const result = generateTemplate({ applications: [], unitTypes: [], metrics: [] });
+    const match = result.match(/end_date:\s*(\S+)/);
+    expect(match).not.toBeNull();
+    const endDate = new Date(match![1]);
+    expect(endDate.getTime()).toBeGreaterThan(Date.now());
+  });
 });

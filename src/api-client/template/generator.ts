@@ -31,7 +31,8 @@ export function generateTemplate(
   parts.push(`type: ${experimentType}\n`);
   parts.push('state: created\n\n');
   parts.push('## Runtime\n\n');
-  parts.push('end_date: 2025-12-31T18:00:00\n');
+  const endDate = new Date(Date.now() + 28 * 24 * 60 * 60 * 1000);
+  parts.push(`end_date: ${endDate.toISOString().replace(/\.\d{3}Z$/, '')}\n`);
   parts.push('duration_days: 28\n');
   parts.push('timezone: Europe/Lisbon\n\n');
   parts.push('## Traffic\n\n');
