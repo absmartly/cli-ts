@@ -62,39 +62,6 @@ function createAPIError(message: string, response?: HttpResponse): APIError {
   return error;
 }
 
-function buildErrorMessage(method: string, url: string, status: number, response?: HttpResponse): string {
-  switch (status) {
-    case 401:
-      return (
-        `Unauthorized: Invalid or expired API key.\n` +
-        `Endpoint: ${method} ${url}`
-      );
-    case 403:
-      return (
-        `Forbidden: Insufficient permissions for this operation.\n` +
-        `Endpoint: ${method} ${url}\n` +
-        `Please check your API key has the required permissions.`
-      );
-    case 404:
-      return (
-        `Not found: Resource does not exist.\n` +
-        `Endpoint: ${method} ${url}`
-      );
-    case 429: {
-      const retryAfter = response?.headers['retry-after'];
-      return (
-        `Rate limit exceeded.\n` +
-        `Endpoint: ${method} ${url}\n` +
-        (retryAfter ? `Retry after: ${retryAfter} seconds` : 'Please try again later.')
-      );
-    }
-    default:
-      return (
-        `API error (${status})\n` +
-        `Endpoint: ${method} ${url}`
-      );
-  }
-}
 
 export class APIClient {
   private httpClient: HttpClient;
@@ -116,16 +83,7 @@ export class APIClient {
     if (options?.params) config.params = options.params;
     if (options?.data !== undefined) config.data = options.data;
     if (options?.headers) config.headers = options.headers;
-    const response = await this.httpClient.request<T>(config);
-
-    if (response.status >= 400) {
-      throw createAPIError(
-        buildErrorMessage(method, url, response.status, response),
-        response
-      );
-    }
-
-    return response;
+    return this.httpClient.request<T>(config);
   }
 
   private validateListResponse<T>(
