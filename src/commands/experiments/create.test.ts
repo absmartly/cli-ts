@@ -18,6 +18,9 @@ describe('create command', () => {
   const mockClient = {
     createExperiment: vi.fn().mockResolvedValue({ id: 99, name: 'test-exp', type: 'test' }),
     listCustomSectionFields: vi.fn().mockResolvedValue([]),
+    listApplications: vi.fn().mockResolvedValue([]),
+    listUnitTypes: vi.fn().mockResolvedValue([]),
+    listMetrics: vi.fn().mockResolvedValue([]),
   };
 
   beforeEach(() => {

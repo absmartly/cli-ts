@@ -1,7 +1,8 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, resolveAPIKey, withErrorHandling } from '../../lib/utils/api-helper.js';
-import { parseExperimentFile, type VariantTemplate } from '../../lib/template/parser.js';
+import { parseExperimentFile } from '../../lib/template/parser.js';
+import { buildExperimentPayload } from '../../api-client/payload/builder.js';
 import type { Experiment } from '../../lib/api/types.js';
 
 function shellEscape(s: string): string {
@@ -36,39 +37,21 @@ export const createCommand = new Command('create')
 
     if (options.fromFile) {
       const template = parseExperimentFile(options.fromFile);
-      data = {
-        name: template.name,
-        display_name: template.display_name,
-        type: template.type as 'test' | 'feature',
-        state: template.state as 'archived' | 'created' | 'ready' | 'running' | 'development' | 'full_on' | 'stopped' | 'scheduled',
-        traffic: template.percentage_of_traffic,
-      } as Partial<Experiment>;
 
-      if (template.owner_id) {
-        (data as any).owners = [{ user_id: Number(template.owner_id) }];
-      }
+      const [applications, unitTypes, metrics, customSectionFields] = await Promise.all([
+        client.listApplications(),
+        client.listUnitTypes(),
+        client.listMetrics(),
+        client.listCustomSectionFields(),
+      ]);
 
-      if (template.variants && template.variants.length > 0) {
-        data.variants = template.variants.map((v: VariantTemplate, index: number) => {
-          let parsedConfig = {};
-          if (v.config) {
-            try {
-              parsedConfig = JSON.parse(v.config);
-            } catch (error) {
-              throw new Error(
-                `Invalid JSON in variant "${v.name}" (variant ${index}):\n` +
-                `${error instanceof Error ? error.message : 'unknown error'}\n` +
-                `Config: ${v.config.substring(0, 100)}${v.config.length > 100 ? '...' : ''}`
-              );
-            }
-          }
-          return {
-            name: v.name,
-            variant: v.variant ?? index,
-            config: JSON.stringify(parsedConfig),
-          };
-        });
-      }
+      data = buildExperimentPayload(template, {
+        applications,
+        unitTypes,
+        metrics,
+        goals: [],
+        customSectionFields,
+      }) as Partial<Experiment>;
     } else {
       if (!options.name) {
         throw new Error(
