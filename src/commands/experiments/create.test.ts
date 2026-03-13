@@ -88,6 +88,66 @@ config: {"color":"blue"}
       );
     });
 
+    it('should fetch context for buildExperimentPayload', async () => {
+      writeFileSync(tmpFile, `---\nname: ctx-exp\n---\n`, 'utf8');
+
+      await createCommand.parseAsync(['node', 'test', '--from-file', tmpFile]);
+
+      expect(mockClient.listApplications).toHaveBeenCalledOnce();
+      expect(mockClient.listUnitTypes).toHaveBeenCalledOnce();
+      expect(mockClient.listMetrics).toHaveBeenCalledOnce();
+      expect(mockClient.listCustomSectionFields).toHaveBeenCalled();
+    });
+
+    it('should resolve application and unit_type by name via builder', async () => {
+      mockClient.listApplications.mockResolvedValue([{ id: 10, name: 'web' }, { id: 11, name: 'mobile' }]);
+      mockClient.listUnitTypes.mockResolvedValue([{ id: 20, name: 'user_id' }, { id: 21, name: 'device_id' }]);
+      mockClient.listMetrics.mockResolvedValue([{ id: 30, name: 'clicks' }]);
+
+      writeFileSync(tmpFile, `---
+name: resolved-exp
+---
+
+## Unit & Application
+
+unit_type: user_id
+application: mobile
+
+## Metrics
+
+primary_metric: clicks
+`, 'utf8');
+
+      await createCommand.parseAsync(['node', 'test', '--from-file', tmpFile]);
+
+      expect(mockClient.createExperiment).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: 'resolved-exp',
+          applications: [{ application_id: 11, application_version: '0' }],
+          unit_type: { unit_type_id: 20 },
+          primary_metric: { metric_id: 30 },
+        })
+      );
+    });
+
+    it('should include custom section field defaults from builder', async () => {
+      mockClient.listCustomSectionFields.mockResolvedValue([
+        { id: 100, name: 'launch_date', type: 'string', default_value: '2026-06-01', custom_section: { type: 'test' } },
+      ]);
+
+      writeFileSync(tmpFile, `---\nname: csf-exp\ntype: test\n---\n`, 'utf8');
+
+      await createCommand.parseAsync(['node', 'test', '--from-file', tmpFile]);
+
+      expect(mockClient.createExperiment).toHaveBeenCalledWith(
+        expect.objectContaining({
+          custom_section_field_values: {
+            '100': { type: 'string', value: '2026-06-01' },
+          },
+        })
+      );
+    });
+
     it('should throw on invalid JSON in variant config', async () => {
       writeFileSync(tmpFile, `---
 name: bad-json
