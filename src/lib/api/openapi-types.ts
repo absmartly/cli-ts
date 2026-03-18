@@ -41,4 +41,10 @@ export type Role = components['schemas']['Role'];
 export type Permission = components['schemas']['Permission'];
 export type Webhook = components['schemas']['Webhook'];
 
+export type FileUpload = components['schemas']['FileUpload'];
+export type FileUploadInput = components['schemas']['FileUploadInput'];
+export type FileUploadDetails = components['schemas']['FileUploadDetails'];
+export type VariantScreenshotInput = components['schemas']['VariantScreenshotInput'];
+export type VariantScreenshotDetails = components['schemas']['VariantScreenshotDetails'];
+
 export type { paths, components };
