@@ -1,5 +1,6 @@
 import type { ExperimentTemplate, VariantTemplate } from '../template/parser.js';
 import { resolveByName, type ResolverContext } from './resolver.js';
+import { resolveScreenshot } from '../template/screenshot.js';
 
 const DEFAULT_ANALYSIS_TYPE = 'group_sequential';
 const DEFAULT_PERCENTAGES = '50/50';
@@ -81,6 +82,25 @@ function buildCustomSectionFieldValues(
   return fieldValues;
 }
 
+function buildVariantScreenshots(template: ExperimentTemplate): Array<Record<string, unknown>> {
+  if (!template.variants) return [];
+
+  const screenshots: Array<Record<string, unknown>> = [];
+  for (const v of template.variants) {
+    if (!v.screenshot) continue;
+
+    const resolved = resolveScreenshot(v.screenshot, v.name);
+    if (!resolved) continue;
+
+    screenshots.push({
+      variant: v.variant ?? template.variants.indexOf(v),
+      file_upload: resolved,
+    });
+  }
+
+  return screenshots;
+}
+
 export function buildExperimentPayload(
   template: ExperimentTemplate,
   context: ResolverContext,
@@ -107,7 +127,7 @@ export function buildExperimentPayload(
     audience_strict: false,
     nr_variants: variants.length,
     variants,
-    variant_screenshots: [],
+    variant_screenshots: buildVariantScreenshots(template),
     secondary_metrics: [],
     teams: [],
     experiment_tags: [],

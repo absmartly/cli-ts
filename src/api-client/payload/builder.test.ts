@@ -95,6 +95,42 @@ describe('buildExperimentPayload', () => {
     expect(payload.hypothesis).toBe('hypothesis');
   });
 
+  describe('variant screenshots', () => {
+    it('should include inline file_upload for base64 screenshot', () => {
+      const base64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwADhQGAWjR9awAAAABJRU5ErkJggg==';
+      const template: ExperimentTemplate = {
+        name: 'screenshot-exp',
+        variants: [
+          { name: 'control', variant: 0, config: '{}', screenshot: `data:image/png;base64,${base64}` },
+          { name: 'treatment', variant: 1, config: '{}' },
+        ],
+      };
+
+      const payload = buildExperimentPayload(template, baseContext);
+      const screenshots = payload.variant_screenshots as Array<Record<string, unknown>>;
+
+      expect(screenshots).toHaveLength(1);
+      expect(screenshots[0].variant).toBe(0);
+      const fileUpload = screenshots[0].file_upload as Record<string, unknown>;
+      expect(fileUpload.data).toBe(base64);
+      expect(fileUpload.content_type).toBe('image/png');
+      expect(fileUpload.file_name).toBe('control.png');
+    });
+
+    it('should skip variants without screenshots', () => {
+      const template: ExperimentTemplate = {
+        name: 'no-screenshot-exp',
+        variants: [
+          { name: 'control', variant: 0, config: '{}' },
+          { name: 'treatment', variant: 1, config: '{}' },
+        ],
+      };
+
+      const payload = buildExperimentPayload(template, baseContext);
+      expect(payload.variant_screenshots).toEqual([]);
+    });
+  });
+
   it('should build custom section field values', () => {
     const context: ResolverContext = {
       ...baseContext,
