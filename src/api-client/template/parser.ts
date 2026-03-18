@@ -74,18 +74,23 @@ export function parseExperimentMarkdown(content: string): ExperimentTemplate {
 
   for (const [sectionName, sectionContent] of Object.entries(sections)) {
     if (sectionName !== 'Variants' && sectionName !== 'Custom Fields') {
-      const keyValuePattern = /^(\w+(?:_\w+)*):\s*(.*)$/gm;
+      const keyValuePattern = /^(\w+(?:_\w+)*):[^\S\n]*(.*)$/gm;
       let match;
 
       while ((match = keyValuePattern.exec(sectionContent)) !== null) {
         const matchedKey = match[1];
         const matchedValue = match[2];
-        if (matchedKey && matchedValue) {
+        if (matchedKey) {
           const key = matchedKey.toLowerCase();
-          const value = matchedValue.trim();
+          const value = matchedValue ? matchedValue.trim() : '';
 
           if (value) {
             (template as Record<string, unknown>)[key] = value;
+          } else {
+            const listItems = parseInlineList(sectionContent, match.index + match[0].length);
+            if (listItems.length > 0) {
+              (template as Record<string, unknown>)[key] = listItems;
+            }
           }
         }
       }
@@ -101,6 +106,21 @@ export function parseExperimentMarkdown(content: string): ExperimentTemplate {
   }
 
   return template;
+}
+
+function parseInlineList(content: string, startOffset: number): string[] {
+  const items: string[] = [];
+  const remaining = content.slice(startOffset);
+  const lines = remaining.split('\n');
+  for (const line of lines) {
+    const listMatch = /^[^\S\n]*-\s+(.+)$/.exec(line);
+    if (listMatch && listMatch[1]) {
+      items.push(listMatch[1].trim());
+    } else if (line.trim() !== '') {
+      break;
+    }
+  }
+  return items;
 }
 
 function parseVariants(content: string): VariantTemplate[] {

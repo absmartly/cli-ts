@@ -89,7 +89,12 @@ function buildVariantScreenshots(template: ExperimentTemplate): Array<Record<str
   for (const v of template.variants) {
     if (!v.screenshot) continue;
 
-    const resolved = resolveScreenshot(v.screenshot, v.name);
+    let resolved;
+    try {
+      resolved = resolveScreenshot(v.screenshot, v.name);
+    } catch {
+      continue;
+    }
     if (!resolved) continue;
 
     screenshots.push({

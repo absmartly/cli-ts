@@ -40,6 +40,10 @@ export function resolveScreenshot(value: string | undefined, variantName: string
     return resolveDataUri(value, variantName);
   }
 
+  if (value.startsWith('http://') || value.startsWith('https://')) {
+    return null;
+  }
+
   return resolveFilePath(value, variantName);
 }
 
