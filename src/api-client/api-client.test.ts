@@ -969,4 +969,48 @@ describe.skipIf(isLiveMode)('APIClient core', () => {
       expect(await client.listAccessControlPolicies()).toEqual([]);
     });
   });
+
+  describe('file uploads', () => {
+    it('should upload a file', async () => {
+      const uploadResponse = {
+        file: {
+          id: 399,
+          file_usage_id: 2,
+          width: 1,
+          height: 1,
+          file_size: 67,
+          file_name: '1x1.png',
+          content_type: 'image/png',
+          base_url: '/files/variant_screenshots/abc123',
+          crop_left: 0,
+          crop_top: 0,
+          crop_width: 1,
+          crop_height: 1,
+        },
+      };
+
+      server.use(
+        http.post(`${BASE_URL}/file_uploads/variant_screenshots`, () => {
+          return HttpResponse.json(uploadResponse);
+        })
+      );
+
+      const result = await client.uploadFile('variant_screenshots', {
+        data: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAACklEQVR4nGIAAAACAAEAyCL1OAAAAABJRU5ErkJggg==',
+        file_name: '1x1.png',
+        file_size: 67,
+        content_type: 'image/png',
+        width: 1,
+        height: 1,
+        crop_left: 0,
+        crop_top: 0,
+        crop_width: 1,
+        crop_height: 1,
+      });
+
+      expect(result.id).toBe(399);
+      expect(result.file_name).toBe('1x1.png');
+      expect(result.base_url).toBe('/files/variant_screenshots/abc123');
+    });
+  });
 });

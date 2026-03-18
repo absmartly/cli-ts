@@ -1359,6 +1359,40 @@ export class APIClient {
     await this.request('DELETE', `/experiment_update_schedules/${id}`);
   }
 
+  async uploadFile(
+    usage: 'attachments' | 'variant_screenshots' | 'avatars',
+    file: {
+      data: string;
+      file_name: string;
+      file_size: number;
+      content_type: string;
+      width: number;
+      height: number;
+      crop_left: number;
+      crop_top: number;
+      crop_width: number;
+      crop_height: number;
+    }
+  ): Promise<{
+    id: number;
+    file_usage_id: number;
+    base_url: string;
+    file_name: string;
+    file_size: number;
+    content_type: string;
+    width: number;
+    height: number;
+    crop_left: number;
+    crop_top: number;
+    crop_width: number;
+    crop_height: number;
+  }> {
+    const response = await this.request('POST', `/file_uploads/${usage}`, {
+      data: { usage, file },
+    });
+    return this.validateEntityResponse(response, 'file', 'uploadFile');
+  }
+
   async rawRequest(
     path: string,
     method = 'GET',
