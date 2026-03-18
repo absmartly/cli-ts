@@ -30,6 +30,22 @@ export function experimentToMarkdown(experiment: Experiment): string {
   if ((experiment as Record<string, unknown>).baseline_participants_per_day) {
     parts.push(`baseline_participants: ${(experiment as Record<string, unknown>).baseline_participants_per_day}\n`);
   }
+
+  const secondaryMetrics = experiment.secondary_metrics as Array<Record<string, unknown>> | undefined;
+  const guardrailMetrics = (experiment as Record<string, unknown>).guardrail_metrics as Array<Record<string, unknown>> | undefined;
+  if (secondaryMetrics && secondaryMetrics.length > 0) {
+    parts.push('secondary_metrics:\n');
+    for (const m of secondaryMetrics) {
+      parts.push(`  - ${m.name || m.metric_id}\n`);
+    }
+  }
+  if (guardrailMetrics && guardrailMetrics.length > 0) {
+    parts.push('guardrail_metrics:\n');
+    for (const m of guardrailMetrics) {
+      parts.push(`  - ${m.name || m.metric_id}\n`);
+    }
+  }
+
   parts.push('---\n\n');
 
   const unitType = experiment.unit_type as Record<string, unknown> | undefined;
@@ -47,25 +63,9 @@ export function experimentToMarkdown(experiment: Experiment): string {
   }
 
   const primaryMetric = experiment.primary_metric as Record<string, unknown> | undefined;
-  const secondaryMetrics = experiment.secondary_metrics as Array<Record<string, unknown>> | undefined;
-  const guardrailMetrics = (experiment as Record<string, unknown>).guardrail_metrics as Array<Record<string, unknown>> | undefined;
-  if (primaryMetric || (secondaryMetrics && secondaryMetrics.length > 0)) {
+  if (primaryMetric) {
     parts.push('## Metrics\n\n');
-    if (primaryMetric) {
-      parts.push(`primary_metric: ${primaryMetric.name || primaryMetric.metric_id}\n`);
-    }
-    if (secondaryMetrics && secondaryMetrics.length > 0) {
-      parts.push('secondary_metrics:\n');
-      for (const m of secondaryMetrics) {
-        parts.push(`  - ${m.name || m.metric_id}\n`);
-      }
-    }
-    if (guardrailMetrics && guardrailMetrics.length > 0) {
-      parts.push('guardrail_metrics:\n');
-      for (const m of guardrailMetrics) {
-        parts.push(`  - ${m.name || m.metric_id}\n`);
-      }
-    }
+    parts.push(`primary_metric: ${primaryMetric.name || primaryMetric.metric_id}\n`);
     parts.push('\n');
   }
 
