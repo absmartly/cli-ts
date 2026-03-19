@@ -82,7 +82,7 @@ function buildCustomSectionFieldValues(
   return fieldValues;
 }
 
-function buildVariantScreenshots(template: ExperimentTemplate): Array<Record<string, unknown>> {
+async function buildVariantScreenshots(template: ExperimentTemplate): Promise<Array<Record<string, unknown>>> {
   if (!template.variants) return [];
 
   const screenshots: Array<Record<string, unknown>> = [];
@@ -91,7 +91,7 @@ function buildVariantScreenshots(template: ExperimentTemplate): Array<Record<str
 
     let resolved;
     try {
-      resolved = resolveScreenshot(v.screenshot, v.name);
+      resolved = await resolveScreenshot(v.screenshot, v.name);
     } catch {
       continue;
     }
@@ -106,10 +106,10 @@ function buildVariantScreenshots(template: ExperimentTemplate): Array<Record<str
   return screenshots;
 }
 
-export function buildExperimentPayload(
+export async function buildExperimentPayload(
   template: ExperimentTemplate,
   context: ResolverContext,
-): Record<string, unknown> {
+): Promise<Record<string, unknown>> {
   const experimentType = template.type ?? DEFAULT_TYPE;
   const variants = buildVariants(template);
 
@@ -132,7 +132,7 @@ export function buildExperimentPayload(
     audience_strict: false,
     nr_variants: variants.length,
     variants,
-    variant_screenshots: buildVariantScreenshots(template),
+    variant_screenshots: await buildVariantScreenshots(template),
     secondary_metrics: [],
     teams: [],
     experiment_tags: [],

@@ -31,7 +31,7 @@ const MIME_TO_EXTENSION: Record<string, string> = {
   'image/svg+xml': '.svg',
 };
 
-export function resolveScreenshot(value: string | undefined, variantName: string): ScreenshotData | null {
+export async function resolveScreenshot(value: string | undefined, variantName: string): Promise<ScreenshotData | null> {
   if (!value || value.trim() === '') {
     return null;
   }
@@ -41,7 +41,7 @@ export function resolveScreenshot(value: string | undefined, variantName: string
   }
 
   if (value.startsWith('http://') || value.startsWith('https://')) {
-    return null;
+    return resolveUrl(value, variantName);
   }
 
   return resolveFilePath(value, variantName);
@@ -66,6 +66,39 @@ function resolveDataUri(uri: string, variantName: string): ScreenshotData {
     file_name: `${variantName}${ext}`,
     file_size: buffer.length,
     content_type: contentType,
+    width: 0,
+    height: 0,
+    crop_left: 0,
+    crop_top: 0,
+    crop_width: 0,
+    crop_height: 0,
+  };
+}
+
+async function resolveUrl(url: string, variantName: string): Promise<ScreenshotData> {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(
+      `Failed to fetch screenshot from ${url}: ${response.status} ${response.statusText}\n` +
+      `Referenced in variant "${variantName}".`,
+    );
+  }
+
+  const buffer = Buffer.from(await response.arrayBuffer());
+  const contentTypeHeader = response.headers.get('content-type') || '';
+  const contentType = contentTypeHeader.split(';')[0]?.trim() || 'image/png';
+
+  const urlPath = new URL(url).pathname;
+  const urlExt = extname(urlPath).toLowerCase();
+  const fileName = urlExt
+    ? basename(urlPath)
+    : `${variantName}${MIME_TO_EXTENSION[contentType] || '.png'}`;
+
+  return {
+    data: buffer.toString('base64'),
+    file_name: fileName,
+    file_size: buffer.length,
+    content_type: EXTENSION_TO_MIME[urlExt] || contentType,
     width: 0,
     height: 0,
     crop_left: 0,

@@ -11,9 +11,9 @@ const baseContext: ResolverContext = {
 };
 
 describe('buildExperimentPayload', () => {
-  it('should build minimal payload with defaults', () => {
+  it('should build minimal payload with defaults', async () => {
     const template: ExperimentTemplate = { name: 'my_exp' };
-    const payload = buildExperimentPayload(template, baseContext);
+    const payload = await buildExperimentPayload(template, baseContext);
     expect(payload.name).toBe('my_exp');
     expect(payload.display_name).toBe('my_exp');
     expect(payload.type).toBe('test');
@@ -27,39 +27,39 @@ describe('buildExperimentPayload', () => {
     expect(variants[1].name).toBe('treatment');
   });
 
-  it('should resolve application by name', () => {
+  it('should resolve application by name', async () => {
     const template: ExperimentTemplate = { name: 'exp', application: 'web' };
-    const payload = buildExperimentPayload(template, baseContext);
+    const payload = await buildExperimentPayload(template, baseContext);
     expect(payload.applications).toEqual([{ application_id: 1, application_version: '0' }]);
   });
 
-  it('should resolve unit_type by name', () => {
+  it('should resolve unit_type by name', async () => {
     const template: ExperimentTemplate = { name: 'exp', unit_type: 'user_id' };
-    const payload = buildExperimentPayload(template, baseContext);
+    const payload = await buildExperimentPayload(template, baseContext);
     expect(payload.unit_type).toEqual({ unit_type_id: 1 });
   });
 
-  it('should resolve primary and secondary metrics', () => {
+  it('should resolve primary and secondary metrics', async () => {
     const template: ExperimentTemplate = {
       name: 'exp',
       primary_metric: 'clicks',
       secondary_metrics: ['revenue'],
     };
-    const payload = buildExperimentPayload(template, baseContext);
+    const payload = await buildExperimentPayload(template, baseContext);
     expect(payload.primary_metric).toEqual({ metric_id: 1 });
     expect(payload.secondary_metrics).toEqual([{ metric_id: 2 }]);
   });
 
-  it('should resolve guardrail metrics', () => {
+  it('should resolve guardrail metrics', async () => {
     const template: ExperimentTemplate = {
       name: 'exp',
       guardrail_metrics: ['revenue'],
     };
-    const payload = buildExperimentPayload(template, baseContext);
+    const payload = await buildExperimentPayload(template, baseContext);
     expect(payload.guardrail_metrics).toEqual([{ metric_id: 2 }]);
   });
 
-  it('should build custom variants', () => {
+  it('should build custom variants', async () => {
     const template: ExperimentTemplate = {
       name: 'exp',
       variants: [
@@ -67,36 +67,36 @@ describe('buildExperimentPayload', () => {
         { name: 'treatment', variant: 1, config: '{"a":2}' },
       ],
     };
-    const payload = buildExperimentPayload(template, baseContext);
+    const payload = await buildExperimentPayload(template, baseContext);
     const variants = payload.variants as Array<Record<string, unknown>>;
     expect(variants).toHaveLength(2);
     expect(variants[0].name).toBe('control');
     expect(variants[0].config).toBe('{"a":1}');
   });
 
-  it('should throw on invalid variant config JSON', () => {
+  it('should throw on invalid variant config JSON', async () => {
     const template: ExperimentTemplate = {
       name: 'exp',
       variants: [{ name: 'v0', config: 'not-json' }],
     };
-    expect(() => buildExperimentPayload(template, baseContext)).toThrow(/Invalid JSON in variant/);
+    await expect(buildExperimentPayload(template, baseContext)).rejects.toThrow(/Invalid JSON in variant/);
   });
 
-  it('should include owner and description', () => {
+  it('should include owner and description', async () => {
     const template: ExperimentTemplate = {
       name: 'exp',
       owner_id: 42,
       description: 'test desc',
       hypothesis: 'hypothesis',
     };
-    const payload = buildExperimentPayload(template, baseContext);
+    const payload = await buildExperimentPayload(template, baseContext);
     expect(payload.owners).toEqual([{ user_id: 42 }]);
     expect(payload.description).toBe('test desc');
     expect(payload.hypothesis).toBe('hypothesis');
   });
 
   describe('variant screenshots', () => {
-    it('should include inline file_upload for base64 screenshot', () => {
+    it('should include inline file_upload for base64 screenshot', async () => {
       const base64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwADhQGAWjR9awAAAABJRU5ErkJggg==';
       const template: ExperimentTemplate = {
         name: 'screenshot-exp',
@@ -106,7 +106,7 @@ describe('buildExperimentPayload', () => {
         ],
       };
 
-      const payload = buildExperimentPayload(template, baseContext);
+      const payload = await buildExperimentPayload(template, baseContext);
       const screenshots = payload.variant_screenshots as Array<Record<string, unknown>>;
 
       expect(screenshots).toHaveLength(1);
@@ -117,7 +117,7 @@ describe('buildExperimentPayload', () => {
       expect(fileUpload.file_name).toBe('control.png');
     });
 
-    it('should skip variants without screenshots', () => {
+    it('should skip variants without screenshots', async () => {
       const template: ExperimentTemplate = {
         name: 'no-screenshot-exp',
         variants: [
@@ -126,12 +126,12 @@ describe('buildExperimentPayload', () => {
         ],
       };
 
-      const payload = buildExperimentPayload(template, baseContext);
+      const payload = await buildExperimentPayload(template, baseContext);
       expect(payload.variant_screenshots).toEqual([]);
     });
   });
 
-  it('should build custom section field values', () => {
+  it('should build custom section field values', async () => {
     const context: ResolverContext = {
       ...baseContext,
       customSectionFields: [
@@ -141,7 +141,7 @@ describe('buildExperimentPayload', () => {
       ],
     };
     const template: ExperimentTemplate = { name: 'exp', owner_id: 5 };
-    const payload = buildExperimentPayload(template, context);
+    const payload = await buildExperimentPayload(template, context);
     const fields = payload.custom_section_field_values as Record<string, { type: string; value: string }>;
     expect(fields['10']).toEqual({ type: 'string', value: '2026-01-01' });
     expect(fields['11']).toEqual({ type: 'user', value: '5' });

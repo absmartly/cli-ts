@@ -3,6 +3,7 @@ import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, resolveAPIKey, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseExperimentFile } from '../../lib/template/parser.js';
 import { buildExperimentPayload } from '../../api-client/payload/builder.js';
+import { resolveScreenshot } from '../../api-client/template/screenshot.js';
 import type { Experiment } from '../../lib/api/types.js';
 
 function shellEscape(s: string): string {
@@ -27,6 +28,7 @@ export const createCommand = new Command('create')
   .option('--description <text>', 'experiment description')
   .option('--hypothesis <text>', 'experiment hypothesis')
   .option('--owner <user_id>', 'owner user ID (can specify multiple)', (val: string, prev: string[]) => [...prev, val], [] as string[])
+  .option('--screenshot <variant:source...>', 'variant screenshot (variant_index:path_or_url, can specify multiple)')
   .option('--dry-run', 'show the request payload without making the API call')
   .option('--as-curl', 'output as curl command instead of making the API call')
   .action(withErrorHandling(async (options) => {
@@ -45,7 +47,7 @@ export const createCommand = new Command('create')
         client.listCustomSectionFields(),
       ]);
 
-      data = buildExperimentPayload(template, {
+      data = await buildExperimentPayload(template, {
         applications,
         unitTypes,
         metrics,
@@ -105,6 +107,31 @@ export const createCommand = new Command('create')
       }
       if (options.primaryMetric) {
         (data as any).primary_metric = { metric_id: options.primaryMetric };
+      }
+
+      if (options.screenshot && options.screenshot.length > 0) {
+        const screenshots: Array<Record<string, unknown>> = [];
+        for (const entry of options.screenshot as string[]) {
+          const colonIdx = entry.indexOf(':');
+          if (colonIdx === -1) {
+            throw new Error(
+              `Invalid --screenshot format: "${entry}"\n` +
+              `Expected: <variant_index>:<file_path_or_url>\n` +
+              `Example: --screenshot 0:./control.png --screenshot 1:https://example.com/treatment.png`
+            );
+          }
+          const variantIdx = parseInt(entry.substring(0, colonIdx), 10);
+          const source = entry.substring(colonIdx + 1);
+          if (isNaN(variantIdx)) {
+            throw new Error(`Invalid variant index in --screenshot: "${entry}"`);
+          }
+          const variantName = variants[variantIdx]?.name || `variant_${variantIdx}`;
+          const resolved = await resolveScreenshot(source, variantName);
+          if (resolved) {
+            screenshots.push({ variant: variantIdx, file_upload: resolved });
+          }
+        }
+        (data as any).variant_screenshots = screenshots;
       }
     }
 
