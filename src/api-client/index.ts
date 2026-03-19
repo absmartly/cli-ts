@@ -7,6 +7,9 @@ export type {
 
 export { APIClient, createAPIClient } from './api-client.js';
 
+export { experimentToInput } from './experiment-transform.js';
+export type { ExperimentInput } from './experiment-transform.js';
+
 export {
   ExperimentId,
   GoalId,

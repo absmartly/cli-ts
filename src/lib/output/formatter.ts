@@ -2,7 +2,7 @@ import Table from 'cli-table3';
 import yaml from 'js-yaml';
 import chalk from 'chalk';
 
-export type OutputFormat = 'table' | 'json' | 'yaml' | 'plain' | 'markdown';
+export type OutputFormat = 'table' | 'json' | 'yaml' | 'plain' | 'markdown' | 'template';
 
 export interface OutputOptions {
   format?: OutputFormat;

@@ -63,4 +63,29 @@ describe('get command', () => {
 
     expect(mockClient.listExperimentActivity).not.toHaveBeenCalled();
   });
+
+  it('should output markdown template with --output template', async () => {
+    mockClient.getExperiment.mockResolvedValue({
+      id: 42,
+      name: 'test-exp',
+      display_name: 'Test Exp',
+      type: 'test',
+      state: 'running',
+      variants: [
+        { name: 'control', variant: 0, config: '{}' },
+        { name: 'treatment', variant: 1, config: '{}' },
+      ],
+    });
+    vi.mocked(getGlobalOptions).mockReturnValue({ output: 'template' } as any);
+
+    await getCommand.parseAsync(['node', 'test', '42']);
+
+    expect(printFormatted).not.toHaveBeenCalled();
+    const output = consoleSpy.mock.calls.flat().join('');
+    expect(output).toContain('---');
+    expect(output).toContain('name: test-exp');
+    expect(output).toContain('display_name: Test Exp');
+    expect(output).toContain('### variant_0');
+    expect(output).toContain('### variant_1');
+  });
 });

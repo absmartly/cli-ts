@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseExperimentId } from '../../lib/utils/validators.js';
+import { experimentToMarkdown } from '../../api-client/template/serializer.js';
 import type { ExperimentId } from '../../lib/api/branded-types.js';
 
 export const getCommand = new Command('get')
@@ -12,6 +13,11 @@ export const getCommand = new Command('get')
     const client = await getAPIClientFromOptions(globalOptions);
 
     const experiment = await client.getExperiment(id);
+
+    if (globalOptions.output === 'template') {
+      console.log(experimentToMarkdown(experiment));
+      return;
+    }
 
     if (options.activity) {
       const notes = await client.listExperimentActivity(id);
