@@ -64,7 +64,7 @@ These options are available on every command:
 | `--endpoint <url>` | Override API endpoint |
 | `--app <name>` | Override default application |
 | `--env <name>` | Override default environment |
-| `-o, --output <format>` | Output format: `table` (default), `json`, `yaml`, `plain`, `markdown` |
+| `-o, --output <format>` | Output format: `table` (default), `json`, `yaml`, `plain`, `markdown`, `template` |
 | `--no-color` | Disable colored output |
 | `-v, --verbose` | Verbose output |
 | `-q, --quiet` | Minimal output |
@@ -93,12 +93,14 @@ abs experiments search "onboarding"
 # Get experiment details
 abs experiments get 123
 abs experiments get 123 --activity    # include activity log
+abs experiments get 123 -o template   # export as reusable markdown template
 
 # Create an experiment
 abs experiments create --name my-experiment --type test --variants "control,treatment"
 abs experiments create --from-file experiment.md
 abs experiments create --name my-experiment --dry-run     # preview payload
 abs experiments create --name my-experiment --as-curl     # output as curl command
+abs experiments create --name my-exp --screenshot 0:./control.png --screenshot 1:./treatment.png
 
 # Update an experiment
 abs experiments update 123 --display-name "New Name" --traffic 50
@@ -671,7 +673,41 @@ abs experiments create --from-file experiment.md
 
 # Update an experiment from a template
 abs experiments update 123 --from-file experiment.md
+
+# Export an existing experiment as a template
+abs experiments get 123 -o template > experiment.md
+
+# Clone workflow: export, modify, re-create
+abs experiments get 123 -o template > clone.md
+# Edit clone.md (change name, variants, etc.)
+abs experiments create --from-file clone.md
 ```
+
+### Variant screenshots
+
+Screenshots can be attached to variants in templates or via CLI options.
+
+**In templates** (in the variant section):
+
+```markdown
+### variant_0
+
+name: control
+config: {"color":"blue"}
+screenshot: ./path/to/control.png
+screenshot: https://cdn.example.com/treatment.png
+screenshot: data:image/png;base64,iVBORw0KGgo...
+```
+
+**Via CLI options** (format: `<variant_index>:<source>`):
+
+```bash
+abs experiments create --name my-exp \
+  --screenshot 0:./control.png \
+  --screenshot 1:https://cdn.example.com/treatment.png
+```
+
+Sources can be local file paths, HTTP/HTTPS URLs, or base64 data URIs.
 
 ## Development
 
