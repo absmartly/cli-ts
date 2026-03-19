@@ -75,6 +75,18 @@ describe('APIClient', () => {
 
   describe('updateExperiment', () => {
     it('should send update and return unwrapped experiment with merged fields', async () => {
+      server.use(
+        http.put(`${BASE_URL}/experiments/:id`, async ({ params, request }) => {
+          const body = await request.json() as Record<string, unknown>;
+          const data = (typeof body.data === 'object' && body.data !== null) ? body.data as Record<string, unknown> : {};
+          return HttpResponse.json({
+            ok: true,
+            experiment: { id: Number(params.id), name: 'test', display_name: data.display_name ?? 'default', state: 'created' },
+            errors: [],
+          });
+        })
+      );
+
       const experiment = await client.updateExperiment(expId, { display_name: 'Updated Name' });
 
       expect(experiment.id).toBe(expId);

@@ -11,6 +11,8 @@ const VALID_REASONS = [
   'testing', 'tracking_issue', 'code_cleaned_up', 'other',
 ] as const;
 
+const VALID_RESTART_TYPES = ['feature', 'experiment'] as const;
+
 export const restartCommand = new Command('restart')
   .description('Restart a stopped experiment')
   .argument('<id>', 'experiment ID', parseExperimentId)
@@ -18,6 +20,7 @@ export const restartCommand = new Command('restart')
   .option('--reason <reason>', `reason for restart (${VALID_REASONS.join(', ')})`)
   .option('--reshuffle', 'reshuffle variant assignments')
   .option('--state <state>', 'target state: running or development', 'running')
+  .option('--as-type <type>', `convert type on restart (${VALID_RESTART_TYPES.join(', ')})`)
   .action(withErrorHandling(async (id: ExperimentId, options) => {
     const globalOptions = getGlobalOptions(restartCommand);
     const client = await getAPIClientFromOptions(globalOptions);
@@ -36,11 +39,20 @@ export const restartCommand = new Command('restart')
       );
     }
 
+    if (options.asType && !VALID_RESTART_TYPES.includes(options.asType)) {
+      throw new Error(
+        `Invalid type: "${options.asType}"\n` +
+        `Valid types: ${VALID_RESTART_TYPES.join(', ')}`
+      );
+    }
+
     const restartOptions: Parameters<typeof client.restartExperiment>[1] = { note: options.note };
     if (options.reason) restartOptions.reason = options.reason;
     if (options.reshuffle) restartOptions.reshuffle = true;
     if (options.state) restartOptions.state = options.state;
+    if (options.asType) restartOptions.restart_as_type = options.asType;
 
     await client.restartExperiment(id, restartOptions);
-    console.log(chalk.green(`✓ Experiment ${id} restarted`));
+    const typeNote = options.asType ? ` as ${options.asType}` : '';
+    console.log(chalk.green(`✓ Experiment ${id} restarted${typeNote}`));
   }));

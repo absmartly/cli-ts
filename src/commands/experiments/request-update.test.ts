@@ -44,4 +44,14 @@ describe('experiments request-update', () => {
     const output = consoleSpy.mock.calls.flat().join(' ');
     expect(output).toContain('Analysis update requested for experiment 42');
   });
+
+  it('should reject invalid experiment ID', async () => {
+    await expect(requestUpdateCommand.parseAsync(['node', 'test', 'abc'])).rejects.toThrow();
+  });
+
+  it('should handle API errors', async () => {
+    mockClient.requestExperimentUpdate.mockRejectedValue(new Error('Not found'));
+
+    await expect(requestUpdateCommand.parseAsync(['node', 'test', '42'])).rejects.toThrow();
+  });
 });

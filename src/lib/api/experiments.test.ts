@@ -102,6 +102,18 @@ describe('APIClient - Experiments', () => {
 
   describe('updateExperiment', () => {
     it('should send update data and extract experiment from response', async () => {
+      server.use(
+        http.put(`${BASE_URL}/experiments/:id`, async ({ params, request }) => {
+          const body = await request.json() as Record<string, unknown>;
+          const inputData = (typeof body.data === 'object' && body.data !== null) ? body.data as Record<string, unknown> : {};
+          return HttpResponse.json({
+            ok: true,
+            experiment: { id: Number(params.id), name: 'test', display_name: inputData.display_name ?? 'default', state: 'created' },
+            errors: [],
+          });
+        })
+      );
+
       const data = { display_name: 'Updated Name' };
       const experiment = await client.updateExperiment(expId, data);
       expect(experiment.id).toBe(expId);

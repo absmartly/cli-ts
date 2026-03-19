@@ -44,4 +44,14 @@ describe('experiments export', () => {
     const output = consoleSpy.mock.calls.flat().join(' ');
     expect(output).toContain('Experiment 42 data export initiated');
   });
+
+  it('should reject invalid experiment ID', async () => {
+    await expect(exportCommand.parseAsync(['node', 'test', 'abc'])).rejects.toThrow();
+  });
+
+  it('should handle API errors', async () => {
+    mockClient.exportExperimentData.mockRejectedValue(new Error('Not found'));
+
+    await expect(exportCommand.parseAsync(['node', 'test', '42'])).rejects.toThrow();
+  });
 });
