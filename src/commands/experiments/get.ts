@@ -15,6 +15,7 @@ export const getCommand = new Command('get')
   .option('--embed-screenshots', 'embed screenshots as base64 data URIs in template output')
   .option('--screenshots-dir <path>', 'save screenshots to directory in template output')
   .option('--show-images', 'display screenshots inline (iTerm2, Kitty, Sixel)')
+  .option('--image-width <cols>', 'image width in terminal columns (default: 40)', parseInt)
   .action(withErrorHandling(async (id: ExperimentId, options) => {
     const globalOptions = getGlobalOptions(getCommand);
     const client = await getAPIClientFromOptions(globalOptions);
@@ -63,7 +64,7 @@ export const getCommand = new Command('get')
           const url = `${baseUrl}${fileUpload.base_url}/${fileName}`;
 
           console.log(`\n${variantName}:`);
-          await fetchAndDisplayImage(url, fileName, { headers, width: 40 });
+          await fetchAndDisplayImage(url, fileName, { headers, width: options.imageWidth ?? 40 });
         }
       }
     }
