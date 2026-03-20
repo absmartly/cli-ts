@@ -185,12 +185,15 @@ describe('experimentToMarkdown', () => {
     expect(md).toContain('  - homepage');
   });
 
-  it('should include audience', () => {
+  it('should include audience as JSON block', () => {
     const md = experimentToMarkdown(makeExperiment({
       audience: '{"filter":[]}',
     }));
 
-    expect(md).toContain("audience: '{\"filter\":[]}'");
+    expect(md).toContain('## Audience');
+    expect(md).toContain('```json');
+    expect(md).toContain('"filter": []');
+    expect(md).toContain('```');
   });
 
   it('should include analysis config fields', () => {

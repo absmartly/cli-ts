@@ -95,12 +95,15 @@ export function experimentToMarkdown(experiment: Experiment): string {
   if (exp.required_power) parts.push(`required_power: ${exp.required_power}\n`);
   if (exp.baseline_participants_per_day) parts.push(`baseline_participants: ${exp.baseline_participants_per_day}\n`);
 
-  if (exp.audience) {
-    const audienceStr = typeof exp.audience === 'string' ? exp.audience : JSON.stringify(exp.audience);
-    parts.push(`audience: '${audienceStr}'\n`);
-  }
-
   parts.push('---\n');
+
+  if (exp.audience) {
+    const audienceObj = typeof exp.audience === 'string' ? JSON.parse(exp.audience) : exp.audience;
+    parts.push('\n## Audience\n\n');
+    parts.push('```json\n');
+    parts.push(JSON.stringify(audienceObj, null, 2));
+    parts.push('\n```\n');
+  }
 
   const variants = experiment.variants as Variant[] | undefined;
   const variantScreenshots = exp.variant_screenshots as Array<Record<string, unknown>> | undefined;
