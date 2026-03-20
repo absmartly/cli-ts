@@ -1,0 +1,14 @@
+export const DEFAULT_ANALYSIS_TYPE = 'group_sequential';
+export const DEFAULT_PERCENTAGES = '50/50';
+export const DEFAULT_STATE = 'ready';
+export const DEFAULT_TRAFFIC = 100;
+export const DEFAULT_REQUIRED_ALPHA = '0.1';
+export const DEFAULT_REQUIRED_POWER = '0.8';
+export const DEFAULT_FUTILITY_TYPE = 'binding';
+export const DEFAULT_MIN_ANALYSIS_INTERVAL = '1d';
+export const DEFAULT_FIRST_ANALYSIS_INTERVAL = '7d';
+export const DEFAULT_MAX_DURATION_INTERVAL = '6w';
+export const DEFAULT_BASELINE_PARTICIPANTS = '33';
+export const DEFAULT_AUDIENCE = '{"filter":[{"and":[]}]}';
+export const DEFAULT_CONTROL_NAME = 'control';
+export const DEFAULT_TREATMENT_NAME = 'treatment';

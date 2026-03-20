@@ -20,6 +20,13 @@ export const cloneCommand = new Command('clone')
   .option('--from-file <path>', 'apply template overrides before cloning')
   .option('--dry-run', 'show the payload without creating')
   .action(withErrorHandling(async (id: ExperimentId, options) => {
+    if (!options.name) {
+      throw new Error(
+        `--name is required for clone.\n` +
+        `Example: abs experiments clone ${id} --name my_cloned_experiment`
+      );
+    }
+
     const globalOptions = getGlobalOptions(cloneCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
@@ -40,13 +47,6 @@ export const cloneCommand = new Command('clone')
         readFileSync(options.fromFile === '-' ? '/dev/stdin' : options.fromFile, 'utf8')
       );
       template = mergeTemplateOverrides(template, overrideTemplate);
-    }
-
-    if (!options.name) {
-      throw new Error(
-        `--name is required for clone.\n` +
-        `Example: abs experiments clone ${id} --name my_cloned_experiment`
-      );
     }
 
     template.name = options.name;

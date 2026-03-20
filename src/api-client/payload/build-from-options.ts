@@ -1,6 +1,12 @@
 import { resolveScreenshot } from '../template/screenshot.js';
-import type { Experiment } from '../types.js';
 import type { APIClient } from '../api-client.js';
+import {
+  DEFAULT_ANALYSIS_TYPE, DEFAULT_STATE, DEFAULT_TRAFFIC,
+  DEFAULT_REQUIRED_ALPHA, DEFAULT_REQUIRED_POWER, DEFAULT_FUTILITY_TYPE,
+  DEFAULT_MIN_ANALYSIS_INTERVAL, DEFAULT_FIRST_ANALYSIS_INTERVAL,
+  DEFAULT_MAX_DURATION_INTERVAL, DEFAULT_BASELINE_PARTICIPANTS, DEFAULT_AUDIENCE,
+  DEFAULT_CONTROL_NAME, DEFAULT_TREATMENT_NAME,
+} from './defaults.js';
 
 export interface CreateFromOptionsInput {
   name: string;
@@ -18,52 +24,52 @@ export interface CreateFromOptionsInput {
   ownerIds?: number[];
 }
 
-export async function buildPayloadFromOptions(input: CreateFromOptionsInput, client?: APIClient): Promise<Partial<Experiment>> {
-  const variantNames = input.variants ? input.variants.split(',').map((n: string) => n.trim()) : ['control', 'treatment'];
+export async function buildPayloadFromOptions(input: CreateFromOptionsInput, client?: APIClient): Promise<Record<string, unknown>> {
+  const variantNames = input.variants ? input.variants.split(',').map(n => n.trim()) : [DEFAULT_CONTROL_NAME, DEFAULT_TREATMENT_NAME];
   const variantConfigs: string[] = input.variantConfig || [];
-  const variants = variantNames.map((name: string, index: number) => ({
+  const variants = variantNames.map((name, index) => ({
     name,
     variant: index,
     config: variantConfigs[index] || JSON.stringify({}),
   }));
 
   const percentages = input.percentages
-    ? input.percentages.split(',').map((p: string) => parseInt(p.trim(), 10))
+    ? input.percentages.split(',').map(p => parseInt(p.trim(), 10))
     : variantNames.map(() => Math.floor(100 / variantNames.length));
 
-  const data: Partial<Experiment> = {
+  const data: Record<string, unknown> = {
     name: input.name,
     display_name: input.displayName || input.name,
-    type: input.type as 'test' | 'feature',
-    state: input.state || 'ready',
+    type: input.type || 'test',
+    state: input.state || DEFAULT_STATE,
     percentages: percentages.join('/'),
-    percentage_of_traffic: input.percentageOfTraffic ?? 100,
-    audience: '{"filter":[{"and":[]}]}',
+    percentage_of_traffic: input.percentageOfTraffic ?? DEFAULT_TRAFFIC,
+    audience: DEFAULT_AUDIENCE,
     audience_strict: false,
-    analysis_type: 'group_sequential',
-    required_alpha: '0.1',
-    required_power: '0.8',
-    group_sequential_futility_type: 'binding',
-    group_sequential_min_analysis_interval: '1d',
-    group_sequential_first_analysis_interval: '7d',
-    group_sequential_max_duration_interval: '6w',
-    baseline_participants_per_day: '33',
+    analysis_type: DEFAULT_ANALYSIS_TYPE,
+    required_alpha: DEFAULT_REQUIRED_ALPHA,
+    required_power: DEFAULT_REQUIRED_POWER,
+    group_sequential_futility_type: DEFAULT_FUTILITY_TYPE,
+    group_sequential_min_analysis_interval: DEFAULT_MIN_ANALYSIS_INTERVAL,
+    group_sequential_first_analysis_interval: DEFAULT_FIRST_ANALYSIS_INTERVAL,
+    group_sequential_max_duration_interval: DEFAULT_MAX_DURATION_INTERVAL,
+    baseline_participants_per_day: DEFAULT_BASELINE_PARTICIPANTS,
     nr_variants: variants.length,
     variants,
-    variant_screenshots: [],
-    secondary_metrics: [],
-    teams: [],
-    experiment_tags: [],
-  } as any;
+    variant_screenshots: [] as Array<Record<string, unknown>>,
+    secondary_metrics: [] as Array<Record<string, unknown>>,
+    teams: [] as Array<Record<string, unknown>>,
+    experiment_tags: [] as Array<Record<string, unknown>>,
+  };
 
   if (input.unitType) {
-    (data as any).unit_type = { unit_type_id: input.unitType };
+    data.unit_type = { unit_type_id: input.unitType };
   }
   if (input.applicationId) {
-    (data as any).applications = [{ application_id: input.applicationId, application_version: '0' }];
+    data.applications = [{ application_id: input.applicationId, application_version: '0' }];
   }
   if (input.primaryMetric) {
-    (data as any).primary_metric = { metric_id: input.primaryMetric };
+    data.primary_metric = { metric_id: input.primaryMetric };
   }
   if (input.screenshot && input.screenshot.length > 0) {
     const screenshots: Array<Record<string, unknown>> = [];
@@ -87,30 +93,30 @@ export async function buildPayloadFromOptions(input: CreateFromOptionsInput, cli
         screenshots.push({ variant: variantIdx, file_upload: resolved });
       }
     }
-    (data as any).variant_screenshots = screenshots;
+    data.variant_screenshots = screenshots;
   }
 
   if (input.ownerIds && input.ownerIds.length > 0) {
-    (data as any).owners = input.ownerIds.map(id => ({ user_id: id }));
+    data.owners = input.ownerIds.map(id => ({ user_id: id }));
   }
 
   if (client) {
     const customFields = await client.listCustomSectionFields();
-    const expType = input.type || 'test';
+    const expType = (input.type || 'test') as string;
     const relevantFields = customFields.filter(
-      (f: any) => !f.archived && f.custom_section?.type === expType && !f.custom_section?.archived
+      f => !f.archived && f.custom_section?.type === expType && !f.custom_section?.archived
     );
     if (relevantFields.length > 0) {
       const ownerId = input.ownerIds?.[0];
       const fieldValues: Record<string, { type: string; value: string }> = {};
-      for (const f of relevantFields) {
-        let value = f.default_value ?? '';
-        if (f.type === 'user' && ownerId) {
+      for (const field of relevantFields) {
+        let value = field.default_value ?? '';
+        if (field.type === 'user' && ownerId) {
           value = JSON.stringify({ selected: [{ userId: ownerId }] });
         }
-        fieldValues[f.id] = { type: f.type, value };
+        fieldValues[field.id] = { type: field.type, value };
       }
-      (data as any).custom_section_field_values = fieldValues;
+      data.custom_section_field_values = fieldValues;
     }
   }
 

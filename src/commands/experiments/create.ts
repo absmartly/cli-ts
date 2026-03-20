@@ -4,7 +4,7 @@ import { getAPIClientFromOptions, getGlobalOptions, resolveAPIKey, withErrorHand
 import { parseExperimentFile } from '../../lib/template/parser.js';
 import { buildPayloadFromTemplate } from '../../api-client/template/build-from-template.js';
 import { buildPayloadFromOptions } from '../../api-client/payload/build-from-options.js';
-import type { Experiment } from '../../lib/api/types.js';
+
 import { getDefaultType } from './default-type.js';
 
 function shellEscape(s: string): string {
@@ -33,7 +33,7 @@ export const createCommand = new Command('create')
     const globalOptions = getGlobalOptions(createCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
-    let data: Partial<Experiment>;
+    let data: Record<string, unknown>;
 
     if (options.fromFile) {
       const template = parseExperimentFile(options.fromFile);
@@ -41,7 +41,7 @@ export const createCommand = new Command('create')
       for (const warning of result.warnings) {
         console.log(chalk.yellow(`⚠ ${warning}`));
       }
-      data = result.payload as Partial<Experiment>;
+      data = result.payload;
     } else {
       if (!options.name) {
         throw new Error(

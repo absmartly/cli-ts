@@ -1,22 +1,14 @@
 import type { ExperimentTemplate, VariantTemplate } from '../template/parser.js';
 import { resolveByName, type ResolverContext } from './resolver.js';
 import { resolveScreenshot } from '../template/screenshot.js';
+import {
+  DEFAULT_ANALYSIS_TYPE, DEFAULT_PERCENTAGES, DEFAULT_STATE, DEFAULT_TRAFFIC,
+  DEFAULT_REQUIRED_ALPHA, DEFAULT_REQUIRED_POWER, DEFAULT_FUTILITY_TYPE,
+  DEFAULT_MIN_ANALYSIS_INTERVAL, DEFAULT_FIRST_ANALYSIS_INTERVAL,
+  DEFAULT_MAX_DURATION_INTERVAL, DEFAULT_BASELINE_PARTICIPANTS, DEFAULT_AUDIENCE,
+  DEFAULT_CONTROL_NAME, DEFAULT_TREATMENT_NAME,
+} from './defaults.js';
 
-const DEFAULT_ANALYSIS_TYPE = 'group_sequential';
-const DEFAULT_PERCENTAGES = '50/50';
-
-const DEFAULT_STATE = 'ready';
-const DEFAULT_TRAFFIC = 100;
-const DEFAULT_REQUIRED_ALPHA = '0.1';
-const DEFAULT_REQUIRED_POWER = '0.8';
-const DEFAULT_FUTILITY_TYPE = 'binding';
-const DEFAULT_MIN_ANALYSIS_INTERVAL = '1d';
-const DEFAULT_FIRST_ANALYSIS_INTERVAL = '7d';
-const DEFAULT_MAX_DURATION_INTERVAL = '6w';
-const DEFAULT_BASELINE_PARTICIPANTS = '33';
-const DEFAULT_AUDIENCE = '{"filter":[{"and":[]}]}';
-const DEFAULT_CONTROL_NAME = 'control';
-const DEFAULT_TREATMENT_NAME = 'treatment';
 const CONFIG_PREVIEW_LENGTH = 100;
 
 function parseVariantConfig(variant: VariantTemplate, index: number): string {
