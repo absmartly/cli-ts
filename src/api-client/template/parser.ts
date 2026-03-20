@@ -20,8 +20,8 @@ export interface ExperimentTemplate {
   secondary_metrics?: string[];
   guardrail_metrics?: string[];
   exploratory_metrics?: string[];
+  owners?: string[];
   owner_id?: number;
-  owner_ids?: number[];
   teams?: string[];
   tags?: string[];
   audience?: string;

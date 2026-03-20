@@ -5,6 +5,7 @@ import { parseExperimentFile } from '../../lib/template/parser.js';
 import { buildExperimentPayload } from '../../api-client/payload/builder.js';
 import { resolveScreenshot } from '../../api-client/template/screenshot.js';
 import type { Experiment } from '../../lib/api/types.js';
+import { resolveBySearch } from '../../api-client/payload/search-resolver.js';
 
 function shellEscape(s: string): string {
   return "'" + s.replace(/'/g, "'\\''") + "'";
@@ -38,11 +39,25 @@ export const createCommand = new Command('create')
     if (options.fromFile) {
       const template = parseExperimentFile(options.fromFile);
 
-      const [applications, unitTypes, metrics, customSectionFields] = await Promise.all([
+      const metricNames = [
+        template.primary_metric,
+        ...(template.secondary_metrics ?? []),
+        ...(template.guardrail_metrics ?? []),
+        ...(template.exploratory_metrics ?? []),
+      ].filter(Boolean) as string[];
+
+      const ownerRefs = template.owners ?? [];
+
+      const [applications, unitTypes, customSectionFields, metrics, users] = await Promise.all([
         client.listApplications(),
         client.listUnitTypes(),
-        client.listMetrics({ archived: true }),
         client.listCustomSectionFields(),
+        metricNames.length > 0
+          ? resolveBySearch(metricNames, name => client.listMetrics({ search: name, archived: true }))
+          : Promise.resolve([]),
+        ownerRefs.length > 0
+          ? resolveBySearch(ownerRefs, ref => client.listUsers({ search: ref }))
+          : Promise.resolve([]),
       ]);
 
       const result = await buildExperimentPayload(template, {
@@ -51,6 +66,7 @@ export const createCommand = new Command('create')
         metrics,
         goals: [],
         customSectionFields,
+        users,
       });
 
       for (const warning of result.warnings) {

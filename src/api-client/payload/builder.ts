@@ -140,7 +140,7 @@ const KNOWN_TEMPLATE_KEYS = new Set([
   'percentage_of_traffic', 'percentages',
   'unit_type', 'application',
   'primary_metric', 'secondary_metrics', 'guardrail_metrics', 'exploratory_metrics',
-  'owner_id', 'owner_ids', 'teams', 'tags', 'audience',
+  'owner_id', 'owners', 'teams', 'tags', 'audience',
   'variants', 'custom_fields',
   'analysis_type', 'required_alpha', 'required_power', 'baseline_participants',
 ]);
@@ -233,9 +233,29 @@ export async function buildExperimentPayload(
   }
 
   let ownerId: number | undefined;
-  if (template.owner_ids && template.owner_ids.length > 0) {
-    payload.owners = template.owner_ids.map(id => ({ user_id: Number(id) }));
-    ownerId = Number(template.owner_ids[0]);
+  if (template.owners && template.owners.length > 0 && context.users) {
+    const resolvedOwners: Array<{ user_id: number }> = [];
+    for (const ownerRef of template.owners) {
+      const asInt = parseInt(String(ownerRef), 10);
+      if (!isNaN(asInt) && String(asInt) === String(ownerRef).trim()) {
+        resolvedOwners.push({ user_id: asInt });
+      } else {
+        const ref = String(ownerRef).toLowerCase();
+        const user = context.users.find(u =>
+          u.email.toLowerCase() === ref ||
+          `${u.first_name ?? ''} ${u.last_name ?? ''}`.trim().toLowerCase() === ref
+        );
+        if (user) {
+          resolvedOwners.push({ user_id: user.id });
+        } else {
+          warnings.push(`Owner "${ownerRef}" not found, skipping`);
+        }
+      }
+    }
+    if (resolvedOwners.length > 0) {
+      payload.owners = resolvedOwners;
+      ownerId = resolvedOwners[0]!.user_id;
+    }
   } else if (template.owner_id) {
     ownerId = Number(template.owner_id);
     payload.owners = [{ user_id: ownerId }];

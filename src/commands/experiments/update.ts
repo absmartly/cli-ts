@@ -6,6 +6,7 @@ import { buildExperimentPayload } from '../../api-client/payload/builder.js';
 import { parseExperimentId, requireAtLeastOneField } from '../../lib/utils/validators.js';
 import type { ExperimentId } from '../../lib/api/branded-types.js';
 import type { ExperimentInput } from '../../api-client/index.js';
+import { resolveBySearch } from '../../api-client/payload/search-resolver.js';
 
 export const updateCommand = new Command('update')
   .description('Update an existing experiment')
@@ -23,11 +24,25 @@ export const updateCommand = new Command('update')
     if (options.fromFile) {
       const template = parseExperimentFile(options.fromFile);
 
-      const [applications, unitTypes, metrics, customSectionFields] = await Promise.all([
+      const metricNames = [
+        template.primary_metric,
+        ...(template.secondary_metrics ?? []),
+        ...(template.guardrail_metrics ?? []),
+        ...(template.exploratory_metrics ?? []),
+      ].filter(Boolean) as string[];
+
+      const ownerRefs = template.owners ?? [];
+
+      const [applications, unitTypes, customSectionFields, metrics, users] = await Promise.all([
         client.listApplications(),
         client.listUnitTypes(),
-        client.listMetrics({ archived: true }),
         client.listCustomSectionFields(),
+        metricNames.length > 0
+          ? resolveBySearch(metricNames, name => client.listMetrics({ search: name, archived: true }))
+          : Promise.resolve([]),
+        ownerRefs.length > 0
+          ? resolveBySearch(ownerRefs, ref => client.listUsers({ search: ref }))
+          : Promise.resolve([]),
       ]);
 
       const result = await buildExperimentPayload(template, {
@@ -36,6 +51,7 @@ export const updateCommand = new Command('update')
         metrics,
         goals: [],
         customSectionFields,
+        users,
       });
 
       for (const warning of result.warnings) {

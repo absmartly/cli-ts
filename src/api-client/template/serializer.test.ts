@@ -151,22 +151,35 @@ describe('experimentToMarkdown', () => {
     expect(md).toContain('config: {"color":"red"}');
   });
 
-  it('should include owner_id for single owner', () => {
+  it('should include owner email for single owner', () => {
+    const md = experimentToMarkdown(makeExperiment({
+      owners: [{ user_id: 42, user: { email: 'jane@example.com' } }],
+    }));
+
+    expect(md).toContain('owners:');
+    expect(md).toContain('  - jane@example.com');
+  });
+
+  it('should include owner emails for multiple owners', () => {
+    const md = experimentToMarkdown(makeExperiment({
+      owners: [
+        { user_id: 42, user: { email: 'jane@example.com' } },
+        { user_id: 43, user: { email: 'john@example.com' } },
+      ],
+    }));
+
+    expect(md).toContain('owners:');
+    expect(md).toContain('  - jane@example.com');
+    expect(md).toContain('  - john@example.com');
+  });
+
+  it('should fall back to user_id when user object is missing', () => {
     const md = experimentToMarkdown(makeExperiment({
       owners: [{ user_id: 42 }],
     }));
 
-    expect(md).toContain('owner_id: 42');
-  });
-
-  it('should include owner_ids for multiple owners', () => {
-    const md = experimentToMarkdown(makeExperiment({
-      owners: [{ user_id: 42 }, { user_id: 43 }],
-    }));
-
-    expect(md).toContain('owner_ids:');
+    expect(md).toContain('owners:');
     expect(md).toContain('  - 42');
-    expect(md).toContain('  - 43');
   });
 
   it('should include teams', () => {

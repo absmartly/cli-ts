@@ -14,7 +14,7 @@ const listCommand = new Command('list')
     const globalOptions = getGlobalOptions(listCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
-    const users = await client.listUsers(options.includeArchived);
+    const users = await client.listUsers({ includeArchived: options.includeArchived });
     printFormatted(users, globalOptions);
   }));
 

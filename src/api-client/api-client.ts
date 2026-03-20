@@ -523,10 +523,11 @@ export class APIClient {
     await this.request('PUT', `/teams/${id}/archive`, { data: { archive: !unarchive } });
   }
 
-  async listUsers(includeArchived = false): Promise<User[]> {
-    const response = await this.request('GET', '/users', {
-      params: { include_archived: includeArchived ? '1' : '0' },
-    });
+  async listUsers(options: { includeArchived?: boolean; search?: string } = {}): Promise<User[]> {
+    const params: Record<string, string> = {};
+    if (options.includeArchived) params.include_archived = '1';
+    if (options.search) params.search = options.search;
+    const response = await this.request('GET', '/users', { params });
     return this.validateListResponse<User>(response, 'users', 'listUsers');
   }
 
@@ -554,11 +555,12 @@ export class APIClient {
     this.validateOkResponse(response, 'resetUserPassword');
   }
 
-  async listMetrics(options: { items?: number; page?: number; archived?: boolean } = {}): Promise<Metric[]> {
+  async listMetrics(options: { items?: number; page?: number; archived?: boolean; search?: string } = {}): Promise<Metric[]> {
     const params: Record<string, string> = {};
     if (options.items !== undefined) params.items = String(options.items);
     if (options.page !== undefined) params.page = String(options.page);
     if (options.archived) params.archived = 'true';
+    if (options.search) params.search = options.search;
     const response = await this.request('GET', '/metrics', { params });
     return this.validateListResponse<Metric>(response, 'metrics', 'listMetrics');
   }

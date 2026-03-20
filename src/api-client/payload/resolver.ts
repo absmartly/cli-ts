@@ -3,6 +3,7 @@ export interface ResolverContext {
   unitTypes: Array<{ id: number; name: string }>;
   metrics: Array<{ id: number; name: string }>;
   goals: Array<{ id: number; name: string }>;
+  users?: Array<{ id: number; email: string; first_name?: string; last_name?: string }>;
   customSectionFields?: Array<{
     id: number;
     name?: string;

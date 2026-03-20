@@ -21,6 +21,7 @@ describe('create command', () => {
     listApplications: vi.fn().mockResolvedValue([]),
     listUnitTypes: vi.fn().mockResolvedValue([]),
     listMetrics: vi.fn().mockResolvedValue([]),
+    listUsers: vi.fn().mockResolvedValue([]),
   };
 
   beforeEach(() => {
@@ -89,14 +90,24 @@ config: {"color":"blue"}
     });
 
     it('should fetch context for buildExperimentPayload', async () => {
-      writeFileSync(tmpFile, `---\nname: ctx-exp\n---\n`, 'utf8');
+      writeFileSync(tmpFile, `---\nname: ctx-exp\nprimary_metric: clicks\n---\n`, 'utf8');
+      mockClient.listMetrics.mockResolvedValue([{ id: 30, name: 'clicks' }]);
 
       await createCommand.parseAsync(['node', 'test', '--from-file', tmpFile]);
 
       expect(mockClient.listApplications).toHaveBeenCalledOnce();
       expect(mockClient.listUnitTypes).toHaveBeenCalledOnce();
-      expect(mockClient.listMetrics).toHaveBeenCalledOnce();
+      expect(mockClient.listMetrics).toHaveBeenCalled();
       expect(mockClient.listCustomSectionFields).toHaveBeenCalled();
+    });
+
+    it('should skip fetching metrics and users when not needed', async () => {
+      writeFileSync(tmpFile, `---\nname: minimal-exp\n---\n`, 'utf8');
+
+      await createCommand.parseAsync(['node', 'test', '--from-file', tmpFile]);
+
+      expect(mockClient.listMetrics).not.toHaveBeenCalled();
+      expect(mockClient.listUsers).not.toHaveBeenCalled();
     });
 
     it('should resolve application and unit_type by name via builder', async () => {
@@ -130,11 +141,12 @@ primary_metric: clicks
       );
     });
 
-    it('should resolve archived metrics when using --from-file', async () => {
-      mockClient.listMetrics.mockResolvedValue([
-        { id: 30, name: 'clicks' },
-        { id: 99, name: 'Archived Metric' },
-      ]);
+    it('should resolve archived metrics via search', async () => {
+      mockClient.listMetrics.mockImplementation((opts: { search?: string }) => {
+        if (opts?.search === 'clicks') return Promise.resolve([{ id: 30, name: 'clicks' }]);
+        if (opts?.search === 'Archived Metric') return Promise.resolve([{ id: 99, name: 'Archived Metric' }]);
+        return Promise.resolve([]);
+      });
 
       writeFileSync(tmpFile, `---
 name: archived-metric-exp
@@ -146,37 +158,11 @@ secondary_metrics:
 
       await createCommand.parseAsync(['node', 'test', '--from-file', tmpFile]);
 
-      expect(mockClient.listMetrics).toHaveBeenCalledWith({ archived: true });
+      expect(mockClient.listMetrics).toHaveBeenCalledWith(expect.objectContaining({ archived: true }));
       expect(mockClient.createExperiment).toHaveBeenCalledWith(
         expect.objectContaining({
           primary_metric: { metric_id: 30 },
           secondary_metrics: [{ metric_id: 99, type: 'secondary', order_index: 0 }],
-        })
-      );
-    });
-
-    it('should resolve metric only visible with archived=true', async () => {
-      mockClient.listMetrics.mockImplementation((opts: { archived?: boolean }) => {
-        const base = [{ id: 30, name: 'clicks' }];
-        if (opts?.archived) base.push({ id: 149, name: 'Error rate' });
-        return Promise.resolve(base);
-      });
-
-      writeFileSync(tmpFile, `---
-name: archived-only-metric-exp
-primary_metric: clicks
-guardrail_metrics:
-  - Error rate
----
-`, 'utf8');
-
-      await createCommand.parseAsync(['node', 'test', '--from-file', tmpFile]);
-
-      expect(mockClient.listMetrics).toHaveBeenCalledWith({ archived: true });
-      expect(mockClient.createExperiment).toHaveBeenCalledWith(
-        expect.objectContaining({
-          primary_metric: { metric_id: 30 },
-          secondary_metrics: [{ metric_id: 149, type: 'guardrail', order_index: 0 }],
         })
       );
     });
@@ -207,12 +193,17 @@ guardrail_metrics:
       expect(errorOutput).toContain('not found');
     });
 
-    it('should resolve owner_ids, teams, and tags from template', async () => {
+    it('should resolve owners by email, teams, and tags from template', async () => {
+      mockClient.listUsers.mockResolvedValue([
+        { id: 10, email: 'jane@example.com', first_name: 'Jane', last_name: 'Doe' },
+        { id: 20, email: 'john@example.com', first_name: 'John', last_name: 'Smith' },
+      ]);
+
       writeFileSync(tmpFile, `---
 name: full-template-exp
-owner_ids:
-  - 10
-  - 20
+owners:
+  - jane@example.com
+  - john@example.com
 teams:
   - Growth
   - Engineering
@@ -224,6 +215,7 @@ tags:
 
       await createCommand.parseAsync(['node', 'test', '--from-file', tmpFile]);
 
+      expect(mockClient.listUsers).toHaveBeenCalled();
       expect(mockClient.createExperiment).toHaveBeenCalledWith(
         expect.objectContaining({
           owners: [{ user_id: 10 }, { user_id: 20 }],

@@ -59,12 +59,10 @@ export function experimentToMarkdown(experiment: Experiment): string {
 
   const owners = exp.owners as Array<Record<string, unknown>> | undefined;
   if (owners && owners.length > 0) {
-    const ownerIds = owners.map(o => o.user_id);
-    if (ownerIds.length === 1) {
-      parts.push(`owner_id: ${ownerIds[0]}\n`);
-    } else {
-      parts.push(`owner_ids:\n`);
-      for (const id of ownerIds) parts.push(`  - ${id}\n`);
+    parts.push(`owners:\n`);
+    for (const o of owners) {
+      const user = o.user as Record<string, unknown> | undefined;
+      parts.push(`  - ${user?.email ?? o.user_id}\n`);
     }
   }
 

@@ -17,6 +17,11 @@ describe('update command', () => {
 
   const mockClient = {
     updateExperiment: vi.fn().mockResolvedValue({ id: 42 }),
+    listApplications: vi.fn().mockResolvedValue([]),
+    listUnitTypes: vi.fn().mockResolvedValue([]),
+    listMetrics: vi.fn().mockResolvedValue([]),
+    listCustomSectionFields: vi.fn().mockResolvedValue([]),
+    listUsers: vi.fn().mockResolvedValue([]),
   };
 
   beforeEach(() => {
