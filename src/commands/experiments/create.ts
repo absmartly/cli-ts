@@ -17,7 +17,6 @@ export const createCommand = new Command('create')
   .option('--from-file <path>', 'create from markdown template file')
   .option('--name <name>', 'experiment name')
   .option('--display-name <name>', 'display name')
-  .option('--type <type>', 'experiment type (test, feature)')
   .option('--state <state>', 'initial state (created, ready, running)', 'ready')
   .option('--variants <names>', 'comma-separated variant names')
   .option('--variant-config <json...>', 'variant config JSON (one per variant, in order)')
@@ -72,7 +71,7 @@ export const createCommand = new Command('create')
         users,
         teams,
         experimentTags,
-      }, options.type || getDefaultType());
+      }, getDefaultType());
 
       for (const warning of result.warnings) {
         console.log(chalk.yellow(`⚠ ${warning}`));
@@ -102,7 +101,7 @@ export const createCommand = new Command('create')
       data = {
         name: options.name,
         display_name: options.displayName || options.name,
-        type: (options.type || getDefaultType()) as 'test' | 'feature',
+        type: getDefaultType() as 'test' | 'feature',
         state: options.state,
         percentages: percentages.join('/'),
         percentage_of_traffic: options.percentageOfTraffic,

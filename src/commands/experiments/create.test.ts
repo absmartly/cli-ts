@@ -345,14 +345,6 @@ config: ${longConfig}
       );
     });
 
-    it('should pass --type feature through', async () => {
-      await createCommand.parseAsync(['node', 'test', '--name', 'feat-exp', '--type', 'feature']);
-
-      expect(mockClient.createExperiment).toHaveBeenCalledWith(
-        expect.objectContaining({ type: 'feature' })
-      );
-    });
-
     it('should split --variants by comma', async () => {
       await createCommand.parseAsync(['node', 'test', '--name', 'var-exp', '--variants', 'a,b,c']);
 
