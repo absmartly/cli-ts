@@ -2,11 +2,14 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseExperimentFile } from '../../lib/template/parser.js';
-import { buildPayloadFromTemplate } from '../../api-client/template/build-from-template.js';
-import { parseExperimentId, requireAtLeastOneField } from '../../lib/utils/validators.js';
 import { experimentToMarkdown } from '../../api-client/template/serializer.js';
 import { parseExperimentMarkdown } from '../../api-client/template/parser.js';
+import { buildPayloadFromTemplate } from '../../api-client/template/build-from-template.js';
 import { runInteractiveEditor } from '../../lib/interactive/run.js';
+import { resolveBySearch } from '../../api-client/payload/search-resolver.js';
+import { resolveByName } from '../../api-client/payload/resolver.js';
+import { resolveScreenshot } from '../../api-client/template/screenshot.js';
+import { parseExperimentId } from '../../lib/utils/validators.js';
 import type { ExperimentId } from '../../lib/api/branded-types.js';
 import type { ExperimentInput } from '../../api-client/index.js';
 import { getDefaultType } from './default-type.js';
@@ -15,15 +18,144 @@ export const updateCommand = new Command('update')
   .description('Update an existing experiment')
   .argument('<id>', 'experiment ID', parseExperimentId)
   .option('--from-file <path>', 'update from markdown template file')
+  .option('--name <name>', 'experiment name')
   .option('--display-name <name>', 'new display name')
-  .option('--traffic <percent>', 'traffic allocation percentage', parseInt)
+  .option('--state <state>', 'experiment state (created, ready, running)')
+  .option('--variants <names>', 'comma-separated variant names')
+  .option('--variant-config <json...>', 'variant config JSON (one per variant, in order)')
+  .option('--application-id <id>', 'application ID', parseInt)
+  .option('--unit-type <id>', 'unit type ID', parseInt)
+  .option('--primary-metric <id>', 'primary metric ID', parseInt)
+  .option('--secondary-metrics <names>', 'comma-separated secondary metric names or IDs')
+  .option('--guardrail-metrics <names>', 'comma-separated guardrail metric names or IDs')
+  .option('--exploratory-metrics <names>', 'comma-separated exploratory metric names or IDs')
+  .option('--percentages <values>', 'comma-separated traffic split per variant (e.g. 50,50)')
+  .option('--percentage-of-traffic <pct>', 'percentage of total traffic (0-100)', parseInt)
+  .option('--owner <user_id>', 'owner user ID (can specify multiple)', (val: string, prev: string[]) => [...prev, val], [] as string[])
+  .option('--screenshot <variant:source...>', 'variant screenshot (variant_index:path_or_url, can specify multiple)')
+  .option('--screenshot-id <variant:upload_id...>', 'variant screenshot by existing file upload ID (variant_index:upload_id, can specify multiple)')
+  .option('--teams <names>', 'comma-separated team names or IDs')
+  .option('--tags <names>', 'comma-separated tag names or IDs')
+  .option('--audience <json>', 'audience filter JSON')
+  .option('--analysis-type <type>', 'analysis type (group_sequential, fixed_horizon)')
+  .option('--required-alpha <value>', 'required alpha (significance level)')
+  .option('--required-power <value>', 'required power')
+  .option('--baseline-participants <n>', 'baseline participants per day')
   .option('-i, --interactive', 'interactive step-by-step editor')
   .option('--dry-run', 'show the request payload without making the API call')
   .action(withErrorHandling(async (id: ExperimentId, options) => {
     const globalOptions = getGlobalOptions(updateCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
-    let data: Record<string, unknown>;
+    const changes: Partial<ExperimentInput> & Record<string, unknown> = {};
+
+    if (options.name !== undefined) changes.name = options.name;
+    if (options.displayName !== undefined) changes.display_name = options.displayName;
+    if (options.state !== undefined) changes.state = options.state;
+    if (options.percentageOfTraffic !== undefined) changes.percentage_of_traffic = options.percentageOfTraffic;
+    if (options.percentages) changes.percentages = options.percentages.split(',').map((p: string) => parseInt(p.trim(), 10)).join('/');
+    if (options.analysisType) changes.analysis_type = options.analysisType;
+    if (options.requiredAlpha) changes.required_alpha = options.requiredAlpha;
+    if (options.requiredPower) changes.required_power = options.requiredPower;
+    if (options.baselineParticipants) changes.baseline_participants_per_day = options.baselineParticipants;
+    if (options.audience) changes.audience = options.audience;
+
+    if (options.primaryMetric) changes.primary_metric = { metric_id: options.primaryMetric };
+    if (options.unitType) changes.unit_type = { unit_type_id: options.unitType };
+    if (options.applicationId) changes.applications = [{ application_id: options.applicationId, application_version: '0' }];
+
+    if (options.owner?.length) changes.owners = options.owner.map((uid: string) => ({ user_id: parseInt(uid, 10) }));
+
+    if (options.variants) {
+      const names = options.variants.split(',').map((n: string) => n.trim());
+      const configs: string[] = options.variantConfig || [];
+      changes.variants = names.map((name: string, i: number) => ({ name, variant: i, config: configs[i] || '{}' }));
+      changes.nr_variants = names.length;
+    }
+
+    const needsMetricResolution = options.secondaryMetrics || options.guardrailMetrics || options.exploratoryMetrics;
+    if (needsMetricResolution) {
+      const allNames = [
+        ...parseCSV(options.secondaryMetrics),
+        ...parseCSV(options.guardrailMetrics),
+        ...parseCSV(options.exploratoryMetrics),
+      ];
+      const metrics = await resolveBySearch(allNames, name => client.listMetrics({ search: name, archived: true }));
+
+      const allMetrics: Array<{ metric_id: number; type: string; order_index: number }> = [];
+      let orderIndex = 0;
+      for (const name of parseCSV(options.secondaryMetrics)) {
+        const metric = resolveByName(metrics, name, 'Secondary metric');
+        allMetrics.push({ metric_id: metric.id, type: 'secondary', order_index: orderIndex++ });
+      }
+      for (const name of parseCSV(options.guardrailMetrics)) {
+        const metric = resolveByName(metrics, name, 'Guardrail metric');
+        allMetrics.push({ metric_id: metric.id, type: 'guardrail', order_index: orderIndex++ });
+      }
+      for (const name of parseCSV(options.exploratoryMetrics)) {
+        const metric = resolveByName(metrics, name, 'Exploratory metric');
+        allMetrics.push({ metric_id: metric.id, type: 'exploratory', order_index: orderIndex++ });
+      }
+      changes.secondary_metrics = allMetrics;
+    }
+
+    if (options.teams) {
+      const teamNames = parseCSV(options.teams);
+      const allTeams = await client.listTeams();
+      changes.teams = teamNames.map(name => {
+        const team = allTeams.find(t => t.name.toLowerCase() === name.trim().toLowerCase() || String(t.id) === name.trim());
+        if (!team) throw new Error(`Team "${name}" not found`);
+        return { team_id: team.id };
+      });
+    }
+
+    if (options.tags) {
+      const tagNames = parseCSV(options.tags);
+      const allTags = await client.listExperimentTags();
+      changes.experiment_tags = tagNames.map(name => {
+        const tag = allTags.find(t => t.tag.toLowerCase() === name.trim().toLowerCase() || String(t.id) === name.trim());
+        if (!tag) throw new Error(`Tag "${name}" not found`);
+        return { experiment_tag_id: tag.id };
+      });
+    }
+
+    if (options.screenshot?.length || options.screenshotId?.length) {
+      const screenshotEntries: Array<{ variant: number; screenshot_file_upload_id: number }> = [];
+
+      if (options.screenshotId?.length) {
+        for (const entry of options.screenshotId as string[]) {
+          const colonIdx = entry.indexOf(':');
+          if (colonIdx === -1) throw new Error(`Invalid --screenshot-id format: "${entry}". Expected: <variant_index>:<upload_id>`);
+          const variantIdx = parseInt(entry.substring(0, colonIdx), 10);
+          const uploadId = parseInt(entry.substring(colonIdx + 1), 10);
+          if (isNaN(variantIdx) || isNaN(uploadId)) throw new Error(`Invalid variant index or upload ID in --screenshot-id: "${entry}"`);
+          screenshotEntries.push({ variant: variantIdx, screenshot_file_upload_id: uploadId });
+        }
+      }
+
+      if (options.screenshot?.length) {
+        for (const entry of options.screenshot as string[]) {
+          const colonIdx = entry.indexOf(':');
+          if (colonIdx === -1) throw new Error(`Invalid --screenshot format: "${entry}". Expected: <variant_index>:<file_path_or_url>`);
+          const variantIdx = parseInt(entry.substring(0, colonIdx), 10);
+          const source = entry.substring(colonIdx + 1);
+          if (isNaN(variantIdx)) throw new Error(`Invalid variant index in --screenshot: "${entry}"`);
+          const resolved = await resolveScreenshot(source, `variant_${variantIdx}`);
+          if (resolved) screenshotEntries.push({ variant: variantIdx, ...resolved } as any);
+        }
+      }
+
+      changes.variant_screenshots = screenshotEntries as ExperimentInput['variant_screenshots'];
+    }
+
+    if (options.fromFile) {
+      const template = parseExperimentFile(options.fromFile);
+      const resolved = await buildPayloadFromTemplate(client, template, getDefaultType());
+      for (const warning of resolved.warnings) console.log(chalk.yellow(`⚠ ${warning}`));
+      for (const [key, value] of Object.entries(resolved.payload)) {
+        changes[key] = value;
+      }
+    }
 
     if (options.interactive) {
       const experiment = await client.getExperiment(id);
@@ -31,37 +163,27 @@ export const updateCommand = new Command('update')
       const template = parseExperimentMarkdown(md);
       const edited = await runInteractiveEditor(client, template, getDefaultType());
       if (!edited) return;
-      const result = await buildPayloadFromTemplate(client, edited, getDefaultType());
-      for (const warning of result.warnings) {
-        console.log(chalk.yellow(`Warning: ${warning}`));
+      const resolved = await buildPayloadFromTemplate(client, edited, getDefaultType());
+      for (const warning of resolved.warnings) console.log(chalk.yellow(`⚠ ${warning}`));
+      for (const [key, value] of Object.entries(resolved.payload)) {
+        changes[key] = value;
       }
-      data = result.payload as Record<string, unknown>;
-    } else if (options.fromFile) {
-      const template = parseExperimentFile(options.fromFile);
-      const result = await buildPayloadFromTemplate(client, template, getDefaultType());
-
-      for (const warning of result.warnings) {
-        console.log(chalk.yellow(`⚠ ${warning}`));
-      }
-
-      data = result.payload as Record<string, unknown>;
-    } else {
-      data = {};
-      if (options.displayName !== undefined) data.display_name = options.displayName;
-      if (options.traffic !== undefined) data.percentage_of_traffic = options.traffic;
     }
-
-    requireAtLeastOneField(data, 'update field');
 
     if (options.dryRun) {
       console.log(chalk.blue('Request Payload (dry-run):'));
       console.log('');
       console.log(`PUT /experiments/${id}`);
       console.log('');
-      console.log(JSON.stringify(data, null, 2));
+      console.log(JSON.stringify(changes, null, 2));
       return;
     }
 
-    await client.updateExperiment(id, data as Partial<ExperimentInput>);
+    await client.updateExperiment(id, changes);
     console.log(chalk.green(`Experiment ${id} updated`));
   }));
+
+function parseCSV(value: string | undefined): string[] {
+  if (!value) return [];
+  return value.split(',').map(s => s.trim()).filter(Boolean);
+}

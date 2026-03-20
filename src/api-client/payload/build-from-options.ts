@@ -1,4 +1,6 @@
 import { resolveScreenshot } from '../template/screenshot.js';
+import { resolveBySearch } from './search-resolver.js';
+import { resolveByName } from './resolver.js';
 import type { APIClient } from '../api-client.js';
 import {
   DEFAULT_ANALYSIS_TYPE, DEFAULT_STATE, DEFAULT_TRAFFIC,
@@ -22,6 +24,21 @@ export interface CreateFromOptionsInput {
   primaryMetric?: number;
   screenshot?: string[];
   ownerIds?: number[];
+  secondaryMetrics?: string;
+  guardrailMetrics?: string;
+  exploratoryMetrics?: string;
+  teams?: string;
+  tags?: string;
+  audience?: string;
+  analysisType?: string;
+  requiredAlpha?: string;
+  requiredPower?: string;
+  baselineParticipants?: string;
+}
+
+function parseCSV(value: string | undefined): string[] {
+  if (!value) return [];
+  return value.split(',').map(s => s.trim()).filter(Boolean);
 }
 
 export async function buildPayloadFromOptions(input: CreateFromOptionsInput, client?: APIClient): Promise<Record<string, unknown>> {
@@ -44,16 +61,16 @@ export async function buildPayloadFromOptions(input: CreateFromOptionsInput, cli
     state: input.state || DEFAULT_STATE,
     percentages: percentages.join('/'),
     percentage_of_traffic: input.percentageOfTraffic ?? DEFAULT_TRAFFIC,
-    audience: DEFAULT_AUDIENCE,
+    audience: input.audience || DEFAULT_AUDIENCE,
     audience_strict: false,
-    analysis_type: DEFAULT_ANALYSIS_TYPE,
-    required_alpha: DEFAULT_REQUIRED_ALPHA,
-    required_power: DEFAULT_REQUIRED_POWER,
+    analysis_type: input.analysisType || DEFAULT_ANALYSIS_TYPE,
+    required_alpha: input.requiredAlpha || DEFAULT_REQUIRED_ALPHA,
+    required_power: input.requiredPower || DEFAULT_REQUIRED_POWER,
     group_sequential_futility_type: DEFAULT_FUTILITY_TYPE,
     group_sequential_min_analysis_interval: DEFAULT_MIN_ANALYSIS_INTERVAL,
     group_sequential_first_analysis_interval: DEFAULT_FIRST_ANALYSIS_INTERVAL,
     group_sequential_max_duration_interval: DEFAULT_MAX_DURATION_INTERVAL,
-    baseline_participants_per_day: DEFAULT_BASELINE_PARTICIPANTS,
+    baseline_participants_per_day: input.baselineParticipants || DEFAULT_BASELINE_PARTICIPANTS,
     nr_variants: variants.length,
     variants,
     variant_screenshots: [] as Array<Record<string, unknown>>,
@@ -101,6 +118,52 @@ export async function buildPayloadFromOptions(input: CreateFromOptionsInput, cli
   }
 
   if (client) {
+    const needsMetricResolution = input.secondaryMetrics || input.guardrailMetrics || input.exploratoryMetrics;
+    if (needsMetricResolution) {
+      const allNames = [
+        ...parseCSV(input.secondaryMetrics),
+        ...parseCSV(input.guardrailMetrics),
+        ...parseCSV(input.exploratoryMetrics),
+      ];
+      const metrics = await resolveBySearch(allNames, name => client.listMetrics({ search: name, archived: true }));
+
+      const allMetrics: Array<{ metric_id: number; type: string; order_index: number }> = [];
+      let orderIndex = 0;
+      for (const name of parseCSV(input.secondaryMetrics)) {
+        const metric = resolveByName(metrics, name, 'Secondary metric');
+        allMetrics.push({ metric_id: metric.id, type: 'secondary', order_index: orderIndex++ });
+      }
+      for (const name of parseCSV(input.guardrailMetrics)) {
+        const metric = resolveByName(metrics, name, 'Guardrail metric');
+        allMetrics.push({ metric_id: metric.id, type: 'guardrail', order_index: orderIndex++ });
+      }
+      for (const name of parseCSV(input.exploratoryMetrics)) {
+        const metric = resolveByName(metrics, name, 'Exploratory metric');
+        allMetrics.push({ metric_id: metric.id, type: 'exploratory', order_index: orderIndex++ });
+      }
+      data.secondary_metrics = allMetrics;
+    }
+
+    if (input.teams) {
+      const teamNames = parseCSV(input.teams);
+      const allTeams = await client.listTeams();
+      data.teams = teamNames.map(name => {
+        const team = allTeams.find(t => t.name.toLowerCase() === name.trim().toLowerCase() || String(t.id) === name.trim());
+        if (!team) throw new Error(`Team "${name}" not found`);
+        return { team_id: team.id };
+      });
+    }
+
+    if (input.tags) {
+      const tagNames = parseCSV(input.tags);
+      const allTags = await client.listExperimentTags();
+      data.experiment_tags = tagNames.map(name => {
+        const tag = allTags.find(t => t.tag.toLowerCase() === name.trim().toLowerCase() || String(t.id) === name.trim());
+        if (!tag) throw new Error(`Tag "${name}" not found`);
+        return { experiment_tag_id: tag.id };
+      });
+    }
+
     const customFields = await client.listCustomSectionFields();
     const expType = (input.type || 'test') as string;
     const relevantFields = customFields.filter(

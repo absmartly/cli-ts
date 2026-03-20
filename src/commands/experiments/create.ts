@@ -28,6 +28,16 @@ export const createCommand = new Command('create')
   .option('--env <name>', 'environment name')
   .option('--owner <user_id>', 'owner user ID (can specify multiple)', (val: string, prev: string[]) => [...prev, val], [] as string[])
   .option('--screenshot <variant:source...>', 'variant screenshot (variant_index:path_or_url, can specify multiple)')
+  .option('--secondary-metrics <names>', 'comma-separated secondary metric names or IDs')
+  .option('--guardrail-metrics <names>', 'comma-separated guardrail metric names or IDs')
+  .option('--exploratory-metrics <names>', 'comma-separated exploratory metric names or IDs')
+  .option('--teams <names>', 'comma-separated team names or IDs')
+  .option('--tags <names>', 'comma-separated tag names or IDs')
+  .option('--audience <json>', 'audience filter JSON')
+  .option('--analysis-type <type>', 'analysis type (group_sequential, fixed_horizon)')
+  .option('--required-alpha <value>', 'required alpha (significance level)')
+  .option('--required-power <value>', 'required power')
+  .option('--baseline-participants <n>', 'baseline participants per day')
   .option('-i, --interactive', 'interactive step-by-step editor')
   .option('--dry-run', 'show the request payload without making the API call')
   .option('--as-curl', 'output as curl command instead of making the API call')
@@ -77,6 +87,16 @@ export const createCommand = new Command('create')
         primaryMetric: options.primaryMetric,
         screenshot: options.screenshot,
         ownerIds,
+        secondaryMetrics: options.secondaryMetrics,
+        guardrailMetrics: options.guardrailMetrics,
+        exploratoryMetrics: options.exploratoryMetrics,
+        teams: options.teams,
+        tags: options.tags,
+        audience: options.audience,
+        analysisType: options.analysisType,
+        requiredAlpha: options.requiredAlpha,
+        requiredPower: options.requiredPower,
+        baselineParticipants: options.baselineParticipants,
       }, client);
     }
 
