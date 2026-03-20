@@ -14,8 +14,30 @@ const listCommand = new Command('list')
   .action(withErrorHandling(async (id: ExperimentId) => {
     const globalOptions = getGlobalOptions(listCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    const metrics = await client.listExperimentMetrics(id);
-    printFormatted(metrics, globalOptions);
+    const experiment = await client.getExperiment(id);
+    const exp = experiment as Record<string, unknown>;
+
+    const rows: Array<Record<string, unknown>> = [];
+
+    const primary = exp.primary_metric as Record<string, unknown> | undefined;
+    if (primary) {
+      rows.push({ id: exp.primary_metric_id, name: primary.name, type: 'primary' });
+    }
+
+    const secondary = exp.secondary_metrics as Array<Record<string, unknown>> | undefined;
+    if (secondary) {
+      for (const m of secondary) {
+        const metric = m.metric as Record<string, unknown> | undefined;
+        rows.push({ id: m.metric_id, name: metric?.name || m.metric_id, type: m.type || 'secondary' });
+      }
+    }
+
+    if (rows.length === 0) {
+      console.log(chalk.blue('No metrics assigned to this experiment.'));
+      return;
+    }
+
+    printFormatted(rows, globalOptions);
   }));
 
 const addCommand = new Command('add')
