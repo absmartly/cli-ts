@@ -155,6 +155,32 @@ secondary_metrics:
       );
     });
 
+    it('should resolve metric only visible with archived=true', async () => {
+      mockClient.listMetrics.mockImplementation((opts: { archived?: boolean }) => {
+        const base = [{ id: 30, name: 'clicks' }];
+        if (opts?.archived) base.push({ id: 149, name: 'Error rate' });
+        return Promise.resolve(base);
+      });
+
+      writeFileSync(tmpFile, `---
+name: archived-only-metric-exp
+primary_metric: clicks
+guardrail_metrics:
+  - Error rate
+---
+`, 'utf8');
+
+      await createCommand.parseAsync(['node', 'test', '--from-file', tmpFile]);
+
+      expect(mockClient.listMetrics).toHaveBeenCalledWith({ archived: true });
+      expect(mockClient.createExperiment).toHaveBeenCalledWith(
+        expect.objectContaining({
+          primary_metric: { metric_id: 30 },
+          secondary_metrics: [{ metric_id: 149, type: 'guardrail', order_index: 0 }],
+        })
+      );
+    });
+
     it('should fail when metric is not found even with archived=true', async () => {
       mockClient.listMetrics.mockResolvedValue([
         { id: 30, name: 'clicks' },
