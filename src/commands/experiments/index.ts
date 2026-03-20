@@ -14,7 +14,6 @@ import { restartCommand } from './restart.js';
 import { fullOnCommand } from './full-on.js';
 import { scheduleCommand } from './schedule.js';
 import { metricsCommand } from './metrics.js';
-import { deleteCommand } from './delete.js';
 import { parentCommand } from './parent.js';
 import { accessCommand } from './access.js';
 import { followCommand, unfollowCommand } from './follow.js';
@@ -29,7 +28,7 @@ const subcommands = [
   listCommand, getCommand, searchCommand, createCommand, cloneCommand, updateCommand,
   startCommand, stopCommand, archiveCommand, activityCommand, generateTemplateCommand,
   developmentCommand, restartCommand, fullOnCommand, scheduleCommand, metricsCommand,
-  deleteCommand, parentCommand, accessCommand, followCommand, unfollowCommand,
+  parentCommand, accessCommand, followCommand, unfollowCommand,
   annotationsCommand, alertsCommand, recommendationsCommand, exportCommand, requestUpdateCommand,
 ];
 

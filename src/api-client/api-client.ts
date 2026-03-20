@@ -269,11 +269,6 @@ export class APIClient {
     await this.request('PUT', `/experiments/${id}/archive`, { data: { archive: !unarchive } });
   }
 
-  async deleteExperiment(id: ExperimentId): Promise<void> {
-    const response = await this.request('DELETE', `/experiments/${id}`);
-    this.validateOkResponse(response, 'deleteExperiment');
-  }
-
   async getParentExperiment(id: ExperimentId): Promise<Experiment> {
     const response = await this.request('GET', `/experiments/${id}/parent`);
     return this.validateEntityResponse<Experiment>(response, 'parent_experiment', 'getParentExperiment');

@@ -183,8 +183,7 @@ abs experiments activity create 123 --note "Deployed to staging"
 abs experiments activity edit 123 456 --note "Updated note"
 abs experiments activity reply 123 456 --note "Looks good"
 
-# Delete and parent
-abs experiments delete 123
+# Parent experiment
 abs experiments parent 123                               # get parent experiment
 
 # Follow/unfollow

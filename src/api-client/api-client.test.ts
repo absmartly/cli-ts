@@ -168,15 +168,6 @@ describe.skipIf(isLiveMode)('APIClient core', () => {
       await client.archiveExperiment(1, true);
     });
 
-    it('should delete experiment', async () => {
-      server.use(
-        http.delete(`${BASE_URL}/experiments/1`, () =>
-          HttpResponse.json({ ok: true, errors: [] })
-        )
-      );
-      await client.deleteExperiment(1);
-    });
-
     it('should get parent experiment', async () => {
       server.use(
         http.get(`${BASE_URL}/experiments/1/parent`, () =>
