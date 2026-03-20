@@ -46,6 +46,11 @@ abs auth login --api-key YOUR_KEY --endpoint https://staging.absmartly.com/v1 --
 abs auth status
 abs auth status --show-key    # reveal last 4 chars of key
 
+# Show current authenticated user
+abs auth whoami
+abs auth whoami --avatar       # display avatar inline (iTerm2, Kitty, Sixel)
+abs auth whoami --avatar 30    # avatar at 30 columns wide
+
 # Logout
 abs auth logout
 abs auth logout --profile staging
@@ -108,6 +113,10 @@ abs experiments get 123 --raw                            # full response as tabl
 abs experiments get 123 --show audience Hypothesis       # include API or custom fields
 abs experiments get 123 --activity                       # include activity log
 
+# Inline screenshots (iTerm2, Kitty, Sixel)
+abs experiments get 123 --show-images                    # display variant screenshots
+abs experiments get 123 --show-images 60                 # at 60 columns wide
+
 # Template export (for cloning, editing, round-tripping)
 abs experiments get 123 -o template                      # markdown template
 abs experiments get 123 -o template --embed-screenshots  # with base64 screenshots
@@ -115,6 +124,10 @@ abs experiments get 123 -o template --screenshots-dir ./screenshots  # save scre
 
 # Create an experiment
 abs experiments create --name my-experiment --variants "control,treatment"
+abs experiments create --name my-experiment --secondary-metrics "Revenue,Bookings"
+abs experiments create --name my-experiment --teams "Product" --tags "v1"
+abs experiments create --name my-experiment --audience '{"filter":[]}'
+abs experiments create --name my-experiment --analysis-type fixed_horizon
 abs experiments create --from-file experiment.md         # from template
 abs experiments create --name my-experiment --dry-run    # preview payload
 abs experiments create --name my-experiment --as-curl    # output as curl command
@@ -126,9 +139,21 @@ abs experiments clone 123 --name my-clone --dry-run      # preview
 abs experiments clone 123 --name my-clone --from-file overrides.md  # clone with changes
 
 # Update an experiment
-abs experiments update 123 --display-name "New Name" --traffic 50
+abs experiments update 123 --display-name "New Name"
+abs experiments update 123 --name new_name --state running
+abs experiments update 123 --percentage-of-traffic 50 --percentages 30,70
+abs experiments update 123 --primary-metric 145 --unit-type 3 --application-id 5
+abs experiments update 123 --variants "control,treatment,treatment2"
+abs experiments update 123 --secondary-metrics "Revenue,Bookings"
+abs experiments update 123 --guardrail-metrics "Error rate"
+abs experiments update 123 --teams "Product,Engineering" --tags "v1,mobile"
+abs experiments update 123 --audience '{"filter":[]}'
+abs experiments update 123 --analysis-type fixed_horizon --required-alpha 0.05
+abs experiments update 123 --owner 10 --owner 20
+abs experiments update 123 --screenshot-id 0:376 --screenshot-id 1:378  # restore screenshots by upload ID
 abs experiments update 123 --from-file experiment.md     # update from template
 abs experiments update 123 --from-file experiment.md --dry-run
+abs experiments update 123 -i                            # interactive editor
 
 # Lifecycle transitions
 abs experiments development 123                          # enter development mode
