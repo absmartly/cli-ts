@@ -84,9 +84,9 @@ describe('insights command', () => {
 
     expect(mockClient.getVelocityInsights).toHaveBeenCalledWith(
       expect.objectContaining({
-        unit_type_ids: '1,2',
-        team_ids: '3,4',
-        owner_ids: '5,6',
+        unit_type_ids: [1, 2],
+        team_ids: [3, 4],
+        owner_ids: [5, 6],
       })
     );
   });

@@ -67,9 +67,7 @@ export function formatConfidence(exp: Record<string, unknown>): string {
   const pvalue = result.pvalue as number | null;
   if (pvalue === null) return '';
 
-  const confidence = Math.min((1 - pvalue) * 100, 99.99);
-  const decimals = confidence >= 99.9 ? 2 : 1;
-  return `${confidence.toFixed(decimals)}%`;
+  return formatConfidenceValue(pvalue);
 }
 
 export function formatProgress(exp: Record<string, unknown>): string {
@@ -93,4 +91,22 @@ export function formatProgress(exp: Record<string, unknown>): string {
 export function formatPct(value: number): string {
   const pct = value * 100;
   return `${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%`;
+}
+
+export function formatConfidenceValue(pvalue: number): string {
+  const confidence = Math.min((1 - pvalue) * 100, 99.99);
+  const decimals = confidence >= 99.9 ? 2 : 1;
+  return `${confidence.toFixed(decimals)}%`;
+}
+
+export function formatOwnerName(owner: Record<string, unknown>): string {
+  const user = owner.user as Record<string, unknown> | undefined;
+  if (user) return `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim() || `user ${owner.user_id}`;
+  return `user ${owner.user_id}`;
+}
+
+export function formatOwnerLabel(owner: Record<string, unknown>): string {
+  const user = owner.user as Record<string, unknown> | undefined;
+  if (user?.first_name && user?.email) return `${user.first_name} ${user.last_name ?? ''} <${user.email}>`.trim();
+  return `user ${owner.user_id}`;
 }

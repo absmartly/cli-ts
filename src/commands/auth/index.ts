@@ -19,12 +19,10 @@ const loginCommand = new Command('login')
     const endpoint = options.endpoint || parentOpts.endpoint;
 
     if (!apiKey) {
-      console.error('Error: --api-key is required');
-      process.exit(1);
+      throw new Error('--api-key is required');
     }
     if (!endpoint) {
-      console.error('Error: --endpoint is required');
-      process.exit(1);
+      throw new Error('--endpoint is required');
     }
 
     options.apiKey = apiKey;
@@ -76,11 +74,9 @@ const statusCommand = new Command('status')
     } catch (error) {
       const msg = error instanceof Error ? error.message : '';
       if (msg.includes('not found') || msg.includes('No API key')) {
-        console.error('Not authenticated. Run `abs auth login` to authenticate.');
-      } else {
-        console.error(`Error checking auth status: ${msg || error}`);
+        throw new Error('Not authenticated. Run `abs auth login` to authenticate.');
       }
-      process.exit(1);
+      throw new Error(`Error checking auth status: ${msg || error}`);
     }
   }));
 

@@ -1,6 +1,6 @@
 import type { APIClient } from './api-client.js';
 import type { ExperimentId } from './types.js';
-import { renderCIBar, formatPct } from './format-helpers.js';
+import { renderCIBar, formatPct, formatConfidenceValue, formatOwnerLabel } from './format-helpers.js';
 
 export interface MetricResult {
   metric_id: number;
@@ -24,6 +24,9 @@ export function parseMetricData(
   const cols = data.columnNames;
   const variantIdx = cols.indexOf('variant');
   const unitIdx = cols.indexOf('unit_count');
+  if (variantIdx < 0 || unitIdx < 0) {
+    return [];
+  }
   const prefix = `metric_${metricId}`;
   const impactIdx = cols.indexOf(`${prefix}_impact`);
   const ciLIdx = cols.indexOf(`${prefix}_impact_ci_lower`);
@@ -53,10 +56,7 @@ export function formatResultRow(r: MetricResult, variantNames: Map<number, strin
     : '';
 
   const confidence = treatment.pvalue !== null
-    ? (() => {
-        const c = Math.min((1 - treatment.pvalue) * 100, 99.99);
-        return `${c.toFixed(c >= 99.9 ? 2 : 1)}%`;
-      })()
+    ? formatConfidenceValue(treatment.pvalue)
     : '';
 
   const variantLabel = variantNames.get(treatment.variant) || `v${treatment.variant}`;
@@ -127,9 +127,5 @@ export async function fetchAllMetricResults(
 export function metricOwners(metric: Record<string, unknown> | undefined): string {
   const owners = metric?.owners as Array<Record<string, unknown>> | undefined;
   if (!owners || owners.length === 0) return '';
-  return owners.map(o => {
-    const user = o.user as Record<string, unknown> | undefined;
-    if (user?.first_name && user?.email) return `${user.first_name} ${user.last_name ?? ''} <${user.email}>`.trim();
-    return `user ${o.user_id}`;
-  }).join(', ');
+  return owners.map(o => formatOwnerLabel(o)).join(', ');
 }

@@ -13,9 +13,7 @@ export const startCommand = new Command('start')
 
     const experiment = await client.getExperiment(id);
     if (experiment.state === 'created') {
-      console.error(chalk.red(`Error: Experiment ${id} is in draft (created) state.`));
-      console.error(chalk.yellow(`Set it to 'ready' before starting. Draft experiments need to be finalized first.`));
-      process.exit(1);
+      throw new Error(`Experiment ${id} is in draft (created) state.\nSet it to 'ready' before starting: abs experiments update ${id} --state ready`);
     }
 
     await client.startExperiment(id);

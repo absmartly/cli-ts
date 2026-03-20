@@ -14,11 +14,15 @@ async function fetchScreenshotBuffer(url: string, apiKey?: string): Promise<{ bu
     const headers: Record<string, string> = {};
     if (apiKey) headers['Authorization'] = `Api-Key ${apiKey}`;
     const response = await fetch(url, { headers });
-    if (!response.ok) return null;
+    if (!response.ok) {
+      console.error(`Warning: Screenshot fetch failed (${response.status}): ${url}`);
+      return null;
+    }
     const contentType = response.headers.get('content-type') || 'image/png';
     const buffer = Buffer.from(await response.arrayBuffer());
     return { buffer, contentType };
-  } catch {
+  } catch (error) {
+    console.error(`Warning: Screenshot fetch error: ${error instanceof Error ? error.message : url}`);
     return null;
   }
 }
@@ -125,7 +129,12 @@ export async function experimentToMarkdown(experiment: Experiment, options: Seri
   parts.push('---\n');
 
   if (exp.audience) {
-    const audienceObj = typeof exp.audience === 'string' ? JSON.parse(exp.audience) : exp.audience;
+    let audienceObj: unknown;
+    try {
+      audienceObj = typeof exp.audience === 'string' ? JSON.parse(exp.audience as string) : exp.audience;
+    } catch {
+      audienceObj = exp.audience;
+    }
     parts.push('\n## Audience\n\n');
     parts.push('```json\n');
     parts.push(JSON.stringify(audienceObj, null, 2));

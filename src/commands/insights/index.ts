@@ -24,9 +24,9 @@ const velocityCommand = new Command('velocity')
       from: toEpochSeconds(options.from),
       to: toEpochSeconds(options.to),
       aggregation: options.aggregation,
-      unit_type_ids: options.unitTypes,
-      team_ids: options.teams,
-      owner_ids: options.owners,
+      unit_type_ids: options.unitTypes?.split(',').map((s: string) => parseInt(s.trim(), 10)),
+      team_ids: options.teams?.split(',').map((s: string) => parseInt(s.trim(), 10)),
+      owner_ids: options.owners?.split(',').map((s: string) => parseInt(s.trim(), 10)),
     });
     printFormatted(result, globalOptions);
   }));
@@ -46,9 +46,9 @@ const decisionsCommand = new Command('decisions')
       from: toEpochSeconds(options.from),
       to: toEpochSeconds(options.to),
       aggregation: options.aggregation,
-      unit_type_ids: options.unitTypes,
-      team_ids: options.teams,
-      owner_ids: options.owners,
+      unit_type_ids: options.unitTypes?.split(',').map((s: string) => parseInt(s.trim(), 10)),
+      team_ids: options.teams?.split(',').map((s: string) => parseInt(s.trim(), 10)),
+      owner_ids: options.owners?.split(',').map((s: string) => parseInt(s.trim(), 10)),
     });
     printFormatted(result, globalOptions);
   }));

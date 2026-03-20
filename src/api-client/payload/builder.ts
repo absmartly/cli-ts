@@ -115,7 +115,10 @@ function buildCustomSectionFieldValues(
   return { values: fieldValues, warnings };
 }
 
-async function buildVariantScreenshots(template: ExperimentTemplate): Promise<Array<Record<string, unknown>>> {
+async function buildVariantScreenshots(
+  template: ExperimentTemplate,
+  warnings: string[],
+): Promise<Array<Record<string, unknown>>> {
   if (!template.variants) return [];
 
   const screenshots: Array<Record<string, unknown>> = [];
@@ -125,7 +128,8 @@ async function buildVariantScreenshots(template: ExperimentTemplate): Promise<Ar
     let resolved;
     try {
       resolved = await resolveScreenshot(v.screenshot, v.name);
-    } catch {
+    } catch (error) {
+      warnings.push(`Screenshot for variant "${v.name}" failed: ${error instanceof Error ? error.message : error}`);
       continue;
     }
     if (!resolved) continue;
@@ -188,7 +192,7 @@ export async function buildExperimentPayload(
     audience_strict: false,
     nr_variants: variants.length,
     variants,
-    variant_screenshots: await buildVariantScreenshots(template),
+    variant_screenshots: await buildVariantScreenshots(template, warnings),
     secondary_metrics: [],
     teams: [],
     experiment_tags: [],

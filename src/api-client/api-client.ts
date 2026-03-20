@@ -366,7 +366,11 @@ export class APIClient {
 
   async getExperimentMetricData(experimentId: ExperimentId, metricId: number | 'main'): Promise<{ columnNames: string[]; rows: unknown[][] }> {
     const response = await this.request<Record<string, unknown>>('POST', `/experiments/${experimentId}/metrics/${metricId}`);
-    return response.data as { columnNames: string[]; rows: unknown[][] };
+    const data = response.data;
+    if (!data || !Array.isArray(data.columnNames) || !Array.isArray(data.rows)) {
+      throw new Error(`Invalid metric data response for experiment ${experimentId}, metric ${metricId}`);
+    }
+    return data as { columnNames: string[]; rows: unknown[][] };
   }
 
   async addExperimentMetrics(id: ExperimentId, metricIds: MetricId[]): Promise<void> {
@@ -605,8 +609,7 @@ export class APIClient {
     const response = await this.request<Record<string, unknown>>('GET', '/experiment_custom_section_fields', {
       params: { limit: String(limit), offset: String(offset) },
     });
-    const data = response.data;
-    return (data.experiment_custom_section_fields ?? data.items ?? data) as CustomSectionField[];
+    return this.validateListResponse<CustomSectionField>(response, 'experiment_custom_section_fields', 'listCustomSectionFields');
   }
 
   async getCustomSectionField(id: CustomSectionFieldId): Promise<CustomSectionField> {
@@ -1190,18 +1193,18 @@ export class APIClient {
     from: number;
     to: number;
     aggregation: string;
-    unit_type_ids?: string;
-    team_ids?: string;
-    owner_ids?: string;
+    unit_type_ids?: number[];
+    team_ids?: number[];
+    owner_ids?: number[];
   }): Promise<unknown> {
     const queryParams: Record<string, string> = {
       from: String(params.from),
       to: String(params.to),
       aggregation: params.aggregation,
     };
-    if (params.unit_type_ids) queryParams.unit_type_ids = params.unit_type_ids;
-    if (params.team_ids) queryParams.team_ids = params.team_ids;
-    if (params.owner_ids) queryParams.owner_ids = params.owner_ids;
+    if (params.unit_type_ids) queryParams.unit_type_ids = params.unit_type_ids.join(',');
+    if (params.team_ids) queryParams.team_ids = params.team_ids.join(',');
+    if (params.owner_ids) queryParams.owner_ids = params.owner_ids.join(',');
     const response = await this.request('GET', '/insights/velocity/summary', { params: queryParams });
     return response.data;
   }
@@ -1210,18 +1213,18 @@ export class APIClient {
     from: number;
     to: number;
     aggregation: string;
-    unit_type_ids?: string;
-    team_ids?: string;
-    owner_ids?: string;
+    unit_type_ids?: number[];
+    team_ids?: number[];
+    owner_ids?: number[];
   }): Promise<unknown> {
     const queryParams: Record<string, string> = {
       from: String(params.from),
       to: String(params.to),
       aggregation: params.aggregation,
     };
-    if (params.unit_type_ids) queryParams.unit_type_ids = params.unit_type_ids;
-    if (params.team_ids) queryParams.team_ids = params.team_ids;
-    if (params.owner_ids) queryParams.owner_ids = params.owner_ids;
+    if (params.unit_type_ids) queryParams.unit_type_ids = params.unit_type_ids.join(',');
+    if (params.team_ids) queryParams.team_ids = params.team_ids.join(',');
+    if (params.owner_ids) queryParams.owner_ids = params.owner_ids.join(',');
     const response = await this.request('GET', '/insights/decisions/widgets', { params: queryParams });
     return response.data;
   }

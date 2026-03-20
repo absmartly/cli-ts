@@ -1,5 +1,4 @@
-import { formatExtraField } from './format-helpers.js';
-import { formatImpact, formatConfidence, formatProgress } from './format-helpers.js';
+import { formatExtraField, formatImpact, formatConfidence, formatProgress, formatOwnerName } from './format-helpers.js';
 
 export function summarizeExperiment(exp: Record<string, unknown>, extraFields: string[] = []): Record<string, unknown> {
   const apps = exp.applications as Array<Record<string, unknown>> | undefined;
@@ -71,11 +70,7 @@ export function summarizeExperiment(exp: Record<string, unknown>, extraFields: s
     }
   }
 
-  summary.owners = owners?.map(o => {
-    const user = o.user as Record<string, unknown> | undefined;
-    if (user) return `${user.first_name} ${user.last_name}`;
-    return `user ${o.user_id}`;
-  }).join(', ') ?? '';
+  summary.owners = owners?.map(o => formatOwnerName(o)).join(', ') ?? '';
   summary.teams = teams?.map(t => t.name).join(', ') ?? '';
   summary.tags = tags?.map(t => (t.tag as Record<string, unknown>)?.name ?? '').join(', ') ?? '';
   summary.created_at = exp.created_at ?? '';
@@ -140,11 +135,7 @@ export function summarizeExperimentRow(exp: Record<string, unknown>, extraFields
     unit_type: unitType?.name ?? '',
     traffic: `${exp.percentage_of_traffic}%`,
     primary_metric: primaryMetric?.name ?? '',
-    owner: owners?.map(o => {
-      const user = o.user as Record<string, unknown> | undefined;
-      if (user) return `${user.first_name} ${user.last_name}`;
-      return `user ${o.user_id}`;
-    }).join(', ') ?? '',
+    owner: owners?.map(o => formatOwnerName(o)).join(', ') ?? '',
     percentages: exp.percentages ?? '',
     impact: formatImpact(exp),
     confidence: formatConfidence(exp),
