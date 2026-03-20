@@ -4,6 +4,7 @@ import { getAPIClientFromOptions, getGlobalOptions, resolveAPIKey, withErrorHand
 import { parseExperimentFile } from '../../lib/template/parser.js';
 import { buildPayloadFromTemplate } from '../../api-client/template/build-from-template.js';
 import { buildPayloadFromOptions } from '../../api-client/payload/build-from-options.js';
+import { runInteractiveEditor } from '../../lib/interactive/run.js';
 
 import { getDefaultType } from './default-type.js';
 
@@ -27,6 +28,7 @@ export const createCommand = new Command('create')
   .option('--env <name>', 'environment name')
   .option('--owner <user_id>', 'owner user ID (can specify multiple)', (val: string, prev: string[]) => [...prev, val], [] as string[])
   .option('--screenshot <variant:source...>', 'variant screenshot (variant_index:path_or_url, can specify multiple)')
+  .option('-i, --interactive', 'interactive step-by-step editor')
   .option('--dry-run', 'show the request payload without making the API call')
   .option('--as-curl', 'output as curl command instead of making the API call')
   .action(withErrorHandling(async (options) => {
@@ -35,7 +37,18 @@ export const createCommand = new Command('create')
 
     let data: Record<string, unknown>;
 
-    if (options.fromFile) {
+    if (options.interactive) {
+      const base = options.fromFile
+        ? parseExperimentFile(options.fromFile)
+        : { type: getDefaultType(), percentages: '50/50', variants: [], custom_fields: {} };
+      const edited = await runInteractiveEditor(client, base, getDefaultType());
+      if (!edited) return;
+      const result = await buildPayloadFromTemplate(client, edited, getDefaultType());
+      for (const warning of result.warnings) {
+        console.log(chalk.yellow(`Warning: ${warning}`));
+      }
+      data = result.payload;
+    } else if (options.fromFile) {
       const template = parseExperimentFile(options.fromFile);
       const result = await buildPayloadFromTemplate(client, template, getDefaultType());
       for (const warning of result.warnings) {

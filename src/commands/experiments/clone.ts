@@ -7,6 +7,7 @@ import { parseExperimentMarkdown } from '../../api-client/template/parser.js';
 import { buildPayloadFromTemplate } from '../../api-client/template/build-from-template.js';
 import { mergeTemplateOverrides } from '../../api-client/template/merge-overrides.js';
 import { parseExperimentId } from '../../lib/utils/validators.js';
+import { runInteractiveEditor } from '../../lib/interactive/run.js';
 import { getDefaultType } from './default-type.js';
 import type { ExperimentId } from '../../lib/api/branded-types.js';
 import type { Experiment } from '../../lib/api/types.js';
@@ -18,9 +19,10 @@ export const cloneCommand = new Command('clone')
   .option('--display-name <name>', 'display name for the clone')
   .option('--state <state>', 'initial state (created, ready)', 'created')
   .option('--from-file <path>', 'apply template overrides before cloning')
+  .option('-i, --interactive', 'interactive step-by-step editor')
   .option('--dry-run', 'show the payload without creating')
   .action(withErrorHandling(async (id: ExperimentId, options) => {
-    if (!options.name) {
+    if (!options.name && !options.interactive) {
       throw new Error(
         `--name is required for clone.\n` +
         `Example: abs experiments clone ${id} --name my_cloned_experiment`
@@ -49,9 +51,15 @@ export const cloneCommand = new Command('clone')
       template = mergeTemplateOverrides(template, overrideTemplate);
     }
 
-    template.name = options.name;
+    if (options.name) template.name = options.name;
     if (options.displayName) template.display_name = options.displayName;
     template.state = options.state;
+
+    if (options.interactive) {
+      const edited = await runInteractiveEditor(client, template, getDefaultType());
+      if (!edited) return;
+      template = edited;
+    }
 
     const result = await buildPayloadFromTemplate(client, template, getDefaultType());
 

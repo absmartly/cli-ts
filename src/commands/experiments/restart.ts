@@ -4,6 +4,9 @@ import { getAPIClientFromOptions, getGlobalOptions, withErrorHandling } from '..
 import { parseExperimentFile } from '../../lib/template/parser.js';
 import { buildPayloadFromTemplate } from '../../api-client/template/build-from-template.js';
 import { parseExperimentId } from '../../lib/utils/validators.js';
+import { experimentToMarkdown } from '../../api-client/template/serializer.js';
+import { parseExperimentMarkdown } from '../../api-client/template/parser.js';
+import { runInteractiveEditor } from '../../lib/interactive/run.js';
 import type { ExperimentId } from '../../lib/api/branded-types.js';
 import type { ExperimentInput } from '../../api-client/index.js';
 import { getDefaultType } from './default-type.js';
@@ -26,6 +29,7 @@ export const restartCommand = new Command('restart')
   .option('--reshuffle', 'reshuffle variant assignments')
   .option('--state <state>', 'target state: running or development', 'running')
   .option('--as-type <type>', `convert type on restart (${VALID_RESTART_TYPES.join(', ')})`)
+  .option('-i, --interactive', 'interactive step-by-step editor')
   .option('--dry-run', 'show the changes without restarting')
   .action(withErrorHandling(async (id: ExperimentId, options) => {
     const globalOptions = getGlobalOptions(restartCommand);
@@ -54,7 +58,18 @@ export const restartCommand = new Command('restart')
 
     let changes: Partial<ExperimentInput> | undefined;
 
-    if (options.fromFile) {
+    if (options.interactive) {
+      const experiment = await client.getExperiment(id);
+      const md = await experimentToMarkdown(experiment);
+      const template = parseExperimentMarkdown(md);
+      const edited = await runInteractiveEditor(client, template, options.asType || getDefaultType());
+      if (!edited) return;
+      const result = await buildPayloadFromTemplate(client, edited, options.asType || getDefaultType());
+      for (const warning of result.warnings) {
+        console.log(chalk.yellow(`Warning: ${warning}`));
+      }
+      changes = result.payload as Partial<ExperimentInput>;
+    } else if (options.fromFile) {
       const newTemplate = parseExperimentFile(options.fromFile);
 
       const result = await buildPayloadFromTemplate(client, newTemplate, options.asType || getDefaultType());

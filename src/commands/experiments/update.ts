@@ -4,6 +4,9 @@ import { getAPIClientFromOptions, getGlobalOptions, withErrorHandling } from '..
 import { parseExperimentFile } from '../../lib/template/parser.js';
 import { buildPayloadFromTemplate } from '../../api-client/template/build-from-template.js';
 import { parseExperimentId, requireAtLeastOneField } from '../../lib/utils/validators.js';
+import { experimentToMarkdown } from '../../api-client/template/serializer.js';
+import { parseExperimentMarkdown } from '../../api-client/template/parser.js';
+import { runInteractiveEditor } from '../../lib/interactive/run.js';
 import type { ExperimentId } from '../../lib/api/branded-types.js';
 import type { ExperimentInput } from '../../api-client/index.js';
 import { getDefaultType } from './default-type.js';
@@ -14,6 +17,7 @@ export const updateCommand = new Command('update')
   .option('--from-file <path>', 'update from markdown template file')
   .option('--display-name <name>', 'new display name')
   .option('--traffic <percent>', 'traffic allocation percentage', parseInt)
+  .option('-i, --interactive', 'interactive step-by-step editor')
   .option('--dry-run', 'show the request payload without making the API call')
   .action(withErrorHandling(async (id: ExperimentId, options) => {
     const globalOptions = getGlobalOptions(updateCommand);
@@ -21,7 +25,18 @@ export const updateCommand = new Command('update')
 
     let data: Record<string, unknown>;
 
-    if (options.fromFile) {
+    if (options.interactive) {
+      const experiment = await client.getExperiment(id);
+      const md = await experimentToMarkdown(experiment);
+      const template = parseExperimentMarkdown(md);
+      const edited = await runInteractiveEditor(client, template, getDefaultType());
+      if (!edited) return;
+      const result = await buildPayloadFromTemplate(client, edited, getDefaultType());
+      for (const warning of result.warnings) {
+        console.log(chalk.yellow(`Warning: ${warning}`));
+      }
+      data = result.payload as Record<string, unknown>;
+    } else if (options.fromFile) {
       const template = parseExperimentFile(options.fromFile);
       const result = await buildPayloadFromTemplate(client, template, getDefaultType());
 
