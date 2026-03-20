@@ -20,6 +20,13 @@ export async function resolveAPIKey(options: Record<string, unknown>): Promise<s
   return apiKey;
 }
 
+export function resolveEndpoint(options: Record<string, unknown>): string {
+  const config = loadConfig();
+  const profileName = (options.profile as string) || config['default-profile'];
+  const profile = getProfile(profileName);
+  return (options.endpoint as string) || profile.api.endpoint;
+}
+
 export async function getAPIClientFromOptions(options: Record<string, unknown>): Promise<APIClient> {
   const config = loadConfig();
   const profileName = (options.profile as string) || config['default-profile'];

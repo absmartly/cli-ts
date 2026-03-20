@@ -1,6 +1,26 @@
 import type { Experiment, Variant } from '../types.js';
 
-export function experimentToMarkdown(experiment: Experiment): string {
+export interface SerializerOptions {
+  embedScreenshots?: boolean;
+  apiEndpoint?: string;
+  apiKey?: string;
+}
+
+async function fetchAsDataUri(url: string, apiKey?: string): Promise<string | null> {
+  try {
+    const headers: Record<string, string> = {};
+    if (apiKey) headers['Authorization'] = `Api-Key ${apiKey}`;
+    const response = await fetch(url, { headers });
+    if (!response.ok) return null;
+    const contentType = response.headers.get('content-type') || 'image/png';
+    const buffer = Buffer.from(await response.arrayBuffer());
+    return `data:${contentType};base64,${buffer.toString('base64')}`;
+  } catch {
+    return null;
+  }
+}
+
+export async function experimentToMarkdown(experiment: Experiment, options: SerializerOptions = {}): Promise<string> {
   const exp = experiment as Record<string, unknown>;
   const parts: string[] = [];
 
@@ -126,7 +146,18 @@ export function experimentToMarkdown(experiment: Experiment): string {
       if (screenshot) {
         const fileUpload = screenshot.file_upload as Record<string, unknown> | undefined;
         if (fileUpload) {
-          parts.push(`screenshot: ${fileUpload.base_url}/${fileUpload.file_name}\n`);
+          const relativePath = `${fileUpload.base_url}/${fileUpload.file_name}`;
+          if (options.embedScreenshots && options.apiEndpoint) {
+            const baseUrl = options.apiEndpoint.replace(/\/v1$/, '');
+            const dataUri = await fetchAsDataUri(`${baseUrl}${relativePath}`, options.apiKey);
+            if (dataUri) {
+              parts.push(`screenshot: ${dataUri}\n`);
+            } else {
+              parts.push(`screenshot: ${relativePath}\n`);
+            }
+          } else {
+            parts.push(`screenshot: ${relativePath}\n`);
+          }
         }
       }
     }

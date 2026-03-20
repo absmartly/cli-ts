@@ -112,7 +112,7 @@ description: Testing the full roundtrip flow
     expect(experiment.id).toBe(experimentId);
     expect(experiment).toHaveProperty('variants');
 
-    exportedMarkdown = experimentToMarkdown(experiment as any);
+    exportedMarkdown = await experimentToMarkdown(experiment as any);
 
     expect(exportedMarkdown).toContain('display_name: Roundtrip E2E Test');
     expect(exportedMarkdown).toContain('percentage_of_traffic: 80');
@@ -158,7 +158,7 @@ description: Testing the full roundtrip flow
       expect(experiment.percentage_of_traffic).toBe(60);
     }
 
-    const reExportedMd = experimentToMarkdown(experiment as any);
+    const reExportedMd = await experimentToMarkdown(experiment as any);
     const reParsed = parseExperimentMarkdown(reExportedMd);
 
     if (isLiveMode) {

@@ -1,5 +1,5 @@
 import { Command } from 'commander';
-import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
+import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling, resolveEndpoint, resolveAPIKey } from '../../lib/utils/api-helper.js';
 import { parseExperimentId } from '../../lib/utils/validators.js';
 import { experimentToMarkdown } from '../../api-client/template/serializer.js';
 import type { ExperimentId } from '../../lib/api/branded-types.js';
@@ -120,6 +120,7 @@ export const getCommand = new Command('get')
   .option('--activity', 'include activity notes in the output')
   .option('--raw', 'show full API response without summarizing')
   .option('--show <fields...>', 'include additional fields in summary (e.g. --show audience archived)')
+  .option('--embed-screenshots', 'embed screenshots as base64 data URIs in template output')
   .action(withErrorHandling(async (id: ExperimentId, options) => {
     const globalOptions = getGlobalOptions(getCommand);
     const client = await getAPIClientFromOptions(globalOptions);
@@ -127,7 +128,12 @@ export const getCommand = new Command('get')
     const experiment = await client.getExperiment(id);
 
     if (globalOptions.output === 'template') {
-      console.log(experimentToMarkdown(experiment));
+      const md = await experimentToMarkdown(experiment, {
+        embedScreenshots: options.embedScreenshots,
+        apiEndpoint: resolveEndpoint(globalOptions),
+        ...(options.embedScreenshots && { apiKey: await resolveAPIKey(globalOptions) }),
+      });
+      console.log(md);
       return;
     }
 

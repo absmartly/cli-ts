@@ -27,8 +27,8 @@ function makeExperiment(overrides: Partial<Record<string, unknown>> = {}): Exper
 }
 
 describe('experimentToMarkdown', () => {
-  it('should produce valid YAML frontmatter with core fields', () => {
-    const md = experimentToMarkdown(makeExperiment());
+  it('should produce valid YAML frontmatter with core fields', async () => {
+    const md = await experimentToMarkdown(makeExperiment());
 
     expect(md).toContain('---\n');
     expect(md).toContain('name: test-experiment');
@@ -39,15 +39,15 @@ describe('experimentToMarkdown', () => {
     expect(md).toContain('percentages: 50/50');
   });
 
-  it('should include unit type and application in frontmatter', () => {
-    const md = experimentToMarkdown(makeExperiment());
+  it('should include unit type and application in frontmatter', async () => {
+    const md = await experimentToMarkdown(makeExperiment());
 
     expect(md).toContain('unit_type: user_id');
     expect(md).toContain('application: web');
   });
 
-  it('should fall back to IDs when names are missing', () => {
-    const md = experimentToMarkdown(makeExperiment({
+  it('should fall back to IDs when names are missing', async () => {
+    const md = await experimentToMarkdown(makeExperiment({
       unit_type: { unit_type_id: 5 },
       applications: [{ application_id: 20 }],
       primary_metric: { metric_id: 99 },
@@ -58,16 +58,16 @@ describe('experimentToMarkdown', () => {
     expect(md).toContain('primary_metric: 99');
   });
 
-  it('should include primary and secondary metrics in frontmatter', () => {
-    const md = experimentToMarkdown(makeExperiment());
+  it('should include primary and secondary metrics in frontmatter', async () => {
+    const md = await experimentToMarkdown(makeExperiment());
 
     expect(md).toContain('primary_metric: clicks');
     expect(md).toContain('secondary_metrics:');
     expect(md).toContain('  - revenue');
   });
 
-  it('should include guardrail metrics from secondary_metrics with type guardrail', () => {
-    const md = experimentToMarkdown(makeExperiment({
+  it('should include guardrail metrics from secondary_metrics with type guardrail', async () => {
+    const md = await experimentToMarkdown(makeExperiment({
       secondary_metrics: [
         { metric_id: 31, type: 'secondary', order_index: 0, metric: { name: 'revenue' } },
         { metric_id: 40, type: 'guardrail', order_index: 1, metric: { name: 'latency' } },
@@ -80,8 +80,8 @@ describe('experimentToMarkdown', () => {
     expect(md).toContain('  - latency');
   });
 
-  it('should include exploratory metrics from secondary_metrics with type exploratory', () => {
-    const md = experimentToMarkdown(makeExperiment({
+  it('should include exploratory metrics from secondary_metrics with type exploratory', async () => {
+    const md = await experimentToMarkdown(makeExperiment({
       secondary_metrics: [
         { metric_id: 31, type: 'secondary', order_index: 0, metric: { name: 'revenue' } },
         { metric_id: 50, type: 'exploratory', order_index: 1, metric: { name: 'page_views' } },
@@ -94,8 +94,8 @@ describe('experimentToMarkdown', () => {
     expect(md).toContain('  - page_views');
   });
 
-  it('should export custom fields grouped by section', () => {
-    const md = experimentToMarkdown(makeExperiment({
+  it('should export custom fields grouped by section', async () => {
+    const md = await experimentToMarkdown(makeExperiment({
       custom_section_field_values: [
         {
           experiment_custom_section_field_id: 1,
@@ -129,8 +129,8 @@ describe('experimentToMarkdown', () => {
     expect(jiraPos).toBeLessThan(descPos);
   });
 
-  it('should include variants with config', () => {
-    const md = experimentToMarkdown(makeExperiment());
+  it('should include variants with config', async () => {
+    const md = await experimentToMarkdown(makeExperiment());
 
     expect(md).toContain('## Variants');
     expect(md).toContain('### variant_0');
@@ -141,8 +141,8 @@ describe('experimentToMarkdown', () => {
     expect(md).toContain('config: {"color":"blue"}');
   });
 
-  it('should serialize object config as JSON', () => {
-    const md = experimentToMarkdown(makeExperiment({
+  it('should serialize object config as JSON', async () => {
+    const md = await experimentToMarkdown(makeExperiment({
       variants: [
         { name: 'control', variant: 0, config: { color: 'red' } },
       ],
@@ -151,8 +151,8 @@ describe('experimentToMarkdown', () => {
     expect(md).toContain('config: {"color":"red"}');
   });
 
-  it('should include owner email for single owner', () => {
-    const md = experimentToMarkdown(makeExperiment({
+  it('should include owner email for single owner', async () => {
+    const md = await experimentToMarkdown(makeExperiment({
       owners: [{ user_id: 42, user: { email: 'jane@example.com' } }],
     }));
 
@@ -160,8 +160,8 @@ describe('experimentToMarkdown', () => {
     expect(md).toContain('  - jane@example.com');
   });
 
-  it('should include owner emails for multiple owners', () => {
-    const md = experimentToMarkdown(makeExperiment({
+  it('should include owner emails for multiple owners', async () => {
+    const md = await experimentToMarkdown(makeExperiment({
       owners: [
         { user_id: 42, user: { email: 'jane@example.com' } },
         { user_id: 43, user: { email: 'john@example.com' } },
@@ -173,8 +173,8 @@ describe('experimentToMarkdown', () => {
     expect(md).toContain('  - john@example.com');
   });
 
-  it('should fall back to user_id when user object is missing', () => {
-    const md = experimentToMarkdown(makeExperiment({
+  it('should fall back to user_id when user object is missing', async () => {
+    const md = await experimentToMarkdown(makeExperiment({
       owners: [{ user_id: 42 }],
     }));
 
@@ -182,8 +182,8 @@ describe('experimentToMarkdown', () => {
     expect(md).toContain('  - 42');
   });
 
-  it('should include teams', () => {
-    const md = experimentToMarkdown(makeExperiment({
+  it('should include teams', async () => {
+    const md = await experimentToMarkdown(makeExperiment({
       teams: [
         { team: { name: 'Growth' } },
         { team: { name: 'Engineering' } },
@@ -195,8 +195,8 @@ describe('experimentToMarkdown', () => {
     expect(md).toContain('  - Engineering');
   });
 
-  it('should include tags', () => {
-    const md = experimentToMarkdown(makeExperiment({
+  it('should include tags', async () => {
+    const md = await experimentToMarkdown(makeExperiment({
       experiment_tags: [
         { experiment_tag: { tag: 'q1' } },
         { experiment_tag: { tag: 'homepage' } },
@@ -208,8 +208,8 @@ describe('experimentToMarkdown', () => {
     expect(md).toContain('  - homepage');
   });
 
-  it('should include audience as JSON block', () => {
-    const md = experimentToMarkdown(makeExperiment({
+  it('should include audience as JSON block', async () => {
+    const md = await experimentToMarkdown(makeExperiment({
       audience: '{"filter":[]}',
     }));
 
@@ -219,8 +219,8 @@ describe('experimentToMarkdown', () => {
     expect(md).toContain('```');
   });
 
-  it('should include analysis config fields', () => {
-    const md = experimentToMarkdown(makeExperiment({
+  it('should include analysis config fields', async () => {
+    const md = await experimentToMarkdown(makeExperiment({
       analysis_type: 'group_sequential',
       required_alpha: '0.05',
       required_power: '0.8',
@@ -233,8 +233,8 @@ describe('experimentToMarkdown', () => {
     expect(md).toContain('baseline_participants: 100');
   });
 
-  it('should omit sections when data is absent', () => {
-    const md = experimentToMarkdown(makeExperiment({
+  it('should omit sections when data is absent', async () => {
+    const md = await experimentToMarkdown(makeExperiment({
       unit_type: undefined,
       applications: undefined,
       primary_metric: undefined,
@@ -248,8 +248,8 @@ describe('experimentToMarkdown', () => {
     expect(md).not.toContain('## Variants');
   });
 
-  it('should include screenshot URL from variant_screenshots', () => {
-    const md = experimentToMarkdown(makeExperiment({
+  it('should include screenshot URL from variant_screenshots', async () => {
+    const md = await experimentToMarkdown(makeExperiment({
       variant_screenshots: [
         {
           experiment_id: 1,
@@ -278,8 +278,8 @@ describe('experimentToMarkdown', () => {
     expect(md).toContain('screenshot: /files/variant_screenshots/abc123/control.png');
   });
 
-  it('should match screenshot to correct variant', () => {
-    const md = experimentToMarkdown(makeExperiment({
+  it('should match screenshot to correct variant', async () => {
+    const md = await experimentToMarkdown(makeExperiment({
       variant_screenshots: [
         {
           experiment_id: 1,
@@ -311,10 +311,10 @@ describe('experimentToMarkdown', () => {
     expect(v1Section).toContain('screenshot: /files/variant_screenshots/def456/treatment.png');
   });
 
-  it('should produce output that round-trips through the parser', () => {
+  it('should produce output that round-trips through the parser', async () => {
     const experiment = makeExperiment();
 
-    const md = experimentToMarkdown(experiment);
+    const md = await experimentToMarkdown(experiment);
     const parsed = parseExperimentMarkdown(md);
 
     expect(parsed.name).toBe('test-experiment');
