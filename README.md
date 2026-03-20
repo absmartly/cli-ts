@@ -217,7 +217,7 @@ abs experiments generate-template -o experiment.md
 | `--significance <value>` | `positive`, `negative`, `neutral`, `inconclusive` |
 | `--iterations <n>` | Filter by iteration count |
 | `--iterations-of <id>` | Show all iterations of an experiment |
-| `--created-after <ts>` | Filter by creation date |
+| `--created-after <ts>` | Filter by creation date (see [date formats](#date-formats)) |
 | `--created-before <ts>` | Filter by creation date |
 | `--started-after <ts>` | Filter by start date |
 | `--started-before <ts>` | Filter by start date |
@@ -235,6 +235,28 @@ abs experiments generate-template -o experiment.md
 | `--desc` | Sort descending |
 | `--show <fields...>` | Add extra columns (e.g. `experiment_report archived`) |
 | `--exclude <fields...>` | Hide columns (e.g. `primary_metric owner`) |
+
+#### Date formats
+
+All date/timestamp filters (`--created-after`, `--started-before`, etc.) accept:
+
+| Format | Example |
+|---|---|
+| Relative (short) | `7d`, `2w`, `1mo`, `24h`, `30m`, `1y` |
+| Relative (with ago) | `7d ago`, `2 weeks ago`, `3 months ago` |
+| Keywords | `today`, `yesterday`, `now` |
+| ISO 8601 date | `2024-01-01` |
+| ISO 8601 datetime | `2024-01-01T00:00:00Z` |
+| Epoch milliseconds | `1704067200000` |
+
+Relative units: `m` (minutes), `h` (hours), `d` (days), `w` (weeks), `mo` (months), `y` (years). Case-insensitive.
+
+```bash
+abs experiments list --created-after 7d                  # last 7 days
+abs experiments list --stopped-after "30 days ago"       # stopped in last month
+abs experiments list --started-after yesterday
+abs experiments list --created-after 2024-01-01          # since Jan 1 2024
+```
 
 ### Feature flags
 
