@@ -121,6 +121,7 @@ export const getCommand = new Command('get')
   .option('--raw', 'show full API response without summarizing')
   .option('--show <fields...>', 'include additional fields in summary (e.g. --show audience archived)')
   .option('--embed-screenshots', 'embed screenshots as base64 data URIs in template output')
+  .option('--screenshots-dir <path>', 'save screenshots to directory in template output')
   .action(withErrorHandling(async (id: ExperimentId, options) => {
     const globalOptions = getGlobalOptions(getCommand);
     const client = await getAPIClientFromOptions(globalOptions);
@@ -128,10 +129,12 @@ export const getCommand = new Command('get')
     const experiment = await client.getExperiment(id);
 
     if (globalOptions.output === 'template') {
+      const needsAuth = options.embedScreenshots || options.screenshotsDir;
       const md = await experimentToMarkdown(experiment, {
         embedScreenshots: options.embedScreenshots,
+        screenshotsDir: options.screenshotsDir,
         apiEndpoint: resolveEndpoint(globalOptions),
-        ...(options.embedScreenshots && { apiKey: await resolveAPIKey(globalOptions) }),
+        ...(needsAuth && { apiKey: await resolveAPIKey(globalOptions) }),
       });
       console.log(md);
       return;

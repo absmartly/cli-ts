@@ -1,12 +1,15 @@
+import { mkdirSync, writeFileSync } from 'fs';
+import { join } from 'path';
 import type { Experiment, Variant } from '../types.js';
 
 export interface SerializerOptions {
   embedScreenshots?: boolean;
+  screenshotsDir?: string;
   apiEndpoint?: string;
   apiKey?: string;
 }
 
-async function fetchAsDataUri(url: string, apiKey?: string): Promise<string | null> {
+async function fetchScreenshotBuffer(url: string, apiKey?: string): Promise<{ buffer: Buffer; contentType: string } | null> {
   try {
     const headers: Record<string, string> = {};
     if (apiKey) headers['Authorization'] = `Api-Key ${apiKey}`;
@@ -14,7 +17,7 @@ async function fetchAsDataUri(url: string, apiKey?: string): Promise<string | nu
     if (!response.ok) return null;
     const contentType = response.headers.get('content-type') || 'image/png';
     const buffer = Buffer.from(await response.arrayBuffer());
-    return `data:${contentType};base64,${buffer.toString('base64')}`;
+    return { buffer, contentType };
   } catch {
     return null;
   }
@@ -146,11 +149,21 @@ export async function experimentToMarkdown(experiment: Experiment, options: Seri
       if (screenshot) {
         const fileUpload = screenshot.file_upload as Record<string, unknown> | undefined;
         if (fileUpload) {
-          const relativePath = `${fileUpload.base_url}/${fileUpload.file_name}`;
-          if (options.embedScreenshots && options.apiEndpoint) {
-            const baseUrl = options.apiEndpoint.replace(/\/v1$/, '');
-            const dataUri = await fetchAsDataUri(`${baseUrl}${relativePath}`, options.apiKey);
-            if (dataUri) {
+          const fileName = fileUpload.file_name as string;
+          const relativePath = `${fileUpload.base_url}/${fileName}`;
+          const needsFetch = (options.embedScreenshots || options.screenshotsDir) && options.apiEndpoint;
+
+          if (needsFetch) {
+            const baseUrl = options.apiEndpoint!.replace(/\/v1$/, '');
+            const result = await fetchScreenshotBuffer(`${baseUrl}${relativePath}`, options.apiKey);
+
+            if (result && options.screenshotsDir) {
+              mkdirSync(options.screenshotsDir, { recursive: true });
+              const localPath = join(options.screenshotsDir, fileName);
+              writeFileSync(localPath, result.buffer);
+              parts.push(`screenshot: ${localPath}\n`);
+            } else if (result && options.embedScreenshots) {
+              const dataUri = `data:${result.contentType};base64,${result.buffer.toString('base64')}`;
               parts.push(`screenshot: ${dataUri}\n`);
             } else {
               parts.push(`screenshot: ${relativePath}\n`);
