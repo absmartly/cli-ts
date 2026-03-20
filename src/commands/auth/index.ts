@@ -3,6 +3,7 @@ import chalk from 'chalk';
 import { setProfile, getProfile, loadConfig } from '../../lib/config/config.js';
 import { setAPIKey, getAPIKey, deleteAPIKey } from '../../lib/config/keyring.js';
 import { getAPIClientFromOptions, getGlobalOptions, resolveAPIKey, resolveEndpoint, withErrorHandling } from '../../lib/utils/api-helper.js';
+import { fetchAndDisplayImage, supportsInlineImages } from '../../lib/utils/terminal-image.js';
 
 export const authCommand = new Command('auth').description('Authentication commands');
 
@@ -107,7 +108,8 @@ const createApiKeyCommand = new Command('create-api-key')
 
 const whoamiCommand = new Command('whoami')
   .description('Show the currently authenticated user')
-  .action(withErrorHandling(async () => {
+  .option('--avatar', 'display avatar inline (iTerm2, Kitty, Sixel)')
+  .action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(whoamiCommand);
     const client = await getAPIClientFromOptions(globalOptions);
     const endpoint = resolveEndpoint(globalOptions);
@@ -126,20 +128,12 @@ const whoamiCommand = new Command('whoami')
       const avatarUrl = `${baseUrl}${user.avatar.base_url}/${user.avatar.file_name}`;
       console.log(`Avatar: ${avatarUrl}`);
 
-      if (process.env.TERM_PROGRAM === 'iTerm.app') {
-        try {
-          const apiKey = await resolveAPIKey(globalOptions);
-          const headers: Record<string, string> = { Authorization: `Api-Key ${apiKey}` };
-          const response = await fetch(avatarUrl, { headers });
-          if (response.ok) {
-            const buffer = Buffer.from(await response.arrayBuffer());
-            const b64 = buffer.toString('base64');
-            const fileName = user.avatar.file_name ?? 'avatar';
-            process.stdout.write(`\x1b]1337;File=name=${Buffer.from(fileName).toString('base64')};size=${buffer.length};inline=1;width=20;preserveAspectRatio=1:${b64}\x07\n`);
-          }
-        } catch {
-          // silently skip if image fetch fails
-        }
+      if (options.avatar && supportsInlineImages()) {
+        const apiKey = await resolveAPIKey(globalOptions);
+        await fetchAndDisplayImage(avatarUrl, user.avatar.file_name ?? 'avatar', {
+          headers: { Authorization: `Api-Key ${apiKey}` },
+          width: 20,
+        });
       }
     }
   }));

@@ -3,6 +3,7 @@ import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHan
 import { parseExperimentId } from '../../lib/utils/validators.js';
 import { experimentToMarkdown } from '../../api-client/template/serializer.js';
 import { summarizeExperiment } from '../../api-client/experiment-summary.js';
+import { fetchAndDisplayImage, supportsInlineImages } from '../../lib/utils/terminal-image.js';
 import type { ExperimentId } from '../../lib/api/branded-types.js';
 
 export const getCommand = new Command('get')
@@ -13,6 +14,7 @@ export const getCommand = new Command('get')
   .option('--show <fields...>', 'include additional fields in summary (e.g. --show audience archived)')
   .option('--embed-screenshots', 'embed screenshots as base64 data URIs in template output')
   .option('--screenshots-dir <path>', 'save screenshots to directory in template output')
+  .option('--show-images', 'display screenshots inline (iTerm2, Kitty, Sixel)')
   .action(withErrorHandling(async (id: ExperimentId, options) => {
     const globalOptions = getGlobalOptions(getCommand);
     const client = await getAPIClientFromOptions(globalOptions);
@@ -41,5 +43,28 @@ export const getCommand = new Command('get')
     } else {
       const data = useRaw ? experiment : summarizeExperiment(experiment as Record<string, unknown>, extraFields);
       printFormatted(data, globalOptions);
+    }
+
+    if (options.showImages && supportsInlineImages()) {
+      const screenshots = (experiment as Record<string, unknown>).variant_screenshots as Array<Record<string, unknown>> | undefined;
+      if (screenshots?.length) {
+        const endpoint = resolveEndpoint(globalOptions);
+        const baseUrl = endpoint.replace(/\/v\d+\/?$/, '');
+        const apiKey = await resolveAPIKey(globalOptions);
+        const headers = { Authorization: `Api-Key ${apiKey}` };
+        const variants = (experiment as Record<string, unknown>).variants as Array<Record<string, unknown>> | undefined;
+
+        for (const screenshot of screenshots) {
+          const fileUpload = screenshot.file_upload as Record<string, unknown> | undefined;
+          if (!fileUpload?.base_url) continue;
+          const variantIdx = screenshot.variant as number;
+          const variantName = variants?.find(v => v.variant === variantIdx)?.name as string ?? `variant ${variantIdx}`;
+          const fileName = fileUpload.file_name as string ?? 'screenshot';
+          const url = `${baseUrl}${fileUpload.base_url}/${fileName}`;
+
+          console.log(`\n${variantName}:`);
+          await fetchAndDisplayImage(url, fileName, { headers, width: 40 });
+        }
+      }
     }
   }));
