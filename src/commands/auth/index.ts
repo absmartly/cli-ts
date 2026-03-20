@@ -4,6 +4,7 @@ import { setProfile, getProfile, loadConfig } from '../../lib/config/config.js';
 import { setAPIKey, getAPIKey, deleteAPIKey } from '../../lib/config/keyring.js';
 import { getAPIClientFromOptions, getGlobalOptions, resolveAPIKey, resolveEndpoint, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { fetchAndDisplayImage, supportsInlineImages } from '../../lib/utils/terminal-image.js';
+import { summarizeUser } from '../../api-client/user-summary.js';
 
 export const authCommand = new Command('auth').description('Authentication commands');
 
@@ -115,22 +116,20 @@ const whoamiCommand = new Command('whoami')
     const endpoint = resolveEndpoint(globalOptions);
 
     const user = await client.getCurrentUser();
-    const name = [user.first_name, user.last_name].filter(Boolean).join(' ');
+    const summary = summarizeUser(user, endpoint);
 
-    console.log(`ID: ${user.id}`);
-    console.log(`Email: ${user.email}`);
-    if (name) console.log(`Name: ${name}`);
-    if (user.department) console.log(`Department: ${user.department}`);
-    if (user.job_title) console.log(`Job Title: ${user.job_title}`);
-    if (user.last_login_at) console.log(`Last Login: ${user.last_login_at}`);
-    if (user.avatar?.base_url) {
-      const baseUrl = endpoint.replace(/\/v\d+\/?$/, '');
-      const avatarUrl = `${baseUrl}${user.avatar.base_url}/${user.avatar.file_name}`;
-      console.log(`Avatar: ${avatarUrl}`);
+    console.log(`ID: ${summary.id}`);
+    console.log(`Email: ${summary.email}`);
+    if (summary.name) console.log(`Name: ${summary.name}`);
+    if (summary.department) console.log(`Department: ${summary.department}`);
+    if (summary.job_title) console.log(`Job Title: ${summary.job_title}`);
+    if (summary.last_login_at) console.log(`Last Login: ${summary.last_login_at}`);
+    if (summary.avatar_url) {
+      console.log(`Avatar: ${summary.avatar_url}`);
 
       if (options.avatar && supportsInlineImages()) {
         const apiKey = await resolveAPIKey(globalOptions);
-        await fetchAndDisplayImage(avatarUrl, user.avatar.file_name ?? 'avatar', {
+        await fetchAndDisplayImage(summary.avatar_url, user.avatar?.file_name ?? 'avatar', {
           headers: { Authorization: `Api-Key ${apiKey}` },
           width: typeof options.avatar === 'number' ? options.avatar : 20,
         });

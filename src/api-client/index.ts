@@ -106,6 +106,9 @@ export {
   stateToDate,
 } from './experiment-summary.js';
 
+export type { UserSummary } from './user-summary.js';
+export { summarizeUser } from './user-summary.js';
+
 export type { MetricResult, MetricInfo } from './metric-results.js';
 export {
   parseMetricData,
