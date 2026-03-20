@@ -31,14 +31,14 @@ export const listCommand = new Command('list')
   .option('--stopped-before <timestamp>', 'filter experiments stopped before timestamp')
   .option('--analysis-type <type>', 'filter by analysis type (fixed_horizon, group_sequential)')
   .option('--running-type <type>', 'filter by running type (full_on, experiment)')
-  .option('--alert-srm <value>', 'filter by sample ratio mismatch alert (1 for true)', parseInt)
-  .option('--alert-cleanup-needed <value>', 'filter by cleanup needed alert (1 for true)', parseInt)
-  .option('--alert-audience-mismatch <value>', 'filter by audience mismatch alert (1 for true)', parseInt)
-  .option('--alert-sample-size-reached <value>', 'filter by sample size reached alert (1 for true)', parseInt)
-  .option('--alert-experiments-interact <value>', 'filter by experiments interact alert (1 for true)', parseInt)
-  .option('--alert-group-sequential-updated <value>', 'filter by group sequential updated alert (1 for true)', parseInt)
-  .option('--alert-assignment-conflict <value>', 'filter by assignment conflict alert (1 for true)', parseInt)
-  .option('--alert-metric-threshold-reached <value>', 'filter by metric threshold reached alert (1 for true)', parseInt)
+  .option('--alert-srm [0|1]', 'filter by sample ratio mismatch alert')
+  .option('--alert-cleanup-needed [0|1]', 'filter by cleanup needed alert')
+  .option('--alert-audience-mismatch [0|1]', 'filter by audience mismatch alert')
+  .option('--alert-sample-size-reached [0|1]', 'filter by sample size reached alert')
+  .option('--alert-experiments-interact [0|1]', 'filter by experiments interact alert')
+  .option('--alert-group-sequential-updated [0|1]', 'filter by group sequential updated alert')
+  .option('--alert-assignment-conflict [0|1]', 'filter by assignment conflict alert')
+  .option('--alert-metric-threshold-reached [0|1]', 'filter by metric threshold reached alert')
   .option('--items <number>', 'number of results per page', (v) => parseInt(v, 10), 20)
   .option('--page <number>', 'page number (default: 1)', (v) => parseInt(v, 10), 1)
   .option('--sort <field>', 'sort by field (e.g. created_at, name, state)')
@@ -49,6 +49,12 @@ export const listCommand = new Command('list')
   .action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(listCommand);
     const client = await getAPIClientFromOptions(globalOptions);
+
+    const alertFlag = (v: unknown): number | undefined => {
+      if (v === undefined) return undefined;
+      if (v === true) return 1;
+      return v === '0' ? 0 : 1;
+    };
 
     const createdAfter = parseDateFlagOrUndefined(options.createdAfter);
     const createdBefore = parseDateFlagOrUndefined(options.createdBefore);
@@ -86,14 +92,14 @@ export const listCommand = new Command('list')
       ...(stoppedBefore !== undefined && { stopped_before: stoppedBefore }),
       ...(options.analysisType && { analysis_type: options.analysisType }),
       ...(options.runningType && { running_type: options.runningType }),
-      ...(options.alertSrm !== undefined && { alert_srm: options.alertSrm }),
-      ...(options.alertCleanupNeeded !== undefined && { alert_cleanup_needed: options.alertCleanupNeeded }),
-      ...(options.alertAudienceMismatch !== undefined && { alert_audience_mismatch: options.alertAudienceMismatch }),
-      ...(options.alertSampleSizeReached !== undefined && { alert_sample_size_reached: options.alertSampleSizeReached }),
-      ...(options.alertExperimentsInteract !== undefined && { alert_experiments_interact: options.alertExperimentsInteract }),
-      ...(options.alertGroupSequentialUpdated !== undefined && { alert_group_sequential_updated: options.alertGroupSequentialUpdated }),
-      ...(options.alertAssignmentConflict !== undefined && { alert_assignment_conflict: options.alertAssignmentConflict }),
-      ...(options.alertMetricThresholdReached !== undefined && { alert_metric_threshold_reached: options.alertMetricThresholdReached }),
+      ...(alertFlag(options.alertSrm) !== undefined && { alert_srm: alertFlag(options.alertSrm) }),
+      ...(alertFlag(options.alertCleanupNeeded) !== undefined && { alert_cleanup_needed: alertFlag(options.alertCleanupNeeded) }),
+      ...(alertFlag(options.alertAudienceMismatch) !== undefined && { alert_audience_mismatch: alertFlag(options.alertAudienceMismatch) }),
+      ...(alertFlag(options.alertSampleSizeReached) !== undefined && { alert_sample_size_reached: alertFlag(options.alertSampleSizeReached) }),
+      ...(alertFlag(options.alertExperimentsInteract) !== undefined && { alert_experiments_interact: alertFlag(options.alertExperimentsInteract) }),
+      ...(alertFlag(options.alertGroupSequentialUpdated) !== undefined && { alert_group_sequential_updated: alertFlag(options.alertGroupSequentialUpdated) }),
+      ...(alertFlag(options.alertAssignmentConflict) !== undefined && { alert_assignment_conflict: alertFlag(options.alertAssignmentConflict) }),
+      ...(alertFlag(options.alertMetricThresholdReached) !== undefined && { alert_metric_threshold_reached: alertFlag(options.alertMetricThresholdReached) }),
       ...(options.significance && { significance: options.significance }),
     };
 
