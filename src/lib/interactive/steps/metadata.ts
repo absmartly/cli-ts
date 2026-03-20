@@ -99,8 +99,42 @@ export const metadataStep: Step = {
     for (const [sectionTitle, fields] of grouped) {
       console.log(chalk.cyan(`\n  ${sectionTitle}:`));
       for (const field of fields) {
-        const current = customFields[field.title] ?? field.default_value ?? '';
-        const value = await promptText(`  ${field.title}`, current);
+        const current = customFields[field.title] ?? '';
+        let value: string;
+
+        if (field.type === 'user') {
+          const currentDisplay = current || '(none)';
+          console.log(chalk.gray(`  ${field.title}: ${currentDisplay}`));
+          const { select } = await import('@inquirer/prompts');
+          const action = await select({
+            message: `  ${field.title}:`,
+            choices: [
+              { name: `Keep current (${currentDisplay})`, value: 'keep' },
+              { name: 'Search for user', value: 'search' },
+              { name: 'Clear', value: 'clear' },
+            ],
+          });
+          if (action === 'keep') {
+            value = current;
+          } else if (action === 'clear') {
+            value = '';
+          } else {
+            value = await promptAsyncSearch(
+              `  ${field.title}`,
+              async (term) => {
+                const users = await context.client.listUsers({ search: term });
+                return users.map(u => ({
+                  name: `${u.first_name ?? ''} ${u.last_name ?? ''} <${u.email}>`.trim(),
+                  value: u.email,
+                }));
+              },
+              current,
+            );
+          }
+        } else {
+          value = await promptText(`  ${field.title}`, current);
+        }
+
         if (value.trim()) {
           customFields[field.title] = value.trim();
         } else {
