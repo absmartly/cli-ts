@@ -1,4 +1,4 @@
-import { select, input, confirm } from '@inquirer/prompts';
+import { select, input } from '@inquirer/prompts';
 import chalk from 'chalk';
 import { promptText, promptNavigation } from '../prompts.js';
 import type { Step, StepResult } from '../types.js';

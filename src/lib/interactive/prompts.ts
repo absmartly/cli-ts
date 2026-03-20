@@ -3,15 +3,18 @@ import chalk from 'chalk';
 import type { StepAction } from './types.js';
 
 export async function promptText(label: string, defaultValue = ''): Promise<string> {
-  return input({ message: label, default: defaultValue || undefined });
+  const opts: { message: string; default?: string } = { message: label };
+  if (defaultValue) opts.default = defaultValue;
+  return input(opts);
 }
 
 export async function promptNumber(label: string, defaultValue?: number): Promise<number> {
-  const result = await input({
+  const opts: { message: string; default?: string; validate: (v: string) => true | string } = {
     message: label,
-    default: defaultValue !== undefined ? String(defaultValue) : undefined,
     validate: (v) => !isNaN(Number(v)) || 'Must be a number',
-  });
+  };
+  if (defaultValue !== undefined) opts.default = String(defaultValue);
+  const result = await input(opts);
   return Number(result);
 }
 

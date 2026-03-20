@@ -1,7 +1,6 @@
 import { select } from '@inquirer/prompts';
 import chalk from 'chalk';
 import type { Step, StepResult, StepAction } from '../types.js';
-import type { ExperimentTemplate } from '../../../api-client/template/parser.js';
 
 export const reviewStep: Step = {
   name: 'Review',

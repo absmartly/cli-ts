@@ -1,5 +1,5 @@
 import { promptSelect, promptText, promptNavigation } from '../prompts.js';
-import type { Step, StepResult, EditorContext } from '../types.js';
+import type { Step, StepResult } from '../types.js';
 import type { ExperimentTemplate } from '../../../api-client/template/parser.js';
 
 const ANALYSIS_TYPES = [
@@ -31,8 +31,8 @@ export const analysisStep: Step = {
       analysis_type: analysisType,
       required_alpha: alpha,
       required_power: power,
-      baseline_participants: baseline || undefined,
     };
+    if (baseline) updated.baseline_participants = baseline;
     const action = await promptNavigation('Analysis', false, false);
     return { action, template: updated };
   },

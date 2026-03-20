@@ -1,5 +1,5 @@
 import { promptSearchSelect, promptJsonEditor, promptNavigation } from '../prompts.js';
-import type { Step, StepResult, EditorContext } from '../types.js';
+import type { Step, StepResult } from '../types.js';
 import type { ExperimentTemplate } from '../../../api-client/template/parser.js';
 
 export const audiencesStep: Step = {
@@ -28,8 +28,10 @@ export const audiencesStep: Step = {
       ...template,
       unit_type: unitType,
       application,
-      audience: audience.trim() || undefined,
     };
+    if (audience.trim()) {
+      updated.audience = audience.trim();
+    }
     const action = await promptNavigation('Audiences', false, false);
     return { action, template: updated };
   },

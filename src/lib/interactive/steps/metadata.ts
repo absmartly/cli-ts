@@ -95,8 +95,10 @@ export const metadataStep: Step = {
       owners,
       teams,
       tags,
-      custom_fields: Object.keys(customFields).length > 0 ? customFields : undefined,
     };
+    if (Object.keys(customFields).length > 0) {
+      updated.custom_fields = customFields;
+    }
     const action = await promptNavigation('Metadata', false, false);
     return { action, template: updated };
   },
