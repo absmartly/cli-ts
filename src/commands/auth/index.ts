@@ -2,7 +2,7 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import { setProfile, getProfile, loadConfig } from '../../lib/config/config.js';
 import { setAPIKey, getAPIKey, deleteAPIKey } from '../../lib/config/keyring.js';
-import { getAPIClientFromOptions, getGlobalOptions, resolveEndpoint, withErrorHandling } from '../../lib/utils/api-helper.js';
+import { getAPIClientFromOptions, getGlobalOptions, resolveAPIKey, resolveEndpoint, withErrorHandling } from '../../lib/utils/api-helper.js';
 
 export const authCommand = new Command('auth').description('Authentication commands');
 
@@ -123,7 +123,24 @@ const whoamiCommand = new Command('whoami')
     if (user.last_login_at) console.log(`Last Login: ${user.last_login_at}`);
     if (user.avatar?.base_url) {
       const baseUrl = endpoint.replace(/\/v\d+\/?$/, '');
-      console.log(`Avatar: ${baseUrl}${user.avatar.base_url}/${user.avatar.file_name}`);
+      const avatarUrl = `${baseUrl}${user.avatar.base_url}/${user.avatar.file_name}`;
+      console.log(`Avatar: ${avatarUrl}`);
+
+      if (process.env.TERM_PROGRAM === 'iTerm.app') {
+        try {
+          const apiKey = await resolveAPIKey(globalOptions);
+          const headers: Record<string, string> = { Authorization: `Api-Key ${apiKey}` };
+          const response = await fetch(avatarUrl, { headers });
+          if (response.ok) {
+            const buffer = Buffer.from(await response.arrayBuffer());
+            const b64 = buffer.toString('base64');
+            const fileName = user.avatar.file_name ?? 'avatar';
+            process.stdout.write(`\x1b]1337;File=name=${Buffer.from(fileName).toString('base64')};size=${buffer.length};inline=1;width=20;preserveAspectRatio=1:${b64}\x07\n`);
+          }
+        } catch {
+          // silently skip if image fetch fails
+        }
+      }
     }
   }));
 
