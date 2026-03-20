@@ -16,11 +16,12 @@ export interface EditorContext {
   experimentTags: Array<{ id: number; tag: string }>;
   customSectionFields: Array<{
     id: number;
-    name: string;
+    name?: string;
+    title?: string;
     type: string;
     default_value?: string;
     archived?: boolean;
-    custom_section?: { type?: string; archived?: boolean };
+    custom_section?: { title?: string; type?: string; archived?: boolean };
   }>;
   experimentType: string;
 }

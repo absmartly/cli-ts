@@ -31,7 +31,10 @@ async function editOwners(current: string[], context: EditorContext): Promise<st
         'Search user (type email or name)',
         async (term) => {
           const users = await context.client.listUsers({ search: term });
-          return users.map(u => ({ name: `${u.email}`, value: u.email }));
+          return users.map(u => ({
+            name: `${u.first_name ?? ''} ${u.last_name ?? ''} <${u.email}>`.trim(),
+            value: u.email,
+          }));
         },
       );
       if (owner && !result.includes(owner)) {
@@ -51,15 +54,31 @@ async function editOwners(current: string[], context: EditorContext): Promise<st
   return result;
 }
 
-function groupCustomFields(context: EditorContext) {
-  const groups = new Map<string, Array<{ id: number; name: string; type: string; default_value?: string }>>();
+interface GroupedField {
+  id: number;
+  title: string;
+  type: string;
+  default_value: string;
+}
+
+function groupCustomFields(context: EditorContext): Map<string, GroupedField[]> {
+  const groups = new Map<string, GroupedField[]>();
 
   for (const field of context.customSectionFields) {
     if (field.archived) continue;
-    const section = field.custom_section?.type ?? 'Other';
     if (field.custom_section?.archived) continue;
-    if (!groups.has(section)) groups.set(section, []);
-    groups.get(section)!.push(field);
+    if (field.custom_section?.type && field.custom_section.type !== context.experimentType) continue;
+
+    const sectionTitle = field.custom_section?.title ?? 'Other';
+    const title = field.title ?? `field_${field.id}`;
+
+    if (!groups.has(sectionTitle)) groups.set(sectionTitle, []);
+    groups.get(sectionTitle)!.push({
+      id: field.id,
+      title,
+      type: field.type,
+      default_value: field.default_value ?? '',
+    });
   }
 
   return groups;
@@ -77,15 +96,15 @@ export const metadataStep: Step = {
     const customFields: Record<string, string> = { ...(template.custom_fields ?? {}) };
     const grouped = groupCustomFields(context);
 
-    for (const [section, fields] of grouped) {
-      console.log(chalk.cyan(`\n  ${section}:`));
+    for (const [sectionTitle, fields] of grouped) {
+      console.log(chalk.cyan(`\n  ${sectionTitle}:`));
       for (const field of fields) {
-        const current = customFields[field.name] ?? field.default_value ?? '';
-        const value = await promptText(`  ${field.name}`, current);
+        const current = customFields[field.title] ?? field.default_value ?? '';
+        const value = await promptText(`  ${field.title}`, current);
         if (value.trim()) {
-          customFields[field.name] = value.trim();
+          customFields[field.title] = value.trim();
         } else {
-          delete customFields[field.name];
+          delete customFields[field.title];
         }
       }
     }
