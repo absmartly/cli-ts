@@ -85,6 +85,8 @@ export type { ResolverContext } from './payload/resolver.js';
 export { resolveByName } from './payload/resolver.js';
 export { buildExperimentPayload, type BuildPayloadResult } from './payload/builder.js';
 export { resolveBySearch } from './payload/search-resolver.js';
+export { buildSecondaryMetrics, type SecondaryMetricEntry } from './payload/metrics-builder.js';
+export { parseCSV } from './payload/parse-csv.js';
 
 export { experimentToMarkdown, type SerializerOptions } from './template/serializer.js';
 export { buildPayloadFromTemplate } from './template/build-from-template.js';

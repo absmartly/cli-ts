@@ -1,5 +1,6 @@
 import type { ExperimentTemplate, VariantTemplate } from '../template/parser.js';
 import { resolveByName, type ResolverContext } from './resolver.js';
+import { buildSecondaryMetrics } from './metrics-builder.js';
 import { resolveScreenshot } from '../template/screenshot.js';
 import {
   DEFAULT_ANALYSIS_TYPE, DEFAULT_PERCENTAGES, DEFAULT_STATE, DEFAULT_TRAFFIC,
@@ -226,29 +227,14 @@ export async function buildExperimentPayload(
     payload.primary_metric = { metric_id: metric.id };
   }
 
-  const allMetrics: Array<{ metric_id: number; type: string; order_index: number }> = [];
-  let orderIndex = 0;
+  const resolveMetricNames = (names: string[] | undefined, label: string) =>
+    (names ?? []).map(name => resolveByName(context.metrics, name, label));
 
-  if (template.secondary_metrics && template.secondary_metrics.length > 0) {
-    for (const name of template.secondary_metrics) {
-      const metric = resolveByName(context.metrics, name, 'Secondary metric');
-      allMetrics.push({ metric_id: metric.id, type: 'secondary', order_index: orderIndex++ });
-    }
-  }
-
-  if (template.guardrail_metrics && template.guardrail_metrics.length > 0) {
-    for (const name of template.guardrail_metrics) {
-      const metric = resolveByName(context.metrics, name, 'Guardrail metric');
-      allMetrics.push({ metric_id: metric.id, type: 'guardrail', order_index: orderIndex++ });
-    }
-  }
-
-  if (template.exploratory_metrics && template.exploratory_metrics.length > 0) {
-    for (const name of template.exploratory_metrics) {
-      const metric = resolveByName(context.metrics, name, 'Exploratory metric');
-      allMetrics.push({ metric_id: metric.id, type: 'exploratory', order_index: orderIndex++ });
-    }
-  }
+  const allMetrics = buildSecondaryMetrics({
+    secondary: resolveMetricNames(template.secondary_metrics, 'Secondary metric'),
+    guardrail: resolveMetricNames(template.guardrail_metrics, 'Guardrail metric'),
+    exploratory: resolveMetricNames(template.exploratory_metrics, 'Exploratory metric'),
+  });
 
   if (allMetrics.length > 0) {
     payload.secondary_metrics = allMetrics;

@@ -31,6 +31,25 @@ describe('update command', () => {
       { id: 10, tag: 'v1' },
       { id: 11, tag: 'mobile' },
     ]),
+    resolveMetrics: vi.fn().mockImplementation((names: string[]) => Promise.resolve(
+      names.map((n, i) => ({ id: i + 1, name: n }))
+    )),
+    resolveTeams: vi.fn().mockImplementation((names: string[]) => {
+      const teams = [{ id: 1, name: 'Product' }, { id: 2, name: 'Engineering' }];
+      return Promise.resolve(names.map(n => {
+        const t = teams.find(t => t.name.toLowerCase() === n.toLowerCase());
+        if (!t) throw new Error(`Team "${n}" not found`);
+        return t;
+      }));
+    }),
+    resolveTags: vi.fn().mockImplementation((names: string[]) => {
+      const tags = [{ id: 10, tag: 'v1' }, { id: 11, tag: 'mobile' }];
+      return Promise.resolve(names.map(n => {
+        const t = tags.find(t => t.tag.toLowerCase() === n.toLowerCase());
+        if (!t) throw new Error(`Tag "${n}" not found`);
+        return t;
+      }));
+    }),
   };
 
   beforeEach(() => {
@@ -206,19 +225,20 @@ describe('update command', () => {
   });
 
   it('should update secondary metrics', async () => {
-    mockClient.listMetrics.mockResolvedValue([
-      { id: 1, name: 'Revenue' },
-      { id: 2, name: 'Bookings' },
+    mockClient.resolveMetrics.mockResolvedValue([
+      { id: 10, name: 'Revenue' },
+      { id: 20, name: 'Bookings' },
     ]);
 
     await updateCommand.parseAsync(['node', 'test', '42', '--secondary-metrics', 'Revenue,Bookings']);
 
+    expect(mockClient.resolveMetrics).toHaveBeenCalledWith(['Revenue', 'Bookings']);
     expect(mockClient.updateExperiment).toHaveBeenCalledWith(
       42,
       expect.objectContaining({
         secondary_metrics: [
-          { metric_id: 1, type: 'secondary', order_index: 0 },
-          { metric_id: 2, type: 'secondary', order_index: 1 },
+          { metric_id: 10, type: 'secondary', order_index: 0 },
+          { metric_id: 20, type: 'secondary', order_index: 1 },
         ],
       })
     );

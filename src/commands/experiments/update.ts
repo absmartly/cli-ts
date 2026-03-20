@@ -5,9 +5,9 @@ import { parseExperimentFile } from '../../lib/template/parser.js';
 import { experimentToMarkdown } from '../../api-client/template/serializer.js';
 import { parseExperimentMarkdown } from '../../api-client/template/parser.js';
 import { buildPayloadFromTemplate } from '../../api-client/template/build-from-template.js';
+import { buildSecondaryMetrics } from '../../api-client/payload/metrics-builder.js';
+import { parseCSV } from '../../api-client/payload/parse-csv.js';
 import { runInteractiveEditor } from '../../lib/interactive/run.js';
-import { resolveBySearch } from '../../api-client/payload/search-resolver.js';
-import { resolveByName } from '../../api-client/payload/resolver.js';
 import { resolveScreenshot } from '../../api-client/template/screenshot.js';
 import { parseExperimentId } from '../../lib/utils/validators.js';
 import type { ExperimentId } from '../../lib/api/branded-types.js';
@@ -73,50 +73,30 @@ export const updateCommand = new Command('update')
       changes.nr_variants = names.length;
     }
 
-    const needsMetricResolution = options.secondaryMetrics || options.guardrailMetrics || options.exploratoryMetrics;
-    if (needsMetricResolution) {
+    if (options.secondaryMetrics || options.guardrailMetrics || options.exploratoryMetrics) {
       const allNames = [
         ...parseCSV(options.secondaryMetrics),
         ...parseCSV(options.guardrailMetrics),
         ...parseCSV(options.exploratoryMetrics),
       ];
-      const metrics = await resolveBySearch(allNames, name => client.listMetrics({ search: name, archived: true }));
+      const resolved = await client.resolveMetrics(allNames);
+      const byName = new Map(allNames.map((name, i) => [name, resolved[i]!]));
 
-      const allMetrics: Array<{ metric_id: number; type: string; order_index: number }> = [];
-      let orderIndex = 0;
-      for (const name of parseCSV(options.secondaryMetrics)) {
-        const metric = resolveByName(metrics, name, 'Secondary metric');
-        allMetrics.push({ metric_id: metric.id, type: 'secondary', order_index: orderIndex++ });
-      }
-      for (const name of parseCSV(options.guardrailMetrics)) {
-        const metric = resolveByName(metrics, name, 'Guardrail metric');
-        allMetrics.push({ metric_id: metric.id, type: 'guardrail', order_index: orderIndex++ });
-      }
-      for (const name of parseCSV(options.exploratoryMetrics)) {
-        const metric = resolveByName(metrics, name, 'Exploratory metric');
-        allMetrics.push({ metric_id: metric.id, type: 'exploratory', order_index: orderIndex++ });
-      }
-      changes.secondary_metrics = allMetrics;
+      changes.secondary_metrics = buildSecondaryMetrics({
+        secondary: parseCSV(options.secondaryMetrics).map(n => byName.get(n)!),
+        guardrail: parseCSV(options.guardrailMetrics).map(n => byName.get(n)!),
+        exploratory: parseCSV(options.exploratoryMetrics).map(n => byName.get(n)!),
+      });
     }
 
     if (options.teams) {
-      const teamNames = parseCSV(options.teams);
-      const allTeams = await client.listTeams();
-      changes.teams = teamNames.map(name => {
-        const team = allTeams.find(t => t.name.toLowerCase() === name.trim().toLowerCase() || String(t.id) === name.trim());
-        if (!team) throw new Error(`Team "${name}" not found`);
-        return { team_id: team.id };
-      });
+      const resolved = await client.resolveTeams(parseCSV(options.teams));
+      changes.teams = resolved.map(t => ({ team_id: t.id }));
     }
 
     if (options.tags) {
-      const tagNames = parseCSV(options.tags);
-      const allTags = await client.listExperimentTags();
-      changes.experiment_tags = tagNames.map(name => {
-        const tag = allTags.find(t => t.tag.toLowerCase() === name.trim().toLowerCase() || String(t.id) === name.trim());
-        if (!tag) throw new Error(`Tag "${name}" not found`);
-        return { experiment_tag_id: tag.id };
-      });
+      const resolved = await client.resolveTags(parseCSV(options.tags));
+      changes.experiment_tags = resolved.map(t => ({ experiment_tag_id: t.id }));
     }
 
     if (options.screenshot?.length || options.screenshotId?.length) {
@@ -182,8 +162,3 @@ export const updateCommand = new Command('update')
     await client.updateExperiment(id, changes);
     console.log(chalk.green(`Experiment ${id} updated`));
   }));
-
-function parseCSV(value: string | undefined): string[] {
-  if (!value) return [];
-  return value.split(',').map(s => s.trim()).filter(Boolean);
-}

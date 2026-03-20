@@ -1,6 +1,6 @@
 import { resolveScreenshot } from '../template/screenshot.js';
-import { resolveBySearch } from './search-resolver.js';
-import { resolveByName } from './resolver.js';
+import { buildSecondaryMetrics } from './metrics-builder.js';
+import { parseCSV } from './parse-csv.js';
 import type { APIClient } from '../api-client.js';
 import {
   DEFAULT_ANALYSIS_TYPE, DEFAULT_STATE, DEFAULT_TRAFFIC,
@@ -34,11 +34,6 @@ export interface CreateFromOptionsInput {
   requiredAlpha?: string;
   requiredPower?: string;
   baselineParticipants?: string;
-}
-
-function parseCSV(value: string | undefined): string[] {
-  if (!value) return [];
-  return value.split(',').map(s => s.trim()).filter(Boolean);
 }
 
 export async function buildPayloadFromOptions(input: CreateFromOptionsInput, client?: APIClient): Promise<Record<string, unknown>> {
@@ -118,50 +113,30 @@ export async function buildPayloadFromOptions(input: CreateFromOptionsInput, cli
   }
 
   if (client) {
-    const needsMetricResolution = input.secondaryMetrics || input.guardrailMetrics || input.exploratoryMetrics;
-    if (needsMetricResolution) {
+    if (input.secondaryMetrics || input.guardrailMetrics || input.exploratoryMetrics) {
       const allNames = [
         ...parseCSV(input.secondaryMetrics),
         ...parseCSV(input.guardrailMetrics),
         ...parseCSV(input.exploratoryMetrics),
       ];
-      const metrics = await resolveBySearch(allNames, name => client.listMetrics({ search: name, archived: true }));
+      const resolved = await client.resolveMetrics(allNames);
+      const byName = new Map(allNames.map((name, i) => [name, resolved[i]!]));
 
-      const allMetrics: Array<{ metric_id: number; type: string; order_index: number }> = [];
-      let orderIndex = 0;
-      for (const name of parseCSV(input.secondaryMetrics)) {
-        const metric = resolveByName(metrics, name, 'Secondary metric');
-        allMetrics.push({ metric_id: metric.id, type: 'secondary', order_index: orderIndex++ });
-      }
-      for (const name of parseCSV(input.guardrailMetrics)) {
-        const metric = resolveByName(metrics, name, 'Guardrail metric');
-        allMetrics.push({ metric_id: metric.id, type: 'guardrail', order_index: orderIndex++ });
-      }
-      for (const name of parseCSV(input.exploratoryMetrics)) {
-        const metric = resolveByName(metrics, name, 'Exploratory metric');
-        allMetrics.push({ metric_id: metric.id, type: 'exploratory', order_index: orderIndex++ });
-      }
-      data.secondary_metrics = allMetrics;
+      data.secondary_metrics = buildSecondaryMetrics({
+        secondary: parseCSV(input.secondaryMetrics).map(n => byName.get(n)!),
+        guardrail: parseCSV(input.guardrailMetrics).map(n => byName.get(n)!),
+        exploratory: parseCSV(input.exploratoryMetrics).map(n => byName.get(n)!),
+      });
     }
 
     if (input.teams) {
-      const teamNames = parseCSV(input.teams);
-      const allTeams = await client.listTeams();
-      data.teams = teamNames.map(name => {
-        const team = allTeams.find(t => t.name.toLowerCase() === name.trim().toLowerCase() || String(t.id) === name.trim());
-        if (!team) throw new Error(`Team "${name}" not found`);
-        return { team_id: team.id };
-      });
+      const resolved = await client.resolveTeams(parseCSV(input.teams));
+      data.teams = resolved.map(t => ({ team_id: t.id }));
     }
 
     if (input.tags) {
-      const tagNames = parseCSV(input.tags);
-      const allTags = await client.listExperimentTags();
-      data.experiment_tags = tagNames.map(name => {
-        const tag = allTags.find(t => t.tag.toLowerCase() === name.trim().toLowerCase() || String(t.id) === name.trim());
-        if (!tag) throw new Error(`Tag "${name}" not found`);
-        return { experiment_tag_id: tag.id };
-      });
+      const resolved = await client.resolveTags(parseCSV(input.tags));
+      data.experiment_tags = resolved.map(t => ({ experiment_tag_id: t.id }));
     }
 
     const customFields = await client.listCustomSectionFields();

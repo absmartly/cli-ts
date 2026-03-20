@@ -1,6 +1,8 @@
 import type { HttpClient, HttpRequestConfig, HttpResponse, APIError } from './http-client.js';
 import { experimentToInput } from './experiment-transform.js';
 import type { ExperimentInput } from './experiment-transform.js';
+import { resolveBySearch } from './payload/search-resolver.js';
+import { resolveByName } from './payload/resolver.js';
 import type {
   Experiment,
   ListOptions,
@@ -1420,6 +1422,55 @@ export class APIClient {
       data: { usage, file },
     });
     return this.validateEntityResponse(response, 'file', 'uploadFile');
+  }
+
+  async resolveMetrics(namesOrIds: string[]): Promise<Array<{ id: number; name: string }>> {
+    const results = await resolveBySearch(namesOrIds, name => this.listMetrics({ search: name, archived: true }));
+    return namesOrIds.map(ref => resolveByName(results, ref, 'Metric'));
+  }
+
+  async resolveTeams(namesOrIds: string[]): Promise<Array<{ id: number; name: string }>> {
+    const teams = await this.listTeams();
+    return namesOrIds.map(ref => resolveByName(teams, ref, 'Team'));
+  }
+
+  async resolveTags(namesOrIds: string[]): Promise<Array<{ id: number; tag: string }>> {
+    const tags = await this.listExperimentTags();
+    return namesOrIds.map(ref => {
+      const trimmed = ref.trim();
+      const asInt = parseInt(trimmed, 10);
+      if (!isNaN(asInt) && String(asInt) === trimmed) {
+        const byId = tags.find(t => t.id === asInt);
+        if (byId) return byId;
+        throw new Error(`Tag with ID ${asInt} not found`);
+      }
+      const match = tags.filter(t => (t.tag ?? '').toLowerCase() === trimmed.toLowerCase());
+      if (match.length === 1) return match[0]!;
+      if (match.length > 1) throw new Error(`Multiple tags match "${trimmed}": ${match.map(t => `"${t.tag}" (id: ${t.id})`).join(', ')}`);
+      throw new Error(`Tag "${trimmed}" not found`);
+    });
+  }
+
+  async resolveUsers(namesOrEmails: string[]): Promise<Array<{ id: number; email: string }>> {
+    const results = await resolveBySearch(namesOrEmails, ref => this.listUsers({ search: ref }));
+    return namesOrEmails.map(ref => {
+      const trimmed = ref.trim();
+      const asInt = parseInt(trimmed, 10);
+      if (!isNaN(asInt) && String(asInt) === trimmed) {
+        const byId = results.find(u => u.id === asInt);
+        if (byId) return byId;
+        throw new Error(`User with ID ${asInt} not found`);
+      }
+      const emailInBrackets = /<(.+?)>/.exec(trimmed);
+      const searchRef = (emailInBrackets ? emailInBrackets[1]! : trimmed).toLowerCase();
+      const match = results.filter(u =>
+        u.email.toLowerCase() === searchRef ||
+        `${(u as any).first_name ?? ''} ${(u as any).last_name ?? ''}`.trim().toLowerCase() === searchRef
+      );
+      if (match.length === 1) return match[0]!;
+      if (match.length > 1) throw new Error(`Multiple users match "${trimmed}": ${match.map(u => `${u.email} (id: ${u.id})`).join(', ')}`);
+      throw new Error(`User "${trimmed}" not found`);
+    });
   }
 
   async rawRequest(
