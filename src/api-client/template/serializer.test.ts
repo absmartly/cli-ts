@@ -13,7 +13,7 @@ function makeExperiment(overrides: Partial<Record<string, unknown>> = {}): Exper
     percentage_of_traffic: 100,
     percentages: '50/50',
     unit_type: { unit_type_id: 1, name: 'user_id' },
-    applications: [{ application_id: 10, name: 'web', application_version: '0' }],
+    applications: [{ application_id: 10, application: { name: 'web' }, application_version: '0' }],
     primary_metric: { metric_id: 30, name: 'clicks' },
     secondary_metrics: [
       { metric_id: 31, name: 'revenue', type: 'secondary', order_index: 0 },
@@ -32,17 +32,16 @@ describe('experimentToMarkdown', () => {
 
     expect(md).toContain('---\n');
     expect(md).toContain('name: test-experiment');
-    expect(md).toContain('display_name: Test Experiment');
+    expect(md).toContain('display_name: "Test Experiment"');
     expect(md).toContain('type: test');
     expect(md).toContain('state: running');
     expect(md).toContain('percentage_of_traffic: 100');
     expect(md).toContain('percentages: 50/50');
   });
 
-  it('should include unit type and application by name', () => {
+  it('should include unit type and application in frontmatter', () => {
     const md = experimentToMarkdown(makeExperiment());
 
-    expect(md).toContain('## Unit & Application');
     expect(md).toContain('unit_type: user_id');
     expect(md).toContain('application: web');
   });
@@ -59,11 +58,11 @@ describe('experimentToMarkdown', () => {
     expect(md).toContain('primary_metric: 99');
   });
 
-  it('should include metrics section', () => {
+  it('should include primary and secondary metrics in frontmatter', () => {
     const md = experimentToMarkdown(makeExperiment());
 
-    expect(md).toContain('## Metrics');
     expect(md).toContain('primary_metric: clicks');
+    expect(md).toContain('secondary_metrics:');
     expect(md).toContain('  - revenue');
   });
 
@@ -142,12 +141,56 @@ describe('experimentToMarkdown', () => {
     expect(md).toContain('config: {"color":"red"}');
   });
 
-  it('should include owner_id from owners array', () => {
+  it('should include owner_id for single owner', () => {
     const md = experimentToMarkdown(makeExperiment({
       owners: [{ user_id: 42 }],
     }));
 
     expect(md).toContain('owner_id: 42');
+  });
+
+  it('should include owner_ids for multiple owners', () => {
+    const md = experimentToMarkdown(makeExperiment({
+      owners: [{ user_id: 42 }, { user_id: 43 }],
+    }));
+
+    expect(md).toContain('owner_ids:');
+    expect(md).toContain('  - 42');
+    expect(md).toContain('  - 43');
+  });
+
+  it('should include teams', () => {
+    const md = experimentToMarkdown(makeExperiment({
+      teams: [
+        { team: { name: 'Growth' } },
+        { team: { name: 'Engineering' } },
+      ],
+    }));
+
+    expect(md).toContain('teams:');
+    expect(md).toContain('  - Growth');
+    expect(md).toContain('  - Engineering');
+  });
+
+  it('should include tags', () => {
+    const md = experimentToMarkdown(makeExperiment({
+      experiment_tags: [
+        { experiment_tag: { tag: 'q1' } },
+        { experiment_tag: { tag: 'homepage' } },
+      ],
+    }));
+
+    expect(md).toContain('tags:');
+    expect(md).toContain('  - q1');
+    expect(md).toContain('  - homepage');
+  });
+
+  it('should include audience', () => {
+    const md = experimentToMarkdown(makeExperiment({
+      audience: '{"filter":[]}',
+    }));
+
+    expect(md).toContain("audience: '{\"filter\":[]}'");
   });
 
   it('should include analysis config fields', () => {
@@ -171,10 +214,11 @@ describe('experimentToMarkdown', () => {
       primary_metric: undefined,
       secondary_metrics: undefined,
       variants: undefined,
-      }));
+    }));
 
-    expect(md).not.toContain('## Unit & Application');
-    expect(md).not.toContain('## Metrics');
+    expect(md).not.toContain('unit_type:');
+    expect(md).not.toContain('application:');
+    expect(md).not.toContain('primary_metric:');
     expect(md).not.toContain('## Variants');
   });
 

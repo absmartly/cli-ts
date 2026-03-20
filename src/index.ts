@@ -53,7 +53,7 @@ program
   .option('--endpoint <url>', 'override API endpoint')
   .option('--app <name>', 'override default application')
   .option('--env <name>', 'override default environment')
-  .option('-o, --output <format>', 'output format (table, json, yaml, plain, markdown, vertical)', 'table')
+  .option('-o, --output <format>', 'output format (table, json, yaml, plain, markdown, vertical, template)', 'table')
   .option('--no-color', 'disable colored output')
   .option('-v, --verbose', 'verbose output')
   .option('-q, --quiet', 'minimal output')
