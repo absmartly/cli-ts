@@ -5,6 +5,7 @@ export interface VariantTemplate {
   name: string;
   config?: string;
   screenshot?: string;
+  screenshot_id?: number;
 }
 
 export interface ExperimentTemplate {
@@ -166,6 +167,7 @@ function parseVariants(content: string): VariantTemplate[] {
           if (key === 'name') variant.name = value;
           else if (key === 'config') variant.config = value;
           else if (key === 'screenshot') variant.screenshot = value;
+          else if (key === 'screenshot_id') variant.screenshot_id = parseInt(value, 10);
         }
       }
     }

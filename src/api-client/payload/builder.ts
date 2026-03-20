@@ -123,8 +123,15 @@ async function buildVariantScreenshots(
 
   const screenshots: Array<Record<string, unknown>> = [];
   for (const v of template.variants) {
-    if (!v.screenshot) continue;
+    if (v.screenshot_id) {
+      screenshots.push({
+        variant: v.variant ?? template.variants.indexOf(v),
+        screenshot_file_upload_id: v.screenshot_id,
+      });
+      continue;
+    }
 
+    if (!v.screenshot) continue;
     if (v.screenshot.startsWith('/files/')) continue;
 
     let resolved;
@@ -199,9 +206,9 @@ export async function buildExperimentPayload(
     experiment_tags: [],
   };
 
-  const newScreenshots = await buildVariantScreenshots(template, warnings);
-  if (newScreenshots.length > 0) {
-    payload.variant_screenshots = newScreenshots;
+  const builtScreenshots = await buildVariantScreenshots(template, warnings);
+  if (builtScreenshots.length > 0) {
+    payload.variant_screenshots = builtScreenshots;
   }
 
   if (template.application) {

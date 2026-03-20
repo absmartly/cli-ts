@@ -156,6 +156,7 @@ export async function experimentToMarkdown(experiment: Experiment, options: Seri
 
       const screenshot = variantScreenshots?.find(s => s.variant === idx);
       if (screenshot) {
+        const uploadId = screenshot.screenshot_file_upload_id as number | undefined;
         const fileUpload = screenshot.file_upload as Record<string, unknown> | undefined;
         if (fileUpload) {
           const fileName = fileUpload.file_name as string;
@@ -180,6 +181,7 @@ export async function experimentToMarkdown(experiment: Experiment, options: Seri
           } else {
             parts.push(`screenshot: ${relativePath}\n`);
           }
+          if (uploadId) parts.push(`screenshot_id: ${uploadId}\n`);
         }
       }
     }
