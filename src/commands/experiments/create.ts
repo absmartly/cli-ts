@@ -72,7 +72,7 @@ export const createCommand = new Command('create')
         users,
         teams,
         experimentTags,
-      }, getDefaultType());
+      }, options.type || getDefaultType());
 
       for (const warning of result.warnings) {
         console.log(chalk.yellow(`⚠ ${warning}`));

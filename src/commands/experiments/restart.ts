@@ -90,7 +90,7 @@ export const restartCommand = new Command('restart')
         users,
         teams,
         experimentTags,
-      }, getDefaultType());
+      }, options.asType || getDefaultType());
 
       for (const warning of result.warnings) {
         console.log(chalk.yellow(`⚠ ${warning}`));
