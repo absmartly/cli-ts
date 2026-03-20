@@ -23,9 +23,10 @@ import { alertsCommand } from './alerts.js';
 import { recommendationsCommand } from './recommendations.js';
 import { exportCommand } from './export.js';
 import { requestUpdateCommand } from './request-update.js';
+import { cloneCommand } from './clone.js';
 
 const subcommands = [
-  listCommand, getCommand, searchCommand, createCommand, updateCommand,
+  listCommand, getCommand, searchCommand, createCommand, cloneCommand, updateCommand,
   startCommand, stopCommand, archiveCommand, activityCommand, generateTemplateCommand,
   developmentCommand, restartCommand, fullOnCommand, scheduleCommand, metricsCommand,
   deleteCommand, parentCommand, accessCommand, followCommand, unfollowCommand,
