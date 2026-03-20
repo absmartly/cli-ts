@@ -94,29 +94,39 @@ describe('experimentToMarkdown', () => {
     expect(md).toContain('  - page_views');
   });
 
-  it('should export custom section field values', () => {
+  it('should export custom fields grouped by section', () => {
     const md = experimentToMarkdown(makeExperiment({
       custom_section_field_values: [
         {
           experiment_custom_section_field_id: 1,
           type: 'text',
           value: 'Users will click more',
-          custom_section_field: { id: 1, title: 'Hypothesis', section_id: 1 },
+          custom_section_field: {
+            id: 1, title: 'Hypothesis', order_index: 1,
+            custom_section: { title: 'Description', order_index: 2 },
+          },
         },
         {
           experiment_custom_section_field_id: 5,
           type: 'text',
-          value: 'Improve conversion',
-          custom_section_field: { id: 5, title: 'Purpose', section_id: 1 },
+          value: 'https://jira.example.com/IT-123',
+          custom_section_field: {
+            id: 5, title: 'JIRA URL', order_index: 1,
+            custom_section: { title: 'JIRA', order_index: 1 },
+          },
         },
       ],
     }));
 
-    expect(md).toContain('## Custom Fields');
+    expect(md).toContain('## JIRA');
+    expect(md).toContain('### JIRA URL');
+    expect(md).toContain('https://jira.example.com/IT-123');
+    expect(md).toContain('## Description');
     expect(md).toContain('### Hypothesis');
     expect(md).toContain('Users will click more');
-    expect(md).toContain('### Purpose');
-    expect(md).toContain('Improve conversion');
+    const jiraPos = md.indexOf('## JIRA');
+    const descPos = md.indexOf('## Description');
+    expect(jiraPos).toBeLessThan(descPos);
   });
 
   it('should include variants with config', () => {

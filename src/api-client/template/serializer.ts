@@ -143,11 +143,19 @@ export function experimentToMarkdown(experiment: Experiment): string {
       return ((fa.order_index as number) ?? 0) - ((fb.order_index as number) ?? 0);
     });
     if (nonEmpty.length > 0) {
-      parts.push('\n## Custom Fields\n');
+      let currentSection = '';
       for (const entry of nonEmpty) {
         const field = entry.custom_section_field as Record<string, unknown>;
+        const section = field.custom_section as Record<string, unknown> | undefined;
+        const sectionTitle = (section?.title as string) || 'Custom Fields';
         const title = field.title as string;
         const value = (entry.value as string) || '';
+
+        if (sectionTitle !== currentSection) {
+          currentSection = sectionTitle;
+          parts.push(`\n## ${sectionTitle}\n`);
+        }
+
         parts.push(`\n### ${title}\n\n`);
         parts.push(`${value}\n`);
       }
