@@ -108,8 +108,7 @@ const createApiKeyCommand = new Command('create-api-key')
 
 const whoamiCommand = new Command('whoami')
   .description('Show the currently authenticated user')
-  .option('--avatar', 'display avatar inline (iTerm2, Kitty, Sixel)')
-  .option('--image-width <cols>', 'image width in terminal columns (default: 20)', parseInt)
+  .option('--avatar [cols]', 'display avatar inline, optional width in columns (default: 20)', parseInt)
   .action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(whoamiCommand);
     const client = await getAPIClientFromOptions(globalOptions);
@@ -133,7 +132,7 @@ const whoamiCommand = new Command('whoami')
         const apiKey = await resolveAPIKey(globalOptions);
         await fetchAndDisplayImage(avatarUrl, user.avatar.file_name ?? 'avatar', {
           headers: { Authorization: `Api-Key ${apiKey}` },
-          width: options.imageWidth ?? 20,
+          width: typeof options.avatar === 'number' ? options.avatar : 20,
         });
       }
     }
