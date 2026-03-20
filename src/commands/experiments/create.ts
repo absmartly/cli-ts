@@ -2,10 +2,9 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, resolveAPIKey, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseExperimentFile } from '../../lib/template/parser.js';
-import { buildExperimentPayload } from '../../api-client/payload/builder.js';
-import { resolveScreenshot } from '../../api-client/template/screenshot.js';
+import { buildPayloadFromTemplate } from '../../api-client/template/build-from-template.js';
+import { buildPayloadFromOptions } from '../../api-client/payload/build-from-options.js';
 import type { Experiment } from '../../lib/api/types.js';
-import { resolveBySearch } from '../../api-client/payload/search-resolver.js';
 import { getDefaultType } from './default-type.js';
 
 function shellEscape(s: string): string {
@@ -38,45 +37,10 @@ export const createCommand = new Command('create')
 
     if (options.fromFile) {
       const template = parseExperimentFile(options.fromFile);
-
-      const metricNames = [
-        template.primary_metric,
-        ...(template.secondary_metrics ?? []),
-        ...(template.guardrail_metrics ?? []),
-        ...(template.exploratory_metrics ?? []),
-      ].filter(Boolean) as string[];
-
-      const ownerRefs = template.owners ?? [];
-
-      const [applications, unitTypes, customSectionFields, metrics, users, teams, experimentTags] = await Promise.all([
-        client.listApplications(),
-        client.listUnitTypes(),
-        client.listCustomSectionFields(),
-        metricNames.length > 0
-          ? resolveBySearch(metricNames, name => client.listMetrics({ search: name, archived: true }))
-          : Promise.resolve([]),
-        ownerRefs.length > 0
-          ? resolveBySearch(ownerRefs, ref => client.listUsers({ search: ref }))
-          : Promise.resolve([]),
-        template.teams?.length ? client.listTeams() : Promise.resolve([]),
-        template.tags?.length ? client.listExperimentTags() : Promise.resolve([]),
-      ]);
-
-      const result = await buildExperimentPayload(template, {
-        applications,
-        unitTypes,
-        metrics,
-        goals: [],
-        customSectionFields,
-        users,
-        teams,
-        experimentTags,
-      }, getDefaultType());
-
+      const result = await buildPayloadFromTemplate(client, template, getDefaultType());
       for (const warning of result.warnings) {
         console.log(chalk.yellow(`⚠ ${warning}`));
       }
-
       data = result.payload as Partial<Experiment>;
     } else {
       if (!options.name) {
@@ -85,101 +49,22 @@ export const createCommand = new Command('create')
           'Either provide --name or use --from-file with a template.'
         );
       }
-
-      const variantNames = options.variants ? options.variants.split(',').map((n: string) => n.trim()) : ['control', 'treatment'];
-      const variantConfigs: string[] = options.variantConfig || [];
-      const variants = variantNames.map((name: string, index: number) => ({
-        name,
-        variant: index,
-        config: variantConfigs[index] || JSON.stringify({}),
-      }));
-
-      const percentages = options.percentages
-        ? options.percentages.split(',').map((p: string) => parseInt(p.trim(), 10))
-        : variantNames.map(() => Math.floor(100 / variantNames.length));
-
-      data = {
+      const ownerIds = options.owner?.map((id: string) => parseInt(id, 10));
+      data = await buildPayloadFromOptions({
         name: options.name,
-        display_name: options.displayName || options.name,
-        type: getDefaultType() as 'test' | 'feature',
+        displayName: options.displayName,
+        type: getDefaultType(),
         state: options.state,
-        percentages: percentages.join('/'),
-        percentage_of_traffic: options.percentageOfTraffic,
-        audience: '{"filter":[{"and":[]}]}',
-        audience_strict: false,
-        analysis_type: 'group_sequential',
-        required_alpha: '0.1',
-        required_power: '0.8',
-        group_sequential_futility_type: 'binding',
-        group_sequential_min_analysis_interval: '1d',
-        group_sequential_first_analysis_interval: '7d',
-        group_sequential_max_duration_interval: '6w',
-        baseline_participants_per_day: '33',
-        nr_variants: variants.length,
-        variants,
-        variant_screenshots: [],
-        secondary_metrics: [],
-        teams: [],
-        experiment_tags: [],
-      } as any;
-
-      if (options.unitType) {
-        (data as any).unit_type = { unit_type_id: options.unitType };
-      }
-      if (options.applicationId) {
-        (data as any).applications = [{ application_id: options.applicationId, application_version: '0' }];
-      }
-      if (options.primaryMetric) {
-        (data as any).primary_metric = { metric_id: options.primaryMetric };
-      }
-      if (options.screenshot && options.screenshot.length > 0) {
-        const screenshots: Array<Record<string, unknown>> = [];
-        for (const entry of options.screenshot as string[]) {
-          const colonIdx = entry.indexOf(':');
-          if (colonIdx === -1) {
-            throw new Error(
-              `Invalid --screenshot format: "${entry}"\n` +
-              `Expected: <variant_index>:<file_path_or_url>\n` +
-              `Example: --screenshot 0:./control.png --screenshot 1:https://example.com/treatment.png`
-            );
-          }
-          const variantIdx = parseInt(entry.substring(0, colonIdx), 10);
-          const source = entry.substring(colonIdx + 1);
-          if (isNaN(variantIdx)) {
-            throw new Error(`Invalid variant index in --screenshot: "${entry}"`);
-          }
-          const variantName = variants[variantIdx]?.name || `variant_${variantIdx}`;
-          const resolved = await resolveScreenshot(source, variantName);
-          if (resolved) {
-            screenshots.push({ variant: variantIdx, file_upload: resolved });
-          }
-        }
-        (data as any).variant_screenshots = screenshots;
-      }
-    }
-
-    if (options.owner && options.owner.length > 0) {
-      (data as any).owners = options.owner.map((id: string) => ({ user_id: parseInt(id, 10) }));
-    }
-
-    if (!(data as any).custom_section_field_values) {
-      const customFields = await client.listCustomSectionFields();
-      const expType = (data as any).type || 'test';
-      const allFields = customFields.filter(
-        (f: any) => !f.archived && f.custom_section?.type === expType && !f.custom_section?.archived
-      );
-      if (allFields.length > 0) {
-        const ownerId = (data as any).owners?.[0]?.user_id;
-        const fieldValues: Record<string, { type: string; value: string }> = {};
-        for (const f of allFields) {
-          let value = f.default_value ?? '';
-          if (f.type === 'user' && ownerId) {
-            value = String(ownerId);
-          }
-          fieldValues[f.id] = { type: f.type, value };
-        }
-        (data as any).custom_section_field_values = fieldValues;
-      }
+        variants: options.variants,
+        variantConfig: options.variantConfig,
+        percentages: options.percentages,
+        percentageOfTraffic: options.percentageOfTraffic,
+        unitType: options.unitType,
+        applicationId: options.applicationId,
+        primaryMetric: options.primaryMetric,
+        screenshot: options.screenshot,
+        ownerIds,
+      }, client);
     }
 
     if (options.dryRun) {

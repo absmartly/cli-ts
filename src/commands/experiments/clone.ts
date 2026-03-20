@@ -4,8 +4,8 @@ import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, resolveEndpoint, resolveAPIKey, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { experimentToMarkdown } from '../../api-client/template/serializer.js';
 import { parseExperimentMarkdown } from '../../api-client/template/parser.js';
-import { buildExperimentPayload } from '../../api-client/payload/builder.js';
-import { resolveBySearch } from '../../api-client/payload/search-resolver.js';
+import { buildPayloadFromTemplate } from '../../api-client/template/build-from-template.js';
+import { mergeTemplateOverrides } from '../../api-client/template/merge-overrides.js';
 import { parseExperimentId } from '../../lib/utils/validators.js';
 import { getDefaultType } from './default-type.js';
 import type { ExperimentId } from '../../lib/api/branded-types.js';
@@ -39,11 +39,7 @@ export const cloneCommand = new Command('clone')
       const overrideTemplate = parseExperimentMarkdown(
         readFileSync(options.fromFile === '-' ? '/dev/stdin' : options.fromFile, 'utf8')
       );
-      for (const [key, value] of Object.entries(overrideTemplate)) {
-        if (value !== undefined && value !== '' && !(Array.isArray(value) && value.length === 0)) {
-          (template as Record<string, unknown>)[key] = value;
-        }
-      }
+      template = mergeTemplateOverrides(template, overrideTemplate);
     }
 
     if (!options.name) {
@@ -57,39 +53,7 @@ export const cloneCommand = new Command('clone')
     if (options.displayName) template.display_name = options.displayName;
     template.state = options.state;
 
-    const metricNames = [
-      template.primary_metric,
-      ...(template.secondary_metrics ?? []),
-      ...(template.guardrail_metrics ?? []),
-      ...(template.exploratory_metrics ?? []),
-    ].filter(Boolean) as string[];
-
-    const ownerRefs = template.owners ?? [];
-
-    const [applications, unitTypes, customSectionFields, metrics, users, teams, experimentTags] = await Promise.all([
-      client.listApplications(),
-      client.listUnitTypes(),
-      client.listCustomSectionFields(),
-      metricNames.length > 0
-        ? resolveBySearch(metricNames, name => client.listMetrics({ search: name, archived: true }))
-        : Promise.resolve([]),
-      ownerRefs.length > 0
-        ? resolveBySearch(ownerRefs, ref => client.listUsers({ search: ref }))
-        : Promise.resolve([]),
-      template.teams?.length ? client.listTeams() : Promise.resolve([]),
-      template.tags?.length ? client.listExperimentTags() : Promise.resolve([]),
-    ]);
-
-    const result = await buildExperimentPayload(template, {
-      applications,
-      unitTypes,
-      metrics,
-      goals: [],
-      customSectionFields,
-      users,
-      teams,
-      experimentTags,
-    }, getDefaultType());
+    const result = await buildPayloadFromTemplate(client, template, getDefaultType());
 
     for (const warning of result.warnings) {
       console.log(chalk.yellow(`⚠ ${warning}`));

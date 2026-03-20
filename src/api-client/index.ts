@@ -84,3 +84,37 @@ export { generateTemplate } from './template/generator.js';
 export type { ResolverContext } from './payload/resolver.js';
 export { resolveByName } from './payload/resolver.js';
 export { buildExperimentPayload, type BuildPayloadResult } from './payload/builder.js';
+export { resolveBySearch } from './payload/search-resolver.js';
+
+export { experimentToMarkdown, type SerializerOptions } from './template/serializer.js';
+export { buildPayloadFromTemplate } from './template/build-from-template.js';
+
+export {
+  formatExtraField,
+  formatImpact,
+  formatConfidence,
+  formatProgress,
+  renderCIBar,
+  formatPct,
+} from './format-helpers.js';
+
+export {
+  summarizeExperiment,
+  summarizeExperimentRow,
+  stateToDate,
+} from './experiment-summary.js';
+
+export type { MetricResult, MetricInfo } from './metric-results.js';
+export {
+  parseMetricData,
+  formatResultRow,
+  metricOwners,
+  extractMetricInfos,
+  extractVariantNames,
+  fetchAllMetricResults,
+} from './metric-results.js';
+
+export type { CreateFromOptionsInput } from './payload/build-from-options.js';
+export { buildPayloadFromOptions } from './payload/build-from-options.js';
+
+export { mergeTemplateOverrides } from './template/merge-overrides.js';

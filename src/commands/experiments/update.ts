@@ -2,11 +2,10 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseExperimentFile } from '../../lib/template/parser.js';
-import { buildExperimentPayload } from '../../api-client/payload/builder.js';
+import { buildPayloadFromTemplate } from '../../api-client/template/build-from-template.js';
 import { parseExperimentId, requireAtLeastOneField } from '../../lib/utils/validators.js';
 import type { ExperimentId } from '../../lib/api/branded-types.js';
 import type { ExperimentInput } from '../../api-client/index.js';
-import { resolveBySearch } from '../../api-client/payload/search-resolver.js';
 import { getDefaultType } from './default-type.js';
 
 export const updateCommand = new Command('update')
@@ -24,40 +23,7 @@ export const updateCommand = new Command('update')
 
     if (options.fromFile) {
       const template = parseExperimentFile(options.fromFile);
-
-      const metricNames = [
-        template.primary_metric,
-        ...(template.secondary_metrics ?? []),
-        ...(template.guardrail_metrics ?? []),
-        ...(template.exploratory_metrics ?? []),
-      ].filter(Boolean) as string[];
-
-      const ownerRefs = template.owners ?? [];
-
-      const [applications, unitTypes, customSectionFields, metrics, users, teams, experimentTags] = await Promise.all([
-        client.listApplications(),
-        client.listUnitTypes(),
-        client.listCustomSectionFields(),
-        metricNames.length > 0
-          ? resolveBySearch(metricNames, name => client.listMetrics({ search: name, archived: true }))
-          : Promise.resolve([]),
-        ownerRefs.length > 0
-          ? resolveBySearch(ownerRefs, ref => client.listUsers({ search: ref }))
-          : Promise.resolve([]),
-        template.teams?.length ? client.listTeams() : Promise.resolve([]),
-        template.tags?.length ? client.listExperimentTags() : Promise.resolve([]),
-      ]);
-
-      const result = await buildExperimentPayload(template, {
-        applications,
-        unitTypes,
-        metrics,
-        goals: [],
-        customSectionFields,
-        users,
-        teams,
-        experimentTags,
-      }, getDefaultType());
+      const result = await buildPayloadFromTemplate(client, template, getDefaultType());
 
       for (const warning of result.warnings) {
         console.log(chalk.yellow(`⚠ ${warning}`));

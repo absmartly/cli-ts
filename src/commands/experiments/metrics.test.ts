@@ -14,7 +14,11 @@ describe('experiments metrics', () => {
   let processExitSpy: ReturnType<typeof vi.spyOn>;
 
   const mockClient = {
-    listExperimentMetrics: vi.fn(),
+    getExperiment: vi.fn().mockResolvedValue({
+      primary_metric_id: 1,
+      primary_metric: { name: 'Conversions' },
+      secondary_metrics: [{ metric_id: 2, type: 'secondary', metric: { name: 'Revenue' } }],
+    }),
     addExperimentMetrics: vi.fn(),
     confirmMetricImpact: vi.fn(),
     excludeExperimentMetric: vi.fn(),
@@ -43,12 +47,16 @@ describe('experiments metrics', () => {
 
   describe('list', () => {
     it('should list metrics for an experiment', async () => {
-      mockClient.listExperimentMetrics.mockResolvedValue([{ id: 1 }, { id: 2 }]);
-
       await metricsCommand.parseAsync(['node', 'test', 'list', '42']);
 
-      expect(mockClient.listExperimentMetrics).toHaveBeenCalledWith(42);
-      expect(printFormatted).toHaveBeenCalledWith([{ id: 1 }, { id: 2 }], expect.any(Object));
+      expect(mockClient.getExperiment).toHaveBeenCalledWith(42);
+      expect(printFormatted).toHaveBeenCalledWith(
+        [
+          { id: 1, name: 'Conversions', type: 'primary', owners: '' },
+          { id: 2, name: 'Revenue', type: 'secondary', owners: '' },
+        ],
+        expect.any(Object),
+      );
     });
   });
 

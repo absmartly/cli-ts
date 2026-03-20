@@ -2,8 +2,7 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseExperimentFile } from '../../lib/template/parser.js';
-import { buildExperimentPayload } from '../../api-client/payload/builder.js';
-import { resolveBySearch } from '../../api-client/payload/search-resolver.js';
+import { buildPayloadFromTemplate } from '../../api-client/template/build-from-template.js';
 import { parseExperimentId } from '../../lib/utils/validators.js';
 import type { ExperimentId } from '../../lib/api/branded-types.js';
 import type { ExperimentInput } from '../../api-client/index.js';
@@ -58,39 +57,7 @@ export const restartCommand = new Command('restart')
     if (options.fromFile) {
       const newTemplate = parseExperimentFile(options.fromFile);
 
-      const metricNames = [
-        newTemplate.primary_metric,
-        ...(newTemplate.secondary_metrics ?? []),
-        ...(newTemplate.guardrail_metrics ?? []),
-        ...(newTemplate.exploratory_metrics ?? []),
-      ].filter(Boolean) as string[];
-
-      const ownerRefs = newTemplate.owners ?? [];
-
-      const [applications, unitTypes, customSectionFields, metrics, users, teams, experimentTags] = await Promise.all([
-        client.listApplications(),
-        client.listUnitTypes(),
-        client.listCustomSectionFields(),
-        metricNames.length > 0
-          ? resolveBySearch(metricNames, name => client.listMetrics({ search: name, archived: true }))
-          : Promise.resolve([]),
-        ownerRefs.length > 0
-          ? resolveBySearch(ownerRefs, ref => client.listUsers({ search: ref }))
-          : Promise.resolve([]),
-        newTemplate.teams?.length ? client.listTeams() : Promise.resolve([]),
-        newTemplate.tags?.length ? client.listExperimentTags() : Promise.resolve([]),
-      ]);
-
-      const result = await buildExperimentPayload(newTemplate, {
-        applications,
-        unitTypes,
-        metrics,
-        goals: [],
-        customSectionFields,
-        users,
-        teams,
-        experimentTags,
-      }, options.asType || getDefaultType());
+      const result = await buildPayloadFromTemplate(client, newTemplate, options.asType || getDefaultType());
 
       for (const warning of result.warnings) {
         console.log(chalk.yellow(`⚠ ${warning}`));

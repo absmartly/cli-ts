@@ -3,58 +3,8 @@ import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseDateFlagOrUndefined } from '../../lib/utils/date-parser.js';
 import type { ListOptions } from '../../lib/api/types.js';
-import { formatExtraField, formatImpact, formatConfidence, formatProgress } from './format-helpers.js';
+import { summarizeExperimentRow } from '../../api-client/experiment-summary.js';
 import { getDefaultType } from './default-type.js';
-
-function stateToDate(state: string, exp: Record<string, unknown>): string {
-  let date: string | undefined;
-  switch (state) {
-    case 'running': date = exp.start_at as string; break;
-    case 'stopped': date = exp.stop_at as string; break;
-    case 'archived': date = exp.stop_at as string; break;
-    default: date = exp.created_at as string; break;
-  }
-  return (date ?? '').slice(0, 10);
-}
-
-function summarizeExperimentRow(exp: Record<string, unknown>, extraFields: string[] = []): Record<string, unknown> {
-  const apps = exp.applications as Array<Record<string, unknown>> | undefined;
-  const unitType = exp.unit_type as Record<string, unknown> | undefined;
-  const primaryMetric = exp.primary_metric as Record<string, unknown> | undefined;
-  const owners = exp.owners as Array<Record<string, unknown>> | undefined;
-
-  const state = exp.state as string;
-  const stateDate = stateToDate(state, exp);
-
-  const row: Record<string, unknown> = {
-    id: exp.id,
-    name: exp.name,
-    type: exp.type,
-    state,
-    state_since: stateDate,
-    app: apps?.map(a => (a.application as Record<string, unknown>)?.name ?? a.name).join(', ') ?? '',
-    unit_type: unitType?.name ?? '',
-    traffic: `${exp.percentage_of_traffic}%`,
-    primary_metric: primaryMetric?.name ?? '',
-    owner: owners?.map(o => {
-      const user = o.user as Record<string, unknown> | undefined;
-      if (user) return `${user.first_name} ${user.last_name}`;
-      return `user ${o.user_id}`;
-    }).join(', ') ?? '',
-    percentages: exp.percentages ?? '',
-    impact: formatImpact(exp),
-    confidence: formatConfidence(exp),
-    progress: formatProgress(exp),
-  };
-
-  for (const field of extraFields) {
-    if (!(field in row) && field in exp) {
-      row[field] = formatExtraField(field, exp[field]);
-    }
-  }
-
-  return row;
-}
 
 export const listCommand = new Command('list')
   .description('List experiments')
