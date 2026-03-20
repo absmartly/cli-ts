@@ -2,7 +2,7 @@ import Table from 'cli-table3';
 import yaml from 'js-yaml';
 import chalk from 'chalk';
 
-export type OutputFormat = 'table' | 'json' | 'yaml' | 'plain' | 'markdown' | 'template';
+export type OutputFormat = 'table' | 'json' | 'yaml' | 'plain' | 'markdown' | 'template' | 'vertical';
 
 export interface OutputOptions {
   format?: OutputFormat;
@@ -32,6 +32,8 @@ export function formatOutput(
       return formatPlain(data, options);
     case 'markdown':
       return formatMarkdown(data, options);
+    case 'vertical':
+      return formatVertical(data, options);
     case 'table':
     default:
       return formatTable(data, options);
@@ -138,6 +140,41 @@ export function formatMarkdown(data: unknown, options: OutputOptions = {}): stri
       output += `- **${key}**: ${formatValue(value, options)}\n`;
     }
     return output;
+  }
+
+  return String(data);
+}
+
+export function formatVertical(data: unknown, options: OutputOptions = {}): string {
+  if (Array.isArray(data)) {
+    if (data.length === 0) return 'No results found.';
+
+    return data.map((item, idx) => {
+      const header = options.noColor
+        ? `*** ${idx + 1}. row ***`
+        : chalk.cyan(`*** ${idx + 1}. row ***`);
+
+      if (typeof item !== 'object' || item === null) {
+        return `${header}\n  ${formatValue(item, options)}`;
+      }
+
+      const maxKeyLen = Math.max(...Object.keys(item).map(k => k.length));
+      const lines = Object.entries(item).map(([key, value]) => {
+        const label = options.noColor ? key.padStart(maxKeyLen) : chalk.bold(key.padStart(maxKeyLen));
+        return `${label}: ${formatValue(value, { ...options, full: true })}`;
+      });
+
+      return `${header}\n${lines.join('\n')}`;
+    }).join('\n\n');
+  }
+
+  if (typeof data === 'object' && data !== null) {
+    const entries = Object.entries(data);
+    const maxKeyLen = Math.max(...entries.map(([k]) => k.length));
+    return entries.map(([key, value]) => {
+      const label = options.noColor ? key.padStart(maxKeyLen) : chalk.bold(key.padStart(maxKeyLen));
+      return `${label}: ${formatValue(value, { ...options, full: true })}`;
+    }).join('\n');
   }
 
   return String(data);
