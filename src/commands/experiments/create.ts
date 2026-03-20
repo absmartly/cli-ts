@@ -41,7 +41,7 @@ export const createCommand = new Command('create')
       const [applications, unitTypes, metrics, customSectionFields] = await Promise.all([
         client.listApplications(),
         client.listUnitTypes(),
-        client.listMetrics(),
+        client.listMetrics({ archived: true }),
         client.listCustomSectionFields(),
       ]);
 

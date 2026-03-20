@@ -76,7 +76,7 @@ async function main() {
   });
 
   await runTest('Fetch metrics', async () => {
-    const metrics = await client.listMetrics(1);
+    const metrics = await client.listMetrics();
     assert(metrics.length > 0, 'No metrics found');
     metricId = metrics[0].id;
     console.log(`    metricId=${metricId} (${(metrics[0] as any).description || 'metric'})`);

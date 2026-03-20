@@ -41,7 +41,7 @@ export async function fetchLiveMetadata(client: APIClient): Promise<LiveMetadata
     client.listApplications(),
     client.listUnitTypes(),
     client.listTeams(),
-    client.listMetrics(1),
+    client.listMetrics({ archived: true }),
     client.listUsers(),
     client.listCustomSectionFields(),
   ]);

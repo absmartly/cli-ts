@@ -27,7 +27,9 @@ export function experimentToMarkdown(experiment: Experiment): string {
   }
 
   const primaryMetric = experiment.primary_metric as Record<string, unknown> | undefined;
-  if (primaryMetric) parts.push(`primary_metric: ${primaryMetric.name ?? primaryMetric.metric_id ?? primaryMetric.id}\n`);
+  if (primaryMetric) {
+    parts.push(`primary_metric: ${primaryMetric.name || primaryMetric.metric_id || primaryMetric.id}\n`);
+  }
 
   const allMetrics = experiment.secondary_metrics as Array<Record<string, unknown>> | undefined;
   if (allMetrics && allMetrics.length > 0) {

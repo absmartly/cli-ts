@@ -130,6 +130,31 @@ primary_metric: clicks
       );
     });
 
+    it('should resolve archived metrics when using --from-file', async () => {
+      mockClient.listMetrics.mockResolvedValue([
+        { id: 30, name: 'clicks' },
+        { id: 99, name: 'Archived Metric' },
+      ]);
+
+      writeFileSync(tmpFile, `---
+name: archived-metric-exp
+primary_metric: clicks
+secondary_metrics:
+  - Archived Metric
+---
+`, 'utf8');
+
+      await createCommand.parseAsync(['node', 'test', '--from-file', tmpFile]);
+
+      expect(mockClient.listMetrics).toHaveBeenCalledWith({ archived: true });
+      expect(mockClient.createExperiment).toHaveBeenCalledWith(
+        expect.objectContaining({
+          primary_metric: { metric_id: 30 },
+          secondary_metrics: [{ metric_id: 99, type: 'secondary', order_index: 0 }],
+        })
+      );
+    });
+
     it('should include custom section field defaults from builder', async () => {
       mockClient.listCustomSectionFields.mockResolvedValue([
         { id: 100, name: 'launch_date', type: 'string', default_value: '2026-06-01', custom_section: { type: 'test' } },

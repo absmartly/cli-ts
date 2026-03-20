@@ -11,7 +11,7 @@ export async function generateTemplateFromClient(
 ): Promise<string> {
   const apps = await client.listApplications();
   const units = await client.listUnitTypes();
-  const metrics = await client.listMetrics(100, 0);
+  const metrics = await client.listMetrics();
 
   return generateTemplate(
     { applications: apps, unitTypes: units, metrics },

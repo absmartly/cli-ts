@@ -27,7 +27,7 @@ describe('experiment round-trip: create → export → modify → update', () =>
     const [apps, unitTypes, metrics, goals, customFields] = await Promise.all([
       client.listApplications(),
       client.listUnitTypes(),
-      client.listMetrics(1),
+      client.listMetrics({ archived: true }),
       client.listGoals(),
       client.listCustomSectionFields(),
     ]);

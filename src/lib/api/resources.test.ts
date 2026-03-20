@@ -126,7 +126,7 @@ describe('APIClient - Resources', () => {
 
   describe('Metrics', () => {
     it('should list metrics with expected fields', async () => {
-      const metrics = await client.listMetrics(10);
+      const metrics = await client.listMetrics({ items: 10 });
       expect(Array.isArray(metrics)).toBe(true);
       expect(metrics.length).toBeGreaterThan(0);
       expect(metrics[0]).toHaveProperty('id');
@@ -134,7 +134,7 @@ describe('APIClient - Resources', () => {
     });
 
     it('should get metric and extract from wrapped response', async () => {
-      const metrics = await client.listMetrics(1);
+      const metrics = await client.listMetrics({ items: 1 });
       const metricId = metrics[0].id;
       const metric = await client.getMetric(metricId);
       expect(metric.id).toBe(metricId);

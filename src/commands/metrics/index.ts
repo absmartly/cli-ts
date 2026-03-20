@@ -13,13 +13,14 @@ export const metricsCommand = new Command('metrics')
 
 const listCommand = new Command('list')
   .description('List all metrics')
-  .option('--limit <number>', 'maximum number of results', parseInt, 100)
-  .option('--offset <number>', 'offset for pagination', parseInt, 0)
+  .option('--items <number>', 'number of results per page', (v) => parseInt(v, 10), 100)
+  .option('--page <number>', 'page number', (v) => parseInt(v, 10), 1)
+  .option('--archived', 'include archived metrics')
   .action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(listCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
-    const metrics = await client.listMetrics(options.limit, options.offset);
+    const metrics = await client.listMetrics({ items: options.items, page: options.page, archived: options.archived });
     printFormatted(metrics, globalOptions);
   }));
 

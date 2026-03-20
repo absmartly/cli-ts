@@ -554,10 +554,12 @@ export class APIClient {
     this.validateOkResponse(response, 'resetUserPassword');
   }
 
-  async listMetrics(limit = 100, offset = 0): Promise<Metric[]> {
-    const response = await this.request('GET', '/metrics', {
-      params: { limit: String(limit), offset: String(offset) },
-    });
+  async listMetrics(options: { items?: number; page?: number; archived?: boolean } = {}): Promise<Metric[]> {
+    const params: Record<string, string> = {};
+    if (options.items !== undefined) params.items = String(options.items);
+    if (options.page !== undefined) params.page = String(options.page);
+    if (options.archived) params.archived = 'true';
+    const response = await this.request('GET', '/metrics', { params });
     return this.validateListResponse<Metric>(response, 'metrics', 'listMetrics');
   }
 

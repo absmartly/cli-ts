@@ -43,7 +43,7 @@ describe('metrics command', () => {
   it('should list metrics', async () => {
     await metricsCommand.parseAsync(['node', 'test', 'list']);
 
-    expect(mockClient.listMetrics).toHaveBeenCalledWith(100, 0);
+    expect(mockClient.listMetrics).toHaveBeenCalledWith({ items: 100, page: 1, archived: undefined });
     expect(printFormatted).toHaveBeenCalled();
   });
 
