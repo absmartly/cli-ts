@@ -11,8 +11,12 @@ Requires Node.js >= 18.
 ## Quick start
 
 ```bash
-# Interactive setup wizard (recommended for first-time users)
+# Interactive setup wizard
 abs setup
+
+# Non-interactive setup
+abs setup --api-key YOUR_KEY --endpoint https://your-instance.absmartly.com/v1
+abs setup --api-key YOUR_KEY --endpoint https://staging.absmartly.com/v1 --profile staging
 
 # Or authenticate manually
 abs auth login --api-key YOUR_API_KEY --endpoint https://your-instance.absmartly.com/v1
@@ -64,7 +68,7 @@ These options are available on every command:
 | `--endpoint <url>` | Override API endpoint |
 | `--app <name>` | Override default application |
 | `--env <name>` | Override default environment |
-| `-o, --output <format>` | Output format: `table` (default), `json`, `yaml`, `plain`, `markdown`, `template` |
+| `-o, --output <format>` | Output format: `table` (default), `json`, `yaml`, `plain`, `markdown`, `vertical`, `template` |
 | `--no-color` | Disable colored output |
 | `-v, --verbose` | Verbose output |
 | `-q, --quiet` | Minimal output |
@@ -78,46 +82,75 @@ These options are available on every command:
 
 Full lifecycle management for A/B tests and feature flags.
 
-Aliases: `experiments`, `experiment`, `exp`
+Aliases: `experiments`, `experiment`, `exp`, `features`, `feature`
+
+Use `abs features` instead of `abs experiments` to auto-filter by `type=feature`.
 
 ```bash
-# List experiments with filters
+# List experiments with filters and pagination
 abs experiments list
-abs experiments list --state running --type test --limit 50
-abs experiments list --app my-app --search "checkout"
+abs experiments list --state running --items 50 --sort created_at --desc
+abs experiments list --app my-app --search "checkout" --page 2
 abs experiments list --created-after 2025-01-01 --tags 1,2,3
+
+# Customize columns
+abs experiments list --show experiment_report archived   # add extra columns
+abs experiments list --exclude primary_metric owner      # hide columns
 
 # Search by name
 abs experiments search "onboarding"
 
 # Get experiment details
-abs experiments get 123
-abs experiments get 123 --activity    # include activity log
-abs experiments get 123 -o template   # export as reusable markdown template
+abs experiments get 123                                  # summary table
+abs experiments get 123 -o vertical                      # one field per line
+abs experiments get 123 -o json                          # full API response
+abs experiments get 123 --raw                            # full response as table
+abs experiments get 123 --show audience Hypothesis       # include API or custom fields
+abs experiments get 123 --activity                       # include activity log
+
+# Template export (for cloning, editing, round-tripping)
+abs experiments get 123 -o template                      # markdown template
+abs experiments get 123 -o template --embed-screenshots  # with base64 screenshots
+abs experiments get 123 -o template --screenshots-dir ./screenshots  # save screenshots as files
 
 # Create an experiment
-abs experiments create --name my-experiment --type test --variants "control,treatment"
-abs experiments create --from-file experiment.md
-abs experiments create --name my-experiment --dry-run     # preview payload
-abs experiments create --name my-experiment --as-curl     # output as curl command
-abs experiments create --name my-exp --screenshot 0:./control.png --screenshot 1:./treatment.png
+abs experiments create --name my-experiment --variants "control,treatment"
+abs experiments create --from-file experiment.md         # from template
+abs experiments create --name my-experiment --dry-run    # preview payload
+abs experiments create --name my-experiment --as-curl    # output as curl command
+cat template.md | abs experiments create --from-file -   # from stdin
+
+# Clone an experiment
+abs experiments clone 123 --name my-clone                # clone with new name
+abs experiments clone 123 --name my-clone --dry-run      # preview
+abs experiments clone 123 --name my-clone --from-file overrides.md  # clone with changes
 
 # Update an experiment
 abs experiments update 123 --display-name "New Name" --traffic 50
-abs experiments update 123 --from-file experiment.md
+abs experiments update 123 --from-file experiment.md     # update from template
+abs experiments update 123 --from-file experiment.md --dry-run
 
 # Lifecycle transitions
-abs experiments development 123                           # enter development mode
-abs experiments start 123                                 # start experiment
-abs experiments stop 123                                  # stop experiment
-abs experiments restart 123 --reason other --reshuffle    # restart stopped experiment
-abs experiments restart 123 --as-type feature             # restart as feature flag
-abs experiments restart 123 --as-type experiment --state development  # restart as experiment
-abs experiments full-on 123 --variant 1                   # set full-on variant
+abs experiments development 123                          # enter development mode
+abs experiments start 123                                # start experiment
+abs experiments stop 123                                 # stop experiment
+abs experiments restart 123 --reason other --reshuffle   # restart stopped experiment
+abs experiments restart 123 --from-file changes.md       # restart with template changes
+abs experiments restart 123 --as-type feature            # restart as feature flag
+abs experiments full-on 123 --variant 1                  # set full-on variant
 
 # Archive
 abs experiments archive 123
 abs experiments archive 123 --unarchive
+
+# Metric results
+abs experiments metrics list 123                         # list assigned metrics
+abs experiments metrics results 123                      # show results with CI bars
+abs experiments metrics results 123 -o vertical          # one metric per block
+abs experiments metrics add 123 --metrics 1,2,3
+abs experiments metrics confirm-impact 123 456
+abs experiments metrics exclude 123 456
+abs experiments metrics include 123 456
 
 # Activity log
 abs experiments activity list 123
@@ -127,18 +160,11 @@ abs experiments activity reply 123 456 --note "Looks good"
 
 # Delete and parent
 abs experiments delete 123
-abs experiments parent 123                                # get parent experiment
+abs experiments parent 123                               # get parent experiment
 
 # Follow/unfollow
 abs experiments follow 123
 abs experiments unfollow 123
-
-# Metrics management
-abs experiments metrics list 123
-abs experiments metrics add 123 --metrics 1,2,3
-abs experiments metrics confirm-impact 123 456
-abs experiments metrics exclude 123 456
-abs experiments metrics include 123 456
 
 # Annotations
 abs experiments annotations list 123
@@ -193,19 +219,25 @@ abs experiments generate-template -o experiment.md
 | `--analysis-type <type>` | `fixed_horizon`, `group_sequential` |
 | `--running-type <type>` | `full_on`, `experiment` |
 | `--significance <value>` | `positive`, `negative`, `insignificant` |
-| `--limit <n>` | Max results (default: 20) |
-| `--offset <n>` | Pagination offset |
-| `--page <n>` | Page number |
+| `--items <n>` | Results per page (default: 20) |
+| `--page <n>` | Page number (default: 1) |
+| `--sort <field>` | Sort by field (e.g. `created_at`, `name`, `state`) |
+| `--asc` | Sort ascending |
+| `--desc` | Sort descending |
+| `--show <fields...>` | Add extra columns (e.g. `experiment_report archived`) |
+| `--exclude <fields...>` | Hide columns (e.g. `primary_metric owner`) |
 
 ### Feature flags
 
-Convenience alias for experiments filtered to type `feature`.
-
-Aliases: `flags`, `flag`, `features`, `feature`
+`abs features` is the same as `abs experiments` but auto-filters to `type=feature`.
+All subcommands work identically.
 
 ```bash
-abs flags list
-abs flags get 123
+abs features list
+abs features get 123
+abs features create --from-file flag.md
+abs features clone 123 --name my-clone
+abs features restart 123 --as-type experiment    # convert to experiment
 ```
 
 ### Goals
@@ -576,8 +608,16 @@ abs update-schedules delete 1
 Make arbitrary API requests for endpoints not covered by dedicated commands.
 
 ```bash
+# GET requests
 abs api /experiments
+abs api "/experiments?search=Bundle&items=5&previews=1"
+abs api /metrics?archived=true -o json
+
+# POST requests
 abs api /experiments -X POST -d '{"name": "test", "type": "test"}'
+abs api -X POST "/experiments/123/metrics/145" -o json   # fetch metric data
+
+# Custom headers
 abs api /experiments -H "X-Custom: value"
 ```
 
@@ -662,52 +702,115 @@ profiles:
 
 ## Experiment templates
 
-Create experiments from Markdown template files with frontmatter:
+The CLI uses Markdown templates with YAML frontmatter for experiment round-trips.
+All names (metrics, owners, teams, tags, applications) are resolved by name — no IDs needed.
 
 ```bash
-# Generate a template with your account's applications and unit types pre-filled
+# Generate a blank template
 abs experiments generate-template -o experiment.md
-
-# Create an experiment from a template
-abs experiments create --from-file experiment.md
-
-# Update an experiment from a template
-abs experiments update 123 --from-file experiment.md
 
 # Export an existing experiment as a template
 abs experiments get 123 -o template > experiment.md
+abs experiments get 123 -o template --embed-screenshots > experiment.md  # with base64 screenshots
+abs experiments get 123 -o template --screenshots-dir ./screenshots      # save screenshots as files
 
-# Clone workflow: export, modify, re-create
-abs experiments get 123 -o template > clone.md
-# Edit clone.md (change name, variants, etc.)
-abs experiments create --from-file clone.md
+# Create from template
+abs experiments create --from-file experiment.md
+abs experiments create --from-file experiment.md --dry-run   # preview payload
+cat experiment.md | abs experiments create --from-file -     # from stdin
+
+# Update from template
+abs experiments update 123 --from-file experiment.md
+
+# Clone (shortcut)
+abs experiments clone 123 --name my-clone
+
+# Restart with changes
+abs experiments restart 123 --from-file changes.md --reason hypothesis_iteration
 ```
 
-### Variant screenshots
-
-Screenshots can be attached to variants in templates or via CLI options.
-
-**In templates** (in the variant section):
+### Template format
 
 ```markdown
+---
+name: my_experiment
+display_name: "My Experiment"
+unit_type: user_id
+application: www
+primary_metric: Net conversion rate
+secondary_metrics:
+  - Gross conversion rate
+  - Product page views
+guardrail_metrics:
+  - Page load time (ms)
+  - Error rate
+percentages: 50/50
+percentage_of_traffic: 100
+owners:
+  - Márcio Martins <marcio@absmartly.com>
+  - Cal Courtney <cal@absmartly.com>
+teams:
+  - Product
+  - Engineering
+tags:
+  - q1
+  - homepage
+analysis_type: group_sequential
+required_alpha: 0.1
+required_power: 0.8
+baseline_participants: 143
+---
+
+## Audience
+
+```json
+{
+  "filter": [
+    { "and": [{ "eq": [{ "var": { "path": "language" } }, { "value": "en-GB" }] }] }
+  ]
+}
+```
+
+## Variants
+
 ### variant_0
 
-name: control
-config: {"color":"blue"}
-screenshot: ./path/to/control.png
-screenshot: https://cdn.example.com/treatment.png
-screenshot: data:image/png;base64,iVBORw0KGgo...
+name: Control
+config: {}
+screenshot: ./screenshots/control.png
+
+### variant_1
+
+name: Treatment
+config: {"feature_enabled": true}
+screenshot: ./screenshots/treatment.png
+
+## Description
+
+### Hypothesis
+
+We believe changing X will improve Y by Z%.
+
+### Implementation Details
+
+Details here...
+
+## JIRA
+
+### JIRA URL
+
+https://jira.example.com/IT-1234
 ```
 
-**Via CLI options** (format: `<variant_index>:<source>`):
-
-```bash
-abs experiments create --name my-exp \
-  --screenshot 0:./control.png \
-  --screenshot 1:https://cdn.example.com/treatment.png
-```
-
-Sources can be local file paths, HTTP/HTTPS URLs, or base64 data URIs.
+Template features:
+- **Metrics**: resolved by name, including archived metrics
+- **Owners**: `Name <email>`, email, or user ID
+- **Teams/tags**: resolved by name
+- **Audience**: JSON code block, parsed and compacted for the API
+- **Custom fields**: grouped by section name (matches UI sections)
+- **User-type fields**: exported as email, converted back to `{"selected":[{"userId":N}]}`
+- **Screenshots**: local file paths, URLs, or base64 data URIs
+- **Type**: inferred from command (`abs experiments` → test, `abs features` → feature)
 
 ## Development
 
