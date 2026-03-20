@@ -516,7 +516,7 @@ describe('template roundtrip', () => {
       const { payload } = await buildExperimentPayload(template, context);
 
       const customValues = payload.custom_section_field_values as Record<string, { type: string; value: string }>;
-      expect(customValues[302]).toEqual({ type: 'user', value: '100' });
+      expect(customValues[302]).toEqual({ type: 'user', value: '{"selected":[{"userId":100}]}' });
     });
 
     it('should warn when a custom field title does not match any known field', async () => {

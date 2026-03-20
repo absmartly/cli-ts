@@ -176,6 +176,19 @@ export async function experimentToMarkdown(experiment: Experiment, options: Seri
     }
   }
 
+  const userLookup = new Map<number, string>();
+  const allOwners = exp.owners as Array<Record<string, unknown>> | undefined;
+  if (allOwners) {
+    for (const o of allOwners) {
+      const user = o.user as Record<string, unknown> | undefined;
+      if (user?.id && user?.email) userLookup.set(user.id as number, user.email as string);
+    }
+  }
+  const createdBy = exp.created_by as Record<string, unknown> | undefined;
+  if (createdBy?.id && createdBy?.email) userLookup.set(createdBy.id as number, createdBy.email as string);
+  const updatedBy = exp.updated_by as Record<string, unknown> | undefined;
+  if (updatedBy?.id && updatedBy?.email) userLookup.set(updatedBy.id as number, updatedBy.email as string);
+
   const customFieldValues = exp.custom_section_field_values as Array<Record<string, unknown>> | undefined;
   if (customFieldValues && customFieldValues.length > 0) {
     const nonEmpty = customFieldValues.filter(entry => {
@@ -197,7 +210,16 @@ export async function experimentToMarkdown(experiment: Experiment, options: Seri
         const section = field.custom_section as Record<string, unknown> | undefined;
         const sectionTitle = (section?.title as string) || 'Custom Fields';
         const title = field.title as string;
-        const value = (entry.value as string) || '';
+        let value = (entry.value as string) || '';
+
+        if (entry.type === 'user' && value) {
+          try {
+            const parsed = JSON.parse(value);
+            const userIds = (parsed.selected as Array<{ userId: number }>)?.map(s => s.userId) ?? [];
+            const resolved = userIds.map(id => userLookup.get(id) ?? `user:${id}`);
+            value = resolved.join(', ');
+          } catch { /* keep raw value */ }
+        }
 
         if (sectionTitle !== currentSection) {
           currentSection = sectionTitle;

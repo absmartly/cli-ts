@@ -96,13 +96,25 @@ function buildCustomSectionFieldValues(
   for (const field of relevantFields) {
     let value = field.default_value ?? '';
     if (field.type === 'user' && ownerId) {
-      value = String(ownerId);
+      value = JSON.stringify({ selected: [{ userId: ownerId }] });
     }
     if (templateCustomFields) {
       const fieldLabel = field.title ?? field.name ?? '';
       const templateValue = templateCustomFields[fieldLabel];
       if (templateValue !== undefined) {
-        value = templateValue;
+        if (field.type === 'user' && templateValue && !templateValue.startsWith('{')) {
+          const userIds = templateValue.split(',').map(ref => {
+            const trimmed = ref.trim();
+            if (trimmed.startsWith('user:')) return parseInt(trimmed.slice(5), 10);
+            const user = context.users?.find(u =>
+              u.email.toLowerCase() === trimmed.toLowerCase()
+            );
+            return user?.id;
+          }).filter((id): id is number => id !== undefined && !isNaN(id));
+          value = JSON.stringify({ selected: userIds.map(userId => ({ userId })) });
+        } else {
+          value = templateValue;
+        }
       }
     }
     fieldValues[field.id] = { type: field.type, value };

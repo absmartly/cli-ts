@@ -188,7 +188,7 @@ describe('buildExperimentPayload', () => {
     const { payload } = await buildExperimentPayload(template, context);
     const fields = payload.custom_section_field_values as Record<string, { type: string; value: string }>;
     expect(fields['10']).toEqual({ type: 'string', value: '2026-01-01' });
-    expect(fields['11']).toEqual({ type: 'user', value: '5' });
+    expect(fields['11']).toEqual({ type: 'user', value: '{"selected":[{"userId":5}]}' });
     expect(fields['12']).toBeUndefined();
   });
 
