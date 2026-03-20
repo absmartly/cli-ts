@@ -240,7 +240,9 @@ export async function buildExperimentPayload(
       if (!isNaN(asInt) && String(asInt) === String(ownerRef).trim()) {
         resolvedOwners.push({ user_id: asInt });
       } else {
-        const ref = String(ownerRef).toLowerCase();
+        const raw = String(ownerRef).trim();
+        const emailInBrackets = /<(.+?)>/.exec(raw);
+        const ref = (emailInBrackets ? emailInBrackets[1]! : raw).toLowerCase();
         const matches = context.users.filter(u =>
           u.email.toLowerCase() === ref ||
           `${u.first_name ?? ''} ${u.last_name ?? ''}`.trim().toLowerCase() === ref

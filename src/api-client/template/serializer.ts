@@ -62,7 +62,11 @@ export function experimentToMarkdown(experiment: Experiment): string {
     parts.push(`owners:\n`);
     for (const o of owners) {
       const user = o.user as Record<string, unknown> | undefined;
-      parts.push(`  - ${user?.email ?? o.user_id}\n`);
+      if (user?.first_name && user?.email) {
+        parts.push(`  - ${user.first_name} ${user.last_name ?? ''} <${user.email}>\n`);
+      } else {
+        parts.push(`  - ${user?.email ?? o.user_id}\n`);
+      }
     }
   }
 
