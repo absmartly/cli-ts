@@ -1,7 +1,59 @@
 import { Command } from 'commander';
+import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseDateFlagOrUndefined } from '../../lib/utils/date-parser.js';
 import type { ListOptions } from '../../lib/api/types.js';
+import { formatExtraField, formatImpact, formatConfidence, formatProgress } from './format-helpers.js';
+
+function stateToDate(state: string, exp: Record<string, unknown>): string {
+  let date: string | undefined;
+  switch (state) {
+    case 'running': date = exp.start_at as string; break;
+    case 'stopped': date = exp.stop_at as string; break;
+    case 'archived': date = exp.stop_at as string; break;
+    default: date = exp.created_at as string; break;
+  }
+  return (date ?? '').slice(0, 10);
+}
+
+function summarizeExperimentRow(exp: Record<string, unknown>, extraFields: string[] = []): Record<string, unknown> {
+  const apps = exp.applications as Array<Record<string, unknown>> | undefined;
+  const unitType = exp.unit_type as Record<string, unknown> | undefined;
+  const primaryMetric = exp.primary_metric as Record<string, unknown> | undefined;
+  const owners = exp.owners as Array<Record<string, unknown>> | undefined;
+
+  const state = exp.state as string;
+  const stateDate = stateToDate(state, exp);
+
+  const row: Record<string, unknown> = {
+    id: exp.id,
+    name: exp.name,
+    type: exp.type,
+    state,
+    state_since: stateDate,
+    app: apps?.map(a => (a.application as Record<string, unknown>)?.name ?? a.name).join(', ') ?? '',
+    unit_type: unitType?.name ?? '',
+    traffic: `${exp.percentage_of_traffic}%`,
+    primary_metric: primaryMetric?.name ?? '',
+    owner: owners?.map(o => {
+      const user = o.user as Record<string, unknown> | undefined;
+      if (user) return `${user.first_name} ${user.last_name}`;
+      return `user ${o.user_id}`;
+    }).join(', ') ?? '',
+    percentages: exp.percentages ?? '',
+    impact: formatImpact(exp),
+    confidence: formatConfidence(exp),
+    progress: formatProgress(exp),
+  };
+
+  for (const field of extraFields) {
+    if (!(field in row) && field in exp) {
+      row[field] = formatExtraField(field, exp[field]);
+    }
+  }
+
+  return row;
+}
 
 export const listCommand = new Command('list')
   .description('List experiments')
@@ -30,17 +82,16 @@ export const listCommand = new Command('list')
   .option('--alert-assignment-conflict <value>', 'filter by assignment conflict alert (1 for true)', parseInt)
   .option('--alert-metric-threshold-reached <value>', 'filter by metric threshold reached alert (1 for true)', parseInt)
   .option('--significance <value>', 'filter by significance (positive, negative, insignificant)')
-  .option('--limit <number>', 'maximum number of results', parseInt, 20)
-  .option('--offset <number>', 'offset for pagination', parseInt, 0)
-  .option('--page <number>', 'page number for pagination', parseInt)
+  .option('--items <number>', 'number of results per page', (v) => parseInt(v, 10), 20)
+  .option('--page <number>', 'page number (default: 1)', (v) => parseInt(v, 10), 1)
+  .option('--sort <field>', 'sort by field (e.g. created_at, name, state)')
+  .option('--asc', 'sort in ascending order')
+  .option('--desc', 'sort in descending order')
+  .option('--show <fields...>', 'include additional fields (e.g. --show experiment_report archived)')
+  .option('--exclude <fields...>', 'hide columns (e.g. --exclude primary_metric owner)')
   .action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(listCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-
-    const limit = options.limit;
-    const offset = options.page && options.page > 0
-      ? (options.page - 1) * limit
-      : options.offset;
 
     const createdAfter = parseDateFlagOrUndefined(options.createdAfter);
     const createdBefore = parseDateFlagOrUndefined(options.createdBefore);
@@ -50,8 +101,12 @@ export const listCommand = new Command('list')
     const stoppedBefore = parseDateFlagOrUndefined(options.stoppedBefore);
 
     const listOptions: ListOptions = {
-      limit,
-      offset,
+      page: options.page,
+      items: options.items,
+      previews: true,
+      ...(options.sort && { sort: options.sort }),
+      ...(options.asc && { ascending: true }),
+      ...(options.desc && { ascending: false }),
       ...(options.app && { application: options.app }),
       ...(options.state && { state: options.state }),
       ...(options.type && { type: options.type }),
@@ -80,5 +135,32 @@ export const listCommand = new Command('list')
     };
 
     const experiments = await client.listExperiments(listOptions);
-    printFormatted(experiments, globalOptions);
+
+    const useRaw = globalOptions.output === 'json' || globalOptions.output === 'yaml';
+    if (useRaw) {
+      printFormatted(experiments, globalOptions);
+    } else {
+      const extraFields = (options.show as string[] | undefined) ?? [];
+      const excludeFields = new Set((options.exclude as string[] | undefined) ?? []);
+      let rows = (experiments as Array<Record<string, unknown>>).map(e => summarizeExperimentRow(e, extraFields));
+      if (excludeFields.size > 0) {
+        rows = rows.map(row => {
+          const filtered: Record<string, unknown> = {};
+          for (const [k, v] of Object.entries(row)) {
+            if (!excludeFields.has(k)) filtered[k] = v;
+          }
+          return filtered;
+        });
+      }
+      printFormatted(rows, globalOptions);
+
+      const page = options.page ?? 1;
+      const items = options.items ?? 20;
+      const count = experiments.length;
+      const hasMore = count === items;
+      const footer = hasMore
+        ? `Page ${page} (${count} results). Next: --page ${page + 1}`
+        : `Page ${page} (${count} results).`;
+      console.log(chalk.gray(footer));
+    }
   }));

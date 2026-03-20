@@ -11,16 +11,16 @@ export const flagsCommand = new Command('flags')
 
 const listCommand = new Command('list')
   .description('List all feature flags')
-  .option('--limit <number>', 'maximum number of results', parseInt, 100)
-  .option('--offset <number>', 'offset for pagination', parseInt, 0)
+  .option('--items <number>', 'number of results per page', (v) => parseInt(v, 10), 100)
+  .option('--page <number>', 'page number', (v) => parseInt(v, 10), 1)
   .action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(listCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
     const flags = await client.listExperiments({
       type: 'feature',
-      limit: options.limit,
-      offset: options.offset,
+      items: options.items,
+      page: options.page,
     });
     printFormatted(flags, globalOptions);
   }));

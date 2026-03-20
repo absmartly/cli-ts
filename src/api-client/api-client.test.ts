@@ -101,7 +101,7 @@ describe.skipIf(isLiveMode)('APIClient core', () => {
           return HttpResponse.json({ experiments: [{ id: 1, name: 'test', state: params.get('state') }] });
         })
       );
-      const result = await client.listExperiments({ state: 'running', limit: 10 });
+      const result = await client.listExperiments({ state: 'running', items: 10 });
       expect(result[0].state).toBe('running');
     });
 

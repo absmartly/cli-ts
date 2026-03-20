@@ -16,15 +16,14 @@ const typesCommand = new Command('types')
     const client = await getAPIClientFromOptions(globalOptions);
 
     const allExperiments = [];
-    const limit = 100;
+    const itemsPerPage = 100;
     const MAX_EXPERIMENTS = 50000;
-    let offset = 0;
+    let page = 1;
     let hasMore = true;
-    let pageCount = 0;
     const MAX_PAGES = 500;
 
     while (hasMore) {
-      if (pageCount >= MAX_PAGES) {
+      if (page > MAX_PAGES) {
         throw new Error(
           `Pagination limit exceeded: ${MAX_PAGES} pages\n` +
           `Fetched ${allExperiments.length} experiments. Use filters to reduce result set.`
@@ -40,29 +39,28 @@ const typesCommand = new Command('types')
         break;
       }
 
-      const batch = await client.listExperiments({ limit, offset });
+      const batch = await client.listExperiments({ items: itemsPerPage, page });
 
       if (!Array.isArray(batch)) {
         throw new Error(
-          `Invalid API response at page ${pageCount + 1}: Expected array, got ${typeof batch}`
+          `Invalid API response at page ${page}: Expected array, got ${typeof batch}`
         );
       }
 
       allExperiments.push(...batch);
-      pageCount++;
 
       if (process.env.DEBUG) {
-        console.error(chalk.gray(`Fetched page ${pageCount}: ${batch.length} experiments (total: ${allExperiments.length})`));
+        console.error(chalk.gray(`Fetched page ${page}: ${batch.length} experiments (total: ${allExperiments.length})`));
       }
 
-      if (batch.length < limit) {
+      if (batch.length < itemsPerPage) {
         hasMore = false;
       } else {
-        offset += limit;
+        page++;
       }
     }
 
-    console.log(chalk.gray(`Fetched ${allExperiments.length} experiments from ${pageCount} pages`));
+    console.log(chalk.gray(`Fetched ${allExperiments.length} experiments from ${page} pages`));
 
     const uniqueNames = [...new Set(allExperiments.map((e) => e.name).filter(Boolean))];
 
@@ -85,7 +83,7 @@ export interface ExperimentContext {
 
     if (options.output) {
       writeFileSync(options.output, typesContent, 'utf8');
-      console.log(chalk.green(`✓ Types written to ${options.output}`));
+      console.log(chalk.green(`Types written to ${options.output}`));
     } else {
       console.log(typesContent);
     }

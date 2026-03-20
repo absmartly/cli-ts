@@ -56,8 +56,8 @@ describe('flags command', () => {
     );
   });
 
-  it('should pass custom limit', async () => {
-    await flagsCommand.parseAsync(['node', 'test', 'list', '--limit', '5']);
+  it('should pass custom items', async () => {
+    await flagsCommand.parseAsync(['node', 'test', 'list', '--items', '5']);
 
     expect(mockClient.listExperiments).toHaveBeenCalledWith(
       expect.objectContaining({ type: 'feature' })

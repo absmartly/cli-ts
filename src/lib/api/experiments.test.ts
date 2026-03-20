@@ -52,9 +52,9 @@ describe('APIClient - Experiments', () => {
         })
       );
 
-      await client.listExperiments({ limit: 10, state: 'running' });
+      await client.listExperiments({ items: 10, state: 'running' });
 
-      expect(receivedParams!.get('limit')).toBe('10');
+      expect(receivedParams!.get('items')).toBe('10');
       expect(receivedParams!.get('state')).toBe('running');
     });
 
@@ -75,7 +75,7 @@ describe('APIClient - Experiments', () => {
       const experiments = await client.searchExperiments('test', 5);
 
       expect(receivedParams!.get('search')).toBe('test');
-      expect(receivedParams!.get('limit')).toBe('5');
+      expect(receivedParams!.get('items')).toBe('5');
       expect(experiments).toHaveLength(2);
       expect(experiments[0].name).toBe('test_one');
     });

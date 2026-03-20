@@ -9,64 +9,66 @@ const BASE_URL = TEST_BASE_URL;
 describe.skipIf(isLiveMode)('experiments list command integration', () => {
   const client = createAPIClient(BASE_URL, TEST_API_KEY);
 
-  describe('pagination logic', () => {
-    it('should calculate offset from page number correctly', async () => {
+  describe('pagination params', () => {
+    it('should send page and items params', async () => {
       let receivedParams: URLSearchParams | null = null;
       server.use(
         http.get(`${BASE_URL}/experiments`, ({ request }) => {
-          const url = new URL(request.url);
-          receivedParams = url.searchParams;
+          receivedParams = new URL(request.url).searchParams;
           return HttpResponse.json({ experiments: [] });
         })
       );
 
-      const limit = 20;
-      const page = 3;
-      const expectedOffset = (page - 1) * limit;
+      await client.listExperiments({ page: 3, items: 20 });
 
-      await client.listExperiments({ limit, offset: expectedOffset });
-
-      expect(receivedParams?.get('limit')).toBe('20');
-      expect(receivedParams?.get('offset')).toBe('40');
+      expect(receivedParams?.get('page')).toBe('3');
+      expect(receivedParams?.get('items')).toBe('20');
     });
 
-    it('should handle page 1 with offset 0 (offset IS sent even when 0)', async () => {
+    it('should send sort and ascending params', async () => {
       let receivedParams: URLSearchParams | null = null;
       server.use(
         http.get(`${BASE_URL}/experiments`, ({ request }) => {
-          const url = new URL(request.url);
-          receivedParams = url.searchParams;
+          receivedParams = new URL(request.url).searchParams;
           return HttpResponse.json({ experiments: [] });
         })
       );
 
-      const limit = 10;
-      const page = 1;
-      const offset = (page - 1) * limit;
+      await client.listExperiments({ sort: 'created_at', ascending: true });
 
-      await client.listExperiments({ limit, offset });
-
-      expect(receivedParams?.get('offset')).toBe('0');
-      expect(receivedParams?.get('limit')).toBe('10');
+      expect(receivedParams?.get('sort')).toBe('created_at');
+      expect(receivedParams?.get('ascending')).toBe('true');
     });
 
-    it('should handle large page numbers', async () => {
+    it('should send select and include params', async () => {
       let receivedParams: URLSearchParams | null = null;
       server.use(
         http.get(`${BASE_URL}/experiments`, ({ request }) => {
-          const url = new URL(request.url);
-          receivedParams = url.searchParams;
+          receivedParams = new URL(request.url).searchParams;
           return HttpResponse.json({ experiments: [] });
         })
       );
 
-      const limit = 50;
-      const page = 100;
-      const offset = (page - 1) * limit;
+      await client.listExperiments({ select: 'id,name', include: 'tags,metrics' });
 
-      await client.listExperiments({ limit, offset });
+      expect(receivedParams?.get('select')).toBe('id,name');
+      expect(receivedParams?.get('include')).toBe('tags,metrics');
+    });
 
-      expect(receivedParams?.get('offset')).toBe('4950');
+    it('should not send params when not provided', async () => {
+      let receivedParams: URLSearchParams | null = null;
+      server.use(
+        http.get(`${BASE_URL}/experiments`, ({ request }) => {
+          receivedParams = new URL(request.url).searchParams;
+          return HttpResponse.json({ experiments: [] });
+        })
+      );
+
+      await client.listExperiments({});
+
+      expect(receivedParams?.has('page')).toBe(false);
+      expect(receivedParams?.has('items')).toBe(false);
+      expect(receivedParams?.has('sort')).toBe(false);
     });
   });
 
@@ -75,8 +77,7 @@ describe.skipIf(isLiveMode)('experiments list command integration', () => {
       let receivedParams: URLSearchParams | null = null;
       server.use(
         http.get(`${BASE_URL}/experiments`, ({ request }) => {
-          const url = new URL(request.url);
-          receivedParams = url.searchParams;
+          receivedParams = new URL(request.url).searchParams;
           return HttpResponse.json({ experiments: [] });
         })
       );
@@ -93,8 +94,7 @@ describe.skipIf(isLiveMode)('experiments list command integration', () => {
       let receivedParams: URLSearchParams | null = null;
       server.use(
         http.get(`${BASE_URL}/experiments`, ({ request }) => {
-          const url = new URL(request.url);
-          receivedParams = url.searchParams;
+          receivedParams = new URL(request.url).searchParams;
           return HttpResponse.json({ experiments: [] });
         })
       );
@@ -119,8 +119,7 @@ describe.skipIf(isLiveMode)('experiments list command integration', () => {
       let receivedParams: URLSearchParams | null = null;
       server.use(
         http.get(`${BASE_URL}/experiments`, ({ request }) => {
-          const url = new URL(request.url);
-          receivedParams = url.searchParams;
+          receivedParams = new URL(request.url).searchParams;
           return HttpResponse.json({ experiments: [] });
         })
       );
@@ -140,8 +139,7 @@ describe.skipIf(isLiveMode)('experiments list command integration', () => {
       let receivedParams: URLSearchParams | null = null;
       server.use(
         http.get(`${BASE_URL}/experiments`, ({ request }) => {
-          const url = new URL(request.url);
-          receivedParams = url.searchParams;
+          receivedParams = new URL(request.url).searchParams;
           return HttpResponse.json({ experiments: [] });
         })
       );
@@ -161,8 +159,7 @@ describe.skipIf(isLiveMode)('experiments list command integration', () => {
       let receivedParams: URLSearchParams | null = null;
       server.use(
         http.get(`${BASE_URL}/experiments`, ({ request }) => {
-          const url = new URL(request.url);
-          receivedParams = url.searchParams;
+          receivedParams = new URL(request.url).searchParams;
           return HttpResponse.json({ experiments: [] });
         })
       );
@@ -170,12 +167,12 @@ describe.skipIf(isLiveMode)('experiments list command integration', () => {
       await client.listExperiments({
         search: 'homepage',
         state: 'running',
-        limit: 50,
+        items: 50,
       });
 
       expect(receivedParams?.get('search')).toBe('homepage');
       expect(receivedParams?.get('state')).toBe('running');
-      expect(receivedParams?.get('limit')).toBe('50');
+      expect(receivedParams?.get('items')).toBe('50');
     });
   });
 
@@ -195,20 +192,8 @@ describe.skipIf(isLiveMode)('experiments list command integration', () => {
 
     it('should return experiments with correct structure', async () => {
       const mockExperiments = [
-        {
-          id: 1,
-          name: 'test_1',
-          display_name: 'Test 1',
-          state: 'running',
-          type: 'test',
-        },
-        {
-          id: 2,
-          name: 'test_2',
-          display_name: 'Test 2',
-          state: 'stopped',
-          type: 'feature',
-        },
+        { id: 1, name: 'test_1', display_name: 'Test 1', state: 'running', type: 'test' },
+        { id: 2, name: 'test_2', display_name: 'Test 2', state: 'stopped', type: 'feature' },
       ];
 
       server.use(
@@ -217,7 +202,7 @@ describe.skipIf(isLiveMode)('experiments list command integration', () => {
         })
       );
 
-      const result = await client.listExperiments({ limit: 2 });
+      const result = await client.listExperiments({ items: 2 });
 
       expect(result).toHaveLength(2);
       expect(result[0].id).toBe(1);
@@ -226,25 +211,6 @@ describe.skipIf(isLiveMode)('experiments list command integration', () => {
       expect(result[1].id).toBe(2);
       expect(result[1].type).toBe('feature');
     });
-
-    it('should respect limit in response', async () => {
-      server.use(
-        http.get(`${BASE_URL}/experiments`, ({ request }) => {
-          const url = new URL(request.url);
-          const limit = parseInt(url.searchParams.get('limit') || '20');
-          const experiments = Array.from({ length: limit }, (_, i) => ({
-            id: i + 1,
-            name: `exp_${i + 1}`,
-            state: 'created',
-          }));
-          return HttpResponse.json({ experiments });
-        })
-      );
-
-      const result = await client.listExperiments({ limit: 5 });
-
-      expect(result).toHaveLength(5);
-    });
   });
 
   describe('search experiments', () => {
@@ -252,8 +218,7 @@ describe.skipIf(isLiveMode)('experiments list command integration', () => {
       let receivedParams: URLSearchParams | null = null;
       server.use(
         http.get(`${BASE_URL}/experiments`, ({ request }) => {
-          const url = new URL(request.url);
-          receivedParams = url.searchParams;
+          receivedParams = new URL(request.url).searchParams;
           return HttpResponse.json({ experiments: [] });
         })
       );
@@ -261,15 +226,14 @@ describe.skipIf(isLiveMode)('experiments list command integration', () => {
       await client.searchExperiments('homepage test', 25);
 
       expect(receivedParams?.get('search')).toBe('homepage test');
-      expect(receivedParams?.get('limit')).toBe('25');
+      expect(receivedParams?.get('items')).toBe('25');
     });
 
-    it('should use default limit for search', async () => {
+    it('should use default items for search', async () => {
       let receivedParams: URLSearchParams | null = null;
       server.use(
         http.get(`${BASE_URL}/experiments`, ({ request }) => {
-          const url = new URL(request.url);
-          receivedParams = url.searchParams;
+          receivedParams = new URL(request.url).searchParams;
           return HttpResponse.json({ experiments: [] });
         })
       );
@@ -277,7 +241,7 @@ describe.skipIf(isLiveMode)('experiments list command integration', () => {
       await client.searchExperiments('test');
 
       expect(receivedParams?.get('search')).toBe('test');
-      expect(receivedParams?.get('limit')).toBe('50');
+      expect(receivedParams?.get('items')).toBe('50');
     });
   });
 
@@ -306,32 +270,6 @@ describe.skipIf(isLiveMode)('experiments list command integration', () => {
 
       await client.listExperiments({ alert_cleanup_needed: 1 });
       expect(receivedParams?.get('cleanup_needed')).toBe('1');
-    });
-
-    it('should pass alert-audience-mismatch filter', async () => {
-      let receivedParams: URLSearchParams | null = null;
-      server.use(
-        http.get(`${BASE_URL}/experiments`, ({ request }) => {
-          receivedParams = new URL(request.url).searchParams;
-          return HttpResponse.json({ experiments: [] });
-        })
-      );
-
-      await client.listExperiments({ alert_audience_mismatch: 1 });
-      expect(receivedParams?.get('audience_mismatch')).toBe('1');
-    });
-
-    it('should pass alert-sample-size-reached filter', async () => {
-      let receivedParams: URLSearchParams | null = null;
-      server.use(
-        http.get(`${BASE_URL}/experiments`, ({ request }) => {
-          receivedParams = new URL(request.url).searchParams;
-          return HttpResponse.json({ experiments: [] });
-        })
-      );
-
-      await client.listExperiments({ alert_sample_size_reached: 1 });
-      expect(receivedParams?.get('sample_size_reached')).toBe('1');
     });
 
     it('should pass all remaining alert filters', async () => {
@@ -367,19 +305,6 @@ describe.skipIf(isLiveMode)('experiments list command integration', () => {
 
       await client.listExperiments({ analysis_type: 'group_sequential' });
       expect(receivedParams?.get('analysis_type')).toBe('group_sequential');
-    });
-
-    it('should pass running-type filter', async () => {
-      let receivedParams: URLSearchParams | null = null;
-      server.use(
-        http.get(`${BASE_URL}/experiments`, ({ request }) => {
-          receivedParams = new URL(request.url).searchParams;
-          return HttpResponse.json({ experiments: [] });
-        })
-      );
-
-      await client.listExperiments({ running_type: 'full_on' });
-      expect(receivedParams?.get('running_type')).toBe('full_on');
     });
 
     it('should pass significance filter', async () => {

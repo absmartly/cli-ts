@@ -201,7 +201,7 @@ describe.skipIf(isLiveMode)('APIClient - List Options', () => {
   });
 
   describe('Pagination and Filtering', () => {
-    it('should send limit and offset correctly', async () => {
+    it('should send items and page correctly', async () => {
       let receivedParams: URLSearchParams | null = null;
       server.use(
         http.get(`${BASE_URL}/experiments`, ({ request }) => {
@@ -211,10 +211,10 @@ describe.skipIf(isLiveMode)('APIClient - List Options', () => {
         })
       );
 
-      await client.listExperiments({ limit: 50, offset: 100 });
+      await client.listExperiments({ items: 50, page: 3 });
 
-      expect(receivedParams?.get('limit')).toBe('50');
-      expect(receivedParams?.get('offset')).toBe('100');
+      expect(receivedParams?.get('items')).toBe('50');
+      expect(receivedParams?.get('page')).toBe('3');
     });
 
     it('should send state filter', async () => {
@@ -335,8 +335,8 @@ describe.skipIf(isLiveMode)('APIClient - List Options', () => {
       );
 
       await client.listExperiments({
-        limit: 20,
-        offset: 40,
+        items: 20,
+        page: 3,
         state: 'running',
         type: 'test',
         teams: '1,2',
@@ -346,8 +346,8 @@ describe.skipIf(isLiveMode)('APIClient - List Options', () => {
         significance: 'positive',
       });
 
-      expect(receivedParams?.get('limit')).toBe('20');
-      expect(receivedParams?.get('offset')).toBe('40');
+      expect(receivedParams?.get('items')).toBe('20');
+      expect(receivedParams?.get('page')).toBe('3');
       expect(receivedParams?.get('state')).toBe('running');
       expect(receivedParams?.get('type')).toBe('test');
       expect(receivedParams?.get('teams')).toBe('1,2');
@@ -367,13 +367,13 @@ describe.skipIf(isLiveMode)('APIClient - List Options', () => {
       );
 
       await client.listExperiments({
-        limit: 10,
+        items: 10,
         state: undefined,
         type: undefined,
         search: undefined,
       });
 
-      expect(receivedParams?.get('limit')).toBe('10');
+      expect(receivedParams?.get('items')).toBe('10');
       expect(receivedParams?.has('state')).toBe(false);
       expect(receivedParams?.has('type')).toBe(false);
       expect(receivedParams?.has('search')).toBe(false);
@@ -381,7 +381,7 @@ describe.skipIf(isLiveMode)('APIClient - List Options', () => {
   });
 
   describe('Edge Cases', () => {
-    it('should handle limit of 0 (sent explicitly)', async () => {
+    it('should handle items of 0 (sent explicitly)', async () => {
       let receivedParams: URLSearchParams | null = null;
       server.use(
         http.get(`${BASE_URL}/experiments`, ({ request }) => {
@@ -391,12 +391,12 @@ describe.skipIf(isLiveMode)('APIClient - List Options', () => {
         })
       );
 
-      await client.listExperiments({ limit: 0 });
+      await client.listExperiments({ items: 0 });
 
-      expect(receivedParams?.get('limit')).toBe('0');
+      expect(receivedParams?.get('items')).toBe('0');
     });
 
-    it('should handle offset of 0 (sent explicitly)', async () => {
+    it('should handle page of 0 (sent explicitly)', async () => {
       let receivedParams: URLSearchParams | null = null;
       server.use(
         http.get(`${BASE_URL}/experiments`, ({ request }) => {
@@ -406,12 +406,12 @@ describe.skipIf(isLiveMode)('APIClient - List Options', () => {
         })
       );
 
-      await client.listExperiments({ offset: 0 });
+      await client.listExperiments({ page: 0 });
 
-      expect(receivedParams?.get('offset')).toBe('0');
+      expect(receivedParams?.get('page')).toBe('0');
     });
 
-    it('should handle very large limit', async () => {
+    it('should handle very large items', async () => {
       let receivedParams: URLSearchParams | null = null;
       server.use(
         http.get(`${BASE_URL}/experiments`, ({ request }) => {
@@ -421,9 +421,9 @@ describe.skipIf(isLiveMode)('APIClient - List Options', () => {
         })
       );
 
-      await client.listExperiments({ limit: 10000 });
+      await client.listExperiments({ items: 10000 });
 
-      expect(receivedParams?.get('limit')).toBe('10000');
+      expect(receivedParams?.get('items')).toBe('10000');
     });
 
     it('should handle empty string filters as missing', async () => {

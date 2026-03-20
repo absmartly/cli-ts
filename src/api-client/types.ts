@@ -410,8 +410,13 @@ export interface PermissionCategory {
 }
 
 export interface ListOptions {
-  limit?: number;
-  offset?: number;
+  page?: number;
+  items?: number;
+  sort?: string;
+  ascending?: boolean;
+  select?: string;
+  include?: string;
+  previews?: boolean;
   application?: string;
   status?: string;
   state?: string;

@@ -158,8 +158,13 @@ export class APIClient {
   async listExperiments(options: ListOptions = {}): Promise<Experiment[]> {
     const params: Record<string, string> = {};
 
-    if (options.limit !== undefined) params.limit = String(options.limit);
-    if (options.offset !== undefined) params.offset = String(options.offset);
+    if (options.page !== undefined) params.page = String(options.page);
+    if (options.items !== undefined) params.items = String(options.items);
+    if (options.sort) params.sort = options.sort;
+    if (options.ascending !== undefined) params.sort_asc = String(options.ascending);
+    if (options.select) params.select = options.select;
+    if (options.include) params.include = options.include;
+    if (options.previews) params.previews = '1';
     if (options.application) params.application = options.application;
     if (options.status) params.status = options.status;
     if (options.state) params.state = options.state;
@@ -416,8 +421,8 @@ export class APIClient {
     this.validateOkResponse(response, 'requestExperimentUpdate');
   }
 
-  async searchExperiments(query: string, limit = 50): Promise<Experiment[]> {
-    return this.listExperiments({ search: query, limit });
+  async searchExperiments(query: string, items = 50): Promise<Experiment[]> {
+    return this.listExperiments({ search: query, items });
   }
 
   async listExperimentAlerts(experimentId?: ExperimentId): Promise<Alert[]> {
