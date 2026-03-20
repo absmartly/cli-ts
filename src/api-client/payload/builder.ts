@@ -241,12 +241,15 @@ export async function buildExperimentPayload(
         resolvedOwners.push({ user_id: asInt });
       } else {
         const ref = String(ownerRef).toLowerCase();
-        const user = context.users.find(u =>
+        const matches = context.users.filter(u =>
           u.email.toLowerCase() === ref ||
           `${u.first_name ?? ''} ${u.last_name ?? ''}`.trim().toLowerCase() === ref
         );
-        if (user) {
-          resolvedOwners.push({ user_id: user.id });
+        if (matches.length === 1) {
+          resolvedOwners.push({ user_id: matches[0]!.id });
+        } else if (matches.length > 1) {
+          const suggestions = matches.map(u => `${u.email} (id: ${u.id})`).join(', ');
+          warnings.push(`Owner "${ownerRef}" matches multiple users: ${suggestions}. Use email to disambiguate.`);
         } else {
           warnings.push(`Owner "${ownerRef}" not found, skipping`);
         }
