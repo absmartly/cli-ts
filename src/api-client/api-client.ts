@@ -607,7 +607,11 @@ export class APIClient {
     const baseUrl = this.httpClient.getBaseUrl?.() ?? '';
     const rootUrl = baseUrl.replace(/\/v\d+\/?$/, '');
     const response = await this.request('GET', `${rootUrl}/auth/current-user`);
-    return this.validateEntityResponse<User>(response, 'user', 'getCurrentUser');
+    const user = this.validateEntityResponse<User>(response, 'user', 'getCurrentUser');
+    if (user.avatar_file_upload_id && !user.avatar) {
+      return this.getUser(user.id);
+    }
+    return user;
   }
 
   async createUserApiKey(name: string, description?: string): Promise<{ id: number; name: string; key: string }> {
@@ -1472,7 +1476,7 @@ export class APIClient {
       const searchRef = (emailInBrackets ? emailInBrackets[1]! : trimmed).toLowerCase();
       const match = results.filter(u =>
         u.email.toLowerCase() === searchRef ||
-        `${(u as any).first_name ?? ''} ${(u as any).last_name ?? ''}`.trim().toLowerCase() === searchRef
+        `${u.first_name ?? ''} ${u.last_name ?? ''}`.trim().toLowerCase() === searchRef
       );
       if (match.length === 1) return match[0]!;
       if (match.length > 1) throw new Error(`Multiple users match "${trimmed}": ${match.map(u => `${u.email} (id: ${u.id})`).join(', ')}`);

@@ -2,7 +2,7 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import { setProfile, getProfile, loadConfig } from '../../lib/config/config.js';
 import { setAPIKey, getAPIKey, deleteAPIKey } from '../../lib/config/keyring.js';
-import { getAPIClientFromOptions, getGlobalOptions, withErrorHandling } from '../../lib/utils/api-helper.js';
+import { getAPIClientFromOptions, getGlobalOptions, resolveEndpoint, withErrorHandling } from '../../lib/utils/api-helper.js';
 
 export const authCommand = new Command('auth').description('Authentication commands');
 
@@ -110,12 +110,20 @@ const whoamiCommand = new Command('whoami')
   .action(withErrorHandling(async () => {
     const globalOptions = getGlobalOptions(whoamiCommand);
     const client = await getAPIClientFromOptions(globalOptions);
+    const endpoint = resolveEndpoint(globalOptions);
 
     const user = await client.getCurrentUser();
+    const name = [user.first_name, user.last_name].filter(Boolean).join(' ');
+
     console.log(`ID: ${user.id}`);
     console.log(`Email: ${user.email}`);
-    if ((user as any).first_name || (user as any).last_name) {
-      console.log(`Name: ${[(user as any).first_name, (user as any).last_name].filter(Boolean).join(' ')}`);
+    if (name) console.log(`Name: ${name}`);
+    if (user.department) console.log(`Department: ${user.department}`);
+    if (user.job_title) console.log(`Job Title: ${user.job_title}`);
+    if (user.last_login_at) console.log(`Last Login: ${user.last_login_at}`);
+    if (user.avatar?.base_url) {
+      const baseUrl = endpoint.replace(/\/v\d+\/?$/, '');
+      console.log(`Avatar: ${baseUrl}${user.avatar.base_url}/${user.avatar.file_name}`);
     }
   }));
 
