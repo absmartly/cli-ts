@@ -133,6 +133,14 @@ export function experimentToMarkdown(experiment: Experiment): string {
     const nonEmpty = customFieldValues.filter(entry => {
       const field = entry.custom_section_field as Record<string, unknown> | undefined;
       return field?.title;
+    }).sort((a, b) => {
+      const fa = a.custom_section_field as Record<string, unknown>;
+      const fb = b.custom_section_field as Record<string, unknown>;
+      const sa = fa.custom_section as Record<string, unknown> | undefined;
+      const sb = fb.custom_section as Record<string, unknown> | undefined;
+      const sectionDiff = ((sa?.order_index as number) ?? 0) - ((sb?.order_index as number) ?? 0);
+      if (sectionDiff !== 0) return sectionDiff;
+      return ((fa.order_index as number) ?? 0) - ((fb.order_index as number) ?? 0);
     });
     if (nonEmpty.length > 0) {
       parts.push('\n## Custom Fields\n');
