@@ -194,11 +194,15 @@ export async function buildExperimentPayload(
     audience_strict: false,
     nr_variants: variants.length,
     variants,
-    variant_screenshots: await buildVariantScreenshots(template, warnings),
     secondary_metrics: [],
     teams: [],
     experiment_tags: [],
   };
+
+  const newScreenshots = await buildVariantScreenshots(template, warnings);
+  if (newScreenshots.length > 0) {
+    payload.variant_screenshots = newScreenshots;
+  }
 
   if (template.application) {
     const app = resolveByName(context.applications, template.application, 'Application');
