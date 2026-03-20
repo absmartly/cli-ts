@@ -8,14 +8,21 @@ import { getDefaultType } from './default-type.js';
 
 export const listCommand = new Command('list')
   .description('List experiments')
-  .option('--state <state>', 'filter by state (created, ready, running, stopped, archived)')
+  .option('--state <state>', 'filter by state (created, ready, running, development, full_on, stopped, archived)')
   .option('--type <type>', 'filter by type (test, feature)')
-  .option('--app <app>', 'filter by application')
+  .option('--app <app>', 'filter by application name')
+  .option('--applications <ids>', 'filter by application IDs (comma-separated)')
   .option('--search <query>', 'search by name or display name')
   .option('--unit-types <ids>', 'filter by unit types (comma-separated IDs)')
   .option('--owners <ids>', 'filter by owner user IDs (comma-separated)')
   .option('--teams <ids>', 'filter by team IDs (comma-separated)')
   .option('--tags <ids>', 'filter by tag IDs (comma-separated)')
+  .option('--ids <ids>', 'filter by experiment IDs (comma-separated)')
+  .option('--impact <min,max>', 'filter by impact range (e.g. 1,5)')
+  .option('--confidence <min,max>', 'filter by confidence range (e.g. 90,100)')
+  .option('--significance <value>', 'filter by significance (positive, negative, neutral, inconclusive)')
+  .option('--iterations <n>', 'filter by iteration count', (v) => parseInt(v, 10))
+  .option('--iterations-of <id>', 'show all iterations of experiment ID', (v) => parseInt(v, 10))
   .option('--created-after <timestamp>', 'filter experiments created after timestamp')
   .option('--created-before <timestamp>', 'filter experiments created before timestamp')
   .option('--started-after <timestamp>', 'filter experiments started after timestamp')
@@ -32,7 +39,6 @@ export const listCommand = new Command('list')
   .option('--alert-group-sequential-updated <value>', 'filter by group sequential updated alert (1 for true)', parseInt)
   .option('--alert-assignment-conflict <value>', 'filter by assignment conflict alert (1 for true)', parseInt)
   .option('--alert-metric-threshold-reached <value>', 'filter by metric threshold reached alert (1 for true)', parseInt)
-  .option('--significance <value>', 'filter by significance (positive, negative, insignificant)')
   .option('--items <number>', 'number of results per page', (v) => parseInt(v, 10), 20)
   .option('--page <number>', 'page number (default: 1)', (v) => parseInt(v, 10), 1)
   .option('--sort <field>', 'sort by field (e.g. created_at, name, state)')
@@ -59,6 +65,7 @@ export const listCommand = new Command('list')
       ...(options.asc && { ascending: true }),
       ...(options.desc && { ascending: false }),
       ...(options.app && { application: options.app }),
+      ...(options.applications && { applications: options.applications }),
       ...(options.state && { state: options.state }),
       type: options.type || getDefaultType(),
       ...(options.search && { search: options.search }),
@@ -66,6 +73,11 @@ export const listCommand = new Command('list')
       ...(options.owners && { owners: options.owners }),
       ...(options.teams && { teams: options.teams }),
       ...(options.tags && { tags: options.tags }),
+      ...(options.ids && { ids: options.ids }),
+      ...(options.impact && { impact: options.impact }),
+      ...(options.confidence && { confidence: options.confidence }),
+      ...(options.iterations !== undefined && { iterations: options.iterations }),
+      ...(options.iterationsOf !== undefined && { iterations_of: options.iterationsOf }),
       ...(createdAfter !== undefined && { created_after: createdAfter }),
       ...(createdBefore !== undefined && { created_before: createdBefore }),
       ...(startedAfter !== undefined && { started_after: startedAfter }),

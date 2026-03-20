@@ -417,6 +417,7 @@ export interface ListOptions {
   select?: string;
   include?: string;
   previews?: boolean;
+  applications?: string;
   application?: string;
   status?: string;
   state?: string;
@@ -425,6 +426,17 @@ export interface ListOptions {
   owners?: string;
   teams?: string;
   tags?: string;
+  templates?: string;
+  ids?: string;
+  impact?: string;
+  confidence?: string;
+  iterations?: number;
+  iterations_of?: number;
+  created_at?: string;
+  updated_at?: string;
+  started_at?: string;
+  stopped_at?: string;
+  full_on_at?: string;
   created_after?: number;
   created_before?: number;
   started_after?: number;

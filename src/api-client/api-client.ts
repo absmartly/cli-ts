@@ -165,6 +165,7 @@ export class APIClient {
     if (options.select) params.select = options.select;
     if (options.include) params.include = options.include;
     if (options.previews) params.previews = '1';
+    if (options.applications) params.applications = options.applications;
     if (options.application) params.application = options.application;
     if (options.status) params.status = options.status;
     if (options.state) params.state = options.state;
@@ -173,16 +174,27 @@ export class APIClient {
     if (options.owners) params.owners = options.owners;
     if (options.teams) params.teams = options.teams;
     if (options.tags) params.tags = options.tags;
+    if (options.templates) params.templates = options.templates;
+    if (options.ids) params.ids = options.ids;
+    if (options.impact) params.impact = options.impact;
+    if (options.confidence) params.confidence = options.confidence;
+    if (options.iterations !== undefined) params.iterations = String(options.iterations);
+    if (options.iterations_of !== undefined) params.iterations_of = String(options.iterations_of);
 
-    if (options.created_after !== undefined || options.created_before !== undefined) {
+    if (options.created_at) params.created_at = options.created_at;
+    else if (options.created_after !== undefined || options.created_before !== undefined) {
       params.created_at = `${options.created_after ?? 0},${options.created_before ?? 0}`;
     }
-    if (options.started_after !== undefined || options.started_before !== undefined) {
+    if (options.updated_at) params.updated_at = options.updated_at;
+    if (options.started_at) params.started_at = options.started_at;
+    else if (options.started_after !== undefined || options.started_before !== undefined) {
       params.started_at = `${options.started_after ?? 0},${options.started_before ?? 0}`;
     }
-    if (options.stopped_after !== undefined || options.stopped_before !== undefined) {
+    if (options.stopped_at) params.stopped_at = options.stopped_at;
+    else if (options.stopped_after !== undefined || options.stopped_before !== undefined) {
       params.stopped_at = `${options.stopped_after ?? 0},${options.stopped_before ?? 0}`;
     }
+    if (options.full_on_at) params.full_on_at = options.full_on_at;
 
     if (options.analysis_type) params.analysis_type = options.analysis_type;
     if (options.running_type) params.running_type = options.running_type;
