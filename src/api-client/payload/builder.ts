@@ -125,6 +125,8 @@ async function buildVariantScreenshots(
   for (const v of template.variants) {
     if (!v.screenshot) continue;
 
+    if (v.screenshot.startsWith('/files/')) continue;
+
     let resolved;
     try {
       resolved = await resolveScreenshot(v.screenshot, v.name);
