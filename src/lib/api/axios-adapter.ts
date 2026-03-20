@@ -105,6 +105,10 @@ export class AxiosHttpClient implements HttpClient {
     };
   }
 
+  getBaseUrl(): string {
+    return this.client.defaults.baseURL || '';
+  }
+
   private handleError(error: AxiosError): APIError {
     const apiError: APIError = new Error('API error');
     if (error.response?.status !== undefined) {

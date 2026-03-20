@@ -15,6 +15,7 @@ export interface HttpResponse<T = unknown> {
 
 export interface HttpClient {
   request<T = unknown>(config: HttpRequestConfig): Promise<HttpResponse<T>>;
+  getBaseUrl?(): string;
 }
 
 export interface APIError extends Error {

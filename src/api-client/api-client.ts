@@ -603,6 +603,13 @@ export class APIClient {
     return this.validateEntityResponse<Metric>(response, 'metric', 'updateMetric');
   }
 
+  async getCurrentUser(): Promise<User> {
+    const baseUrl = this.httpClient.getBaseUrl?.() ?? '';
+    const rootUrl = baseUrl.replace(/\/v\d+\/?$/, '');
+    const response = await this.request('GET', `${rootUrl}/auth/current-user`);
+    return this.validateEntityResponse<User>(response, 'user', 'getCurrentUser');
+  }
+
   async createUserApiKey(name: string, description?: string): Promise<{ id: number; name: string; key: string }> {
     const response = await this.request<Record<string, unknown>>('POST', '/auth/current-user/api_keys', {
       data: { name, description: description || '' },

@@ -105,7 +105,22 @@ const createApiKeyCommand = new Command('create-api-key')
     console.log(chalk.yellow('  Save this key now — it cannot be retrieved later.'));
   }));
 
+const whoamiCommand = new Command('whoami')
+  .description('Show the currently authenticated user')
+  .action(withErrorHandling(async () => {
+    const globalOptions = getGlobalOptions(whoamiCommand);
+    const client = await getAPIClientFromOptions(globalOptions);
+
+    const user = await client.getCurrentUser();
+    console.log(`ID: ${user.id}`);
+    console.log(`Email: ${user.email}`);
+    if ((user as any).first_name || (user as any).last_name) {
+      console.log(`Name: ${[(user as any).first_name, (user as any).last_name].filter(Boolean).join(' ')}`);
+    }
+  }));
+
 authCommand.addCommand(loginCommand);
 authCommand.addCommand(statusCommand);
 authCommand.addCommand(logoutCommand);
 authCommand.addCommand(createApiKeyCommand);
+authCommand.addCommand(whoamiCommand);
