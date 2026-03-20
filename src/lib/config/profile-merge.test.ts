@@ -1,26 +1,28 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { loadConfig, saveConfig, getConfigPath, defaultConfig } from './config.js';
-import { existsSync, unlinkSync, writeFileSync } from 'fs';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { unlinkSync, writeFileSync, mkdtempSync } from 'fs';
+import { join } from 'path';
+import { tmpdir } from 'os';
 import yaml from 'js-yaml';
+
+const fakeHome = mkdtempSync(join(tmpdir(), 'abs-config-merge-test-'));
+vi.mock('os', async (importOriginal) => {
+  const mod = await importOriginal<typeof import('os')>();
+  return { ...mod, homedir: () => fakeHome };
+});
+
+import { loadConfig, saveConfig, getConfigPath, ensureConfigDir } from './config.js';
 
 describe('Profile Deep Merge', () => {
   const testConfigPath = getConfigPath();
-  let configExisted = false;
-  let originalConfig: string | null = null;
 
   beforeEach(() => {
-    if (existsSync(testConfigPath)) {
-      configExisted = true;
-      originalConfig = require('fs').readFileSync(testConfigPath, 'utf8');
-    }
+    ensureConfigDir();
   });
 
   afterEach(() => {
-    if (configExisted && originalConfig) {
-      writeFileSync(testConfigPath, originalConfig);
-    } else if (existsSync(testConfigPath)) {
+    try {
       unlinkSync(testConfigPath);
-    }
+    } catch {}
   });
 
   it('should deep merge user profile with default profile', () => {
@@ -45,7 +47,7 @@ describe('Profile Deep Merge', () => {
 
     expect(loaded.profiles.default.api.endpoint).toBe('https://custom-api.example.com');
     expect(loaded.profiles.default.api.token).toBe('custom-token');
-    expect(loaded.profiles.default.expctld.endpoint).toBe('https://ctl.absmartly.io/v1');
+    expect(loaded.profiles.default.expctld.endpoint).toBe('');
   });
 
   it('should preserve expctld endpoint when only api is overridden', () => {
@@ -68,7 +70,7 @@ describe('Profile Deep Merge', () => {
     const loaded = loadConfig();
 
     expect(loaded.profiles.default.api.endpoint).toBe('https://my-api.com/v1');
-    expect(loaded.profiles.default.expctld.endpoint).toBe('https://ctl.absmartly.io/v1');
+    expect(loaded.profiles.default.expctld.endpoint).toBe('');
   });
 
   it('should merge both api and expctld when both are provided', () => {
@@ -185,9 +187,9 @@ describe('Profile Deep Merge', () => {
 
     const loaded = loadConfig();
 
-    expect(loaded.profiles.default.api.endpoint).toBe('https://api.absmartly.com/v1');
+    expect(loaded.profiles.default.api.endpoint).toBe('');
     expect(loaded.profiles.default.api.token).toBe('only-token');
-    expect(loaded.profiles.default.expctld.endpoint).toBe('https://ctl.absmartly.io/v1');
+    expect(loaded.profiles.default.expctld.endpoint).toBe('');
     expect(loaded.profiles.default.expctld.token).toBeUndefined();
   });
 });

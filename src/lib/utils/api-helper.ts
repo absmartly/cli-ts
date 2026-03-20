@@ -7,15 +7,13 @@ import { formatOutput, type OutputFormat } from '../output/formatter.js';
 export async function resolveAPIKey(options: Record<string, unknown>): Promise<string> {
   const config = loadConfig();
   const profileName = (options.profile as string) || config['default-profile'];
-  const profile = getProfile(profileName);
-  const endpoint = (options.endpoint as string) || profile.api.endpoint;
   const apiKey = (options.apiKey as string) || (await getAPIKey(profileName));
 
   if (!apiKey) {
     throw new Error(
       `No API key found for profile "${profileName}".\n` +
-      `Run: abs auth login --api-key YOUR_KEY --endpoint ${endpoint}\n` +
-      `Or: abs setup  # for interactive configuration`
+      `Run: abs setup\n` +
+      `Or:  abs --endpoint https://your-api.example.com/v1 --api-key YOUR_KEY <command>`
     );
   }
 
@@ -27,6 +25,15 @@ export async function getAPIClientFromOptions(options: Record<string, unknown>):
   const profileName = (options.profile as string) || config['default-profile'];
   const profile = getProfile(profileName);
   const endpoint = (options.endpoint as string) || profile.api.endpoint;
+
+  if (!endpoint) {
+    throw new Error(
+      `No API endpoint configured for profile "${profileName}".\n` +
+      `Run: abs setup\n` +
+      `Or:  abs --endpoint https://your-api.example.com/v1 --api-key YOUR_KEY <command>`
+    );
+  }
+
   const apiKey = await resolveAPIKey(options);
 
   return createAPIClient(endpoint, apiKey, { verbose: options.verbose as boolean });
@@ -47,7 +54,7 @@ export interface GlobalOptions extends Record<string, unknown> {
   full?: boolean;
 }
 
-const VALID_FORMATS: OutputFormat[] = ['table', 'json', 'yaml', 'plain', 'markdown', 'template'];
+const VALID_FORMATS: OutputFormat[] = ['table', 'json', 'yaml', 'plain', 'markdown', 'template', 'vertical'];
 
 export function getGlobalOptions(cmd: Command): GlobalOptions {
   const opts = cmd.optsWithGlobals();

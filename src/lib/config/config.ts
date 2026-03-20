@@ -53,10 +53,10 @@ export function defaultConfig(): Config {
     profiles: {
       default: {
         api: {
-          endpoint: 'https://api.absmartly.com/v1',
+          endpoint: '',
         },
         expctld: {
-          endpoint: 'https://ctl.absmartly.io/v1',
+          endpoint: '',
         },
       },
     },

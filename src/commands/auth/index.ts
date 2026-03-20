@@ -38,7 +38,7 @@ const loginCommand = new Command('login')
         endpoint: options.endpoint,
       },
       expctld: {
-        endpoint: 'https://ctl.absmartly.io/v1',
+        endpoint: '',
       },
       application: options.app,
       environment: options.env,

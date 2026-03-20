@@ -41,7 +41,7 @@ describe('setup command', () => {
   it('should complete setup with valid inputs', async () => {
     mockQuestion
       .mockResolvedValueOnce('test-key')
-      .mockResolvedValueOnce('')
+      .mockResolvedValueOnce('https://api.example.com/v1')
       .mockResolvedValueOnce('production');
 
     vi.mocked(createAPIClient).mockReturnValue({

@@ -1,5 +1,14 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { unlinkSync, existsSync } from 'fs';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { unlinkSync, mkdtempSync } from 'fs';
+import { join } from 'path';
+import { tmpdir } from 'os';
+
+const fakeHome = mkdtempSync(join(tmpdir(), 'abs-config-val-test-'));
+vi.mock('os', async (importOriginal) => {
+  const mod = await importOriginal<typeof import('os')>();
+  return { ...mod, homedir: () => fakeHome };
+});
+
 import {
   getConfigValue,
   setConfigValue,

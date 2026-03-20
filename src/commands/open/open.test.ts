@@ -14,6 +14,7 @@ describe('Open Command Validation', () => {
 
   beforeEach(() => {
     const config = defaultConfig();
+    config.profiles.default.api.endpoint = 'https://api.absmartly.com/v1';
     saveConfig(config);
 
     consoleLogSpy = vi.spyOn(console, 'log').mockImplementation(() => {});

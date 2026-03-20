@@ -1,5 +1,14 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { unlinkSync, existsSync, writeFileSync, readdirSync } from 'fs';
+import { unlinkSync, existsSync, writeFileSync, readdirSync, mkdtempSync } from 'fs';
+import { join } from 'path';
+import { tmpdir } from 'os';
+
+const fakeHome = mkdtempSync(join(tmpdir(), 'abs-config-test-'));
+vi.mock('os', async (importOriginal) => {
+  const mod = await importOriginal<typeof import('os')>();
+  return { ...mod, homedir: () => fakeHome };
+});
+
 import {
   defaultConfig,
   loadConfig,
@@ -39,7 +48,7 @@ describe('Config Management', () => {
       expect(config['default-profile']).toBe('default');
       expect(config.output).toBe('table');
       expect(config.profiles.default).toBeDefined();
-      expect(config.profiles.default.api.endpoint).toBe('https://api.absmartly.com/v1');
+      expect(config.profiles.default.api.endpoint).toBe('');
     });
   });
 
@@ -65,7 +74,7 @@ describe('Config Management', () => {
 
       const loaded = loadConfig();
       expect(loaded.profiles['default']).toBeDefined();
-      expect(loaded.profiles['default'].api.endpoint).toBe('https://api.absmartly.com/v1');
+      expect(loaded.profiles['default'].api.endpoint).toBe('');
       expect(loaded.profiles['staging']).toBeDefined();
       expect(loaded.profiles['staging'].api.endpoint).toBe('https://staging.com/v1');
     });
@@ -100,8 +109,8 @@ describe('Config Management', () => {
 
       const loaded = loadConfig();
       expect(loaded.profiles['default']).toBeDefined();
-      expect(loaded.profiles['default'].api.endpoint).toBe('https://api.absmartly.com/v1');
-      expect(loaded.profiles['default'].expctld.endpoint).toBe('https://ctl.absmartly.io/v1');
+      expect(loaded.profiles['default'].api.endpoint).toBe('');
+      expect(loaded.profiles['default'].expctld.endpoint).toBe('');
       expect(loaded.profiles['custom']).toBeDefined();
     });
 
@@ -116,7 +125,7 @@ describe('Config Management', () => {
 
       const loaded = loadConfig();
       expect(loaded.profiles['default']).toBeDefined();
-      expect(loaded.profiles['default'].api.endpoint).toBe('https://api.absmartly.com/v1');
+      expect(loaded.profiles['default'].api.endpoint).toBe('');
     });
 
     it('should handle missing profiles key', () => {
@@ -128,7 +137,7 @@ describe('Config Management', () => {
 
       const loaded = loadConfig();
       expect(loaded.profiles['default']).toBeDefined();
-      expect(loaded.profiles['default'].api.endpoint).toBe('https://api.absmartly.com/v1');
+      expect(loaded.profiles['default'].api.endpoint).toBe('');
     });
 
     it('should handle config with only top-level keys and preserve defaults', () => {
@@ -157,7 +166,7 @@ describe('Config Management', () => {
     it('should get profile', () => {
       const profile = getProfile('default');
       expect(profile).toBeDefined();
-      expect(profile.api.endpoint).toBe('https://api.absmartly.com/v1');
+      expect(profile.api.endpoint).toBe('');
     });
 
     it('should set new profile', () => {

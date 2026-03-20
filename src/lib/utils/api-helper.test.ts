@@ -44,7 +44,21 @@ describe('API Helper', () => {
         /No API key found for profile "default"/
       );
       await expect(getAPIClientFromOptions({})).rejects.toThrow(
-        /abs auth login --api-key/
+        /abs setup/
+      );
+    });
+
+    it('should throw error when no endpoint is configured', async () => {
+      (loadConfig as any).mockReturnValue({
+        'default-profile': 'default',
+      });
+      (getProfile as any).mockReturnValue({
+        api: { endpoint: '' },
+        expctld: { endpoint: '' },
+      });
+
+      await expect(getAPIClientFromOptions({})).rejects.toThrow(
+        /No API endpoint configured for profile "default"/
       );
       await expect(getAPIClientFromOptions({})).rejects.toThrow(
         /abs setup/
@@ -182,12 +196,12 @@ describe('API Helper', () => {
         /Invalid output format: 'invalid'/
       );
       expect(() => getGlobalOptions(mockCommand)).toThrow(
-        /Must be one of: table, json, yaml, plain, markdown/
+        /Must be one of: table, json, yaml, plain, markdown, template, vertical/
       );
     });
 
     it('should accept valid output formats', () => {
-      const formats = ['table', 'json', 'yaml', 'plain', 'markdown'];
+      const formats = ['table', 'json', 'yaml', 'plain', 'markdown', 'vertical'];
 
       for (const format of formats) {
         mockCommand.setOptionValue('output', format);
