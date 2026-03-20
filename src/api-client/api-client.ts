@@ -364,6 +364,11 @@ export class APIClient {
     return this.validateListResponse<unknown>(response, 'experiment_metrics', 'listExperimentMetrics');
   }
 
+  async getExperimentMetricData(experimentId: ExperimentId, metricId: number | 'main'): Promise<{ columnNames: string[]; rows: unknown[][] }> {
+    const response = await this.request<Record<string, unknown>>('POST', `/experiments/${experimentId}/metrics/${metricId}`);
+    return response.data as { columnNames: string[]; rows: unknown[][] };
+  }
+
   async addExperimentMetrics(id: ExperimentId, metricIds: MetricId[]): Promise<void> {
     const response = await this.request('POST', `/experiments/${id}/metrics`, { data: { metric_ids: metricIds } });
     this.validateOkResponse(response, 'addExperimentMetrics');

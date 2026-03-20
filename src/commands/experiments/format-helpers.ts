@@ -31,7 +31,7 @@ export function formatImpact(exp: Record<string, unknown>): string {
 
 const CI_WIDTH = 20;
 
-function renderCIBar(lower: number, upper: number, impact: number): string {
+export function renderCIBar(lower: number, upper: number, impact: number): string {
   const range = Math.max(Math.abs(lower), Math.abs(upper), 0.01) * 1.5;
   const min = -range;
   const max = range;
@@ -90,7 +90,7 @@ export function formatProgress(exp: Record<string, unknown>): string {
   return '';
 }
 
-function formatPct(value: number): string {
+export function formatPct(value: number): string {
   const pct = value * 100;
   return `${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%`;
 }
