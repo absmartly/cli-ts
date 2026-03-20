@@ -51,6 +51,15 @@ abs auth whoami
 abs auth whoami --avatar       # display avatar inline (iTerm2, Kitty, Sixel)
 abs auth whoami --avatar 30    # avatar at 30 columns wide
 
+# Manage personal API keys
+abs auth list-api-keys
+abs auth get-api-key 1
+abs auth update-api-key 1 --name "Renamed Key"
+abs auth delete-api-key 1
+
+# Edit your profile
+abs auth edit-profile --first-name "Jonas" --last-name "Alves" --department "Engineering"
+
 # Logout
 abs auth logout
 abs auth logout --profile staging
@@ -575,6 +584,22 @@ abs custom-sections archive 1 --unarchive
 abs custom-sections reorder --sections "1:0,2:1,3:2"
 ```
 
+### Events
+
+View and manage event tracking data.
+
+Aliases: `events`, `event`
+
+```bash
+abs events list --from 1711929600000 --to 1712016000000
+abs events list --app 1 --unit-type 2 --event-type exposure --items 50
+abs events history --from 1711929600000 --to 1712016000000 --period 1d
+abs events unit-data 1:user123 2:device456
+abs events delete-unit-data 1:user123
+abs events json-values --event-type exposure --path "variant" --experiment-id 123
+abs events json-layouts --source unit_attribute --phase after_enrichment
+```
+
 ### Insights
 
 View experiment velocity and decision analytics.
@@ -585,6 +610,45 @@ Aliases: `insights`, `insight`
 abs insights velocity --from 2026-01-01 --to 2026-03-01 --aggregation month
 abs insights decisions --from 2026-01-01 --to 2026-03-01 --aggregation week
 abs insights velocity --from 2026-01-01 --to 2026-03-01 --aggregation day --teams 1,2
+abs insights velocity-detail --from 2026-01-01 --to 2026-03-01 --aggregation month
+abs insights decisions-history --from 2026-01-01 --to 2026-03-01 --aggregation week
+```
+
+### Statistics
+
+Statistical analysis tools for experiment planning.
+
+Aliases: `statistics`, `stats`
+
+```bash
+abs statistics power-matrix --config '{"split":[0.5,0.5],"metric_mean":100,"metric_variance":25,"metric_type":"count","powers":[0.8,0.9]}'
+```
+
+### Storage configs
+
+Manage storage destinations for data exports.
+
+Aliases: `storage-configs`, `storageconfigs`
+
+```bash
+abs storage-configs list
+abs storage-configs get 1
+abs storage-configs create --config '{"type": "s3", ...}'
+abs storage-configs update 1 --config '{"bucket": "new-bucket"}'
+abs storage-configs test --config '{"type": "s3", ...}'
+```
+
+### Action dialog fields
+
+Manage fields shown in experiment action dialogs (start, stop, etc.).
+
+Aliases: `action-dialog-fields`, `actiondialogfields`
+
+```bash
+abs action-dialog-fields list
+abs action-dialog-fields get 1
+abs action-dialog-fields create --config '{"name": "Reason", "type": "text"}'
+abs action-dialog-fields update 1 --config '{"required": true}'
 ```
 
 ### Platform configuration
@@ -626,6 +690,9 @@ abs datasources archive 1
 abs datasources test --config '{"type": "postgres", ...}'
 abs datasources introspect --config '{"type": "postgres", ...}'
 abs datasources validate-query --config '{"query": "SELECT ..."}'
+abs datasources preview-query --config '{"query": "SELECT ..."}'
+abs datasources set-default 1
+abs datasources schema 1
 ```
 
 ### Export configurations
@@ -642,6 +709,7 @@ abs export-configs update 1 --config '{"schedule": "daily"}'
 abs export-configs archive 1
 abs export-configs pause 1
 abs export-configs histories 1
+abs export-configs cancel-history 1 42 --reason "No longer needed"
 ```
 
 ### Update schedules

@@ -39,6 +39,10 @@ import { datasourcesCommand } from './commands/datasources/index.js';
 import { exportConfigsCommand } from './commands/exportconfigs/index.js';
 import { updateSchedulesCommand } from './commands/updateschedules/index.js';
 import { customSectionsCommand } from './commands/customsections/index.js';
+import { eventsCommand } from './commands/events/index.js';
+import { storageConfigsCommand } from './commands/storageconfigs/index.js';
+import { statisticsCommand } from './commands/statistics/index.js';
+import { actionDialogFieldsCommand } from './commands/actiondialogfields/index.js';
 import { handleFatalError } from './lib/utils/error-handler.js';
 
 const program = new Command();
@@ -98,6 +102,10 @@ program.addCommand(datasourcesCommand);
 program.addCommand(exportConfigsCommand);
 program.addCommand(updateSchedulesCommand);
 program.addCommand(customSectionsCommand);
+program.addCommand(eventsCommand);
+program.addCommand(storageConfigsCommand);
+program.addCommand(statisticsCommand);
+program.addCommand(actionDialogFieldsCommand);
 process.on('unhandledRejection', (reason) => handleFatalError('unhandled promise rejection', reason));
 process.on('uncaughtException', (error) => handleFatalError('uncaught exception', error));
 

@@ -72,6 +72,11 @@ export class APIClient {
     this.httpClient = httpClient;
   }
 
+  private getRootUrl(): string {
+    const baseUrl = this.httpClient.getBaseUrl?.() ?? '';
+    return baseUrl.replace(/\/v\d+\/?$/, '');
+  }
+
   private async request<T>(
     method: 'GET' | 'POST' | 'PUT' | 'DELETE',
     url: string,
@@ -599,8 +604,7 @@ export class APIClient {
   }
 
   async getCurrentUser(): Promise<User> {
-    const baseUrl = this.httpClient.getBaseUrl?.() ?? '';
-    const rootUrl = baseUrl.replace(/\/v\d+\/?$/, '');
+    const rootUrl = this.getRootUrl();
     const response = await this.request('GET', `${rootUrl}/auth/current-user`);
     const user = this.validateEntityResponse<User>(response, 'user', 'getCurrentUser');
     if (user.avatar_file_upload_id && !user.avatar) {
@@ -610,7 +614,8 @@ export class APIClient {
   }
 
   async createUserApiKey(name: string, description?: string): Promise<{ id: number; name: string; key: string }> {
-    const response = await this.request<Record<string, unknown>>('POST', '/auth/current-user/api_keys', {
+    const rootUrl = this.getRootUrl();
+    const response = await this.request<Record<string, unknown>>('POST', `${rootUrl}/auth/current-user/api_keys`, {
       data: { name, description: description || '' },
     });
     return this.validateEntityResponse<{ id: number; name: string; key: string }>(response, 'user_api_key', 'createUserApiKey');
@@ -1477,6 +1482,231 @@ export class APIClient {
       if (match.length > 1) throw new Error(`Multiple users match "${trimmed}": ${match.map(u => `${u.email} (id: ${u.id})`).join(', ')}`);
       throw new Error(`User "${trimmed}" not found`);
     });
+  }
+
+  // --- Events ---
+
+  async listEvents(body: {
+    filters?: {
+      from?: number; to?: number;
+      applications?: number[]; unit_types?: number[];
+      event_types?: string[]; unit_uids?: string[];
+      environment_types?: string[]; event_names?: string[];
+      effective_exposures?: boolean;
+    };
+    take?: number; skip?: number; unit_hex?: boolean;
+  }): Promise<unknown> {
+    const response = await this.request('POST', '/events', { data: body });
+    return response.data;
+  }
+
+  async listEventsHistory(body: {
+    filters?: {
+      from?: number; to?: number;
+      applications?: number[]; unit_types?: number[];
+      event_types?: string[]; unit_uids?: string[];
+      environment_types?: string[]; event_names?: string[];
+    };
+    period?: string; tz_offset?: number;
+  }): Promise<unknown> {
+    const response = await this.request('POST', '/events/history', { data: body });
+    return response.data;
+  }
+
+  async getEventUnitData(body: {
+    units: Array<{ unit_type_id: number; uid: string }>;
+  }): Promise<unknown> {
+    const response = await this.request('POST', '/events/unit_data', { data: body });
+    return response.data;
+  }
+
+  async deleteEventUnitData(body: {
+    units: Array<{ unit_type_id: number; uid: string }>;
+  }): Promise<unknown> {
+    const response = await this.request('DELETE', '/events/unit_data', { data: body });
+    return response.data;
+  }
+
+  async getEventJsonValues(body: {
+    event_type: 'exposure' | 'goal' | 'attribute';
+    path: string;
+    from?: number; to?: number;
+    experiment_id?: number; goal_id?: number;
+    take?: number; skip?: number; sort?: string;
+  }): Promise<unknown> {
+    const response = await this.request('POST', '/events/json_values', { data: body });
+    return response.data;
+  }
+
+  async getEventJsonLayouts(body: {
+    source: 'unit_attribute' | 'unit_goal_property';
+    phase: 'before_enrichment' | 'after_enrichment';
+    prefix?: string; source_id?: number;
+    from?: number; to?: number;
+    take?: number; skip?: number; sort?: string;
+  }): Promise<unknown> {
+    const response = await this.request('POST', '/events/json_layouts', { data: body });
+    return response.data;
+  }
+
+  // --- Insights Detail ---
+
+  async getVelocityInsightsDetail(params: {
+    from: number; to: number; aggregation: string;
+    teams?: string; applications?: string;
+  }): Promise<unknown> {
+    const queryParams: Record<string, string> = {
+      from: String(params.from), to: String(params.to), aggregation: params.aggregation,
+    };
+    if (params.teams) queryParams.teams = params.teams;
+    if (params.applications) queryParams.applications = params.applications;
+    const response = await this.request('GET', '/insights/velocity/summary/detail', { params: queryParams });
+    return response.data;
+  }
+
+  async getDecisionInsightsHistory(params: {
+    from: number; to: number; aggregation: string;
+    teams?: string; applications?: string;
+  }): Promise<unknown> {
+    const queryParams: Record<string, string> = {
+      from: String(params.from), to: String(params.to), aggregation: params.aggregation,
+    };
+    if (params.teams) queryParams.teams = params.teams;
+    if (params.applications) queryParams.applications = params.applications;
+    const response = await this.request('GET', '/insights/decisions/history', { params: queryParams });
+    return response.data;
+  }
+
+  // --- Statistics ---
+
+  async getPowerAnalysisMatrix(body: {
+    split: number[];
+    metric_mean: number; metric_variance: number; metric_type: string;
+    metric_custom_statistics_type?: string;
+    analysis_type?: string; two_sided?: boolean;
+    sample_sizes?: number[]; minimum_detectable_effects?: number[];
+    powers?: number[]; alphas?: number[];
+    power?: number; alpha?: number;
+    participants_per_week?: number;
+    group_sequential_futility_type?: string;
+    group_sequential_first_analysis_interval?: string;
+    group_sequential_min_analysis_interval?: string;
+  }): Promise<{ matrix: number[][] }> {
+    const response = await this.request<{ matrix: number[][] }>('POST', '/statistics/power/plan/matrix', { data: body });
+    return response.data as { matrix: number[][] };
+  }
+
+  // --- Storage Configs ---
+
+  async listStorageConfigs(): Promise<unknown[]> {
+    const response = await this.request('GET', '/storage_configs');
+    return this.validateListResponse<unknown>(response, 'storage_configs', 'listStorageConfigs');
+  }
+
+  async getStorageConfig(id: number): Promise<unknown> {
+    const response = await this.request('GET', `/storage_configs/${id}`);
+    return this.validateEntityResponse<unknown>(response, 'storage_config', 'getStorageConfig');
+  }
+
+  async createStorageConfig(data: Record<string, unknown>): Promise<unknown> {
+    const response = await this.request('POST', '/storage_configs', { data });
+    return this.validateEntityResponse<unknown>(response, 'storage_config', 'createStorageConfig');
+  }
+
+  async updateStorageConfig(id: number, data: Record<string, unknown>): Promise<unknown> {
+    const response = await this.request('PUT', `/storage_configs/${id}`, { data: { data } });
+    return this.validateEntityResponse<unknown>(response, 'storage_config', 'updateStorageConfig');
+  }
+
+  async testStorageConfig(data: Record<string, unknown>): Promise<void> {
+    const response = await this.request('POST', '/storage_configs/test', { data });
+    this.validateOkResponse(response, 'testStorageConfig');
+  }
+
+  // --- Datasource extras ---
+
+  async previewDatasourceQuery(data: Record<string, unknown>): Promise<unknown> {
+    const response = await this.request('POST', '/datasources/preview_query', { data });
+    return response.data;
+  }
+
+  async setDefaultDatasource(id: DatasourceId): Promise<unknown> {
+    const response = await this.request('PUT', `/datasources/${id}/set_default`);
+    return response.data;
+  }
+
+  async getDatasourceSchema(id: DatasourceId): Promise<unknown> {
+    const response = await this.request('GET', `/datasources/${id}/schema`);
+    return response.data;
+  }
+
+  // --- Export History cancel ---
+
+  async cancelExportHistory(exportConfigId: ExportConfigId, historyId: number, reason?: string): Promise<unknown> {
+    const response = await this.request('PUT',
+      `/export_configs/${exportConfigId}/export_histories/${historyId}/cancel`,
+      { data: { reason: reason ?? '' } }
+    );
+    return response.data;
+  }
+
+  // --- Current User API Keys (full CRUD) ---
+
+  async listUserApiKeys(): Promise<unknown[]> {
+    const rootUrl = this.getRootUrl();
+    const response = await this.request('GET', `${rootUrl}/auth/current-user/api_keys`);
+    return this.validateListResponse<unknown>(response, 'user_api_keys', 'listUserApiKeys');
+  }
+
+  async getUserApiKey(id: number): Promise<unknown> {
+    const rootUrl = this.getRootUrl();
+    const response = await this.request('GET', `${rootUrl}/auth/current-user/api_keys/${id}`);
+    return this.validateEntityResponse<unknown>(response, 'user_api_key', 'getUserApiKey');
+  }
+
+  async updateUserApiKey(id: number, data: { name?: string; description?: string }): Promise<unknown> {
+    const rootUrl = this.getRootUrl();
+    const response = await this.request('PUT', `${rootUrl}/auth/current-user/api_keys/${id}`, { data: { data } });
+    return this.validateEntityResponse<unknown>(response, 'user_api_key', 'updateUserApiKey');
+  }
+
+  async deleteUserApiKey(id: number): Promise<void> {
+    const rootUrl = this.getRootUrl();
+    await this.request('DELETE', `${rootUrl}/auth/current-user/api_keys/${id}`);
+  }
+
+  // --- Edit Current User ---
+
+  async updateCurrentUser(data: {
+    first_name?: string; last_name?: string;
+    department?: string; job_title?: string;
+    date_format_locale?: string;
+  }): Promise<User> {
+    const rootUrl = this.getRootUrl();
+    const response = await this.request('PUT', `${rootUrl}/auth/current-user`, { data: { data } });
+    return this.validateEntityResponse<User>(response, 'user', 'updateCurrentUser');
+  }
+
+  // --- Experiment Action Dialog Fields ---
+
+  async listExperimentActionDialogFields(): Promise<unknown[]> {
+    const response = await this.request('GET', '/experiment_action_dialog_fields');
+    return this.validateListResponse<unknown>(response, 'experiment_action_dialog_fields', 'listExperimentActionDialogFields');
+  }
+
+  async getExperimentActionDialogField(id: number): Promise<unknown> {
+    const response = await this.request('GET', `/experiment_action_dialog_fields/${id}`);
+    return this.validateEntityResponse<unknown>(response, 'experiment_action_dialog_field', 'getExperimentActionDialogField');
+  }
+
+  async createExperimentActionDialogField(data: Record<string, unknown>): Promise<unknown> {
+    const response = await this.request('POST', '/experiment_action_dialog_fields', { data });
+    return this.validateEntityResponse<unknown>(response, 'experiment_action_dialog_field', 'createExperimentActionDialogField');
+  }
+
+  async updateExperimentActionDialogField(id: number, data: Record<string, unknown>): Promise<unknown> {
+    const response = await this.request('PUT', `/experiment_action_dialog_fields/${id}`, { data: { data } });
+    return this.validateEntityResponse<unknown>(response, 'experiment_action_dialog_field', 'updateExperimentActionDialogField');
   }
 
   async rawRequest(

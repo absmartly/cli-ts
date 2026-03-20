@@ -2,7 +2,7 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import { setProfile, getProfile, loadConfig } from '../../lib/config/config.js';
 import { setAPIKey, getAPIKey, deleteAPIKey } from '../../lib/config/keyring.js';
-import { getAPIClientFromOptions, getGlobalOptions, resolveAPIKey, resolveEndpoint, withErrorHandling } from '../../lib/utils/api-helper.js';
+import { getAPIClientFromOptions, getGlobalOptions, printFormatted, resolveAPIKey, resolveEndpoint, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { fetchAndDisplayImage, supportsInlineImages } from '../../lib/utils/terminal-image.js';
 import { summarizeUser } from '../../api-client/user-summary.js';
 
@@ -137,8 +137,79 @@ const whoamiCommand = new Command('whoami')
     }
   }));
 
+const listApiKeysCommand = new Command('list-api-keys')
+  .description('List personal API keys for the current user')
+  .action(withErrorHandling(async () => {
+    const globalOptions = getGlobalOptions(listApiKeysCommand);
+    const client = await getAPIClientFromOptions(globalOptions);
+    const keys = await client.listUserApiKeys();
+    printFormatted(keys, globalOptions);
+  }));
+
+const getApiKeyCommand = new Command('get-api-key')
+  .description('Get a personal API key by ID')
+  .argument('<id>', 'API key ID', parseInt)
+  .action(withErrorHandling(async (id: number) => {
+    const globalOptions = getGlobalOptions(getApiKeyCommand);
+    const client = await getAPIClientFromOptions(globalOptions);
+    const key = await client.getUserApiKey(id);
+    printFormatted(key, globalOptions);
+  }));
+
+const updateApiKeyCommand = new Command('update-api-key')
+  .description('Update a personal API key')
+  .argument('<id>', 'API key ID', parseInt)
+  .option('--name <name>', 'API key name')
+  .option('--description <text>', 'API key description')
+  .action(withErrorHandling(async (id: number, options) => {
+    const globalOptions = getGlobalOptions(updateApiKeyCommand);
+    const client = await getAPIClientFromOptions(globalOptions);
+    const data: { name?: string; description?: string } = {};
+    if (options.name !== undefined) data.name = options.name;
+    if (options.description !== undefined) data.description = options.description;
+    await client.updateUserApiKey(id, data);
+    console.log(chalk.green(`✓ API key ${id} updated`));
+  }));
+
+const deleteApiKeyCommand = new Command('delete-api-key')
+  .description('Delete a personal API key')
+  .argument('<id>', 'API key ID', parseInt)
+  .action(withErrorHandling(async (id: number) => {
+    const globalOptions = getGlobalOptions(deleteApiKeyCommand);
+    const client = await getAPIClientFromOptions(globalOptions);
+    await client.deleteUserApiKey(id);
+    console.log(chalk.green(`✓ API key ${id} deleted`));
+  }));
+
+const editProfileCommand = new Command('edit-profile')
+  .description('Edit current user profile')
+  .option('--first-name <name>', 'first name')
+  .option('--last-name <name>', 'last name')
+  .option('--department <dept>', 'department')
+  .option('--job-title <title>', 'job title')
+  .action(withErrorHandling(async (options) => {
+    const globalOptions = getGlobalOptions(editProfileCommand);
+    const client = await getAPIClientFromOptions(globalOptions);
+    const data: Record<string, string> = {};
+    if (options.firstName !== undefined) data.first_name = options.firstName;
+    if (options.lastName !== undefined) data.last_name = options.lastName;
+    if (options.department !== undefined) data.department = options.department;
+    if (options.jobTitle !== undefined) data.job_title = options.jobTitle;
+    const user = await client.updateCurrentUser(data);
+    console.log(chalk.green(`✓ Profile updated`));
+    const name = [user.first_name, user.last_name].filter(Boolean).join(' ');
+    if (name) console.log(`  Name: ${name}`);
+    if (user.department) console.log(`  Department: ${user.department}`);
+    if (user.job_title) console.log(`  Job Title: ${user.job_title}`);
+  }));
+
 authCommand.addCommand(loginCommand);
 authCommand.addCommand(statusCommand);
 authCommand.addCommand(logoutCommand);
 authCommand.addCommand(createApiKeyCommand);
 authCommand.addCommand(whoamiCommand);
+authCommand.addCommand(listApiKeysCommand);
+authCommand.addCommand(getApiKeyCommand);
+authCommand.addCommand(updateApiKeyCommand);
+authCommand.addCommand(deleteApiKeyCommand);
+authCommand.addCommand(editProfileCommand);

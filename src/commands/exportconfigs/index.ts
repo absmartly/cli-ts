@@ -84,6 +84,18 @@ const historiesCommand = new Command('histories')
     printFormatted(histories, globalOptions);
   }));
 
+const cancelHistoryCommand = new Command('cancel-history')
+  .description('Cancel a running export history')
+  .argument('<export-config-id>', 'export config ID', parseExportConfigId)
+  .argument('<history-id>', 'export history ID', parseInt)
+  .option('--reason <text>', 'cancellation reason')
+  .action(withErrorHandling(async (exportConfigId: ExportConfigId, historyId: number, options) => {
+    const globalOptions = getGlobalOptions(cancelHistoryCommand);
+    const client = await getAPIClientFromOptions(globalOptions);
+    await client.cancelExportHistory(exportConfigId, historyId, options.reason);
+    console.log(chalk.green(`✓ Export history ${historyId} cancelled`));
+  }));
+
 exportConfigsCommand.addCommand(listCommand);
 exportConfigsCommand.addCommand(getCommand);
 exportConfigsCommand.addCommand(createCommand);
@@ -91,3 +103,4 @@ exportConfigsCommand.addCommand(updateCommand);
 exportConfigsCommand.addCommand(archiveCommand);
 exportConfigsCommand.addCommand(pauseCommand);
 exportConfigsCommand.addCommand(historiesCommand);
+exportConfigsCommand.addCommand(cancelHistoryCommand);

@@ -53,5 +53,47 @@ const decisionsCommand = new Command('decisions')
     printFormatted(result, globalOptions);
   }));
 
+const velocityDetailCommand = new Command('velocity-detail')
+  .description('Get detailed velocity insights breakdown')
+  .requiredOption('--from <date>', 'start date (ISO 8601)')
+  .requiredOption('--to <date>', 'end date (ISO 8601)')
+  .requiredOption('--aggregation <agg>', 'aggregation period (month, week, day)')
+  .option('--teams <ids>', 'comma-separated team IDs')
+  .option('--applications <ids>', 'comma-separated application IDs')
+  .action(withErrorHandling(async (options) => {
+    const globalOptions = getGlobalOptions(velocityDetailCommand);
+    const client = await getAPIClientFromOptions(globalOptions);
+    const result = await client.getVelocityInsightsDetail({
+      from: toEpochSeconds(options.from),
+      to: toEpochSeconds(options.to),
+      aggregation: options.aggregation,
+      teams: options.teams,
+      applications: options.applications,
+    });
+    printFormatted(result, globalOptions);
+  }));
+
+const decisionsHistoryCommand = new Command('decisions-history')
+  .description('Get decision insights history')
+  .requiredOption('--from <date>', 'start date (ISO 8601)')
+  .requiredOption('--to <date>', 'end date (ISO 8601)')
+  .requiredOption('--aggregation <agg>', 'aggregation period (month, week, day)')
+  .option('--teams <ids>', 'comma-separated team IDs')
+  .option('--applications <ids>', 'comma-separated application IDs')
+  .action(withErrorHandling(async (options) => {
+    const globalOptions = getGlobalOptions(decisionsHistoryCommand);
+    const client = await getAPIClientFromOptions(globalOptions);
+    const result = await client.getDecisionInsightsHistory({
+      from: toEpochSeconds(options.from),
+      to: toEpochSeconds(options.to),
+      aggregation: options.aggregation,
+      teams: options.teams,
+      applications: options.applications,
+    });
+    printFormatted(result, globalOptions);
+  }));
+
 insightsCommand.addCommand(velocityCommand);
 insightsCommand.addCommand(decisionsCommand);
+insightsCommand.addCommand(velocityDetailCommand);
+insightsCommand.addCommand(decisionsHistoryCommand);

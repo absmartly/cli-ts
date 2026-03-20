@@ -97,6 +97,37 @@ const validateQueryCommand = new Command('validate-query')
     console.log(chalk.green(`✓ Datasource query is valid`));
   }));
 
+const previewQueryCommand = new Command('preview-query')
+  .description('Preview a datasource query')
+  .requiredOption('--config <json>', 'query configuration as JSON')
+  .action(withErrorHandling(async (options) => {
+    const globalOptions = getGlobalOptions(previewQueryCommand);
+    const client = await getAPIClientFromOptions(globalOptions);
+    const config = validateJSON(options.config, '--config') as Record<string, unknown>;
+    const result = await client.previewDatasourceQuery(config);
+    printFormatted(result, globalOptions);
+  }));
+
+const setDefaultCommand = new Command('set-default')
+  .description('Set a datasource as the default')
+  .argument('<id>', 'datasource ID', parseDatasourceId)
+  .action(withErrorHandling(async (id: DatasourceId) => {
+    const globalOptions = getGlobalOptions(setDefaultCommand);
+    const client = await getAPIClientFromOptions(globalOptions);
+    await client.setDefaultDatasource(id);
+    console.log(chalk.green(`✓ Datasource ${id} set as default`));
+  }));
+
+const schemaCommand = new Command('schema')
+  .description('Fetch datasource schema')
+  .argument('<id>', 'datasource ID', parseDatasourceId)
+  .action(withErrorHandling(async (id: DatasourceId) => {
+    const globalOptions = getGlobalOptions(schemaCommand);
+    const client = await getAPIClientFromOptions(globalOptions);
+    const result = await client.getDatasourceSchema(id);
+    printFormatted(result, globalOptions);
+  }));
+
 datasourcesCommand.addCommand(listCommand);
 datasourcesCommand.addCommand(getCommand);
 datasourcesCommand.addCommand(createCommand);
@@ -105,3 +136,6 @@ datasourcesCommand.addCommand(archiveCommand);
 datasourcesCommand.addCommand(testCommand);
 datasourcesCommand.addCommand(introspectCommand);
 datasourcesCommand.addCommand(validateQueryCommand);
+datasourcesCommand.addCommand(previewQueryCommand);
+datasourcesCommand.addCommand(setDefaultCommand);
+datasourcesCommand.addCommand(schemaCommand);
