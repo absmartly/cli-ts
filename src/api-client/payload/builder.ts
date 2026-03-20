@@ -4,7 +4,7 @@ import { resolveScreenshot } from '../template/screenshot.js';
 
 const DEFAULT_ANALYSIS_TYPE = 'group_sequential';
 const DEFAULT_PERCENTAGES = '50/50';
-const DEFAULT_TYPE = 'test';
+
 const DEFAULT_STATE = 'ready';
 const DEFAULT_TRAFFIC = 100;
 const DEFAULT_REQUIRED_ALPHA = '0.1';
@@ -153,6 +153,7 @@ export interface BuildPayloadResult {
 export async function buildExperimentPayload(
   template: ExperimentTemplate,
   context: ResolverContext,
+  defaultType = 'test',
 ): Promise<BuildPayloadResult> {
   const warnings: string[] = [];
 
@@ -161,7 +162,7 @@ export async function buildExperimentPayload(
       warnings.push(`Unknown template field "${key}" will be ignored`);
     }
   }
-  const experimentType = template.type ?? DEFAULT_TYPE;
+  const experimentType = template.type ?? defaultType;
   const variants = buildVariants(template);
 
   const payload: Record<string, unknown> = {

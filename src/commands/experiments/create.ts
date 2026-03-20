@@ -6,6 +6,7 @@ import { buildExperimentPayload } from '../../api-client/payload/builder.js';
 import { resolveScreenshot } from '../../api-client/template/screenshot.js';
 import type { Experiment } from '../../lib/api/types.js';
 import { resolveBySearch } from '../../api-client/payload/search-resolver.js';
+import { getDefaultType } from './default-type.js';
 
 function shellEscape(s: string): string {
   return "'" + s.replace(/'/g, "'\\''") + "'";
@@ -71,7 +72,7 @@ export const createCommand = new Command('create')
         users,
         teams,
         experimentTags,
-      });
+      }, getDefaultType());
 
       for (const warning of result.warnings) {
         console.log(chalk.yellow(`⚠ ${warning}`));
@@ -101,7 +102,7 @@ export const createCommand = new Command('create')
       data = {
         name: options.name,
         display_name: options.displayName || options.name,
-        type: (options.type || 'test') as 'test' | 'feature',
+        type: (options.type || getDefaultType()) as 'test' | 'feature',
         state: options.state,
         percentages: percentages.join('/'),
         percentage_of_traffic: options.percentageOfTraffic,

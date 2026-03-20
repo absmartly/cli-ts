@@ -24,33 +24,20 @@ import { recommendationsCommand } from './recommendations.js';
 import { exportCommand } from './export.js';
 import { requestUpdateCommand } from './request-update.js';
 
+const subcommands = [
+  listCommand, getCommand, searchCommand, createCommand, updateCommand,
+  startCommand, stopCommand, archiveCommand, activityCommand, generateTemplateCommand,
+  developmentCommand, restartCommand, fullOnCommand, scheduleCommand, metricsCommand,
+  deleteCommand, parentCommand, accessCommand, followCommand, unfollowCommand,
+  annotationsCommand, alertsCommand, recommendationsCommand, exportCommand, requestUpdateCommand,
+];
+
 export const experimentsCommand = new Command('experiments')
   .alias('exp')
   .alias('experiment')
-  .description('Experiment commands');
+  .alias('features')
+  .alias('feature')
+  .description('Experiment and feature flag commands');
 
-experimentsCommand.addCommand(listCommand);
-experimentsCommand.addCommand(getCommand);
-experimentsCommand.addCommand(searchCommand);
-experimentsCommand.addCommand(createCommand);
-experimentsCommand.addCommand(updateCommand);
-experimentsCommand.addCommand(startCommand);
-experimentsCommand.addCommand(stopCommand);
-experimentsCommand.addCommand(archiveCommand);
-experimentsCommand.addCommand(activityCommand);
-experimentsCommand.addCommand(generateTemplateCommand);
-experimentsCommand.addCommand(developmentCommand);
-experimentsCommand.addCommand(restartCommand);
-experimentsCommand.addCommand(fullOnCommand);
-experimentsCommand.addCommand(scheduleCommand);
-experimentsCommand.addCommand(metricsCommand);
-experimentsCommand.addCommand(deleteCommand);
-experimentsCommand.addCommand(parentCommand);
-experimentsCommand.addCommand(accessCommand);
-experimentsCommand.addCommand(followCommand);
-experimentsCommand.addCommand(unfollowCommand);
-experimentsCommand.addCommand(annotationsCommand);
-experimentsCommand.addCommand(alertsCommand);
-experimentsCommand.addCommand(recommendationsCommand);
-experimentsCommand.addCommand(exportCommand);
-experimentsCommand.addCommand(requestUpdateCommand);
+for (const cmd of subcommands) experimentsCommand.addCommand(cmd);
+

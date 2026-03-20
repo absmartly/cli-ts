@@ -4,6 +4,7 @@ import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHan
 import { parseDateFlagOrUndefined } from '../../lib/utils/date-parser.js';
 import type { ListOptions } from '../../lib/api/types.js';
 import { formatExtraField, formatImpact, formatConfidence, formatProgress } from './format-helpers.js';
+import { getDefaultType } from './default-type.js';
 
 function stateToDate(state: string, exp: Record<string, unknown>): string {
   let date: string | undefined;
@@ -109,7 +110,7 @@ export const listCommand = new Command('list')
       ...(options.desc && { ascending: false }),
       ...(options.app && { application: options.app }),
       ...(options.state && { state: options.state }),
-      ...(options.type && { type: options.type }),
+      type: options.type || getDefaultType(),
       ...(options.search && { search: options.search }),
       ...(options.unitTypes && { unit_types: options.unitTypes }),
       ...(options.owners && { owners: options.owners }),

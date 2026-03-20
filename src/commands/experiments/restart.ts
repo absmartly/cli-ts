@@ -7,6 +7,7 @@ import { resolveBySearch } from '../../api-client/payload/search-resolver.js';
 import { parseExperimentId } from '../../lib/utils/validators.js';
 import type { ExperimentId } from '../../lib/api/branded-types.js';
 import type { ExperimentInput } from '../../api-client/index.js';
+import { getDefaultType } from './default-type.js';
 
 const VALID_REASONS = [
   'hypothesis_rejected', 'hypothesis_iteration', 'user_feedback', 'data_issue',
@@ -89,7 +90,7 @@ export const restartCommand = new Command('restart')
         users,
         teams,
         experimentTags,
-      });
+      }, getDefaultType());
 
       for (const warning of result.warnings) {
         console.log(chalk.yellow(`⚠ ${warning}`));

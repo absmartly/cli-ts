@@ -7,6 +7,7 @@ import { parseExperimentId, requireAtLeastOneField } from '../../lib/utils/valid
 import type { ExperimentId } from '../../lib/api/branded-types.js';
 import type { ExperimentInput } from '../../api-client/index.js';
 import { resolveBySearch } from '../../api-client/payload/search-resolver.js';
+import { getDefaultType } from './default-type.js';
 
 export const updateCommand = new Command('update')
   .description('Update an existing experiment')
@@ -56,7 +57,7 @@ export const updateCommand = new Command('update')
         users,
         teams,
         experimentTags,
-      });
+      }, getDefaultType());
 
       for (const warning of result.warnings) {
         console.log(chalk.yellow(`⚠ ${warning}`));
