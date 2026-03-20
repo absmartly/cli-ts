@@ -48,7 +48,7 @@ export const createCommand = new Command('create')
 
       const ownerRefs = template.owners ?? [];
 
-      const [applications, unitTypes, customSectionFields, metrics, users] = await Promise.all([
+      const [applications, unitTypes, customSectionFields, metrics, users, teams, experimentTags] = await Promise.all([
         client.listApplications(),
         client.listUnitTypes(),
         client.listCustomSectionFields(),
@@ -58,6 +58,8 @@ export const createCommand = new Command('create')
         ownerRefs.length > 0
           ? resolveBySearch(ownerRefs, ref => client.listUsers({ search: ref }))
           : Promise.resolve([]),
+        template.teams?.length ? client.listTeams() : Promise.resolve([]),
+        template.tags?.length ? client.listExperimentTags() : Promise.resolve([]),
       ]);
 
       const result = await buildExperimentPayload(template, {
@@ -67,6 +69,8 @@ export const createCommand = new Command('create')
         goals: [],
         customSectionFields,
         users,
+        teams,
+        experimentTags,
       });
 
       for (const warning of result.warnings) {

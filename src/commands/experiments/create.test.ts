@@ -22,6 +22,8 @@ describe('create command', () => {
     listUnitTypes: vi.fn().mockResolvedValue([]),
     listMetrics: vi.fn().mockResolvedValue([]),
     listUsers: vi.fn().mockResolvedValue([]),
+    listTeams: vi.fn().mockResolvedValue([]),
+    listExperimentTags: vi.fn().mockResolvedValue([]),
   };
 
   beforeEach(() => {
@@ -198,6 +200,14 @@ guardrail_metrics:
         { id: 10, email: 'jane@example.com', first_name: 'Jane', last_name: 'Doe' },
         { id: 20, email: 'john@example.com', first_name: 'John', last_name: 'Smith' },
       ]);
+      mockClient.listTeams.mockResolvedValue([
+        { id: 100, name: 'Growth' },
+        { id: 101, name: 'Engineering' },
+      ]);
+      mockClient.listExperimentTags.mockResolvedValue([
+        { id: 200, tag: 'q1' },
+        { id: 201, tag: 'homepage' },
+      ]);
 
       writeFileSync(tmpFile, `---
 name: full-template-exp
@@ -216,11 +226,13 @@ tags:
       await createCommand.parseAsync(['node', 'test', '--from-file', tmpFile]);
 
       expect(mockClient.listUsers).toHaveBeenCalled();
+      expect(mockClient.listTeams).toHaveBeenCalled();
+      expect(mockClient.listExperimentTags).toHaveBeenCalled();
       expect(mockClient.createExperiment).toHaveBeenCalledWith(
         expect.objectContaining({
           owners: [{ user_id: 10 }, { user_id: 20 }],
-          teams: [{ name: 'Growth' }, { name: 'Engineering' }],
-          experiment_tags: [{ tag: 'q1' }, { tag: 'homepage' }],
+          teams: [{ team_id: 100 }, { team_id: 101 }],
+          experiment_tags: [{ experiment_tag_id: 200 }, { experiment_tag_id: 201 }],
         })
       );
     });

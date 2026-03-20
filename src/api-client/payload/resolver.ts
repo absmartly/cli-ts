@@ -4,6 +4,8 @@ export interface ResolverContext {
   metrics: Array<{ id: number; name: string }>;
   goals: Array<{ id: number; name: string }>;
   users?: Array<{ id: number; email: string; first_name?: string; last_name?: string }>;
+  teams?: Array<{ id: number; name: string }>;
+  experimentTags?: Array<{ id: number; tag: string }>;
   customSectionFields?: Array<{
     id: number;
     name?: string;

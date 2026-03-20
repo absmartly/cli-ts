@@ -266,12 +266,30 @@ export async function buildExperimentPayload(
     payload.owners = [{ user_id: ownerId }];
   }
 
-  if (template.teams && template.teams.length > 0) {
-    payload.teams = template.teams.map(name => ({ name }));
+  if (template.teams && template.teams.length > 0 && context.teams) {
+    const resolvedTeams: Array<{ team_id: number }> = [];
+    for (const teamName of template.teams) {
+      const team = context.teams.find(t => t.name.toLowerCase() === teamName.toLowerCase());
+      if (team) {
+        resolvedTeams.push({ team_id: team.id });
+      } else {
+        warnings.push(`Team "${teamName}" not found, skipping`);
+      }
+    }
+    if (resolvedTeams.length > 0) payload.teams = resolvedTeams;
   }
 
-  if (template.tags && template.tags.length > 0) {
-    payload.experiment_tags = template.tags.map(tag => ({ tag }));
+  if (template.tags && template.tags.length > 0 && context.experimentTags) {
+    const resolvedTags: Array<{ experiment_tag_id: number }> = [];
+    for (const tagName of template.tags) {
+      const tag = context.experimentTags.find(t => t.tag.toLowerCase() === tagName.toLowerCase());
+      if (tag) {
+        resolvedTags.push({ experiment_tag_id: tag.id });
+      } else {
+        warnings.push(`Tag "${tagName}" not found, skipping`);
+      }
+    }
+    if (resolvedTags.length > 0) payload.experiment_tags = resolvedTags;
   }
 
   if (template.audience) {
