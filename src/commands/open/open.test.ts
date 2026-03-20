@@ -1,13 +1,21 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { unlinkSync, existsSync } from 'fs';
+import { mkdtempSync } from 'fs';
+import { join } from 'path';
+import { tmpdir } from 'os';
 import open from 'open';
 import { openCommand } from './index.js';
-import { saveConfig, defaultConfig, getConfigPath } from '../../lib/config/config.js';
+
+const fakeHome = mkdtempSync(join(tmpdir(), 'abs-open-test-'));
+vi.mock('os', async (importOriginal) => {
+  const mod = await importOriginal<typeof import('os')>();
+  return { ...mod, homedir: () => fakeHome };
+});
+
+import { saveConfig, defaultConfig } from '../../lib/config/config.js';
 
 vi.mock('open');
 
 describe('Open Command Validation', () => {
-  const testConfigPath = getConfigPath();
   let consoleLogSpy: ReturnType<typeof vi.spyOn>;
   let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
   let processExitSpy: ReturnType<typeof vi.spyOn>;
@@ -26,9 +34,6 @@ describe('Open Command Validation', () => {
   });
 
   afterEach(() => {
-    if (existsSync(testConfigPath)) {
-      unlinkSync(testConfigPath);
-    }
     consoleLogSpy.mockRestore();
     consoleErrorSpy.mockRestore();
     processExitSpy.mockRestore();
@@ -160,7 +165,6 @@ describe('Open Command Validation', () => {
     });
 
     it('should reject negative ID', async () => {
-      // Note: Can't test '-5' directly as Commander interprets it as a flag
       const { parseExperimentId } = await import('../../lib/utils/validators.js');
       expect(() => parseExperimentId('-5')).toThrow('must be a positive integer');
     });

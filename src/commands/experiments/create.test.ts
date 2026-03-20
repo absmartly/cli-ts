@@ -155,6 +155,80 @@ secondary_metrics:
       );
     });
 
+    it('should fail when metric is not found even with archived=true', async () => {
+      mockClient.listMetrics.mockResolvedValue([
+        { id: 30, name: 'clicks' },
+      ]);
+
+      writeFileSync(tmpFile, `---
+name: missing-metric-exp
+primary_metric: clicks
+guardrail_metrics:
+  - Completely Deleted Metric
+---
+`, 'utf8');
+
+      try {
+        await createCommand.parseAsync(['node', 'test', '--from-file', tmpFile]);
+        throw new Error('Should have thrown');
+      } catch (error) {
+        if (!(error as Error).message.startsWith('process.exit')) throw error;
+      }
+
+      const errorOutput = consoleErrorSpy.mock.calls.flat().join(' ');
+      expect(errorOutput).toContain('Guardrail metric');
+      expect(errorOutput).toContain('Completely Deleted Metric');
+      expect(errorOutput).toContain('not found');
+    });
+
+    it('should resolve owner_ids, teams, and tags from template', async () => {
+      writeFileSync(tmpFile, `---
+name: full-template-exp
+owner_ids:
+  - 10
+  - 20
+teams:
+  - Growth
+  - Engineering
+tags:
+  - q1
+  - homepage
+---
+`, 'utf8');
+
+      await createCommand.parseAsync(['node', 'test', '--from-file', tmpFile]);
+
+      expect(mockClient.createExperiment).toHaveBeenCalledWith(
+        expect.objectContaining({
+          owners: [{ user_id: 10 }, { user_id: 20 }],
+          teams: [{ name: 'Growth' }, { name: 'Engineering' }],
+          experiment_tags: [{ tag: 'q1' }, { tag: 'homepage' }],
+        })
+      );
+    });
+
+    it('should parse audience from JSON block in template', async () => {
+      const audience = '{"filter":[{"and":[{"eq":[{"var":{"path":"lang"}},{"value":"en"}]}]}]}';
+      writeFileSync(tmpFile, `---
+name: audience-exp
+---
+
+## Audience
+
+\`\`\`json
+${audience}
+\`\`\`
+`, 'utf8');
+
+      await createCommand.parseAsync(['node', 'test', '--from-file', tmpFile]);
+
+      expect(mockClient.createExperiment).toHaveBeenCalledWith(
+        expect.objectContaining({
+          audience,
+        })
+      );
+    });
+
     it('should include custom section field defaults from builder', async () => {
       mockClient.listCustomSectionFields.mockResolvedValue([
         { id: 100, name: 'launch_date', type: 'string', default_value: '2026-06-01', custom_section: { type: 'test' } },

@@ -21,6 +21,10 @@ export interface ExperimentTemplate {
   guardrail_metrics?: string[];
   exploratory_metrics?: string[];
   owner_id?: number;
+  owner_ids?: number[];
+  teams?: string[];
+  tags?: string[];
+  audience?: string;
   variants?: VariantTemplate[];
   custom_fields?: Record<string, string>;
   analysis_type?: string;
@@ -28,8 +32,6 @@ export interface ExperimentTemplate {
   required_power?: string;
   baseline_participants?: string;
   note?: string;
-  description?: string;
-  hypothesis?: string;
 }
 
 export function parseExperimentMarkdown(content: string): ExperimentTemplate {
@@ -73,36 +75,46 @@ export function parseExperimentMarkdown(content: string): ExperimentTemplate {
     (template as Record<string, unknown>)[key] = value;
   }
 
+  const knownBodySections = new Set(['Variants', 'Audience']);
+
   for (const [sectionName, sectionContent] of Object.entries(sections)) {
-    if (sectionName !== 'Variants' && sectionName !== 'Custom Fields') {
-      const keyValuePattern = /^(\w+(?:_\w+)*):[^\S\n]*(.*)$/gm;
-      let match;
+    if (sectionName === 'Variants' && sectionContent.includes('###')) {
+      template.variants = parseVariants(sectionContent);
+      continue;
+    }
 
-      while ((match = keyValuePattern.exec(sectionContent)) !== null) {
-        const matchedKey = match[1];
-        const matchedValue = match[2];
-        if (matchedKey) {
-          const key = matchedKey.toLowerCase();
-          const value = matchedValue ? matchedValue.trim() : '';
+    if (sectionName === 'Audience') {
+      const jsonMatch = /```json\s*\n([\s\S]*?)\n\s*```/.exec(sectionContent);
+      if (jsonMatch && jsonMatch[1]) {
+        template.audience = jsonMatch[1].trim();
+      }
+      continue;
+    }
 
-          if (value) {
-            (template as Record<string, unknown>)[key] = value;
-          } else {
-            const listItems = parseInlineList(sectionContent, match.index + match[0].length);
-            if (listItems.length > 0) {
-              (template as Record<string, unknown>)[key] = listItems;
+    if (!knownBodySections.has(sectionName)) {
+      if (sectionContent.includes('###')) {
+        const fields = parseCustomFields(sectionContent);
+        template.custom_fields = { ...template.custom_fields, ...fields };
+      } else {
+        const keyValuePattern = /^(\w+(?:_\w+)*):[^\S\n]*(.*)$/gm;
+        let match;
+        while ((match = keyValuePattern.exec(sectionContent)) !== null) {
+          const matchedKey = match[1];
+          const matchedValue = match[2];
+          if (matchedKey) {
+            const key = matchedKey.toLowerCase();
+            const value = matchedValue ? matchedValue.trim() : '';
+            if (value) {
+              (template as Record<string, unknown>)[key] = value;
+            } else {
+              const listItems = parseInlineList(sectionContent, match.index + match[0].length);
+              if (listItems.length > 0) {
+                (template as Record<string, unknown>)[key] = listItems;
+              }
             }
           }
         }
       }
-    }
-
-    if (sectionName === 'Variants' && sectionContent.includes('###')) {
-      template.variants = parseVariants(sectionContent);
-    }
-
-    if (sectionName === 'Custom Fields') {
-      template.custom_fields = parseCustomFields(sectionContent);
     }
   }
 

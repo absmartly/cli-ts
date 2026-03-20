@@ -80,9 +80,9 @@ function buildCustomSectionFieldValues(
   );
 
   if (templateCustomFields) {
-    const relevantNames = new Set(relevantFields.map(f => f.name));
+    const relevantTitles = new Set(relevantFields.map(f => (f.title ?? f.name ?? '').toLowerCase()));
     for (const name of Object.keys(templateCustomFields)) {
-      if (!relevantNames.has(name)) {
+      if (!relevantTitles.has(name.toLowerCase())) {
         warnings.push(`Custom field "${name}" in template has no matching custom section field`);
       }
     }
@@ -98,8 +98,12 @@ function buildCustomSectionFieldValues(
     if (field.type === 'user' && ownerId) {
       value = String(ownerId);
     }
-    if (templateCustomFields && field.name in templateCustomFields) {
-      value = templateCustomFields[field.name] ?? value;
+    if (templateCustomFields) {
+      const fieldLabel = field.title ?? field.name ?? '';
+      const templateValue = templateCustomFields[fieldLabel];
+      if (templateValue !== undefined) {
+        value = templateValue;
+      }
     }
     fieldValues[field.id] = { type: field.type, value };
   }
@@ -136,7 +140,8 @@ const KNOWN_TEMPLATE_KEYS = new Set([
   'percentage_of_traffic', 'percentages',
   'unit_type', 'application',
   'primary_metric', 'secondary_metrics', 'guardrail_metrics', 'exploratory_metrics',
-  'owner_id', 'variants', 'custom_fields',
+  'owner_id', 'owner_ids', 'teams', 'tags', 'audience',
+  'variants', 'custom_fields',
   'analysis_type', 'required_alpha', 'required_power', 'baseline_participants',
 ]);
 
@@ -228,9 +233,28 @@ export async function buildExperimentPayload(
   }
 
   let ownerId: number | undefined;
-  if (template.owner_id) {
+  if (template.owner_ids && template.owner_ids.length > 0) {
+    payload.owners = template.owner_ids.map(id => ({ user_id: Number(id) }));
+    ownerId = Number(template.owner_ids[0]);
+  } else if (template.owner_id) {
     ownerId = Number(template.owner_id);
     payload.owners = [{ user_id: ownerId }];
+  }
+
+  if (template.teams && template.teams.length > 0) {
+    payload.teams = template.teams.map(name => ({ name }));
+  }
+
+  if (template.tags && template.tags.length > 0) {
+    payload.experiment_tags = template.tags.map(tag => ({ tag }));
+  }
+
+  if (template.audience) {
+    try {
+      payload.audience = JSON.stringify(JSON.parse(template.audience));
+    } catch {
+      payload.audience = template.audience;
+    }
   }
 
   const customFieldResult = buildCustomSectionFieldValues(context, experimentType, ownerId, template.custom_fields);

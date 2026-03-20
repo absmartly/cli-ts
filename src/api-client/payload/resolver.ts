@@ -5,7 +5,8 @@ export interface ResolverContext {
   goals: Array<{ id: number; name: string }>;
   customSectionFields?: Array<{
     id: number;
-    name: string;
+    name?: string;
+    title?: string;
     type: string;
     default_value?: string;
     archived?: boolean;
