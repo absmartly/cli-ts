@@ -202,14 +202,21 @@ abs experiments generate-template -o experiment.md
 
 | Filter | Description |
 |---|---|
-| `--state <state>` | `created`, `ready`, `running`, `stopped`, `archived` |
+| `--state <state>` | `created`, `ready`, `running`, `development`, `full_on`, `stopped`, `archived`, `scheduled` |
 | `--type <type>` | `test`, `feature` |
-| `--app <name>` | Filter by application |
+| `--app <name>` | Filter by application name |
+| `--applications <ids>` | Filter by application IDs (comma-separated) |
 | `--search <query>` | Search by name or display name |
+| `--ids <ids>` | Filter by experiment IDs (comma-separated) |
 | `--unit-types <ids>` | Comma-separated unit type IDs |
 | `--owners <ids>` | Comma-separated owner user IDs |
 | `--teams <ids>` | Comma-separated team IDs |
 | `--tags <ids>` | Comma-separated tag IDs |
+| `--impact <min,max>` | Filter by impact range (e.g. `-5,50`) |
+| `--confidence <min,max>` | Filter by confidence range (e.g. `90,100`) |
+| `--significance <value>` | `positive`, `negative`, `neutral`, `inconclusive` |
+| `--iterations <n>` | Filter by iteration count |
+| `--iterations-of <id>` | Show all iterations of an experiment |
 | `--created-after <ts>` | Filter by creation date |
 | `--created-before <ts>` | Filter by creation date |
 | `--started-after <ts>` | Filter by start date |
@@ -218,7 +225,9 @@ abs experiments generate-template -o experiment.md
 | `--stopped-before <ts>` | Filter by stop date |
 | `--analysis-type <type>` | `fixed_horizon`, `group_sequential` |
 | `--running-type <type>` | `full_on`, `experiment` |
-| `--significance <value>` | `positive`, `negative`, `insignificant` |
+| `--alert-srm` | Has sample ratio mismatch alert (pass `0` for no alert) |
+| `--alert-cleanup-needed` | Has cleanup needed alert |
+| `--alert-sample-size-reached` | Sample size reached alert |
 | `--items <n>` | Results per page (default: 20) |
 | `--page <n>` | Page number (default: 1) |
 | `--sort <field>` | Sort by field (e.g. `created_at`, `name`, `state`) |

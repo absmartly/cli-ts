@@ -37,7 +37,7 @@ describe.skipIf(isLiveMode)('experiments list command integration', () => {
       await client.listExperiments({ sort: 'created_at', ascending: true });
 
       expect(receivedParams?.get('sort')).toBe('created_at');
-      expect(receivedParams?.get('ascending')).toBe('true');
+      expect(receivedParams?.get('sort_asc')).toBe('true');
     });
 
     it('should send select and include params', async () => {
@@ -318,6 +318,87 @@ describe.skipIf(isLiveMode)('experiments list command integration', () => {
 
       await client.listExperiments({ significance: 'positive' });
       expect(receivedParams?.get('significance')).toBe('positive');
+    });
+  });
+
+  describe('new filters', () => {
+    it('should pass impact filter', async () => {
+      let receivedParams: URLSearchParams | null = null;
+      server.use(
+        http.get(`${BASE_URL}/experiments`, ({ request }) => {
+          receivedParams = new URL(request.url).searchParams;
+          return HttpResponse.json({ experiments: [] });
+        })
+      );
+
+      await client.listExperiments({ impact: '-5,50' });
+      expect(receivedParams?.get('impact')).toBe('-5,50');
+    });
+
+    it('should pass confidence filter', async () => {
+      let receivedParams: URLSearchParams | null = null;
+      server.use(
+        http.get(`${BASE_URL}/experiments`, ({ request }) => {
+          receivedParams = new URL(request.url).searchParams;
+          return HttpResponse.json({ experiments: [] });
+        })
+      );
+
+      await client.listExperiments({ confidence: '90,100' });
+      expect(receivedParams?.get('confidence')).toBe('90,100');
+    });
+
+    it('should pass applications filter', async () => {
+      let receivedParams: URLSearchParams | null = null;
+      server.use(
+        http.get(`${BASE_URL}/experiments`, ({ request }) => {
+          receivedParams = new URL(request.url).searchParams;
+          return HttpResponse.json({ experiments: [] });
+        })
+      );
+
+      await client.listExperiments({ applications: '1,2' });
+      expect(receivedParams?.get('applications')).toBe('1,2');
+    });
+
+    it('should pass ids filter', async () => {
+      let receivedParams: URLSearchParams | null = null;
+      server.use(
+        http.get(`${BASE_URL}/experiments`, ({ request }) => {
+          receivedParams = new URL(request.url).searchParams;
+          return HttpResponse.json({ experiments: [] });
+        })
+      );
+
+      await client.listExperiments({ ids: '123,456' });
+      expect(receivedParams?.get('ids')).toBe('123,456');
+    });
+
+    it('should pass iterations and iterations_of filters', async () => {
+      let receivedParams: URLSearchParams | null = null;
+      server.use(
+        http.get(`${BASE_URL}/experiments`, ({ request }) => {
+          receivedParams = new URL(request.url).searchParams;
+          return HttpResponse.json({ experiments: [] });
+        })
+      );
+
+      await client.listExperiments({ iterations: 1, iterations_of: 123 });
+      expect(receivedParams?.get('iterations')).toBe('1');
+      expect(receivedParams?.get('iterations_of')).toBe('123');
+    });
+
+    it('should pass alert filter as 0 to exclude alerts', async () => {
+      let receivedParams: URLSearchParams | null = null;
+      server.use(
+        http.get(`${BASE_URL}/experiments`, ({ request }) => {
+          receivedParams = new URL(request.url).searchParams;
+          return HttpResponse.json({ experiments: [] });
+        })
+      );
+
+      await client.listExperiments({ alert_srm: 0 });
+      expect(receivedParams?.get('sample_ratio_mismatch')).toBe('0');
     });
   });
 });
