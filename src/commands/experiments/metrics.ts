@@ -5,6 +5,16 @@ import { parseExperimentId, parseMetricId } from '../../lib/utils/validators.js'
 import type { ExperimentId, MetricId } from '../../lib/api/branded-types.js';
 import { renderCIBar, formatPct } from './format-helpers.js';
 
+function metricOwners(metric: Record<string, unknown> | undefined): string {
+  const owners = metric?.owners as Array<Record<string, unknown>> | undefined;
+  if (!owners || owners.length === 0) return '';
+  return owners.map(o => {
+    const user = o.user as Record<string, unknown> | undefined;
+    if (user?.first_name && user?.email) return `${user.first_name} ${user.last_name ?? ''} <${user.email}>`.trim();
+    return `user ${o.user_id}`;
+  }).join(', ');
+}
+
 export const metricsCommand = new Command('metrics')
   .description('Manage experiment metrics');
 
@@ -21,14 +31,14 @@ const listCommand = new Command('list')
 
     const primary = exp.primary_metric as Record<string, unknown> | undefined;
     if (primary) {
-      rows.push({ id: exp.primary_metric_id, name: primary.name, type: 'primary' });
+      rows.push({ id: exp.primary_metric_id, name: primary.name, type: 'primary', owners: metricOwners(primary) });
     }
 
     const secondary = exp.secondary_metrics as Array<Record<string, unknown>> | undefined;
     if (secondary) {
       for (const m of secondary) {
         const metric = m.metric as Record<string, unknown> | undefined;
-        rows.push({ id: m.metric_id, name: metric?.name || m.metric_id, type: m.type || 'secondary' });
+        rows.push({ id: m.metric_id, name: metric?.name || m.metric_id, type: m.type || 'secondary', owners: metricOwners(metric) });
       }
     }
 
