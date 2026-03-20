@@ -22,12 +22,12 @@ export const updateCommand = new Command('update')
       const template = parseExperimentFile(options.fromFile);
       data = {};
       if (template.display_name !== undefined) data.display_name = template.display_name;
-      if (template.percentage_of_traffic !== undefined) data.traffic = template.percentage_of_traffic;
+      if (template.percentage_of_traffic !== undefined) data.percentage_of_traffic = template.percentage_of_traffic;
       if (template.state !== undefined) data.state = template.state;
     } else {
       data = {};
       if (options.displayName !== undefined) data.display_name = options.displayName;
-      if (options.traffic !== undefined) data.traffic = options.traffic;
+      if (options.traffic !== undefined) data.percentage_of_traffic = options.traffic;
     }
 
     requireAtLeastOneField(data, 'update field');

@@ -25,8 +25,6 @@ export const createCommand = new Command('create')
   .option('--percentages <values>', 'comma-separated traffic split per variant (e.g. 50,50)')
   .option('--percentage-of-traffic <pct>', 'percentage of total traffic (0-100)', parseInt, 100)
   .option('--env <name>', 'environment name')
-  .option('--description <text>', 'experiment description')
-  .option('--hypothesis <text>', 'experiment hypothesis')
   .option('--owner <user_id>', 'owner user ID (can specify multiple)', (val: string, prev: string[]) => [...prev, val], [] as string[])
   .option('--screenshot <variant:source...>', 'variant screenshot (variant_index:path_or_url, can specify multiple)')
   .option('--dry-run', 'show the request payload without making the API call')
@@ -47,13 +45,19 @@ export const createCommand = new Command('create')
         client.listCustomSectionFields(),
       ]);
 
-      data = await buildExperimentPayload(template, {
+      const result = await buildExperimentPayload(template, {
         applications,
         unitTypes,
         metrics,
         goals: [],
         customSectionFields,
-      }) as Partial<Experiment>;
+      });
+
+      for (const warning of result.warnings) {
+        console.log(chalk.yellow(`⚠ ${warning}`));
+      }
+
+      data = result.payload as Partial<Experiment>;
     } else {
       if (!options.name) {
         throw new Error(
@@ -108,7 +112,6 @@ export const createCommand = new Command('create')
       if (options.primaryMetric) {
         (data as any).primary_metric = { metric_id: options.primaryMetric };
       }
-
       if (options.screenshot && options.screenshot.length > 0) {
         const screenshots: Array<Record<string, unknown>> = [];
         for (const entry of options.screenshot as string[]) {

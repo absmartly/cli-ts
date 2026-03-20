@@ -7,3 +7,5 @@ export const TEST_BASE_URL = isLiveMode
 export const TEST_API_KEY = isLiveMode
   ? process.env.LIVE_API_KEY!
   : 'test-api-key';
+
+export const TEST_TIMEOUT = isLiveMode ? 10000 : undefined;

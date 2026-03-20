@@ -31,18 +31,32 @@ export function experimentToMarkdown(experiment: Experiment): string {
     parts.push(`baseline_participants: ${(experiment as Record<string, unknown>).baseline_participants_per_day}\n`);
   }
 
-  const secondaryMetrics = experiment.secondary_metrics as Array<Record<string, unknown>> | undefined;
-  const guardrailMetrics = (experiment as Record<string, unknown>).guardrail_metrics as Array<Record<string, unknown>> | undefined;
-  if (secondaryMetrics && secondaryMetrics.length > 0) {
-    parts.push('secondary_metrics:\n');
-    for (const m of secondaryMetrics) {
-      parts.push(`  - ${m.name || m.metric_id}\n`);
+  const allMetrics = experiment.secondary_metrics as Array<Record<string, unknown>> | undefined;
+  if (allMetrics && allMetrics.length > 0) {
+    const secondaryMetrics = allMetrics.filter(m => m.type === 'secondary' || (!m.type && m.type !== 'guardrail' && m.type !== 'exploratory'));
+    const guardrailMetrics = allMetrics.filter(m => m.type === 'guardrail');
+    const exploratoryMetrics = allMetrics.filter(m => m.type === 'exploratory');
+
+    if (secondaryMetrics.length > 0) {
+      parts.push('secondary_metrics:\n');
+      for (const m of secondaryMetrics) {
+        const metric = m.metric as Record<string, unknown> | undefined;
+        parts.push(`  - ${metric?.name || m.name || m.metric_id}\n`);
+      }
     }
-  }
-  if (guardrailMetrics && guardrailMetrics.length > 0) {
-    parts.push('guardrail_metrics:\n');
-    for (const m of guardrailMetrics) {
-      parts.push(`  - ${m.name || m.metric_id}\n`);
+    if (guardrailMetrics.length > 0) {
+      parts.push('guardrail_metrics:\n');
+      for (const m of guardrailMetrics) {
+        const metric = m.metric as Record<string, unknown> | undefined;
+        parts.push(`  - ${metric?.name || m.name || m.metric_id}\n`);
+      }
+    }
+    if (exploratoryMetrics.length > 0) {
+      parts.push('exploratory_metrics:\n');
+      for (const m of exploratoryMetrics) {
+        const metric = m.metric as Record<string, unknown> | undefined;
+        parts.push(`  - ${metric?.name || m.name || m.metric_id}\n`);
+      }
     }
   }
 
@@ -56,7 +70,7 @@ export function experimentToMarkdown(experiment: Experiment): string {
       parts.push(`unit_type: ${unitType.name || unitType.unit_type_id}\n`);
     }
     if (applications && applications.length > 0) {
-      const app = applications[0];
+      const app = applications[0]!;
       parts.push(`application: ${app.name || app.application_id}\n`);
     }
     parts.push('\n');
@@ -98,22 +112,23 @@ export function experimentToMarkdown(experiment: Experiment): string {
     }
   }
 
-  const description = (experiment as Record<string, unknown>).description as string | undefined;
-  const hypothesis = (experiment as Record<string, unknown>).hypothesis as string | undefined;
-  if (description || hypothesis) {
-    parts.push('## Description\n\n');
-    if (hypothesis) {
-      parts.push(`hypothesis: ${hypothesis}\n`);
-    }
-    if (description) {
-      parts.push(`description: ${description}\n`);
-    }
-    parts.push('\n');
-  }
-
   const owners = (experiment as Record<string, unknown>).owners as Array<Record<string, unknown>> | undefined;
   if (owners && owners.length > 0) {
-    parts.push(`owner_id: ${owners[0].user_id}\n`);
+    parts.push(`owner_id: ${owners[0]!.user_id}\n`);
+  }
+
+  const customFieldValues = (experiment as Record<string, unknown>).custom_section_field_values as Array<Record<string, unknown>> | undefined;
+  if (customFieldValues && customFieldValues.length > 0) {
+    parts.push('\n## Custom Fields\n\n');
+    for (const entry of customFieldValues) {
+      const field = entry.custom_section_field as Record<string, unknown> | undefined;
+      const title = field?.title as string | undefined;
+      const value = entry.value as string | undefined;
+      if (title && value) {
+        parts.push(`### ${title}\n\n`);
+        parts.push(`${value}\n\n`);
+      }
+    }
   }
 
   return parts.join('');

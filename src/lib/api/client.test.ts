@@ -48,7 +48,7 @@ describe('APIClient', () => {
         })
       );
 
-      const experiments = await client.listExperiments({ limit: 0 });
+      const experiments = await client.listExperiments({ items: 0 });
 
       expect(Array.isArray(experiments)).toBe(true);
       expect(experiments).toHaveLength(0);
@@ -93,6 +93,17 @@ describe('APIClient', () => {
       expect(experiment).toHaveProperty('display_name');
       if (isLiveMode) expect(experiment.display_name).toBe('Updated Name');
       expect(experiment).not.toHaveProperty('ok');
+    });
+  });
+
+  describe('error handling (live-compatible)', () => {
+    it('should throw 404 for non-existent experiment', async () => {
+      await expect(client.getExperiment(999999999)).rejects.toThrow(/Not found/);
+    });
+
+    it('should throw on invalid API key', async () => {
+      const badClient = createAPIClient(BASE_URL, 'invalid-key-that-does-not-exist');
+      await expect(badClient.listExperiments()).rejects.toThrow(/Unauthorized/);
     });
   });
 
@@ -273,7 +284,7 @@ describe('APIClient', () => {
     });
   });
 
-  describe.skipIf(isLiveMode)('rawRequest security', () => {
+  describe('rawRequest security - validation (no network)', () => {
     it('should reject absolute URLs (SSRF protection)', async () => {
       await expect(client.rawRequest('https://evil.com/steal', 'GET')).rejects.toThrow(
         'Invalid API path: Absolute or protocol-relative URLs are not allowed'
@@ -302,17 +313,6 @@ describe('APIClient', () => {
       await expect(client.rawRequest('experiments', 'GET')).rejects.toThrow(
         'Invalid API path: Must start with "/"'
       );
-    });
-
-    it('should accept valid relative paths', async () => {
-      server.use(
-        http.get(`${BASE_URL}/custom/endpoint`, () => {
-          return HttpResponse.json({ success: true });
-        })
-      );
-
-      const result = await client.rawRequest('/custom/endpoint', 'GET');
-      expect(result).toEqual({ success: true });
     });
 
     it('should reject path traversal with /../', async () => {
@@ -355,6 +355,19 @@ describe('APIClient', () => {
       await expect(client.rawRequest('/%2e%2e', 'GET')).rejects.toThrow(
         'Invalid API path: Path traversal sequences'
       );
+    });
+  });
+
+  describe.skipIf(isLiveMode)('rawRequest security - network tests', () => {
+    it('should accept valid relative paths', async () => {
+      server.use(
+        http.get(`${BASE_URL}/custom/endpoint`, () => {
+          return HttpResponse.json({ success: true });
+        })
+      );
+
+      const result = await client.rawRequest('/custom/endpoint', 'GET');
+      expect(result).toEqual({ success: true });
     });
 
     it('should accept URL-encoded regular characters', async () => {

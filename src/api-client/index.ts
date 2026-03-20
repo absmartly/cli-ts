@@ -83,4 +83,4 @@ export { generateTemplate } from './template/generator.js';
 
 export type { ResolverContext } from './payload/resolver.js';
 export { resolveByName } from './payload/resolver.js';
-export { buildExperimentPayload } from './payload/builder.js';
+export { buildExperimentPayload, type BuildPayloadResult } from './payload/builder.js';

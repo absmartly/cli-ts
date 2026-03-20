@@ -160,12 +160,17 @@ function transformCustomFieldValues(
     const key = String(
       entry.experiment_custom_section_field_id ?? entry.field_id ?? entry.id
     );
-    result[key] = {
-      experiment_id: entry.experiment_id as number | undefined,
-      experiment_custom_section_field_id: (entry.experiment_custom_section_field_id ?? entry.field_id) as number | undefined,
+    const input: CustomFieldValueInput = {
       type: entry.type as string,
       value: entry.value as string,
     };
+    if (entry.experiment_id !== undefined) {
+      input.experiment_id = entry.experiment_id as number;
+    }
+    if (entry.experiment_custom_section_field_id ?? entry.field_id) {
+      input.experiment_custom_section_field_id = (entry.experiment_custom_section_field_id ?? entry.field_id) as number;
+    }
+    result[key] = input;
   }
   return result;
 }

@@ -5,26 +5,71 @@ export interface LiveMetadata {
   unitTypeId: number;
   teamId: number;
   metricId: number;
+  userId: number;
+  customFieldValues: Record<string, { type: string; value: string }>;
+}
+
+function defaultValueForType(type: string, context: { userId: number; defaultValue?: string }): string {
+  if (context.defaultValue) return context.defaultValue;
+
+  switch (type) {
+    case 'user':
+      return String(context.userId);
+    case 'text':
+    case 'string':
+      return 'vitest placeholder';
+    case 'richtext':
+      return '<p>vitest placeholder</p>';
+    case 'number':
+    case 'integer':
+      return '0';
+    case 'boolean':
+      return 'false';
+    case 'date':
+      return new Date().toISOString().split('T')[0];
+    case 'url':
+      return 'https://example.com';
+    case 'email':
+      return 'test@example.com';
+    default:
+      return '';
+  }
 }
 
 export async function fetchLiveMetadata(client: APIClient): Promise<LiveMetadata> {
-  const [apps, unitTypes, teams, metrics] = await Promise.all([
+  const [apps, unitTypes, teams, metrics, users, customFields] = await Promise.all([
     client.listApplications(),
     client.listUnitTypes(),
     client.listTeams(),
     client.listMetrics(1),
+    client.listUsers(),
+    client.listCustomSectionFields(),
   ]);
 
   if (!apps.length) throw new Error('No applications found in live API');
   if (!unitTypes.length) throw new Error('No unit types found in live API');
   if (!teams.length) throw new Error('No teams found in live API');
   if (!metrics.length) throw new Error('No metrics found in live API');
+  if (!users.length) throw new Error('No users found in live API');
+
+  const userId = users[0].id;
+
+  const customFieldValues: Record<string, { type: string; value: string }> = {};
+  for (const f of customFields) {
+    if (f.archived || f.custom_section?.archived) continue;
+    customFieldValues[String(f.id)] = {
+      type: f.type,
+      value: defaultValueForType(f.type, { userId, defaultValue: f.default_value }),
+    };
+  }
 
   return {
     appId: apps[0].id,
     unitTypeId: unitTypes[0].id,
     teamId: teams[0].id,
     metricId: metrics[0].id,
+    userId,
+    customFieldValues,
   };
 }
 
@@ -38,7 +83,7 @@ export function buildExperimentData(meta: LiveMetadata, nameSuffix = '') {
     applications: [{ application_id: meta.appId, application_version: '1' }],
     primary_metric: { metric_id: meta.metricId },
     secondary_metrics: [] as never[],
-    owners: [] as never[],
+    owners: [{ user_id: meta.userId }],
     experiment_tags: [] as never[],
     variants: [
       { name: 'control', variant: 0, config: '{}' },
@@ -53,5 +98,8 @@ export function buildExperimentData(meta: LiveMetadata, nameSuffix = '') {
     required_power: 0.8,
     audience: '{}',
     minimum_detectable_effect: '5',
+    ...(Object.keys(meta.customFieldValues).length > 0
+      ? { custom_section_field_values: meta.customFieldValues }
+      : {}),
   };
 }

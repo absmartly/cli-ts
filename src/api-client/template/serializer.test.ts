@@ -67,13 +67,57 @@ describe('experimentToMarkdown', () => {
     expect(md).toContain('  - revenue');
   });
 
-  it('should include guardrail metrics', () => {
+  it('should include guardrail metrics from secondary_metrics with type guardrail', () => {
     const md = experimentToMarkdown(makeExperiment({
-      guardrail_metrics: [{ metric_id: 40, name: 'latency' }],
+      secondary_metrics: [
+        { metric_id: 31, type: 'secondary', order_index: 0, metric: { name: 'revenue' } },
+        { metric_id: 40, type: 'guardrail', order_index: 1, metric: { name: 'latency' } },
+      ],
     }));
 
+    expect(md).toContain('secondary_metrics:');
+    expect(md).toContain('  - revenue');
     expect(md).toContain('guardrail_metrics:');
     expect(md).toContain('  - latency');
+  });
+
+  it('should include exploratory metrics from secondary_metrics with type exploratory', () => {
+    const md = experimentToMarkdown(makeExperiment({
+      secondary_metrics: [
+        { metric_id: 31, type: 'secondary', order_index: 0, metric: { name: 'revenue' } },
+        { metric_id: 50, type: 'exploratory', order_index: 1, metric: { name: 'page_views' } },
+      ],
+    }));
+
+    expect(md).toContain('secondary_metrics:');
+    expect(md).toContain('  - revenue');
+    expect(md).toContain('exploratory_metrics:');
+    expect(md).toContain('  - page_views');
+  });
+
+  it('should export custom section field values', () => {
+    const md = experimentToMarkdown(makeExperiment({
+      custom_section_field_values: [
+        {
+          experiment_custom_section_field_id: 1,
+          type: 'text',
+          value: 'Users will click more',
+          custom_section_field: { id: 1, title: 'Hypothesis', section_id: 1 },
+        },
+        {
+          experiment_custom_section_field_id: 5,
+          type: 'text',
+          value: 'Improve conversion',
+          custom_section_field: { id: 5, title: 'Purpose', section_id: 1 },
+        },
+      ],
+    }));
+
+    expect(md).toContain('## Custom Fields');
+    expect(md).toContain('### Hypothesis');
+    expect(md).toContain('Users will click more');
+    expect(md).toContain('### Purpose');
+    expect(md).toContain('Improve conversion');
   });
 
   it('should include variants with config', () => {
@@ -96,17 +140,6 @@ describe('experimentToMarkdown', () => {
     }));
 
     expect(md).toContain('config: {"color":"red"}');
-  });
-
-  it('should include description and hypothesis', () => {
-    const md = experimentToMarkdown(makeExperiment({
-      description: 'A test experiment',
-      hypothesis: 'Users will click more',
-    }));
-
-    expect(md).toContain('## Description');
-    expect(md).toContain('hypothesis: Users will click more');
-    expect(md).toContain('description: A test experiment');
   });
 
   it('should include owner_id from owners array', () => {
@@ -138,14 +171,11 @@ describe('experimentToMarkdown', () => {
       primary_metric: undefined,
       secondary_metrics: undefined,
       variants: undefined,
-      description: undefined,
-      hypothesis: undefined,
-    }));
+      }));
 
     expect(md).not.toContain('## Unit & Application');
     expect(md).not.toContain('## Metrics');
     expect(md).not.toContain('## Variants');
-    expect(md).not.toContain('## Description');
   });
 
   it('should include screenshot URL from variant_screenshots', () => {
@@ -212,10 +242,7 @@ describe('experimentToMarkdown', () => {
   });
 
   it('should produce output that round-trips through the parser', () => {
-    const experiment = makeExperiment({
-      description: 'Round trip test',
-      hypothesis: 'It works',
-    });
+    const experiment = makeExperiment();
 
     const md = experimentToMarkdown(experiment);
     const parsed = parseExperimentMarkdown(md);
@@ -233,7 +260,5 @@ describe('experimentToMarkdown', () => {
     expect(parsed.variants![0].name).toBe('control');
     expect(parsed.variants![0].config).toBe('{"color":"red"}');
     expect(parsed.variants![1].name).toBe('treatment');
-    expect(parsed.hypothesis).toBe('It works');
-    expect(parsed.description).toBe('Round trip test');
   });
 });

@@ -5,6 +5,7 @@ import {
   loadOpenAPISpec,
   getSchemaForEndpoint,
   validateAgainstSchema,
+  validateRequestStrict,
 } from 'absmartly-api-mocks/validation';
 import {
   createMockExperiment,
@@ -198,6 +199,67 @@ describe('API contract validation', () => {
     it('list response matches OpenAPI spec', async () => {
       const data = paginatedResponse('webhooks', createMockWebhooks(3));
       await expectSchemaValid('/webhooks', 'get', data);
+    });
+  });
+
+  describe('request payload validation (strict)', () => {
+    async function expectStrictRequestValid(
+      endpointPath: string,
+      method: string,
+      data: unknown,
+    ) {
+      const result = await validateRequestStrict(endpointPath, method, data);
+      if (!result.valid) {
+        const errors = result.errors
+          .map(e => `${e.path || '/'}: [${e.keyword}] ${e.message}`)
+          .join('\n');
+        expect.fail(`Strict request validation failed for ${method.toUpperCase()} ${endpointPath}:\n${errors}`);
+      }
+    }
+
+    async function expectStrictRequestInvalid(
+      endpointPath: string,
+      method: string,
+      data: unknown,
+      expectedKeyword: string,
+    ) {
+      const result = await validateRequestStrict(endpointPath, method, data);
+      expect(result.valid).toBe(false);
+      expect(result.errors.some(e => e.keyword === expectedKeyword)).toBe(true);
+    }
+
+    it('should accept valid experiment create payload', async () => {
+      await expectStrictRequestValid('/experiments', 'post', {
+        name: 'test_exp',
+        display_name: 'Test Experiment',
+        type: 'test',
+        state: 'ready',
+        percentage_of_traffic: 100,
+        percentages: '50/50',
+        nr_variants: 2,
+        variants: [
+          { name: 'control', variant: 0, config: '{}' },
+          { name: 'treatment', variant: 1, config: '{}' },
+        ],
+        variant_screenshots: [],
+        secondary_metrics: [],
+        teams: [],
+        experiment_tags: [],
+      });
+    });
+
+    it('should reject experiment payload with unknown properties', async () => {
+      await expectStrictRequestInvalid('/experiments', 'post', {
+        name: 'test_exp',
+        traffic: 100,
+      }, 'additionalProperties');
+    });
+
+    it('should reject experiment payload with typo in field name', async () => {
+      await expectStrictRequestInvalid('/experiments', 'post', {
+        name: 'test_exp',
+        display_Name: 'Wrong Case',
+      }, 'additionalProperties');
     });
   });
 });

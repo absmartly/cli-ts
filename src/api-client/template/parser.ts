@@ -19,6 +19,7 @@ export interface ExperimentTemplate {
   primary_metric?: string;
   secondary_metrics?: string[];
   guardrail_metrics?: string[];
+  exploratory_metrics?: string[];
   owner_id?: number;
   variants?: VariantTemplate[];
   custom_fields?: Record<string, string>;

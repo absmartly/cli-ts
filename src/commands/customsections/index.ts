@@ -64,7 +64,7 @@ const reorderCommand = new Command('reorder')
     const client = await getAPIClientFromOptions(globalOptions);
     const sections = options.sections.split(',').map((pair: string) => {
       const [idStr, orderStr] = pair.trim().split(':');
-      return { id: parseInt(idStr, 10), order_index: parseInt(orderStr, 10) };
+      return { id: parseInt(idStr ?? '', 10), order_index: parseInt(orderStr ?? '', 10) };
     });
     await client.reorderCustomSections(sections);
     console.log(chalk.green(`✓ Custom sections reordered`));

@@ -79,7 +79,7 @@ config: {"color":"blue"}
           display_name: 'File Experiment',
           type: 'test',
           state: 'created',
-          traffic: 80,
+          percentage_of_traffic: 80,
           variants: [
             { name: 'control', variant: 0, config: '{"color":"red"}' },
             { name: 'treatment', variant: 1, config: '{"color":"blue"}' },

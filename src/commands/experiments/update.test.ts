@@ -53,7 +53,7 @@ describe('update command', () => {
 
     expect(mockClient.updateExperiment).toHaveBeenCalledWith(
       42,
-      expect.objectContaining({ traffic: 50 })
+      expect.objectContaining({ percentage_of_traffic: 50 })
     );
   });
 
@@ -70,7 +70,7 @@ describe('update command', () => {
       42,
       expect.objectContaining({
         display_name: 'Template Name',
-        traffic: 75,
+        percentage_of_traffic: 75,
         state: 'running',
       })
     );

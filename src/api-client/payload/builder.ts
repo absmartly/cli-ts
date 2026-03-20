@@ -53,21 +53,43 @@ function buildVariants(template: ExperimentTemplate): Array<Record<string, unkno
   ];
 }
 
+interface CustomFieldResult {
+  values: Record<string, { type: string; value: string }> | undefined;
+  warnings: string[];
+}
+
 function buildCustomSectionFieldValues(
   context: ResolverContext,
   experimentType: string,
   ownerId: number | undefined,
-): Record<string, { type: string; value: string }> | undefined {
+  templateCustomFields?: Record<string, string>,
+): CustomFieldResult {
+  const warnings: string[] = [];
+
   if (!context.customSectionFields || context.customSectionFields.length === 0) {
-    return undefined;
+    if (templateCustomFields && Object.keys(templateCustomFields).length > 0) {
+      for (const name of Object.keys(templateCustomFields)) {
+        warnings.push(`Custom field "${name}" in template has no matching custom section field`);
+      }
+    }
+    return { values: undefined, warnings };
   }
 
   const relevantFields = context.customSectionFields.filter(
     (f) => !f.archived && f.custom_section?.type === experimentType && !f.custom_section?.archived,
   );
 
+  if (templateCustomFields) {
+    const relevantNames = new Set(relevantFields.map(f => f.name));
+    for (const name of Object.keys(templateCustomFields)) {
+      if (!relevantNames.has(name)) {
+        warnings.push(`Custom field "${name}" in template has no matching custom section field`);
+      }
+    }
+  }
+
   if (relevantFields.length === 0) {
-    return undefined;
+    return { values: undefined, warnings };
   }
 
   const fieldValues: Record<string, { type: string; value: string }> = {};
@@ -76,10 +98,13 @@ function buildCustomSectionFieldValues(
     if (field.type === 'user' && ownerId) {
       value = String(ownerId);
     }
+    if (templateCustomFields && field.name in templateCustomFields) {
+      value = templateCustomFields[field.name] ?? value;
+    }
     fieldValues[field.id] = { type: field.type, value };
   }
 
-  return fieldValues;
+  return { values: fieldValues, warnings };
 }
 
 async function buildVariantScreenshots(template: ExperimentTemplate): Promise<Array<Record<string, unknown>>> {
@@ -106,10 +131,31 @@ async function buildVariantScreenshots(template: ExperimentTemplate): Promise<Ar
   return screenshots;
 }
 
+const KNOWN_TEMPLATE_KEYS = new Set([
+  'name', 'display_name', 'type', 'state',
+  'percentage_of_traffic', 'percentages',
+  'unit_type', 'application',
+  'primary_metric', 'secondary_metrics', 'guardrail_metrics', 'exploratory_metrics',
+  'owner_id', 'variants', 'custom_fields',
+  'analysis_type', 'required_alpha', 'required_power', 'baseline_participants',
+]);
+
+export interface BuildPayloadResult {
+  payload: Record<string, unknown>;
+  warnings: string[];
+}
+
 export async function buildExperimentPayload(
   template: ExperimentTemplate,
   context: ResolverContext,
-): Promise<Record<string, unknown>> {
+): Promise<BuildPayloadResult> {
+  const warnings: string[] = [];
+
+  for (const key of Object.keys(template)) {
+    if (!KNOWN_TEMPLATE_KEYS.has(key) && (template as Record<string, unknown>)[key] !== undefined) {
+      warnings.push(`Unknown template field "${key}" will be ignored`);
+    }
+  }
   const experimentType = template.type ?? DEFAULT_TYPE;
   const variants = buildVariants(template);
 
@@ -118,7 +164,7 @@ export async function buildExperimentPayload(
     display_name: template.display_name ?? template.name,
     type: experimentType,
     state: template.state ?? DEFAULT_STATE,
-    traffic: template.percentage_of_traffic ?? DEFAULT_TRAFFIC,
+    percentage_of_traffic: template.percentage_of_traffic ?? DEFAULT_TRAFFIC,
     percentages: template.percentages ?? DEFAULT_PERCENTAGES,
     analysis_type: template.analysis_type ?? DEFAULT_ANALYSIS_TYPE,
     required_alpha: template.required_alpha ?? DEFAULT_REQUIRED_ALPHA,
@@ -153,18 +199,32 @@ export async function buildExperimentPayload(
     payload.primary_metric = { metric_id: metric.id };
   }
 
+  const allMetrics: Array<{ metric_id: number; type: string; order_index: number }> = [];
+  let orderIndex = 0;
+
   if (template.secondary_metrics && template.secondary_metrics.length > 0) {
-    payload.secondary_metrics = template.secondary_metrics.map((name) => {
+    for (const name of template.secondary_metrics) {
       const metric = resolveByName(context.metrics, name, 'Secondary metric');
-      return { metric_id: metric.id };
-    });
+      allMetrics.push({ metric_id: metric.id, type: 'secondary', order_index: orderIndex++ });
+    }
   }
 
   if (template.guardrail_metrics && template.guardrail_metrics.length > 0) {
-    payload.guardrail_metrics = template.guardrail_metrics.map((name) => {
+    for (const name of template.guardrail_metrics) {
       const metric = resolveByName(context.metrics, name, 'Guardrail metric');
-      return { metric_id: metric.id };
-    });
+      allMetrics.push({ metric_id: metric.id, type: 'guardrail', order_index: orderIndex++ });
+    }
+  }
+
+  if (template.exploratory_metrics && template.exploratory_metrics.length > 0) {
+    for (const name of template.exploratory_metrics) {
+      const metric = resolveByName(context.metrics, name, 'Exploratory metric');
+      allMetrics.push({ metric_id: metric.id, type: 'exploratory', order_index: orderIndex++ });
+    }
+  }
+
+  if (allMetrics.length > 0) {
+    payload.secondary_metrics = allMetrics;
   }
 
   let ownerId: number | undefined;
@@ -173,18 +233,11 @@ export async function buildExperimentPayload(
     payload.owners = [{ user_id: ownerId }];
   }
 
-  if (template.description) {
-    payload.description = template.description;
+  const customFieldResult = buildCustomSectionFieldValues(context, experimentType, ownerId, template.custom_fields);
+  if (customFieldResult.values) {
+    payload.custom_section_field_values = customFieldResult.values;
   }
+  warnings.push(...customFieldResult.warnings);
 
-  if (template.hypothesis) {
-    payload.hypothesis = template.hypothesis;
-  }
-
-  const customFieldValues = buildCustomSectionFieldValues(context, experimentType, ownerId);
-  if (customFieldValues) {
-    payload.custom_section_field_values = customFieldValues;
-  }
-
-  return payload;
+  return { payload, warnings };
 }
