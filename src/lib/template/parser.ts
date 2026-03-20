@@ -7,7 +7,7 @@ export { parseExperimentMarkdown } from '../../api-client/template/parser.js';
 export function parseExperimentFile(filePath: string) {
   let content: string;
   try {
-    content = readFileSync(filePath, 'utf8');
+    content = readFileSync(filePath === '-' ? '/dev/stdin' : filePath, 'utf8');
   } catch (error) {
     if (error instanceof Error) {
       if (error.message.includes('ENOENT')) {
