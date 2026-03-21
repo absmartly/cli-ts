@@ -16,6 +16,8 @@ describe('insights command', () => {
   const mockClient = {
     getVelocityInsights: vi.fn().mockResolvedValue({ data: [] }),
     getDecisionInsights: vi.fn().mockResolvedValue({ data: [] }),
+    getVelocityInsightsDetail: vi.fn().mockResolvedValue({ data: [] }),
+    getDecisionInsightsHistory: vi.fn().mockResolvedValue({ data: [] }),
   };
 
   beforeEach(() => {
@@ -67,6 +69,34 @@ describe('insights command', () => {
       expect.objectContaining({
         aggregation: 'week',
       })
+    );
+    expect(printFormatted).toHaveBeenCalled();
+  });
+
+  it('should get velocity detail insights', async () => {
+    await insightsCommand.parseAsync([
+      'node', 'test', 'velocity-detail',
+      '--from', '2026-01-01',
+      '--to', '2026-03-01',
+      '--aggregation', 'month',
+    ]);
+
+    expect(mockClient.getVelocityInsightsDetail).toHaveBeenCalledWith(
+      expect.objectContaining({ aggregation: 'month' })
+    );
+    expect(printFormatted).toHaveBeenCalled();
+  });
+
+  it('should get decision insights history', async () => {
+    await insightsCommand.parseAsync([
+      'node', 'test', 'decisions-history',
+      '--from', '2026-01-01',
+      '--to', '2026-03-01',
+      '--aggregation', 'week',
+    ]);
+
+    expect(mockClient.getDecisionInsightsHistory).toHaveBeenCalledWith(
+      expect.objectContaining({ aggregation: 'week' })
     );
     expect(printFormatted).toHaveBeenCalled();
   });

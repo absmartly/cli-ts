@@ -22,6 +22,9 @@ describe('datasources command', () => {
     testDatasource: vi.fn().mockResolvedValue(undefined),
     introspectDatasource: vi.fn().mockResolvedValue({ schema: [] }),
     validateDatasourceQuery: vi.fn().mockResolvedValue(undefined),
+    previewDatasourceQuery: vi.fn().mockResolvedValue({ result: [] }),
+    setDefaultDatasource: vi.fn().mockResolvedValue(undefined),
+    getDatasourceSchema: vi.fn().mockResolvedValue({ tables: [] }),
   };
 
   beforeEach(() => {
@@ -98,5 +101,25 @@ describe('datasources command', () => {
     await datasourcesCommand.parseAsync(['node', 'test', 'validate-query', '--config', '{"query":"SELECT 1"}']);
 
     expect(mockClient.validateDatasourceQuery).toHaveBeenCalledWith({ query: 'SELECT 1' });
+  });
+
+  it('should preview a datasource query', async () => {
+    await datasourcesCommand.parseAsync(['node', 'test', 'preview-query', '--config', '{"query":"SELECT 1"}']);
+
+    expect(mockClient.previewDatasourceQuery).toHaveBeenCalledWith({ query: 'SELECT 1' });
+    expect(printFormatted).toHaveBeenCalled();
+  });
+
+  it('should set default datasource', async () => {
+    await datasourcesCommand.parseAsync(['node', 'test', 'set-default', '1']);
+
+    expect(mockClient.setDefaultDatasource).toHaveBeenCalledWith(1);
+  });
+
+  it('should get datasource schema', async () => {
+    await datasourcesCommand.parseAsync(['node', 'test', 'schema', '1']);
+
+    expect(mockClient.getDatasourceSchema).toHaveBeenCalledWith(1);
+    expect(printFormatted).toHaveBeenCalled();
   });
 });

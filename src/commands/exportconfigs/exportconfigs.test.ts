@@ -21,6 +21,7 @@ describe('export-configs command', () => {
     archiveExportConfig: vi.fn().mockResolvedValue(undefined),
     pauseExportConfig: vi.fn().mockResolvedValue(undefined),
     listExportHistories: vi.fn().mockResolvedValue([{ id: 1 }]),
+    cancelExportHistory: vi.fn().mockResolvedValue(undefined),
   };
 
   beforeEach(() => {
@@ -91,5 +92,19 @@ describe('export-configs command', () => {
 
     expect(mockClient.listExportHistories).toHaveBeenCalledWith(1);
     expect(printFormatted).toHaveBeenCalled();
+  });
+
+  it('should cancel an export history', async () => {
+    await exportConfigsCommand.parseAsync(['node', 'test', 'cancel-history', '1', '42', '--reason', 'No longer needed']);
+
+    expect(mockClient.cancelExportHistory).toHaveBeenCalledWith(1, 42, 'No longer needed');
+    const output = consoleSpy.mock.calls.flat().join(' ');
+    expect(output).toContain('cancelled');
+  });
+
+  it('should cancel an export history without reason', async () => {
+    await exportConfigsCommand.parseAsync(['node', 'test', 'cancel-history', '1', '42']);
+
+    expect(mockClient.cancelExportHistory).toHaveBeenCalledWith(1, 42, undefined);
   });
 });
