@@ -1,32 +1,62 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
-import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
+import { getAPIClientFromOptions, getGlobalOptions, printFormatted, resolveAPIKey, resolveEndpoint, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseUserId, requireAtLeastOneField } from '../../lib/utils/validators.js';
+import { fetchAndDisplayImage, supportsInlineImages } from '../../lib/utils/terminal-image.js';
 import type { UserId } from '../../lib/api/branded-types.js';
+import type { User } from '../../api-client/types.js';
 import { resetPasswordCommand } from './reset-password.js';
 
 export const usersCommand = new Command('users').alias('user').description('User commands');
 
+async function displayUserAvatars(users: User[], globalOptions: Record<string, unknown>, width: number): Promise<void> {
+  if (!supportsInlineImages()) return;
+  const endpoint = resolveEndpoint(globalOptions);
+  const baseUrl = endpoint.replace(/\/v\d+\/?$/, '');
+  const apiKey = await resolveAPIKey(globalOptions);
+  const headers = { Authorization: `Api-Key ${apiKey}` };
+
+  for (const user of users) {
+    if (!user.avatar?.base_url) continue;
+    const name = [user.first_name, user.last_name].filter(Boolean).join(' ') || user.email;
+    const url = `${baseUrl}${user.avatar.base_url}/${user.avatar.file_name}`;
+    console.log(`\n${name}:`);
+    await fetchAndDisplayImage(url, user.avatar.file_name ?? 'avatar', { headers, width });
+  }
+}
+
 const listCommand = new Command('list')
   .description('List all users')
   .option('--include-archived', 'include archived users')
+  .option('--show-avatars [cols]', 'display avatars inline, optional width in columns (default: 10)', parseInt)
   .action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(listCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
     const users = await client.listUsers({ includeArchived: options.includeArchived });
     printFormatted(users, globalOptions);
+
+    if (options.showAvatars !== undefined) {
+      const width = typeof options.showAvatars === 'number' ? options.showAvatars : 10;
+      await displayUserAvatars(users as User[], globalOptions, width);
+    }
   }));
 
 const getCommand = new Command('get')
   .description('Get user details')
   .argument('<id>', 'user ID', parseUserId)
-  .action(withErrorHandling(async (id: UserId) => {
+  .option('--show-avatars [cols]', 'display avatar inline, optional width in columns (default: 15)', parseInt)
+  .action(withErrorHandling(async (id: UserId, options) => {
     const globalOptions = getGlobalOptions(getCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
     const user = await client.getUser(id);
     printFormatted(user, globalOptions);
+
+    if (options.showAvatars !== undefined) {
+      const width = typeof options.showAvatars === 'number' ? options.showAvatars : 15;
+      await displayUserAvatars([user as User], globalOptions, width);
+    }
   }));
 
 const createCommand = new Command('create')
