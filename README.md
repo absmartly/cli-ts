@@ -171,7 +171,9 @@ abs experiments update 123 -i                            # interactive editor
 # Lifecycle transitions
 abs experiments development 123                          # enter development mode
 abs experiments start 123                                # start experiment
+abs experiments start 123 --note "Ready for traffic"     # with activity note
 abs experiments stop 123                                 # stop experiment
+abs experiments stop 123 --reason hypothesis_rejected --note "Inconclusive results"
 abs experiments restart 123 --reason other --reshuffle   # restart stopped experiment
 abs experiments restart 123 --from-file changes.md       # restart with template changes
 abs experiments restart 123 --as-type feature            # restart as feature flag
@@ -179,16 +181,22 @@ abs experiments full-on 123 --variant 1                  # set full-on variant
 
 # Archive
 abs experiments archive 123
+abs experiments archive 123 --note "Cleaning up old experiments"
 abs experiments archive 123 --unarchive
 
 # Metric results
 abs experiments metrics list 123                         # list assigned metrics
 abs experiments metrics results 123                      # show results with CI bars
 abs experiments metrics results 123 -o vertical          # one metric per block
+abs experiments metrics results 123 -o json              # programmatic metric access
 abs experiments metrics add 123 --metrics 1,2,3
 abs experiments metrics confirm-impact 123 456
 abs experiments metrics exclude 123 456
 abs experiments metrics include 123 456
+
+# Metric dependencies
+abs experiments metrics deps 145                         # show experiments using metric
+abs experiments metrics deps 145 -o json                 # as JSON
 
 # Activity log
 abs experiments activity list 123
@@ -230,6 +238,25 @@ abs experiments request-update 123
 # Schedule future actions
 abs experiments schedule create 123 --action start --at 2026-04-01T10:00:00Z
 abs experiments schedule delete 123 456
+
+# Compare experiments
+abs experiments diff 22838 22839                         # diff two experiments
+abs experiments diff 22838 --iteration 6                 # diff with a previous iteration
+abs experiments diff 22838 22839 -o json                 # diff as JSON
+abs experiments diff 22838 22839 --raw                   # diff full API response
+
+# Watch live results
+abs experiments watch 22838                              # poll metrics every 60s
+abs experiments watch 22838 --interval 30                # poll every 30s
+
+# Bulk operations
+abs experiments bulk start 123 456 789 --note "Resuming"
+abs experiments bulk stop 123 456 --reason hypothesis_rejected --note "Results inconclusive"
+abs experiments bulk archive 123 456 --yes
+abs experiments bulk full-on 123 --variant 1 --note "Winner confirmed"
+abs experiments bulk development 123 456 --note "Moving to dev"
+abs experiments bulk stop --state running --app my-app --note "Maintenance"
+echo "123\n456" | abs experiments bulk stop --stdin --yes --reason other --note "Automated"
 
 # Generate a markdown template for experiment creation
 abs experiments generate-template -o experiment.md
@@ -325,6 +352,24 @@ abs experiments list --created-after 7d                  # last 7 days
 abs experiments list --stopped-after "30 days ago"       # stopped in last month
 abs experiments list --started-after yesterday
 abs experiments list --created-after 2024-01-01          # since Jan 1 2024
+```
+
+### Activity feed
+
+Global activity feed across all experiments.
+
+Aliases: `activity-feed`
+
+```bash
+# List recent activity
+abs activity-feed list
+abs activity-feed list --since 7d
+abs activity-feed list --state running --items 10
+
+# Watch activity in real-time
+abs activity-feed watch
+abs activity-feed watch --interval 30
+abs activity-feed watch --state running
 ```
 
 ### Feature flags
@@ -802,13 +847,29 @@ abs open experiments 123
 
 # Diagnose configuration issues
 abs doctor
+```
 
+`abs doctor` validates API connectivity, profile configuration, custom fields cache status, credentials file permissions, and warns about stale experiments stuck in "created" state.
+
+```bash
 # Show version and build info
 abs version
+```
 
-# Generate shell completion hints
-abs completion bash
-abs completion zsh
+#### Shell completions
+
+Generate shell completions for Bash or Zsh with tab-completion for commands, subcommands, and options.
+
+```bash
+# Bash
+eval "$(abs completion bash)"
+# Or persist:
+abs completion bash >> ~/.bashrc
+
+# Zsh
+eval "$(abs completion zsh)"
+# Or persist:
+abs completion zsh >> ~/.zshrc
 ```
 
 ## Configuration
