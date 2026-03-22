@@ -459,10 +459,9 @@ export class APIClient {
     }
     const results = await this.searchExperiments(nameOrId);
     const exact = results.filter(e => e.name === nameOrId);
-    if (exact.length === 1) return exact[0]!.id;
-    if (exact.length > 1) {
-      const ids = exact.map(e => `${e.id} (${e.state})`).join(', ');
-      throw new Error(`Multiple experiments match "${nameOrId}": ${ids}. Use the ID instead.`);
+    if (exact.length >= 1) {
+      exact.sort((a, b) => b.id - a.id);
+      return exact[0]!.id;
     }
     if (results.length === 1) return results[0]!.id;
     if (results.length > 1) {
