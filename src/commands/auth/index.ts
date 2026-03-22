@@ -65,7 +65,7 @@ const statusCommand = new Command('status')
       const apiKey = await getAPIKey(profileName);
 
       const keyDisplay = apiKey
-        ? (options.showKey ? '***' + apiKey.slice(-4) : '***hidden***')
+        ? (options.showKey ? apiKey : `${apiKey.slice(0, 4)}...${apiKey.slice(-4)}`)
         : 'not set';
 
       console.log(`Profile: ${profileName}`);
