@@ -1,5 +1,8 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
+import { join } from 'path';
+import { homedir } from 'os';
+import { stat } from 'fs/promises';
 import { getProfile, loadConfig } from '../../lib/config/config.js';
 import { getAPIKey } from '../../lib/config/keyring.js';
 import { createAPIClient } from '../../lib/api/client.js';
@@ -62,6 +65,54 @@ export const doctorCommand = new Command('doctor')
       } else {
         console.log(chalk.yellow('⚠') + ' No default environment set');
       }
+      try {
+        const cachePath = join(homedir(), '.config', 'absmartly', 'custom-fields-cache.json');
+        const cacheStat = await stat(cachePath);
+        const ageMs = Date.now() - cacheStat.mtimeMs;
+        const ageDays = Math.floor(ageMs / (1000 * 60 * 60 * 24));
+        const ageHours = Math.floor(ageMs / (1000 * 60 * 60));
+        const ageLabel = ageDays > 0 ? `${ageDays}d ago` : `${ageHours}h ago`;
+        console.log(chalk.green('✓') + ` Custom fields cache exists (updated ${ageLabel})`);
+      } catch {
+        console.log(chalk.yellow('⚠') + ' Custom fields cache not found');
+        console.log(chalk.yellow('  Run: abs experiments refresh-fields'));
+      }
+
+      try {
+        const credentialsPath = join(homedir(), '.config', 'absmartly', 'credentials.json');
+        const credStat = await stat(credentialsPath);
+        const mode = credStat.mode & 0o777;
+        if (mode === 0o600) {
+          console.log(chalk.green('✓') + ' Credentials file permissions OK (600)');
+        } else {
+          const modeStr = mode.toString(8);
+          console.log(chalk.yellow('⚠') + ` Credentials file permissions are ${modeStr} (expected 600)`);
+        }
+      } catch {
+      }
+
+      if (apiKey) {
+        try {
+          const staleClient = createAPIClient(profile.api.endpoint, apiKey);
+          const experiments = await staleClient.listExperiments({ state: 'created' });
+          const sevenDaysAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+          let staleCount = 0;
+          for (const exp of experiments) {
+            const rec = exp as Record<string, unknown>;
+            const updatedAt = rec.updated_at as string | number | undefined;
+            if (updatedAt && new Date(updatedAt).getTime() < sevenDaysAgo) {
+              staleCount++;
+            }
+          }
+          if (staleCount > 0) {
+            console.log(chalk.yellow('⚠') + ` ${staleCount} experiments stuck in 'created' state`);
+          } else {
+            console.log(chalk.green('✓') + ' No stale experiments in created state');
+          }
+        } catch {
+        }
+      }
+
     } catch (error) {
       console.log(chalk.red('✗') + ' Error: ' + (error instanceof Error ? error.message : error));
       allGood = false;
