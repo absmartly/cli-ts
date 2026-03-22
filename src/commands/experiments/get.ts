@@ -12,6 +12,7 @@ export const getCommand = new Command('get')
   .option('--activity', 'include activity notes in the output')
   .option('--raw', 'show full API response without summarizing')
   .option('--show <fields...>', 'include additional fields in summary (e.g. --show audience archived)')
+  .option('--exclude <fields...>', 'hide fields from summary (e.g. --exclude owners tags)')
   .option('--embed-screenshots', 'embed screenshots as base64 data URIs in template output')
   .option('--screenshots-dir <path>', 'save screenshots to directory in template output')
   .option('--show-images [cols]', 'display screenshots inline, optional width in columns (default: 40)', parseInt)
@@ -33,17 +34,28 @@ export const getCommand = new Command('get')
       return;
     }
 
-    const useRaw = options.raw || globalOptions.output === 'json' || globalOptions.output === 'yaml';
     const extraFields = (options.show as string[] | undefined) ?? [];
+    const excludeFields = new Set((options.exclude as string[] | undefined) ?? []);
 
-    if (options.activity) {
-      const notes = await client.listExperimentActivity(id);
-      const data = useRaw ? { ...experiment, activity: notes } : summarizeExperiment(experiment as Record<string, unknown>, extraFields);
-      printFormatted(data, globalOptions);
+    let data: unknown;
+    if (options.raw) {
+      data = options.activity ? { ...experiment, activity: await client.listExperimentActivity(id) } : experiment;
     } else {
-      const data = useRaw ? experiment : summarizeExperiment(experiment as Record<string, unknown>, extraFields);
-      printFormatted(data, globalOptions);
+      let summary = summarizeExperiment(experiment as Record<string, unknown>, extraFields);
+      if (options.activity) {
+        const notes = await client.listExperimentActivity(id);
+        summary = { ...summary, activity: notes };
+      }
+      if (excludeFields.size > 0) {
+        const filtered: Record<string, unknown> = {};
+        for (const [k, v] of Object.entries(summary)) {
+          if (!excludeFields.has(k)) filtered[k] = v;
+        }
+        summary = filtered;
+      }
+      data = summary;
     }
+    printFormatted(data, globalOptions);
 
     if (options.showImages && supportsInlineImages()) {
       const screenshots = (experiment as Record<string, unknown>).variant_screenshots as Array<Record<string, unknown>> | undefined;

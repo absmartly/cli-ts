@@ -117,9 +117,10 @@ abs experiments search "onboarding"
 # Get experiment details
 abs experiments get 123                                  # summary table
 abs experiments get 123 -o vertical                      # one field per line
-abs experiments get 123 -o json                          # full API response
-abs experiments get 123 --raw                            # full response as table
-abs experiments get 123 --show audience Hypothesis       # include API or custom fields
+abs experiments get 123 -o json                          # summary as JSON
+abs experiments get 123 -o json --raw                    # full API response as JSON
+abs experiments get 123 --show audience Hypothesis       # include extra fields
+abs experiments get 123 --exclude owners tags            # hide fields from output
 abs experiments get 123 --activity                       # include activity log
 
 # Inline screenshots (iTerm2, Kitty, Sixel)

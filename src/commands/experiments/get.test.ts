@@ -110,10 +110,21 @@ describe('get command', () => {
     expect(data.variants).toEqual(fullExperiment.variants);
   });
 
-  it('should show raw response with -o json', async () => {
+  it('should show summary with -o json by default', async () => {
     vi.mocked(getGlobalOptions).mockReturnValue({ output: 'json' } as any);
 
     await getCommand.parseAsync(['node', 'test', '42']);
+
+    const data = vi.mocked(printFormatted).mock.calls[0]![0] as Record<string, unknown>;
+    expect(data.id).toBe(42);
+    expect(data.application).toBeDefined();
+    expect(data.applications).toBeUndefined();
+  });
+
+  it('should show raw response with --raw', async () => {
+    vi.mocked(getGlobalOptions).mockReturnValue({ output: 'json' } as any);
+
+    await getCommand.parseAsync(['node', 'test', '42', '--raw']);
 
     const data = vi.mocked(printFormatted).mock.calls[0]![0] as Record<string, unknown>;
     expect(data.applications).toBeDefined();

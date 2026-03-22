@@ -44,8 +44,9 @@ export const listCommand = new Command('list')
   .option('--sort <field>', 'sort by field (e.g. created_at, name, state)')
   .option('--asc', 'sort in ascending order')
   .option('--desc', 'sort in descending order')
+  .option('--raw', 'show full API response without summarizing')
   .option('--show <fields...>', 'include additional fields (e.g. --show experiment_report archived)')
-  .option('--exclude <fields...>', 'hide columns (e.g. --exclude primary_metric owner)')
+  .option('--exclude <fields...>', 'hide fields (e.g. --exclude primary_metric owner)')
   .action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(listCommand);
     const client = await getAPIClientFromOptions(globalOptions);
@@ -105,8 +106,7 @@ export const listCommand = new Command('list')
 
     const experiments = await client.listExperiments(listOptions);
 
-    const useRaw = globalOptions.output === 'json' || globalOptions.output === 'yaml';
-    if (useRaw) {
+    if (options.raw) {
       printFormatted(experiments, globalOptions);
     } else {
       const extraFields = (options.show as string[] | undefined) ?? [];
@@ -122,14 +122,14 @@ export const listCommand = new Command('list')
         });
       }
       printFormatted(rows, globalOptions);
-
-      const page = options.page ?? 1;
-      const items = options.items ?? 20;
-      const count = experiments.length;
-      const hasMore = count === items;
-      const footer = hasMore
-        ? `Page ${page} (${count} results). Next: --page ${page + 1}`
-        : `Page ${page} (${count} results).`;
-      console.log(chalk.gray(footer));
     }
+
+    const page = options.page ?? 1;
+    const items = options.items ?? 20;
+    const count = experiments.length;
+    const hasMore = count === items;
+    const footer = hasMore
+      ? `Page ${page} (${count} results). Next: --page ${page + 1}`
+      : `Page ${page} (${count} results).`;
+    console.log(chalk.gray(footer));
   }));
