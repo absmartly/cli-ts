@@ -110,6 +110,7 @@ export type { UserSummary } from './user-summary.js';
 export { summarizeUser } from './user-summary.js';
 
 export {
+  applyShowExclude,
   summarizeMetric, summarizeMetricRow,
   summarizeGoal, summarizeGoalRow,
   summarizeTeam, summarizeTeamRow,

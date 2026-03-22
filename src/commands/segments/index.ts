@@ -2,7 +2,7 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseSegmentId, requireAtLeastOneField } from '../../lib/utils/validators.js';
-import { summarizeSegment, summarizeSegmentRow } from '../../api-client/entity-summary.js';
+import { applyShowExclude, summarizeSegment, summarizeSegmentRow } from '../../api-client/entity-summary.js';
 import type { SegmentId } from '../../lib/api/branded-types.js';
 
 export const segmentsCommand = new Command('segments')
@@ -14,12 +14,16 @@ const listCommand = new Command('list')
   .option('--limit <number>', 'maximum number of results', parseInt, 100)
   .option('--offset <number>', 'offset for pagination', parseInt, 0)
   .option('--raw', 'show full API response without summarizing')
+  .option('--show <fields...>', 'include additional fields from API response')
+  .option('--exclude <fields...>', 'hide fields from summary')
   .action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(listCommand);
     const client = await getAPIClientFromOptions(globalOptions);
+    const show = (options.show as string[] | undefined) ?? [];
+    const exclude = (options.exclude as string[] | undefined) ?? [];
 
     const segments = await client.listSegments(options.limit, options.offset);
-    const data = options.raw ? segments : (segments as Array<Record<string, unknown>>).map(s => summarizeSegmentRow(s));
+    const data = options.raw ? segments : (segments as Array<Record<string, unknown>>).map(s => applyShowExclude(summarizeSegmentRow(s), s, show, exclude));
     printFormatted(data, globalOptions);
   }));
 
@@ -27,12 +31,16 @@ const getCommand = new Command('get')
   .description('Get segment details')
   .argument('<id>', 'segment ID', parseSegmentId)
   .option('--raw', 'show full API response without summarizing')
+  .option('--show <fields...>', 'include additional fields from API response')
+  .option('--exclude <fields...>', 'hide fields from summary')
   .action(withErrorHandling(async (id: SegmentId, options) => {
     const globalOptions = getGlobalOptions(getCommand);
     const client = await getAPIClientFromOptions(globalOptions);
+    const show = (options.show as string[] | undefined) ?? [];
+    const exclude = (options.exclude as string[] | undefined) ?? [];
 
     const segment = await client.getSegment(id);
-    const data = options.raw ? segment : summarizeSegment(segment as Record<string, unknown>);
+    const data = options.raw ? segment : applyShowExclude(summarizeSegment(segment as Record<string, unknown>), segment as Record<string, unknown>, show, exclude);
     printFormatted(data, globalOptions);
   }));
 

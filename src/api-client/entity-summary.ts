@@ -1,3 +1,20 @@
+export function applyShowExclude(
+  summary: Record<string, unknown>,
+  raw: Record<string, unknown>,
+  extraFields: string[] = [],
+  excludeFields: string[] = [],
+): Record<string, unknown> {
+  for (const field of extraFields) {
+    if (!(field in summary) && field in raw) {
+      summary[field] = raw[field];
+    }
+  }
+  if (excludeFields.length > 0) {
+    for (const field of excludeFields) delete summary[field];
+  }
+  return summary;
+}
+
 function formatOwner(obj: Record<string, unknown> | undefined): string {
   if (!obj) return '';
   const first = obj.first_name as string ?? '';

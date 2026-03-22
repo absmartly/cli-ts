@@ -3,7 +3,7 @@ import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseGoalId, requireAtLeastOneField } from '../../lib/utils/validators.js';
 import type { GoalId } from '../../lib/api/branded-types.js';
-import { summarizeGoal, summarizeGoalRow } from '../../api-client/entity-summary.js';
+import { applyShowExclude, summarizeGoal, summarizeGoalRow } from '../../api-client/entity-summary.js';
 import { accessCommand } from './access.js';
 import { followCommand, unfollowCommand } from './follow.js';
 
@@ -14,12 +14,16 @@ const listCommand = new Command('list')
   .option('--limit <number>', 'maximum number of results', parseInt, 100)
   .option('--offset <number>', 'offset for pagination', parseInt, 0)
   .option('--raw', 'show full API response without summarizing')
+  .option('--show <fields...>', 'include additional fields from API response')
+  .option('--exclude <fields...>', 'hide fields from summary')
   .action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(listCommand);
     const client = await getAPIClientFromOptions(globalOptions);
+    const show = (options.show as string[] | undefined) ?? [];
+    const exclude = (options.exclude as string[] | undefined) ?? [];
 
     const goals = await client.listGoals(options.limit, options.offset);
-    const data = options.raw ? goals : (goals as Array<Record<string, unknown>>).map(g => summarizeGoalRow(g));
+    const data = options.raw ? goals : (goals as Array<Record<string, unknown>>).map(g => applyShowExclude(summarizeGoalRow(g), g, show, exclude));
     printFormatted(data, globalOptions);
   }));
 
@@ -27,12 +31,16 @@ const getCommand = new Command('get')
   .description('Get goal details')
   .argument('<id>', 'goal ID', parseGoalId)
   .option('--raw', 'show full API response without summarizing')
+  .option('--show <fields...>', 'include additional fields from API response')
+  .option('--exclude <fields...>', 'hide fields from summary')
   .action(withErrorHandling(async (id: GoalId, options) => {
     const globalOptions = getGlobalOptions(getCommand);
     const client = await getAPIClientFromOptions(globalOptions);
+    const show = (options.show as string[] | undefined) ?? [];
+    const exclude = (options.exclude as string[] | undefined) ?? [];
 
     const goal = await client.getGoal(id);
-    const data = options.raw ? goal : summarizeGoal(goal as Record<string, unknown>);
+    const data = options.raw ? goal : applyShowExclude(summarizeGoal(goal as Record<string, unknown>), goal as Record<string, unknown>, show, exclude);
     printFormatted(data, globalOptions);
   }));
 

@@ -3,7 +3,7 @@ import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseMetricId, requireAtLeastOneField } from '../../lib/utils/validators.js';
 import type { MetricId } from '../../lib/api/branded-types.js';
-import { summarizeMetric, summarizeMetricRow } from '../../api-client/entity-summary.js';
+import { applyShowExclude, summarizeMetric, summarizeMetricRow } from '../../api-client/entity-summary.js';
 import { accessCommand } from './access.js';
 import { reviewCommand } from './review.js';
 import { followCommand, unfollowCommand } from './follow.js';
@@ -18,12 +18,16 @@ const listCommand = new Command('list')
   .option('--page <number>', 'page number', (v) => parseInt(v, 10), 1)
   .option('--archived', 'include archived metrics')
   .option('--raw', 'show full API response without summarizing')
+  .option('--show <fields...>', 'include additional fields from API response')
+  .option('--exclude <fields...>', 'hide fields from summary')
   .action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(listCommand);
     const client = await getAPIClientFromOptions(globalOptions);
+    const show = (options.show as string[] | undefined) ?? [];
+    const exclude = (options.exclude as string[] | undefined) ?? [];
 
     const metrics = await client.listMetrics({ items: options.items, page: options.page, archived: options.archived });
-    const data = options.raw ? metrics : (metrics as Array<Record<string, unknown>>).map(m => summarizeMetricRow(m));
+    const data = options.raw ? metrics : (metrics as Array<Record<string, unknown>>).map(m => applyShowExclude(summarizeMetricRow(m), m, show, exclude));
     printFormatted(data, globalOptions);
   }));
 
@@ -31,12 +35,16 @@ const getCommand = new Command('get')
   .description('Get metric details')
   .argument('<id>', 'metric ID', parseMetricId)
   .option('--raw', 'show full API response without summarizing')
+  .option('--show <fields...>', 'include additional fields from API response')
+  .option('--exclude <fields...>', 'hide fields from summary')
   .action(withErrorHandling(async (id: MetricId, options) => {
     const globalOptions = getGlobalOptions(getCommand);
     const client = await getAPIClientFromOptions(globalOptions);
+    const show = (options.show as string[] | undefined) ?? [];
+    const exclude = (options.exclude as string[] | undefined) ?? [];
 
     const metric = await client.getMetric(id);
-    const data = options.raw ? metric : summarizeMetric(metric as Record<string, unknown>);
+    const data = options.raw ? metric : applyShowExclude(summarizeMetric(metric as Record<string, unknown>), metric as Record<string, unknown>, show, exclude);
     printFormatted(data, globalOptions);
   }));
 

@@ -4,7 +4,7 @@ import { getAPIClientFromOptions, getGlobalOptions, printFormatted, resolveAPIKe
 import { parseUserId, requireAtLeastOneField } from '../../lib/utils/validators.js';
 import { fetchAndDisplayImage, supportsInlineImages } from '../../lib/utils/terminal-image.js';
 import type { UserId } from '../../lib/api/branded-types.js';
-import { summarizeUserRow, summarizeUserDetail } from '../../api-client/entity-summary.js';
+import { applyShowExclude, summarizeUserRow, summarizeUserDetail } from '../../api-client/entity-summary.js';
 import type { User } from '../../api-client/types.js';
 import { resetPasswordCommand } from './reset-password.js';
 
@@ -30,13 +30,17 @@ const listCommand = new Command('list')
   .description('List all users')
   .option('--include-archived', 'include archived users')
   .option('--raw', 'show full API response without summarizing')
+  .option('--show <fields...>', 'include additional fields from API response')
+  .option('--exclude <fields...>', 'hide fields from summary')
   .option('--show-avatars [cols]', 'display avatars inline, optional width in columns (default: 10)', parseInt)
   .action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(listCommand);
     const client = await getAPIClientFromOptions(globalOptions);
+    const show = (options.show as string[] | undefined) ?? [];
+    const exclude = (options.exclude as string[] | undefined) ?? [];
 
     const users = await client.listUsers({ includeArchived: options.includeArchived });
-    const data = options.raw ? users : (users as Array<Record<string, unknown>>).map(u => summarizeUserRow(u));
+    const data = options.raw ? users : (users as Array<Record<string, unknown>>).map(u => applyShowExclude(summarizeUserRow(u), u, show, exclude));
     printFormatted(data, globalOptions);
 
     if (options.showAvatars !== undefined) {
@@ -49,13 +53,17 @@ const getCommand = new Command('get')
   .description('Get user details')
   .argument('<id>', 'user ID', parseUserId)
   .option('--raw', 'show full API response without summarizing')
+  .option('--show <fields...>', 'include additional fields from API response')
+  .option('--exclude <fields...>', 'hide fields from summary')
   .option('--show-avatars [cols]', 'display avatar inline, optional width in columns (default: 15)', parseInt)
   .action(withErrorHandling(async (id: UserId, options) => {
     const globalOptions = getGlobalOptions(getCommand);
     const client = await getAPIClientFromOptions(globalOptions);
+    const show = (options.show as string[] | undefined) ?? [];
+    const exclude = (options.exclude as string[] | undefined) ?? [];
 
     const user = await client.getUser(id);
-    const data = options.raw ? user : summarizeUserDetail(user as Record<string, unknown>);
+    const data = options.raw ? user : applyShowExclude(summarizeUserDetail(user as Record<string, unknown>), user as Record<string, unknown>, show, exclude);
     printFormatted(data, globalOptions);
 
     if (options.showAvatars !== undefined) {
