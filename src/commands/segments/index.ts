@@ -26,7 +26,7 @@ const listCommand = addPaginationOptions(
     const segments = await client.listSegments(options.items, options.page);
     const data = options.raw ? segments : (segments as Array<Record<string, unknown>>).map(s => applyShowExclude(summarizeSegmentRow(s), s, show, exclude));
     printFormatted(data, globalOptions);
-    printPaginationFooter(segments.length, options.items, options.page);
+    printPaginationFooter(segments.length, options.items, options.page, globalOptions.output as string);
   }));
 
 const getCommand = new Command('get')

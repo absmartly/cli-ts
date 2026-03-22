@@ -44,7 +44,7 @@ const listCommand = addPaginationOptions(
     const users = await client.listUsers({ includeArchived: options.includeArchived, items: options.items, page: options.page });
     const data = options.raw ? users : (users as Array<Record<string, unknown>>).map(u => applyShowExclude(summarizeUserRow(u), u, show, exclude));
     printFormatted(data, globalOptions);
-    printPaginationFooter(users.length, options.items, options.page);
+    printPaginationFooter(users.length, options.items, options.page, globalOptions.output as string);
 
     if (options.showAvatars !== undefined) {
       const width = typeof options.showAvatars === 'number' ? options.showAvatars : 10;

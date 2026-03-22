@@ -24,7 +24,7 @@ const listCommand = addPaginationOptions(
     const teams = await client.listTeams(options.includeArchived, options.items, options.page);
     const data = options.raw ? teams : (teams as Array<Record<string, unknown>>).map(t => applyShowExclude(summarizeTeamRow(t), t, show, exclude));
     printFormatted(data, globalOptions);
-    printPaginationFooter(teams.length, options.items, options.page);
+    printPaginationFooter(teams.length, options.items, options.page, globalOptions.output as string);
   }));
 
 const getCommand = new Command('get')

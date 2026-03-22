@@ -7,7 +7,8 @@ export function addPaginationOptions(command: Command, defaultItems = 20): Comma
     .option('--page <number>', 'page number', (v: string) => parseInt(v, 10), 1);
 }
 
-export function printPaginationFooter(count: number, items: number, page: number): void {
+export function printPaginationFooter(count: number, items: number, page: number, outputFormat?: string): void {
+  if (outputFormat === 'json' || outputFormat === 'yaml') return;
   const hasMore = count >= items;
   const footer = hasMore
     ? `Page ${page} (${count} results). Next: --page ${page + 1}`

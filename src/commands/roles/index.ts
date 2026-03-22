@@ -16,7 +16,7 @@ const listCommand = addPaginationOptions(
 
     const roles = await client.listRoles(options.items, options.page);
     printFormatted(roles, globalOptions);
-    printPaginationFooter(roles.length, options.items, options.page);
+    printPaginationFooter(roles.length, options.items, options.page, globalOptions.output as string);
   }));
 
 const getCommand = new Command('get')

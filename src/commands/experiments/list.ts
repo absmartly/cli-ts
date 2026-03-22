@@ -115,5 +115,5 @@ export const listCommand = new Command('list')
       printFormatted(rows, globalOptions);
     }
 
-    printPaginationFooter(experiments.length, options.items, options.page);
+    printPaginationFooter(experiments.length, options.items, options.page, globalOptions.output as string);
   }));

@@ -21,7 +21,7 @@ const listCommand = addPaginationOptions(
 
     const categories = await client.listMetricCategories(options.items, options.page);
     printFormatted(categories, globalOptions);
-    printPaginationFooter(categories.length, options.items, options.page);
+    printPaginationFooter(categories.length, options.items, options.page, globalOptions.output as string);
   }));
 
 const getCommand = new Command('get')

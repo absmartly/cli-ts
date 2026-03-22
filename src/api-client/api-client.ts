@@ -718,8 +718,10 @@ export class APIClient {
     return this.validateEntityResponse<Environment>(response, 'environment', 'getEnvironment');
   }
 
-  async listUnitTypes(): Promise<UnitType[]> {
-    const response = await this.request('GET', '/unit_types');
+  async listUnitTypes(items = 100, page = 1): Promise<UnitType[]> {
+    const response = await this.request('GET', '/unit_types', {
+      params: { items: String(items), page: String(page) },
+    });
     return this.validateListResponse<UnitType>(response, 'unit_types', 'listUnitTypes');
   }
 

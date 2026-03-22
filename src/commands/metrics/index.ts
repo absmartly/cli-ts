@@ -30,7 +30,7 @@ const listCommand = addPaginationOptions(
     const metrics = await client.listMetrics({ items: options.items, page: options.page, archived: options.archived });
     const data = options.raw ? metrics : (metrics as Array<Record<string, unknown>>).map(m => applyShowExclude(summarizeMetricRow(m), m, show, exclude));
     printFormatted(data, globalOptions);
-    printPaginationFooter(metrics.length, options.items, options.page);
+    printPaginationFooter(metrics.length, options.items, options.page, globalOptions.output as string);
   }));
 
 const getCommand = new Command('get')
@@ -53,18 +53,40 @@ const getCommand = new Command('get')
 const createCommand = new Command('create')
   .description('Create a new metric')
   .requiredOption('--name <name>', 'metric name')
-  .option('--type <type>', 'metric type')
-  .option('--description <text>', 'metric description')
+  .requiredOption('--type <type>', 'metric type (goal_count, goal_unique_count, goal_ratio, goal_property)')
+  .requiredOption('--description <text>', 'metric description')
+  .option('--effect <effect>', 'expected effect direction (positive, negative)', 'positive')
+  .option('--goal-id <id>', 'goal ID (required for goal_* types)', parseInt)
+  .option('--owner <user_id>', 'owner user ID', parseInt)
+  .option('--format-str <str>', 'display format string', '{}')
+  .option('--scale <n>', 'display scale', parseInt, 1)
+  .option('--precision <n>', 'display precision', parseInt, 2)
+  .option('--mean-format-str <str>', 'mean display format string', '{}%')
+  .option('--mean-scale <n>', 'mean display scale', parseInt, 100)
+  .option('--mean-precision <n>', 'mean display precision', parseInt, 2)
+  .option('--outlier-limit-method <method>', 'outlier limit method (unlimited, tukey, percentile)', 'unlimited')
   .action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(createCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
-    const metric = await client.createMetric({
+    const data: Record<string, unknown> = {
       name: options.name,
       type: options.type,
       description: options.description,
-    });
+      effect: options.effect,
+      format_str: options.formatStr,
+      scale: options.scale,
+      precision: options.precision,
+      mean_format_str: options.meanFormatStr,
+      mean_scale: options.meanScale,
+      mean_precision: options.meanPrecision,
+      outlier_limit_method: options.outlierLimitMethod,
+    };
 
+    if (options.goalId) data.goal_id = options.goalId;
+    if (options.owner) data.owners = [{ user_id: options.owner }];
+
+    const metric = await client.createMetric(data);
     console.log(chalk.green(`✓ Metric created with ID: ${metric.id}`));
   }));
 

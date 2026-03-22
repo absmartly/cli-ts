@@ -18,7 +18,7 @@ const listCommand = addPaginationOptions(
 
     const webhooks = await client.listWebhooks(options.items, options.page);
     printFormatted(webhooks, globalOptions);
-    printPaginationFooter(webhooks.length, options.items, options.page);
+    printPaginationFooter(webhooks.length, options.items, options.page, globalOptions.output as string);
   }));
 
 const getCommand = new Command('get')

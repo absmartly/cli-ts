@@ -22,7 +22,7 @@ const listCommand = addPaginationOptions(
 
     const fields = await client.listCustomSectionFields(options.items, options.page);
     printFormatted(fields, globalOptions);
-    printPaginationFooter(fields.length, options.items, options.page);
+    printPaginationFooter(fields.length, options.items, options.page, globalOptions.output as string);
   }));
 
 const getCommand = new Command('get')

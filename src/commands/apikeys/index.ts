@@ -18,7 +18,7 @@ const listCommand = addPaginationOptions(
 
     const apiKeys = await client.listApiKeys(options.items, options.page);
     printFormatted(apiKeys, globalOptions);
-    printPaginationFooter(apiKeys.length, options.items, options.page);
+    printPaginationFooter(apiKeys.length, options.items, options.page, globalOptions.output as string);
   }));
 
 const getCommand = new Command('get')

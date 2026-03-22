@@ -35,8 +35,12 @@ export function extractCustomFieldValues(
   profile?: string,
 ): Record<string, string> {
   const config = loadConfig();
-  const effectiveProfile = profile || config['default-profile'] || 'default';
-  const fields = loadCachedFields(effectiveProfile, type);
+  const defaultProfile = config['default-profile'] || 'default';
+  const effectiveProfile = profile || defaultProfile;
+  let fields = loadCachedFields(effectiveProfile, type);
+  if (fields.length === 0 && effectiveProfile !== defaultProfile) {
+    fields = loadCachedFields(defaultProfile, type);
+  }
   const result: Record<string, string> = {};
 
   const relevantFields = fields.filter(

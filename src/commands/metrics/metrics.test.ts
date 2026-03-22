@@ -57,10 +57,12 @@ describe('metrics command', () => {
     );
   });
 
-  it('should create a metric', async () => {
-    await metricsCommand.parseAsync(['node', 'test', 'create', '--name', 'ctr']);
+  it('should create a metric with required fields', async () => {
+    await metricsCommand.parseAsync(['node', 'test', 'create', '--name', 'ctr', '--type', 'goal_count', '--description', 'Click-through rate']);
 
-    expect(mockClient.createMetric).toHaveBeenCalledWith({ name: 'ctr' });
+    expect(mockClient.createMetric).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'ctr', type: 'goal_count', description: 'Click-through rate', effect: 'positive' })
+    );
   });
 
   it('should update a metric', async () => {

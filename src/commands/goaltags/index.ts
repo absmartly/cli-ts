@@ -20,7 +20,7 @@ const listCommand = addPaginationOptions(
 
     const tags = await client.listGoalTags(options.items, options.page);
     printFormatted(tags, globalOptions);
-    printPaginationFooter(tags.length, options.items, options.page);
+    printPaginationFooter(tags.length, options.items, options.page, globalOptions.output as string);
   }));
 
 const getCommand = new Command('get')

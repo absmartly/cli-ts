@@ -24,7 +24,7 @@ const listCommand = addPaginationOptions(new Command('list')
     const goals = await client.listGoals(options.items, options.page);
     const data = options.raw ? goals : (goals as Array<Record<string, unknown>>).map(g => applyShowExclude(summarizeGoalRow(g), g, show, exclude));
     printFormatted(data, globalOptions);
-    printPaginationFooter(goals.length, options.items, options.page);
+    printPaginationFooter(goals.length, options.items, options.page, globalOptions.output as string);
   }));
 
 const getCommand = new Command('get')
