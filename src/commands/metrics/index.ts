@@ -3,6 +3,7 @@ import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseMetricId, requireAtLeastOneField } from '../../lib/utils/validators.js';
 import type { MetricId } from '../../lib/api/branded-types.js';
+import { summarizeMetric, summarizeMetricRow } from '../../api-client/entity-summary.js';
 import { accessCommand } from './access.js';
 import { reviewCommand } from './review.js';
 import { followCommand, unfollowCommand } from './follow.js';
@@ -16,23 +17,27 @@ const listCommand = new Command('list')
   .option('--items <number>', 'number of results per page', (v) => parseInt(v, 10), 100)
   .option('--page <number>', 'page number', (v) => parseInt(v, 10), 1)
   .option('--archived', 'include archived metrics')
+  .option('--raw', 'show full API response without summarizing')
   .action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(listCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
     const metrics = await client.listMetrics({ items: options.items, page: options.page, archived: options.archived });
-    printFormatted(metrics, globalOptions);
+    const data = options.raw ? metrics : (metrics as Array<Record<string, unknown>>).map(m => summarizeMetricRow(m));
+    printFormatted(data, globalOptions);
   }));
 
 const getCommand = new Command('get')
   .description('Get metric details')
   .argument('<id>', 'metric ID', parseMetricId)
-  .action(withErrorHandling(async (id: MetricId) => {
+  .option('--raw', 'show full API response without summarizing')
+  .action(withErrorHandling(async (id: MetricId, options) => {
     const globalOptions = getGlobalOptions(getCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
     const metric = await client.getMetric(id);
-    printFormatted(metric, globalOptions);
+    const data = options.raw ? metric : summarizeMetric(metric as Record<string, unknown>);
+    printFormatted(data, globalOptions);
   }));
 
 const createCommand = new Command('create')

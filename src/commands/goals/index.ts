@@ -3,6 +3,7 @@ import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseGoalId, requireAtLeastOneField } from '../../lib/utils/validators.js';
 import type { GoalId } from '../../lib/api/branded-types.js';
+import { summarizeGoal, summarizeGoalRow } from '../../api-client/entity-summary.js';
 import { accessCommand } from './access.js';
 import { followCommand, unfollowCommand } from './follow.js';
 
@@ -12,23 +13,27 @@ const listCommand = new Command('list')
   .description('List all goals')
   .option('--limit <number>', 'maximum number of results', parseInt, 100)
   .option('--offset <number>', 'offset for pagination', parseInt, 0)
+  .option('--raw', 'show full API response without summarizing')
   .action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(listCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
     const goals = await client.listGoals(options.limit, options.offset);
-    printFormatted(goals, globalOptions);
+    const data = options.raw ? goals : (goals as Array<Record<string, unknown>>).map(g => summarizeGoalRow(g));
+    printFormatted(data, globalOptions);
   }));
 
 const getCommand = new Command('get')
   .description('Get goal details')
   .argument('<id>', 'goal ID', parseGoalId)
-  .action(withErrorHandling(async (id: GoalId) => {
+  .option('--raw', 'show full API response without summarizing')
+  .action(withErrorHandling(async (id: GoalId, options) => {
     const globalOptions = getGlobalOptions(getCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
     const goal = await client.getGoal(id);
-    printFormatted(goal, globalOptions);
+    const data = options.raw ? goal : summarizeGoal(goal as Record<string, unknown>);
+    printFormatted(data, globalOptions);
   }));
 
 const createCommand = new Command('create')

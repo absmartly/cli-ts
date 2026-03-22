@@ -109,6 +109,14 @@ export {
 export type { UserSummary } from './user-summary.js';
 export { summarizeUser } from './user-summary.js';
 
+export {
+  summarizeMetric, summarizeMetricRow,
+  summarizeGoal, summarizeGoalRow,
+  summarizeTeam, summarizeTeamRow,
+  summarizeUserRow, summarizeUserDetail,
+  summarizeSegment, summarizeSegmentRow,
+} from './entity-summary.js';
+
 export type { MetricResult, MetricInfo } from './metric-results.js';
 export {
   parseMetricData,

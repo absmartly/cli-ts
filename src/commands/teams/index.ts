@@ -2,6 +2,7 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseTeamId, requireAtLeastOneField } from '../../lib/utils/validators.js';
+import { summarizeTeam, summarizeTeamRow } from '../../api-client/entity-summary.js';
 import type { TeamId } from '../../lib/api/branded-types.js';
 
 export const teamsCommand = new Command('teams').alias('team').description('Team commands');
@@ -9,23 +10,27 @@ export const teamsCommand = new Command('teams').alias('team').description('Team
 const listCommand = new Command('list')
   .description('List all teams')
   .option('--include-archived', 'include archived teams')
+  .option('--raw', 'show full API response without summarizing')
   .action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(listCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
     const teams = await client.listTeams(options.includeArchived);
-    printFormatted(teams, globalOptions);
+    const data = options.raw ? teams : (teams as Array<Record<string, unknown>>).map(t => summarizeTeamRow(t));
+    printFormatted(data, globalOptions);
   }));
 
 const getCommand = new Command('get')
   .description('Get team details')
   .argument('<id>', 'team ID', parseTeamId)
-  .action(withErrorHandling(async (id: TeamId) => {
+  .option('--raw', 'show full API response without summarizing')
+  .action(withErrorHandling(async (id: TeamId, options) => {
     const globalOptions = getGlobalOptions(getCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
     const team = await client.getTeam(id);
-    printFormatted(team, globalOptions);
+    const data = options.raw ? team : summarizeTeam(team as Record<string, unknown>);
+    printFormatted(data, globalOptions);
   }));
 
 const createCommand = new Command('create')

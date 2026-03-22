@@ -4,6 +4,7 @@ import { getAPIClientFromOptions, getGlobalOptions, printFormatted, resolveAPIKe
 import { parseUserId, requireAtLeastOneField } from '../../lib/utils/validators.js';
 import { fetchAndDisplayImage, supportsInlineImages } from '../../lib/utils/terminal-image.js';
 import type { UserId } from '../../lib/api/branded-types.js';
+import { summarizeUserRow, summarizeUserDetail } from '../../api-client/entity-summary.js';
 import type { User } from '../../api-client/types.js';
 import { resetPasswordCommand } from './reset-password.js';
 
@@ -28,13 +29,15 @@ async function displayUserAvatars(users: User[], globalOptions: Record<string, u
 const listCommand = new Command('list')
   .description('List all users')
   .option('--include-archived', 'include archived users')
+  .option('--raw', 'show full API response without summarizing')
   .option('--show-avatars [cols]', 'display avatars inline, optional width in columns (default: 10)', parseInt)
   .action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(listCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
     const users = await client.listUsers({ includeArchived: options.includeArchived });
-    printFormatted(users, globalOptions);
+    const data = options.raw ? users : (users as Array<Record<string, unknown>>).map(u => summarizeUserRow(u));
+    printFormatted(data, globalOptions);
 
     if (options.showAvatars !== undefined) {
       const width = typeof options.showAvatars === 'number' ? options.showAvatars : 10;
@@ -45,13 +48,15 @@ const listCommand = new Command('list')
 const getCommand = new Command('get')
   .description('Get user details')
   .argument('<id>', 'user ID', parseUserId)
+  .option('--raw', 'show full API response without summarizing')
   .option('--show-avatars [cols]', 'display avatar inline, optional width in columns (default: 15)', parseInt)
   .action(withErrorHandling(async (id: UserId, options) => {
     const globalOptions = getGlobalOptions(getCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
     const user = await client.getUser(id);
-    printFormatted(user, globalOptions);
+    const data = options.raw ? user : summarizeUserDetail(user as Record<string, unknown>);
+    printFormatted(data, globalOptions);
 
     if (options.showAvatars !== undefined) {
       const width = typeof options.showAvatars === 'number' ? options.showAvatars : 15;
