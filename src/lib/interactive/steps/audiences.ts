@@ -20,7 +20,8 @@ export const audiencesStep: Step = {
     let audience = template.audience ?? '';
     try {
       audience = await promptJsonEditor('Audience filter (JSON)', audience);
-    } catch {
+    } catch (error) {
+      if (error && typeof error === 'object' && 'name' in error && error.name === 'ExitPromptError') throw error;
       console.log('Keeping current audience value.');
     }
 

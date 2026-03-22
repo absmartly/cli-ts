@@ -2,25 +2,32 @@ import type { APIClient } from './api-client.js';
 import type { ExperimentId } from './types.js';
 import { renderCIBar, formatPct, formatConfidenceValue, formatOwnerLabel } from './format-helpers.js';
 
+export interface VariantResult {
+  variant: number;
+  unit_count: number;
+  impact: number | null;
+  impact_lower: number | null;
+  impact_upper: number | null;
+  pvalue: number | null;
+  mean: number | null;
+  count: number | null;
+  variance: number | null;
+  abs_impact: number | null;
+  abs_impact_lower: number | null;
+  abs_impact_upper: number | null;
+}
+
 export interface MetricResult {
   metric_id: number;
   name: string;
   type: string;
-  variants: Array<{
-    variant: number;
-    unit_count: number;
-    impact: number | null;
-    impact_lower: number | null;
-    impact_upper: number | null;
-    pvalue: number | null;
-    mean: number | null;
-  }>;
+  variants: VariantResult[];
 }
 
 export function parseMetricData(
   metricId: number,
   data: { columnNames: string[]; rows: unknown[][] },
-): Array<{ variant: number; unit_count: number; impact: number | null; impact_lower: number | null; impact_upper: number | null; pvalue: number | null; mean: number | null }> {
+): VariantResult[] {
   const cols = data.columnNames;
   const variantIdx = cols.indexOf('variant');
   const unitIdx = cols.indexOf('unit_count');
@@ -28,24 +35,39 @@ export function parseMetricData(
     return [];
   }
   const prefix = `metric_${metricId}`;
-  const impactIdx = cols.indexOf(`${prefix}_impact`);
-  const ciLIdx = cols.indexOf(`${prefix}_impact_ci_lower`);
-  const ciUIdx = cols.indexOf(`${prefix}_impact_ci_upper`);
-  const pvalIdx = cols.indexOf(`${prefix}_pvalue`);
-  const meanIdx = cols.indexOf(`${prefix}_mean`);
+  const col = (suffix: string) => cols.indexOf(`${prefix}${suffix}`);
+  const impactIdx = col('_impact');
+  const ciLIdx = col('_impact_ci_lower');
+  const ciUIdx = col('_impact_ci_upper');
+  const pvalIdx = col('_pvalue');
+  const meanIdx = col('_mean');
+  const countIdx = cols.indexOf(prefix);
+  const varIdx = col('_var');
+  const absImpactIdx = col('_abs_impact');
+  const absImpactLIdx = col('_abs_impact_ci_lower');
+  const absImpactUIdx = col('_abs_impact_ci_upper');
+
+  const num = (row: unknown[], idx: number): number | null =>
+    idx >= 0 ? (row[idx] as number | null) : null;
 
   return data.rows.map(row => ({
     variant: row[variantIdx] as number,
     unit_count: row[unitIdx] as number,
-    impact: impactIdx >= 0 ? row[impactIdx] as number | null : null,
-    impact_lower: ciLIdx >= 0 ? row[ciLIdx] as number | null : null,
-    impact_upper: ciUIdx >= 0 ? row[ciUIdx] as number | null : null,
-    pvalue: pvalIdx >= 0 ? row[pvalIdx] as number | null : null,
-    mean: meanIdx >= 0 ? row[meanIdx] as number | null : null,
+    impact: num(row, impactIdx),
+    impact_lower: num(row, ciLIdx),
+    impact_upper: num(row, ciUIdx),
+    pvalue: num(row, pvalIdx),
+    mean: num(row, meanIdx),
+    count: num(row, countIdx),
+    variance: num(row, varIdx),
+    abs_impact: num(row, absImpactIdx),
+    abs_impact_lower: num(row, absImpactLIdx),
+    abs_impact_upper: num(row, absImpactUIdx),
   }));
 }
 
 export function formatResultRow(r: MetricResult, variantNames: Map<number, string>): Record<string, unknown> {
+  const control = r.variants.find(v => v.variant === 0);
   const treatment = r.variants.find(v => v.variant > 0);
   if (!treatment || treatment.impact === null) {
     return { metric: r.name, type: r.type, impact: '', confidence: '', samples: '' };
@@ -61,7 +83,10 @@ export function formatResultRow(r: MetricResult, variantNames: Map<number, strin
 
   const variantLabel = variantNames.get(treatment.variant) || `v${treatment.variant}`;
 
-  return {
+  const formatNum = (n: number | null) => n !== null ? n.toLocaleString(undefined, { maximumFractionDigits: 4 }) : '';
+  const formatMean = (n: number | null) => n !== null ? n.toLocaleString(undefined, { maximumFractionDigits: 6 }) : '';
+
+  const row: Record<string, unknown> = {
     metric: r.name,
     type: r.type,
     variant: variantLabel,
@@ -69,6 +94,19 @@ export function formatResultRow(r: MetricResult, variantNames: Map<number, strin
     confidence,
     samples: treatment.unit_count.toLocaleString(),
   };
+
+  if (control) {
+    row.control_count = formatNum(control.count);
+    row.control_mean = formatMean(control.mean);
+  }
+  row.treatment_count = formatNum(treatment.count);
+  row.treatment_mean = formatMean(treatment.mean);
+
+  if (treatment.abs_impact !== null) {
+    row.abs_impact = formatNum(treatment.abs_impact);
+  }
+
+  return row;
 }
 
 export interface MetricInfo {

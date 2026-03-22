@@ -40,7 +40,9 @@ function renderSixel(buffer: Buffer): string | null {
   try {
     const result = execFileSync('img2sixel', ['-'], { input: buffer, maxBuffer: 10 * 1024 * 1024 });
     return result.toString();
-  } catch {
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null;
+    console.error(`Warning: sixel rendering failed: ${error instanceof Error ? error.message : error}`);
     return null;
   }
 }
@@ -81,10 +83,14 @@ export async function fetchAndDisplayImage(url: string, fileName: string, option
     const fetchInit: RequestInit = {};
     if (options?.headers) fetchInit.headers = options.headers;
     const response = await fetch(url, fetchInit);
-    if (!response.ok) return false;
+    if (!response.ok) {
+      console.error(`Warning: Image fetch failed (${response.status}): ${url}`);
+      return false;
+    }
     const buffer = Buffer.from(await response.arrayBuffer());
     return displayInlineImage(buffer, fileName, options?.width ?? 20);
-  } catch {
+  } catch (error) {
+    console.error(`Warning: Could not display image: ${error instanceof Error ? error.message : error}`);
     return false;
   }
 }

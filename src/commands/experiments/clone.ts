@@ -33,7 +33,7 @@ export const cloneCommand = new Command('clone')
     const client = await getAPIClientFromOptions(globalOptions);
 
     const experiment = await client.getExperiment(id);
-    const hasScreenshots = (experiment as any).variant_screenshots?.length > 0;
+    const hasScreenshots = ((experiment.variant_screenshots as unknown[] | undefined)?.length ?? 0) > 0;
     const md = await experimentToMarkdown(experiment, {
       apiEndpoint: resolveEndpoint(globalOptions),
       ...(hasScreenshots && {

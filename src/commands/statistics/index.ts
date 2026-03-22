@@ -13,7 +13,7 @@ const powerMatrixCommand = new Command('power-matrix')
     const globalOptions = getGlobalOptions(powerMatrixCommand);
     const client = await getAPIClientFromOptions(globalOptions);
     const config = validateJSON(options.config, '--config') as Record<string, unknown>;
-    const result = await client.getPowerAnalysisMatrix(config as any);
+    const result = await client.getPowerAnalysisMatrix(config as Parameters<typeof client.getPowerAnalysisMatrix>[0]);
     printFormatted(result, globalOptions);
   }));
 

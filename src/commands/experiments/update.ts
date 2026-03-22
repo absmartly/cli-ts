@@ -121,7 +121,7 @@ export const updateCommand = new Command('update')
           const source = entry.substring(colonIdx + 1);
           if (isNaN(variantIdx)) throw new Error(`Invalid variant index in --screenshot: "${entry}"`);
           const resolved = await resolveScreenshot(source, `variant_${variantIdx}`);
-          if (resolved) screenshotEntries.push({ variant: variantIdx, ...resolved } as any);
+          if (resolved) screenshotEntries.push({ variant: variantIdx, file_upload: resolved } as any);
         }
       }
 

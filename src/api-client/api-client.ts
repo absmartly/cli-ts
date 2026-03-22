@@ -1484,7 +1484,6 @@ export class APIClient {
     });
   }
 
-  // --- Events ---
 
   async listEvents(body: {
     filters?: {
@@ -1549,7 +1548,6 @@ export class APIClient {
     return response.data;
   }
 
-  // --- Insights Detail ---
 
   async getVelocityInsightsDetail(params: {
     from: number; to: number; aggregation: string;
@@ -1577,7 +1575,6 @@ export class APIClient {
     return response.data;
   }
 
-  // --- Statistics ---
 
   async getPowerAnalysisMatrix(body: {
     split: number[];
@@ -1596,7 +1593,6 @@ export class APIClient {
     return response.data as { matrix: number[][] };
   }
 
-  // --- Storage Configs ---
 
   async listStorageConfigs(): Promise<unknown[]> {
     const response = await this.request('GET', '/storage_configs');
@@ -1623,7 +1619,6 @@ export class APIClient {
     this.validateOkResponse(response, 'testStorageConfig');
   }
 
-  // --- Datasource extras ---
 
   async previewDatasourceQuery(data: Record<string, unknown>): Promise<unknown> {
     const response = await this.request('POST', '/datasources/preview_query', { data });
@@ -1640,7 +1635,6 @@ export class APIClient {
     return response.data;
   }
 
-  // --- Export History cancel ---
 
   async cancelExportHistory(exportConfigId: ExportConfigId, historyId: number, reason?: string): Promise<unknown> {
     const response = await this.request('PUT',
@@ -1650,7 +1644,6 @@ export class APIClient {
     return response.data;
   }
 
-  // --- Current User API Keys (full CRUD) ---
 
   async listUserApiKeys(): Promise<unknown[]> {
     const rootUrl = this.getRootUrl();
@@ -1675,7 +1668,6 @@ export class APIClient {
     await this.request('DELETE', `${rootUrl}/auth/current-user/api_keys/${id}`);
   }
 
-  // --- Edit Current User ---
 
   async updateCurrentUser(data: {
     first_name?: string; last_name?: string;
@@ -1687,7 +1679,6 @@ export class APIClient {
     return this.validateEntityResponse<User>(response, 'user', 'updateCurrentUser');
   }
 
-  // --- Experiment Action Dialog Fields ---
 
   async listExperimentActionDialogFields(): Promise<unknown[]> {
     const response = await this.request('GET', '/experiment_action_dialog_fields');
@@ -1738,7 +1729,7 @@ export class APIClient {
     }
 
     const normalizedMethod = method.toUpperCase() as 'GET' | 'POST' | 'PUT' | 'DELETE';
-    const response = await this.request(normalizedMethod, path, {
+    const response = await this.request(normalizedMethod, decodedPath, {
       ...(data !== undefined && { data }),
       ...(headers && { headers }),
     });
