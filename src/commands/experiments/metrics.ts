@@ -125,6 +125,51 @@ const resultsCommand = new Command('results')
     }
   }));
 
+const depsCommand = new Command('deps')
+  .description('Show metric usage/dependency stats')
+  .argument('<metricId>', 'metric ID', parseMetricId)
+  .action(withErrorHandling(async (metricId: MetricId) => {
+    const globalOptions = getGlobalOptions(depsCommand);
+    const client = await getAPIClientFromOptions(globalOptions);
+    const allUsages = await client.listMetricUsages();
+
+    const metric = allUsages.find((m: unknown) => {
+      const rec = m as Record<string, unknown>;
+      return rec.id === metricId;
+    }) as Record<string, unknown> | undefined;
+
+    if (!metric) {
+      console.log(chalk.yellow(`No usage data found for metric ${metricId}`));
+      return;
+    }
+
+    const useRaw = globalOptions.output === 'json' || globalOptions.output === 'yaml';
+    if (useRaw) {
+      printFormatted(metric, globalOptions);
+      return;
+    }
+
+    const meta = (metric.metric_shared_metadata ?? {}) as Record<string, unknown>;
+    const usage = (metric.usage ?? {}) as Record<string, Record<string, unknown>>;
+    const allTime = usage.all_time ?? {};
+    const lastMonth = usage.last_month ?? {};
+    const last6Months = usage.last_6_months ?? {};
+    const lastYear = usage.last_year ?? {};
+
+    console.log(chalk.bold(`\nMetric: ${meta.name ?? metricId} (ID: ${metricId})\n`));
+
+    console.log(chalk.bold('All-time usage:'));
+    console.log(`  Total: ${allTime.total ?? 0}`);
+    console.log(`  Primary: ${allTime.primary ?? 0}`);
+    console.log(`  Secondary: ${allTime.secondary ?? 0}`);
+    console.log(`  Guardrail: ${allTime.guardrail ?? 0}`);
+
+    console.log(chalk.bold('\nRecent usage:'));
+    console.log(`  Last month: ${lastMonth.total ?? 0}`);
+    console.log(`  Last 6 months: ${last6Months.total ?? 0}`);
+    console.log(`  Last year: ${lastYear.total ?? 0}`);
+  }));
+
 metricsCommand.addCommand(resultsCommand);
 metricsCommand.addCommand(listCommand);
 metricsCommand.addCommand(addCommand);
@@ -132,3 +177,4 @@ metricsCommand.addCommand(confirmImpactCommand);
 metricsCommand.addCommand(excludeCommand);
 metricsCommand.addCommand(includeCommand);
 metricsCommand.addCommand(removeImpactCommand);
+metricsCommand.addCommand(depsCommand);

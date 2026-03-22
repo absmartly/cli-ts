@@ -258,20 +258,24 @@ export class APIClient {
     return this.validateEntityResponse<Experiment>(response, 'experiment', 'updateExperiment');
   }
 
-  async startExperiment(id: ExperimentId): Promise<Experiment> {
-    const response = await this.request('PUT', `/experiments/${id}/start`);
+  async startExperiment(id: ExperimentId, note?: string): Promise<Experiment> {
+    const response = await this.request('PUT', `/experiments/${id}/start`, {
+      data: { ...(note !== undefined && { note }) },
+    });
     return this.validateEntityResponse<Experiment>(response, 'experiment', 'startExperiment');
   }
 
-  async stopExperiment(id: ExperimentId, reason?: string): Promise<Experiment> {
+  async stopExperiment(id: ExperimentId, reason: string, note?: string): Promise<Experiment> {
     const response = await this.request('PUT', `/experiments/${id}/stop`, {
-      data: { ...(reason !== undefined && { reason }) },
+      data: { reason, ...(note !== undefined && { note }) },
     });
     return this.validateEntityResponse<Experiment>(response, 'experiment', 'stopExperiment');
   }
 
-  async archiveExperiment(id: ExperimentId, unarchive = false): Promise<void> {
-    await this.request('PUT', `/experiments/${id}/archive`, { data: { archive: !unarchive } });
+  async archiveExperiment(id: ExperimentId, unarchive = false, note?: string): Promise<void> {
+    await this.request('PUT', `/experiments/${id}/archive`, {
+      data: { archive: !unarchive, ...(note !== undefined && { note }) },
+    });
   }
 
   async getParentExperiment(id: ExperimentId): Promise<Experiment> {
@@ -594,6 +598,11 @@ export class APIClient {
   async getMetric(id: MetricId): Promise<Metric> {
     const response = await this.request('GET', `/metrics/${id}`);
     return this.validateEntityResponse<Metric>(response, 'metric', 'getMetric');
+  }
+
+  async listMetricUsages(): Promise<unknown[]> {
+    const response = await this.request('GET', '/metrics/usages');
+    return this.validateListResponse<unknown>(response, 'metrics', 'listMetricUsages');
   }
 
   async createMetric(data: Partial<Metric>): Promise<Metric> {
