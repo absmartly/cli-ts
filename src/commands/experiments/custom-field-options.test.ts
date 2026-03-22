@@ -105,4 +105,53 @@ describe('extractCustomFieldValues', () => {
 
     expect(result).toEqual({ Valid: 'Value' });
   });
+
+  it('should use configured default profile for registration', () => {
+    (loadConfig as any).mockReturnValue({ 'default-profile': 'staging' });
+    (loadCachedFields as any).mockReturnValue([
+      makeField('Deploy Target', 'experiment'),
+    ]);
+
+    const cmd = new Command('test');
+    registerCustomFieldOptions(cmd, 'experiment');
+
+    expect(loadCachedFields).toHaveBeenCalledWith('staging', 'experiment');
+    const optionNames = cmd.options.map(o => o.long);
+    expect(optionNames).toContain('--deploy-target');
+  });
+
+  it('should extract values using the specified profile', () => {
+    (loadConfig as any).mockReturnValue({ 'default-profile': 'default' });
+    (loadCachedFields as any).mockImplementation((profile: string) => {
+      if (profile === 'test-1') return [makeField('Next Steps', 'experiment')];
+      return [];
+    });
+
+    const result = extractCustomFieldValues(
+      { nextSteps: 'Do the thing' },
+      'experiment',
+      'test-1',
+    );
+
+    expect(loadCachedFields).toHaveBeenCalledWith('test-1', 'experiment');
+    expect(result).toEqual({ 'Next Steps': 'Do the thing' });
+  });
+
+  it('should fall back to default profile when requested profile has no cache', () => {
+    (loadConfig as any).mockReturnValue({ 'default-profile': 'default' });
+    (loadCachedFields as any).mockImplementation((profile: string) => {
+      if (profile === 'default') return [makeField('Hypothesis', 'experiment')];
+      return [];
+    });
+
+    const result = extractCustomFieldValues(
+      { hypothesis: 'Test fallback' },
+      'experiment',
+      'missing-profile',
+    );
+
+    expect(loadCachedFields).toHaveBeenCalledWith('missing-profile', 'experiment');
+    expect(loadCachedFields).toHaveBeenCalledWith('default', 'experiment');
+    expect(result).toEqual({ Hypothesis: 'Test fallback' });
+  });
 });
