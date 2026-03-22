@@ -20,8 +20,11 @@ async function getKeytar(): Promise<typeof import('keytar') | null> {
   if (keytarModule === false) return null;
   if (keytarModule !== null) return keytarModule;
   try {
-    keytarModule = await import('keytar');
-    await keytarModule.getPassword(SERVICE_NAME, '__probe__');
+    const mod = await import('keytar');
+    const kt = mod.default ?? mod;
+    if (typeof kt.getPassword !== 'function') throw new Error('keytar not usable');
+    await kt.getPassword(SERVICE_NAME, '__probe__');
+    keytarModule = kt as typeof import('keytar');
     return keytarModule;
   } catch {
     keytarModule = false;
@@ -53,10 +56,8 @@ export async function setPassword(
   const keyName = getKeyName(key, options.profile);
   const keytar = await getKeytar();
   if (keytar) {
-    try {
-      await keytar.setPassword(SERVICE_NAME, keyName, value);
-      return;
-    } catch { /* fall through to file store */ }
+    await keytar.setPassword(SERVICE_NAME, keyName, value);
+    return;
   }
   const creds = readCredentialsFile();
   creds[keyName] = value;
@@ -70,10 +71,7 @@ export async function getPassword(
   const keyName = getKeyName(key, options.profile);
   const keytar = await getKeytar();
   if (keytar) {
-    try {
-      const value = await keytar.getPassword(SERVICE_NAME, keyName);
-      if (value !== null) return value;
-    } catch { /* fall through to file store */ }
+    return await keytar.getPassword(SERVICE_NAME, keyName);
   }
   const creds = readCredentialsFile();
   return creds[keyName] ?? null;
@@ -84,20 +82,17 @@ export async function deletePassword(
   options: KeyringOptions = {}
 ): Promise<boolean> {
   const keyName = getKeyName(key, options.profile);
-  let deleted = false;
   const keytar = await getKeytar();
   if (keytar) {
-    try {
-      deleted = await keytar.deletePassword(SERVICE_NAME, keyName);
-    } catch { /* fall through */ }
+    return await keytar.deletePassword(SERVICE_NAME, keyName);
   }
   const creds = readCredentialsFile();
   if (keyName in creds) {
     delete creds[keyName];
     writeCredentialsFile(creds);
-    deleted = true;
+    return true;
   }
-  return deleted;
+  return false;
 }
 
 export async function setAPIKey(apiKey: string, profile?: string): Promise<void> {
