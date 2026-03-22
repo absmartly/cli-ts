@@ -55,7 +55,7 @@ describe('activity-feed command', () => {
     await activityFeedCommand.parseAsync(['node', 'test', 'list']);
 
     expect(mockClient.listExperiments).toHaveBeenCalledWith(
-      expect.objectContaining({ sort: 'updated_at', items: 20 })
+      expect.objectContaining({ sort: 'updated_at', items: 50 })
     );
     expect(mockClient.listExperimentActivity).toHaveBeenCalledWith(1);
     expect(mockClient.listExperimentActivity).toHaveBeenCalledWith(2);

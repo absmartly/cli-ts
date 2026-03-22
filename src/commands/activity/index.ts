@@ -79,13 +79,14 @@ async function fetchAllActivity(
   client: APIClient,
   options: { items?: number; state?: string; since?: number | undefined }
 ): Promise<ActivityNote[]> {
-  const listOptions: { sort: string; items: number; state?: string } = {
+  const fetchCount = options.items ?? 20;
+  const listOptions: Record<string, unknown> = {
     sort: 'updated_at',
-    items: options.items ?? 20,
+    items: fetchCount,
   };
   if (options.state) listOptions.state = options.state;
 
-  const experiments = await client.listExperiments(listOptions);
+  const experiments = await client.listExperiments(listOptions as any);
 
   const allNotes: ActivityNote[] = [];
 
@@ -134,7 +135,8 @@ export const activityFeedCommand = new Command('activity-feed')
 
 const listCommand = new Command('list')
   .description('List recent activity across all experiments')
-  .option('--items <n>', 'number of experiments to fetch activity from', '20')
+  .option('--experiments <n>', 'number of experiments to scan for activity', '50')
+  .option('--limit <n>', 'max number of activity entries to show', '20')
   .option('--since <date>', 'only show activity after this date (e.g. 7d, 2w, 2026-01-01)')
   .option('--state <state>', 'filter experiments by state')
   .option('--notes', 'show note text for each activity entry')
@@ -143,24 +145,29 @@ const listCommand = new Command('list')
     const client = await getAPIClientFromOptions(globalOptions);
 
     const since = parseDateFlagOrUndefined(options.since);
-    const items = parseInt(options.items, 10);
+    const experiments = parseInt(options.experiments, 10);
+    const limit = parseInt(options.limit, 10);
 
-    const fetchOptions: { items: number; state?: string; since?: number } = { items };
+    const fetchOptions: { items: number; state?: string; since?: number } = { items: experiments };
     if (options.state) fetchOptions.state = options.state;
     if (since !== undefined) fetchOptions.since = since;
 
-    const [notes, lookups] = await Promise.all([
+    const [allNotes, lookups] = await Promise.all([
       fetchAllActivity(client, fetchOptions),
       options.notes ? buildLookups(client) : Promise.resolve({}),
     ]);
 
+    const notes = allNotes.slice(0, limit);
     printActivityNotes(notes, options.notes, lookups);
+    if (allNotes.length > limit) {
+      console.log(chalk.gray(`Showing ${limit} of ${allNotes.length} entries. Use --limit to show more.`));
+    }
   }));
 
 const watchCommand = new Command('watch')
   .description('Watch activity feed in real-time')
   .option('--interval <seconds>', 'poll interval in seconds', '30')
-  .option('--items <n>', 'number of experiments to watch', '20')
+  .option('--experiments <n>', 'number of experiments to scan', '50')
   .option('--state <state>', 'filter experiments by state')
   .option('--notes', 'show note text for each activity entry')
   .action(withErrorHandling(async (options) => {
@@ -168,7 +175,7 @@ const watchCommand = new Command('watch')
     const client = await getAPIClientFromOptions(globalOptions);
 
     const intervalSeconds = parseInt(options.interval, 10);
-    const items = parseInt(options.items, 10);
+    const experiments = parseInt(options.experiments, 10);
 
     let lastSeenTimestamp: number | undefined;
     const lookups = options.notes ? await buildLookups(client) : {};
@@ -176,7 +183,7 @@ const watchCommand = new Command('watch')
     console.log(chalk.blue(`Watching activity (polling every ${intervalSeconds}s)... Press Ctrl+C to stop\n`));
 
     const onTick = async () => {
-      const fetchOptions: { items: number; state?: string; since?: number } = { items };
+      const fetchOptions: { items: number; state?: string; since?: number } = { items: experiments };
       if (options.state) fetchOptions.state = options.state;
       if (lastSeenTimestamp !== undefined) fetchOptions.since = lastSeenTimestamp;
 
