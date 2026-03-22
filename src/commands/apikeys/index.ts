@@ -40,8 +40,12 @@ const createCommand = new Command('create')
       permissions: options.permissions,
     });
 
+    const key = (apiKey as Record<string, unknown>).key as string | undefined;
     console.log(chalk.green(`✓ API key created with ID: ${apiKey.id}`));
-    console.log(chalk.yellow('Note: The API key has been created. Check the ABSmartly web interface for the full key value.'));
+    if (key) {
+      console.log(`  Key: ${key}`);
+      console.log(chalk.yellow('  Save this key now — it cannot be retrieved later.'));
+    }
   }));
 
 const updateCommand = new Command('update')
