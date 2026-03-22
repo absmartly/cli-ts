@@ -472,9 +472,9 @@ export class APIClient {
     this.validateOkResponse(response, 'dismissRecommendedAction');
   }
 
-  async listGoals(limit = 100, offset = 0): Promise<Goal[]> {
+  async listGoals(items = 100, page = 1): Promise<Goal[]> {
     const response = await this.request('GET', '/goals', {
-      params: { limit: String(limit), offset: String(offset) },
+      params: { items: String(items), page: String(page) },
     });
     return this.validateListResponse<Goal>(response, 'goals', 'listGoals');
   }
@@ -494,9 +494,9 @@ export class APIClient {
     return this.validateEntityResponse<Goal>(response, 'goal', 'updateGoal');
   }
 
-  async listSegments(limit = 100, offset = 0): Promise<Segment[]> {
+  async listSegments(items = 100, page = 1): Promise<Segment[]> {
     const response = await this.request('GET', '/segments', {
-      params: { limit: String(limit), offset: String(offset) },
+      params: { items: String(items), page: String(page) },
     });
     return this.validateListResponse<Segment>(response, 'segments', 'listSegments');
   }
@@ -520,9 +520,9 @@ export class APIClient {
     await this.request('DELETE', `/segments/${id}`);
   }
 
-  async listTeams(includeArchived = false): Promise<Team[]> {
+  async listTeams(includeArchived = false, items = 100, page = 1): Promise<Team[]> {
     const response = await this.request('GET', '/teams', {
-      params: { include_archived: includeArchived ? '1' : '0' },
+      params: { include_archived: includeArchived ? '1' : '0', items: String(items), page: String(page) },
     });
     return this.validateListResponse<Team>(response, 'teams', 'listTeams');
   }
@@ -546,8 +546,11 @@ export class APIClient {
     await this.request('PUT', `/teams/${id}/archive`, { data: { archive: !unarchive } });
   }
 
-  async listUsers(options: { includeArchived?: boolean; search?: string } = {}): Promise<User[]> {
-    const params: Record<string, string> = {};
+  async listUsers(options: { includeArchived?: boolean; search?: string; items?: number; page?: number } = {}): Promise<User[]> {
+    const params: Record<string, string> = {
+      items: String(options.items ?? 100),
+      page: String(options.page ?? 1),
+    };
     if (options.includeArchived) params.include_archived = '1';
     if (options.search) params.search = options.search;
     const response = await this.request('GET', '/users', { params });
@@ -630,9 +633,9 @@ export class APIClient {
     await this.request('PUT', `/metrics/${id}/archive`, { data: { archive: !unarchive } });
   }
 
-  async listCustomSectionFields(limit = 100, offset = 0): Promise<CustomSectionField[]> {
+  async listCustomSectionFields(items = 100, page = 1): Promise<CustomSectionField[]> {
     const response = await this.request<Record<string, unknown>>('GET', '/experiment_custom_section_fields', {
-      params: { limit: String(limit), offset: String(offset) },
+      params: { items: String(items), page: String(page) },
     });
     return this.validateListResponse<CustomSectionField>(response, 'experiment_custom_section_fields', 'listCustomSectionFields');
   }
@@ -712,9 +715,9 @@ export class APIClient {
     return this.validateEntityResponse<UnitType>(response, 'unit_type', 'getUnitType');
   }
 
-  async listExperimentTags(limit = 100, offset = 0): Promise<ExperimentTag[]> {
+  async listExperimentTags(items = 100, page = 1): Promise<ExperimentTag[]> {
     const response = await this.request('GET', '/experiment_tags', {
-      params: { limit: String(limit), offset: String(offset) },
+      params: { items: String(items), page: String(page) },
     });
     return this.validateListResponse<ExperimentTag>(response, 'experiment_tags', 'listExperimentTags');
   }
@@ -738,9 +741,9 @@ export class APIClient {
     await this.request('DELETE', `/experiment_tags/${id}`);
   }
 
-  async listGoalTags(limit = 100, offset = 0): Promise<GoalTag[]> {
+  async listGoalTags(items = 100, page = 1): Promise<GoalTag[]> {
     const response = await this.request('GET', '/goal_tags', {
-      params: { limit: String(limit), offset: String(offset) },
+      params: { items: String(items), page: String(page) },
     });
     return this.validateListResponse<GoalTag>(response, 'goal_tags', 'listGoalTags');
   }
@@ -764,9 +767,9 @@ export class APIClient {
     await this.request('DELETE', `/goal_tags/${id}`);
   }
 
-  async listMetricTags(limit = 100, offset = 0): Promise<MetricTag[]> {
+  async listMetricTags(items = 100, page = 1): Promise<MetricTag[]> {
     const response = await this.request('GET', '/metric_tags', {
-      params: { limit: String(limit), offset: String(offset) },
+      params: { items: String(items), page: String(page) },
     });
     return this.validateListResponse<MetricTag>(response, 'metric_tags', 'listMetricTags');
   }
@@ -790,9 +793,9 @@ export class APIClient {
     await this.request('DELETE', `/metric_tags/${id}`);
   }
 
-  async listMetricCategories(limit = 100, offset = 0): Promise<MetricCategory[]> {
+  async listMetricCategories(items = 100, page = 1): Promise<MetricCategory[]> {
     const response = await this.request('GET', '/metric_categories', {
-      params: { limit: String(limit), offset: String(offset) },
+      params: { items: String(items), page: String(page) },
     });
     return this.validateListResponse<MetricCategory>(response, 'metric_categories', 'listMetricCategories');
   }
@@ -823,9 +826,9 @@ export class APIClient {
     await this.request('PUT', `/metric_categories/${id}/archive`, { data: { archive } });
   }
 
-  async listRoles(limit = 20, offset = 0): Promise<Role[]> {
+  async listRoles(items = 20, page = 1): Promise<Role[]> {
     const response = await this.request('GET', '/roles', {
-      params: { limit: String(limit), offset: String(offset) },
+      params: { items: String(items), page: String(page) },
     });
     return this.validateListResponse<Role>(response, 'roles', 'listRoles');
   }
@@ -859,9 +862,9 @@ export class APIClient {
     return this.validateListResponse<PermissionCategory>(response, 'permission_categories', 'listPermissionCategories');
   }
 
-  async listApiKeys(limit = 20, offset = 0): Promise<ApiKey[]> {
+  async listApiKeys(items = 20, page = 1): Promise<ApiKey[]> {
     const response = await this.request('GET', '/api_keys', {
-      params: { limit: String(limit), offset: String(offset) },
+      params: { items: String(items), page: String(page) },
     });
     return this.validateListResponse<ApiKey>(response, 'api_keys', 'listApiKeys');
   }
@@ -885,9 +888,9 @@ export class APIClient {
     await this.request('DELETE', `/api_keys/${id}`);
   }
 
-  async listWebhooks(limit = 20, offset = 0): Promise<Webhook[]> {
+  async listWebhooks(items = 20, page = 1): Promise<Webhook[]> {
     const response = await this.request('GET', '/webhooks', {
-      params: { limit: String(limit), offset: String(offset) },
+      params: { items: String(items), page: String(page) },
     });
     return this.validateListResponse<Webhook>(response, 'webhooks', 'listWebhooks');
   }

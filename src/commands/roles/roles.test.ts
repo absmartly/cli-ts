@@ -43,7 +43,7 @@ describe('roles command', () => {
   it('should list roles', async () => {
     await rolesCommand.parseAsync(['node', 'test', 'list']);
 
-    expect(mockClient.listRoles).toHaveBeenCalledWith(20, 0);
+    expect(mockClient.listRoles).toHaveBeenCalledWith(20, 1);
     expect(printFormatted).toHaveBeenCalled();
   });
 

@@ -2,6 +2,7 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, resolveAPIKey, resolveEndpoint, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseUserId, requireAtLeastOneField } from '../../lib/utils/validators.js';
+import { addPaginationOptions, printPaginationFooter } from '../../lib/utils/pagination.js';
 import { fetchAndDisplayImage, supportsInlineImages } from '../../lib/utils/terminal-image.js';
 import type { UserId } from '../../lib/api/branded-types.js';
 import { applyShowExclude, summarizeUserRow, summarizeUserDetail } from '../../api-client/entity-summary.js';
@@ -26,22 +27,24 @@ async function displayUserAvatars(users: User[], globalOptions: Record<string, u
   }
 }
 
-const listCommand = new Command('list')
-  .description('List all users')
-  .option('--include-archived', 'include archived users')
-  .option('--raw', 'show full API response without summarizing')
-  .option('--show <fields...>', 'include additional fields from API response')
-  .option('--exclude <fields...>', 'hide fields from summary')
-  .option('--show-avatars [cols]', 'display avatars inline, optional width in columns (default: 10)', parseInt)
-  .action(withErrorHandling(async (options) => {
+const listCommand = addPaginationOptions(
+  new Command('list')
+    .description('List all users')
+    .option('--include-archived', 'include archived users')
+    .option('--raw', 'show full API response without summarizing')
+    .option('--show <fields...>', 'include additional fields from API response')
+    .option('--exclude <fields...>', 'hide fields from summary')
+    .option('--show-avatars [cols]', 'display avatars inline, optional width in columns (default: 10)', parseInt),
+).action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(listCommand);
     const client = await getAPIClientFromOptions(globalOptions);
     const show = (options.show as string[] | undefined) ?? [];
     const exclude = (options.exclude as string[] | undefined) ?? [];
 
-    const users = await client.listUsers({ includeArchived: options.includeArchived });
+    const users = await client.listUsers({ includeArchived: options.includeArchived, items: options.items, page: options.page });
     const data = options.raw ? users : (users as Array<Record<string, unknown>>).map(u => applyShowExclude(summarizeUserRow(u), u, show, exclude));
     printFormatted(data, globalOptions);
+    printPaginationFooter(users.length, options.items, options.page);
 
     if (options.showAvatars !== undefined) {
       const width = typeof options.showAvatars === 'number' ? options.showAvatars : 10;

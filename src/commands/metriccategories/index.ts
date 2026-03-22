@@ -2,6 +2,7 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseTagId, requireAtLeastOneField } from '../../lib/utils/validators.js';
+import { addPaginationOptions, printPaginationFooter } from '../../lib/utils/pagination.js';
 import type { TagId } from '../../lib/api/branded-types.js';
 
 export const metricCategoriesCommand = new Command('metric-categories')
@@ -11,16 +12,16 @@ export const metricCategoriesCommand = new Command('metric-categories')
   .alias('metric-cats')
   .description('Metric category commands');
 
-const listCommand = new Command('list')
-  .description('List all metric categories')
-  .option('--limit <number>', 'maximum number of results', parseInt, 20)
-  .option('--offset <number>', 'offset for pagination', parseInt, 0)
-  .action(withErrorHandling(async (options) => {
+const listCommand = addPaginationOptions(
+  new Command('list')
+    .description('List all metric categories'),
+).action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(listCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
-    const categories = await client.listMetricCategories(options.limit, options.offset);
+    const categories = await client.listMetricCategories(options.items, options.page);
     printFormatted(categories, globalOptions);
+    printPaginationFooter(categories.length, options.items, options.page);
   }));
 
 const getCommand = new Command('get')

@@ -2,6 +2,7 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseTagId, requireAtLeastOneField } from '../../lib/utils/validators.js';
+import { addPaginationOptions, printPaginationFooter } from '../../lib/utils/pagination.js';
 import type { TagId } from '../../lib/api/branded-types.js';
 
 export const metricTagsCommand = new Command('metric-tags')
@@ -10,16 +11,16 @@ export const metricTagsCommand = new Command('metric-tags')
   .alias('metric-tag')
   .description('Metric tag commands');
 
-const listCommand = new Command('list')
-  .description('List all metric tags')
-  .option('--limit <number>', 'maximum number of results', parseInt, 20)
-  .option('--offset <number>', 'offset for pagination', parseInt, 0)
-  .action(withErrorHandling(async (options) => {
+const listCommand = addPaginationOptions(
+  new Command('list')
+    .description('List all metric tags'),
+).action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(listCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
-    const tags = await client.listMetricTags(options.limit, options.offset);
+    const tags = await client.listMetricTags(options.items, options.page);
     printFormatted(tags, globalOptions);
+    printPaginationFooter(tags.length, options.items, options.page);
   }));
 
 const getCommand = new Command('get')

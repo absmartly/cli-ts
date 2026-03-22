@@ -43,13 +43,13 @@ describe('custom fields command', () => {
   it('should list custom section fields', async () => {
     mockClient.listCustomSectionFields.mockResolvedValue([{ id: 1, name: 'field1' }]);
     await customFieldsCommand.parseAsync(['node', 'test', 'list']);
-    expect(mockClient.listCustomSectionFields).toHaveBeenCalledWith(100, 0);
+    expect(mockClient.listCustomSectionFields).toHaveBeenCalledWith(100, 1);
     expect(printFormatted).toHaveBeenCalled();
   });
 
-  it('should list with --limit and --offset', async () => {
+  it('should list with --items and --page', async () => {
     mockClient.listCustomSectionFields.mockResolvedValue([]);
-    await customFieldsCommand.parseAsync(['node', 'test', 'list', '--limit', '10', '--offset', '5']);
+    await customFieldsCommand.parseAsync(['node', 'test', 'list', '--items', '10', '--page', '5']);
     expect(mockClient.listCustomSectionFields).toHaveBeenCalled();
   });
 

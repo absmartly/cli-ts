@@ -2,6 +2,7 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseSegmentId, requireAtLeastOneField } from '../../lib/utils/validators.js';
+import { addPaginationOptions, printPaginationFooter } from '../../lib/utils/pagination.js';
 import { applyShowExclude, summarizeSegment, summarizeSegmentRow } from '../../api-client/entity-summary.js';
 import type { SegmentId } from '../../lib/api/branded-types.js';
 
@@ -9,22 +10,23 @@ export const segmentsCommand = new Command('segments')
   .alias('segment')
   .description('Segment commands');
 
-const listCommand = new Command('list')
-  .description('List all segments')
-  .option('--limit <number>', 'maximum number of results', parseInt, 100)
-  .option('--offset <number>', 'offset for pagination', parseInt, 0)
-  .option('--raw', 'show full API response without summarizing')
-  .option('--show <fields...>', 'include additional fields from API response')
-  .option('--exclude <fields...>', 'hide fields from summary')
-  .action(withErrorHandling(async (options) => {
+const listCommand = addPaginationOptions(
+  new Command('list')
+    .description('List all segments')
+    .option('--raw', 'show full API response without summarizing')
+    .option('--show <fields...>', 'include additional fields from API response')
+    .option('--exclude <fields...>', 'hide fields from summary'),
+  100,
+).action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(listCommand);
     const client = await getAPIClientFromOptions(globalOptions);
     const show = (options.show as string[] | undefined) ?? [];
     const exclude = (options.exclude as string[] | undefined) ?? [];
 
-    const segments = await client.listSegments(options.limit, options.offset);
+    const segments = await client.listSegments(options.items, options.page);
     const data = options.raw ? segments : (segments as Array<Record<string, unknown>>).map(s => applyShowExclude(summarizeSegmentRow(s), s, show, exclude));
     printFormatted(data, globalOptions);
+    printPaginationFooter(segments.length, options.items, options.page);
   }));
 
 const getCommand = new Command('get')

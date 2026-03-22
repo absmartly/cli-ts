@@ -43,7 +43,7 @@ describe('tags command', () => {
   it('should list experiment tags', async () => {
     await tagsCommand.parseAsync(['node', 'test', 'list']);
 
-    expect(mockClient.listExperimentTags).toHaveBeenCalledWith(20, 0);
+    expect(mockClient.listExperimentTags).toHaveBeenCalledWith(20, 1);
     expect(printFormatted).toHaveBeenCalled();
   });
 

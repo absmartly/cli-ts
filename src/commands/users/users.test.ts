@@ -43,14 +43,14 @@ describe('users command', () => {
   it('should list users', async () => {
     await usersCommand.parseAsync(['node', 'test', 'list']);
 
-    expect(mockClient.listUsers).toHaveBeenCalledWith({ includeArchived: undefined });
+    expect(mockClient.listUsers).toHaveBeenCalledWith({ includeArchived: undefined, items: 20, page: 1 });
     expect(printFormatted).toHaveBeenCalled();
   });
 
   it('should list users with --include-archived', async () => {
     await usersCommand.parseAsync(['node', 'test', 'list', '--include-archived']);
 
-    expect(mockClient.listUsers).toHaveBeenCalledWith({ includeArchived: true });
+    expect(mockClient.listUsers).toHaveBeenCalledWith({ includeArchived: true, items: 20, page: 1 });
   });
 
   it('should get user by id', async () => {

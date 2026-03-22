@@ -2,22 +2,23 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseWebhookId, requireAtLeastOneField } from '../../lib/utils/validators.js';
+import { addPaginationOptions, printPaginationFooter } from '../../lib/utils/pagination.js';
 import type { WebhookId } from '../../lib/api/branded-types.js';
 
 export const webhooksCommand = new Command('webhooks')
   .alias('webhook')
   .description('Webhook commands');
 
-const listCommand = new Command('list')
-  .description('List all webhooks')
-  .option('--limit <number>', 'maximum number of results', parseInt, 20)
-  .option('--offset <number>', 'offset for pagination', parseInt, 0)
-  .action(withErrorHandling(async (options) => {
+const listCommand = addPaginationOptions(
+  new Command('list')
+    .description('List all webhooks'),
+).action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(listCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
-    const webhooks = await client.listWebhooks(options.limit, options.offset);
+    const webhooks = await client.listWebhooks(options.items, options.page);
     printFormatted(webhooks, globalOptions);
+    printPaginationFooter(webhooks.length, options.items, options.page);
   }));
 
 const getCommand = new Command('get')

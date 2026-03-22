@@ -2,6 +2,7 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseCustomSectionFieldId, requireAtLeastOneField } from '../../lib/utils/validators.js';
+import { addPaginationOptions, printPaginationFooter } from '../../lib/utils/pagination.js';
 import type { CustomSectionFieldId } from '../../lib/api/branded-types.js';
 import type { CustomSectionField } from '../../api-client/types.js';
 
@@ -11,16 +12,17 @@ export const customFieldsCommand = new Command('custom-fields')
   .alias('fields')
   .description('Experiment custom section field commands');
 
-const listCommand = new Command('list')
-  .description('List all experiment custom section fields')
-  .option('--limit <number>', 'maximum number of results', parseInt, 100)
-  .option('--offset <number>', 'offset for pagination', parseInt, 0)
-  .action(withErrorHandling(async (options) => {
+const listCommand = addPaginationOptions(
+  new Command('list')
+    .description('List all experiment custom section fields'),
+  100,
+).action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(listCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
-    const fields = await client.listCustomSectionFields(options.limit, options.offset);
+    const fields = await client.listCustomSectionFields(options.items, options.page);
     printFormatted(fields, globalOptions);
+    printPaginationFooter(fields.length, options.items, options.page);
   }));
 
 const getCommand = new Command('get')

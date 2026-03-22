@@ -1,6 +1,6 @@
 import { Command } from 'commander';
-import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
+import { printPaginationFooter } from '../../lib/utils/pagination.js';
 import { parseDateFlagOrUndefined } from '../../lib/utils/date-parser.js';
 import type { ListOptions } from '../../lib/api/types.js';
 import { summarizeExperimentRow } from '../../api-client/experiment-summary.js';
@@ -115,12 +115,5 @@ export const listCommand = new Command('list')
       printFormatted(rows, globalOptions);
     }
 
-    const page = options.page ?? 1;
-    const items = options.items ?? 20;
-    const count = experiments.length;
-    const hasMore = count === items;
-    const footer = hasMore
-      ? `Page ${page} (${count} results). Next: --page ${page + 1}`
-      : `Page ${page} (${count} results).`;
-    console.log(chalk.gray(footer));
+    printPaginationFooter(experiments.length, options.items, options.page);
   }));

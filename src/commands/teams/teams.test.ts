@@ -43,14 +43,14 @@ describe('teams command', () => {
   it('should list teams', async () => {
     await teamsCommand.parseAsync(['node', 'test', 'list']);
 
-    expect(mockClient.listTeams).toHaveBeenCalledWith(undefined);
+    expect(mockClient.listTeams).toHaveBeenCalledWith(undefined, 20, 1);
     expect(printFormatted).toHaveBeenCalled();
   });
 
   it('should list teams with --include-archived', async () => {
     await teamsCommand.parseAsync(['node', 'test', 'list', '--include-archived']);
 
-    expect(mockClient.listTeams).toHaveBeenCalledWith(true);
+    expect(mockClient.listTeams).toHaveBeenCalledWith(true, 20, 1);
   });
 
   it('should get team by id', async () => {

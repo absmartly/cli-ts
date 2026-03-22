@@ -2,6 +2,7 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseTagId, requireAtLeastOneField } from '../../lib/utils/validators.js';
+import { addPaginationOptions, printPaginationFooter } from '../../lib/utils/pagination.js';
 import type { TagId } from '../../lib/api/branded-types.js';
 
 export const goalTagsCommand = new Command('goal-tags')
@@ -10,16 +11,16 @@ export const goalTagsCommand = new Command('goal-tags')
   .alias('goal-tag')
   .description('Goal tag commands');
 
-const listCommand = new Command('list')
-  .description('List all goal tags')
-  .option('--limit <number>', 'maximum number of results', parseInt, 20)
-  .option('--offset <number>', 'offset for pagination', parseInt, 0)
-  .action(withErrorHandling(async (options) => {
+const listCommand = addPaginationOptions(
+  new Command('list')
+    .description('List all goal tags'),
+).action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(listCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
-    const tags = await client.listGoalTags(options.limit, options.offset);
+    const tags = await client.listGoalTags(options.items, options.page);
     printFormatted(tags, globalOptions);
+    printPaginationFooter(tags.length, options.items, options.page);
   }));
 
 const getCommand = new Command('get')

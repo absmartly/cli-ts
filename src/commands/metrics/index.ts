@@ -2,6 +2,7 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseMetricId, requireAtLeastOneField } from '../../lib/utils/validators.js';
+import { addPaginationOptions, printPaginationFooter } from '../../lib/utils/pagination.js';
 import type { MetricId } from '../../lib/api/branded-types.js';
 import { applyShowExclude, summarizeMetric, summarizeMetricRow } from '../../api-client/entity-summary.js';
 import { accessCommand } from './access.js';
@@ -12,15 +13,15 @@ export const metricsCommand = new Command('metrics')
   .alias('metric')
   .description('Metric commands');
 
-const listCommand = new Command('list')
-  .description('List all metrics')
-  .option('--items <number>', 'number of results per page', (v) => parseInt(v, 10), 100)
-  .option('--page <number>', 'page number', (v) => parseInt(v, 10), 1)
-  .option('--archived', 'include archived metrics')
-  .option('--raw', 'show full API response without summarizing')
-  .option('--show <fields...>', 'include additional fields from API response')
-  .option('--exclude <fields...>', 'hide fields from summary')
-  .action(withErrorHandling(async (options) => {
+const listCommand = addPaginationOptions(
+  new Command('list')
+    .description('List all metrics')
+    .option('--archived', 'include archived metrics')
+    .option('--raw', 'show full API response without summarizing')
+    .option('--show <fields...>', 'include additional fields from API response')
+    .option('--exclude <fields...>', 'hide fields from summary'),
+  100,
+).action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(listCommand);
     const client = await getAPIClientFromOptions(globalOptions);
     const show = (options.show as string[] | undefined) ?? [];
@@ -29,6 +30,7 @@ const listCommand = new Command('list')
     const metrics = await client.listMetrics({ items: options.items, page: options.page, archived: options.archived });
     const data = options.raw ? metrics : (metrics as Array<Record<string, unknown>>).map(m => applyShowExclude(summarizeMetricRow(m), m, show, exclude));
     printFormatted(data, globalOptions);
+    printPaginationFooter(metrics.length, options.items, options.page);
   }));
 
 const getCommand = new Command('get')

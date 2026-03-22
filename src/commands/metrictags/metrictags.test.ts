@@ -43,7 +43,7 @@ describe('metric-tags command', () => {
   it('should list metric tags', async () => {
     await metricTagsCommand.parseAsync(['node', 'test', 'list']);
 
-    expect(mockClient.listMetricTags).toHaveBeenCalledWith(20, 0);
+    expect(mockClient.listMetricTags).toHaveBeenCalledWith(20, 1);
     expect(printFormatted).toHaveBeenCalled();
   });
 

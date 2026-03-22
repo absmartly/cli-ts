@@ -2,22 +2,23 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseApiKeyId, requireAtLeastOneField } from '../../lib/utils/validators.js';
+import { addPaginationOptions, printPaginationFooter } from '../../lib/utils/pagination.js';
 import type { ApiKeyId } from '../../lib/api/branded-types.js';
 
 export const apiKeysCommand = new Command('api-keys')
   .aliases(['apikeys', 'apikey', 'api-key'])
   .description('API key commands');
 
-const listCommand = new Command('list')
-  .description('List all API keys')
-  .option('--limit <number>', 'maximum number of results', parseInt, 20)
-  .option('--offset <number>', 'offset for pagination', parseInt, 0)
-  .action(withErrorHandling(async (options) => {
+const listCommand = addPaginationOptions(
+  new Command('list')
+    .description('List all API keys'),
+).action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(listCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
-    const apiKeys = await client.listApiKeys(options.limit, options.offset);
+    const apiKeys = await client.listApiKeys(options.items, options.page);
     printFormatted(apiKeys, globalOptions);
+    printPaginationFooter(apiKeys.length, options.items, options.page);
   }));
 
 const getCommand = new Command('get')

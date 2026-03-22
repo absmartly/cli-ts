@@ -2,20 +2,21 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseRoleId, requireAtLeastOneField } from '../../lib/utils/validators.js';
+import { addPaginationOptions, printPaginationFooter } from '../../lib/utils/pagination.js';
 import type { RoleId } from '../../lib/api/branded-types.js';
 
 export const rolesCommand = new Command('roles').alias('role').description('Role commands');
 
-const listCommand = new Command('list')
-  .description('List all roles')
-  .option('--limit <number>', 'maximum number of results', parseInt, 20)
-  .option('--offset <number>', 'offset for pagination', parseInt, 0)
-  .action(withErrorHandling(async (options) => {
+const listCommand = addPaginationOptions(
+  new Command('list')
+    .description('List all roles'),
+).action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(listCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
-    const roles = await client.listRoles(options.limit, options.offset);
+    const roles = await client.listRoles(options.items, options.page);
     printFormatted(roles, globalOptions);
+    printPaginationFooter(roles.length, options.items, options.page);
   }));
 
 const getCommand = new Command('get')

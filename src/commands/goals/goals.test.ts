@@ -42,12 +42,12 @@ describe('goals command', () => {
   it('should list goals', async () => {
     await goalsCommand.parseAsync(['node', 'test', 'list']);
 
-    expect(mockClient.listGoals).toHaveBeenCalledWith(100, 0);
+    expect(mockClient.listGoals).toHaveBeenCalledWith(20, 1);
     expect(printFormatted).toHaveBeenCalled();
   });
 
   it('should list goals with custom limit', async () => {
-    await goalsCommand.parseAsync(['node', 'test', 'list', '--limit', '5']);
+    await goalsCommand.parseAsync(['node', 'test', 'list', '--items', '5']);
 
     expect(mockClient.listGoals).toHaveBeenCalled();
   });

@@ -4,15 +4,14 @@ import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHan
 import { parseGoalId, requireAtLeastOneField } from '../../lib/utils/validators.js';
 import type { GoalId } from '../../lib/api/branded-types.js';
 import { applyShowExclude, summarizeGoal, summarizeGoalRow } from '../../api-client/entity-summary.js';
+import { addPaginationOptions, printPaginationFooter } from '../../lib/utils/pagination.js';
 import { accessCommand } from './access.js';
 import { followCommand, unfollowCommand } from './follow.js';
 
 export const goalsCommand = new Command('goals').alias('goal').description('Goal commands');
 
-const listCommand = new Command('list')
-  .description('List all goals')
-  .option('--limit <number>', 'maximum number of results', parseInt, 100)
-  .option('--offset <number>', 'offset for pagination', parseInt, 0)
+const listCommand = addPaginationOptions(new Command('list')
+  .description('List all goals'), 20)
   .option('--raw', 'show full API response without summarizing')
   .option('--show <fields...>', 'include additional fields from API response')
   .option('--exclude <fields...>', 'hide fields from summary')
@@ -22,9 +21,10 @@ const listCommand = new Command('list')
     const show = (options.show as string[] | undefined) ?? [];
     const exclude = (options.exclude as string[] | undefined) ?? [];
 
-    const goals = await client.listGoals(options.limit, options.offset);
+    const goals = await client.listGoals(options.items, options.page);
     const data = options.raw ? goals : (goals as Array<Record<string, unknown>>).map(g => applyShowExclude(summarizeGoalRow(g), g, show, exclude));
     printFormatted(data, globalOptions);
+    printPaginationFooter(goals.length, options.items, options.page);
   }));
 
 const getCommand = new Command('get')
