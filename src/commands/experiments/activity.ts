@@ -69,26 +69,42 @@ const listActivityCommand = new Command('list')
       );
 
       if (options.notes && note.note) {
-        const formatted = formatNoteText(note.note, lookups);
-        if (formatted) console.log(`  ${chalk.white(`→ ${formatted}`)}`);
+        const noteText = note.note as string;
+        const showImages = options.showImages !== undefined && supportsInlineImages();
 
-        if (options.showImages !== undefined && supportsInlineImages()) {
-          const imgRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
-          const noteText = note.note as string;
-          let match;
-          while ((match = imgRegex.exec(noteText)) !== null) {
-            let imgUrl = match[2]!;
-            if (imgUrl.startsWith('/')) {
-              const endpoint = resolveEndpoint(globalOptions);
-              imgUrl = endpoint.replace(/\/v\d+\/?$/, '') + imgUrl;
+        if (showImages) {
+          const IMG_PLACEHOLDER = '\x00IMG:';
+          const images: Array<{ alt: string; url: string }> = [];
+          const withPlaceholders = noteText.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (_, alt, url) => {
+            images.push({ alt, url });
+            return `${IMG_PLACEHOLDER}${images.length - 1}\x00`;
+          });
+
+          const formatted = formatNoteText(withPlaceholders, lookups);
+          const parts = formatted.split(/\x00IMG:(\d+)\x00/);
+
+          const endpoint = resolveEndpoint(globalOptions);
+          const baseUrl = endpoint.replace(/\/v\d+\/?$/, '');
+          const apiKey = await resolveAPIKey(globalOptions);
+          const headers = { Authorization: `Api-Key ${apiKey}` };
+          const width = typeof options.showImages === 'number' ? options.showImages : 30;
+
+          process.stdout.write(`  → `);
+          for (let i = 0; i < parts.length; i++) {
+            if (i % 2 === 0) {
+              process.stdout.write(parts[i]!);
+            } else {
+              const img = images[parseInt(parts[i]!, 10)]!;
+              let imgUrl = img.url;
+              if (imgUrl.startsWith('/')) imgUrl = baseUrl + imgUrl;
+              process.stdout.write('\n');
+              await fetchAndDisplayImage(imgUrl, img.alt || 'image', { headers, width });
             }
-            const width = typeof options.showImages === 'number' ? options.showImages : 30;
-            const apiKey = await resolveAPIKey(globalOptions);
-            await fetchAndDisplayImage(imgUrl, match[1] || 'image', {
-              headers: { Authorization: `Api-Key ${apiKey}` },
-              width,
-            });
           }
+          if (!formatted.endsWith('\n')) process.stdout.write('\n');
+        } else {
+          const formatted = formatNoteText(noteText, lookups);
+          if (formatted) console.log(`  ${chalk.white(`→ ${formatted}`)}`);
         }
       }
     }
