@@ -42,6 +42,22 @@ export function loadCachedFields(profile: string, type: string): CustomSectionFi
   return entry.fields;
 }
 
+export function loadAllCachedFields(type: string): CustomSectionField[] {
+  const cache = readCache();
+  const seen = new Set<string>();
+  const result: CustomSectionField[] = [];
+  for (const [key, entry] of Object.entries(cache)) {
+    if (!key.endsWith(`:${type}`)) continue;
+    for (const field of entry.fields) {
+      const title = (field as { title?: string }).title ?? field.name ?? '';
+      if (!title || seen.has(title.toLowerCase())) continue;
+      seen.add(title.toLowerCase());
+      result.push(field);
+    }
+  }
+  return result;
+}
+
 export function saveCachedFields(profile: string, type: string, fields: CustomSectionField[]): void {
   const cache = readCache();
   cache[cacheKey(profile, type)] = { fields, cachedAt: Date.now() };
