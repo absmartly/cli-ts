@@ -41,8 +41,8 @@ const terminalMarked = new Marked(markedTerminal({
     }
   },
   blockquote: (text: string) => {
-    const lines = text.split('\n');
-    return lines.map(line => chalk.gray(`  │ `) + chalk.italic(line)).join('\n') + '\n';
+    const lines = text.trim().split('\n');
+    return lines.map(line => chalk.gray('│ ') + chalk.italic(line.replace(/^ {1,4}/, ''))).join('\n') + '\n';
   },
 } as any) as any);
 

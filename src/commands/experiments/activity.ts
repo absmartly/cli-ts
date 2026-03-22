@@ -1,9 +1,10 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
-import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
+import { getAPIClientFromOptions, getGlobalOptions, printFormatted, resolveEndpoint, resolveAPIKey, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseNoteId } from '../../lib/utils/validators.js';
 import { parseExperimentIdOrName } from './resolve-id.js';
 import { formatNoteText, type NoteLookups } from '../activity/index.js';
+import { fetchAndDisplayImage, supportsInlineImages } from '../../lib/utils/terminal-image.js';
 import type { NoteId } from '../../lib/api/branded-types.js';
 import type { Note } from '../../api-client/types.js';
 
@@ -26,6 +27,7 @@ const listActivityCommand = new Command('list')
   .description('List all activity notes for an experiment')
   .argument('<id>', 'experiment ID or name', parseExperimentIdOrName)
   .option('--notes', 'show note text for each entry')
+  .option('--show-images [cols]', 'display inline images from notes', parseInt)
   .action(withErrorHandling(async (nameOrId: string, options) => {
     const globalOptions = getGlobalOptions(listActivityCommand);
     const client = await getAPIClientFromOptions(globalOptions);
@@ -69,6 +71,25 @@ const listActivityCommand = new Command('list')
       if (options.notes && note.note) {
         const formatted = formatNoteText(note.note, lookups);
         if (formatted) console.log(`  ${chalk.white(`→ ${formatted}`)}`);
+
+        if (options.showImages !== undefined && supportsInlineImages()) {
+          const imgRegex = /!\[([^\]]*)\]\(([^)]+)\)/g;
+          const noteText = note.note as string;
+          let match;
+          while ((match = imgRegex.exec(noteText)) !== null) {
+            let imgUrl = match[2]!;
+            if (imgUrl.startsWith('/')) {
+              const endpoint = resolveEndpoint(globalOptions);
+              imgUrl = endpoint.replace(/\/v\d+\/?$/, '') + imgUrl;
+            }
+            const width = typeof options.showImages === 'number' ? options.showImages : 30;
+            const apiKey = await resolveAPIKey(globalOptions);
+            await fetchAndDisplayImage(imgUrl, match[1] || 'image', {
+              headers: { Authorization: `Api-Key ${apiKey}` },
+              width,
+            });
+          }
+        }
       }
     }
   }));
