@@ -77,7 +77,7 @@ function printActivityNotes(items: ActivityNote[], showNotes = false, lookups: N
 
 async function fetchAllActivity(
   client: APIClient,
-  options: { items?: number; state?: string; since?: number | undefined; sort?: string }
+  options: { items?: number; state?: string; since?: number | undefined; sort?: string; search?: string }
 ): Promise<ActivityNote[]> {
   const fetchCount = options.items ?? 20;
   const listOptions: Record<string, unknown> = {
@@ -85,6 +85,7 @@ async function fetchAllActivity(
     items: fetchCount,
   };
   if (options.state) listOptions.state = options.state;
+  if (options.search) listOptions.search = options.search;
 
   const experiments = await client.listExperiments(listOptions as any);
 
@@ -140,6 +141,7 @@ const listCommand = new Command('list')
   .option('--limit <n>', 'max number of activity entries to show', '20')
   .option('--since <date>', 'only show activity after this date (e.g. 7d, 2w, 2026-01-01)')
   .option('--state <state>', 'filter experiments by state')
+  .option('--search <query>', 'filter experiments by name')
   .option('--sort <field>', 'sort experiments by (updated_at, created_at)', 'updated_at')
   .option('--notes', 'show note text for each activity entry')
   .action(withErrorHandling(async (options) => {
@@ -150,8 +152,9 @@ const listCommand = new Command('list')
     const experiments = parseInt(options.items ?? options.experiments, 10);
     const limit = parseInt(options.limit, 10);
 
-    const fetchOptions: { items: number; state?: string; since?: number; sort?: string } = { items: experiments };
+    const fetchOptions: { items: number; state?: string; since?: number; sort?: string; search?: string } = { items: experiments };
     if (options.state) fetchOptions.state = options.state;
+    if (options.search) fetchOptions.search = options.search;
     if (since !== undefined) fetchOptions.since = since;
     if (options.sort) fetchOptions.sort = options.sort;
 

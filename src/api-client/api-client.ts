@@ -452,6 +452,26 @@ export class APIClient {
     return this.listExperiments({ search: query, items });
   }
 
+  async resolveExperimentId(nameOrId: string): Promise<ExperimentId> {
+    const asInt = parseInt(nameOrId, 10);
+    if (!isNaN(asInt) && String(asInt) === nameOrId.trim()) {
+      return asInt as ExperimentId;
+    }
+    const results = await this.searchExperiments(nameOrId);
+    const exact = results.filter(e => e.name === nameOrId);
+    if (exact.length === 1) return exact[0]!.id;
+    if (exact.length > 1) {
+      const ids = exact.map(e => `${e.id} (${e.state})`).join(', ');
+      throw new Error(`Multiple experiments match "${nameOrId}": ${ids}. Use the ID instead.`);
+    }
+    if (results.length === 1) return results[0]!.id;
+    if (results.length > 1) {
+      const suggestions = results.slice(0, 5).map(e => `  ${e.id} ${e.name} (${e.state})`).join('\n');
+      throw new Error(`No exact match for "${nameOrId}". Did you mean:\n${suggestions}`);
+    }
+    throw new Error(`Experiment "${nameOrId}" not found`);
+  }
+
   async listExperimentAlerts(experimentId?: ExperimentId): Promise<Alert[]> {
     const params: Record<string, string> = {};
     if (experimentId !== undefined) params.experiment_id = String(experimentId);
