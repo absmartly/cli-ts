@@ -77,11 +77,11 @@ function printActivityNotes(items: ActivityNote[], showNotes = false, lookups: N
 
 async function fetchAllActivity(
   client: APIClient,
-  options: { items?: number; state?: string; since?: number | undefined }
+  options: { items?: number; state?: string; since?: number | undefined; sort?: string }
 ): Promise<ActivityNote[]> {
   const fetchCount = options.items ?? 20;
   const listOptions: Record<string, unknown> = {
-    sort: 'updated_at',
+    sort: options.sort ?? 'updated_at',
     items: fetchCount,
   };
   if (options.state) listOptions.state = options.state;
@@ -131,26 +131,29 @@ async function buildLookups(client: APIClient): Promise<NoteLookups> {
 }
 
 export const activityFeedCommand = new Command('activity-feed')
-  .description('Global activity feed across experiments');
+  .description('Global activity feed across experiments (scans recent experiments by updated_at)');
 
 const listCommand = new Command('list')
   .description('List recent activity across all experiments')
   .option('--experiments <n>', 'number of experiments to scan for activity', '50')
+  .option('--items <n>', 'alias for --experiments')
   .option('--limit <n>', 'max number of activity entries to show', '20')
   .option('--since <date>', 'only show activity after this date (e.g. 7d, 2w, 2026-01-01)')
   .option('--state <state>', 'filter experiments by state')
+  .option('--sort <field>', 'sort experiments by (updated_at, created_at)', 'updated_at')
   .option('--notes', 'show note text for each activity entry')
   .action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(listCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
     const since = parseDateFlagOrUndefined(options.since);
-    const experiments = parseInt(options.experiments, 10);
+    const experiments = parseInt(options.items ?? options.experiments, 10);
     const limit = parseInt(options.limit, 10);
 
-    const fetchOptions: { items: number; state?: string; since?: number } = { items: experiments };
+    const fetchOptions: { items: number; state?: string; since?: number; sort?: string } = { items: experiments };
     if (options.state) fetchOptions.state = options.state;
     if (since !== undefined) fetchOptions.since = since;
+    if (options.sort) fetchOptions.sort = options.sort;
 
     const [allNotes, lookups] = await Promise.all([
       fetchAllActivity(client, fetchOptions),
@@ -168,14 +171,16 @@ const watchCommand = new Command('watch')
   .description('Watch activity feed in real-time')
   .option('--interval <seconds>', 'poll interval in seconds', '30')
   .option('--experiments <n>', 'number of experiments to scan', '50')
+  .option('--items <n>', 'alias for --experiments')
   .option('--state <state>', 'filter experiments by state')
+  .option('--sort <field>', 'sort experiments by (updated_at, created_at)', 'updated_at')
   .option('--notes', 'show note text for each activity entry')
   .action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(watchCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
     const intervalSeconds = parseInt(options.interval, 10);
-    const experiments = parseInt(options.experiments, 10);
+    const experiments = parseInt(options.items ?? options.experiments, 10);
 
     let lastSeenTimestamp: number | undefined;
     const lookups = options.notes ? await buildLookups(client) : {};
@@ -183,8 +188,9 @@ const watchCommand = new Command('watch')
     console.log(chalk.blue(`Watching activity (polling every ${intervalSeconds}s)... Press Ctrl+C to stop\n`));
 
     const onTick = async () => {
-      const fetchOptions: { items: number; state?: string; since?: number } = { items: experiments };
+      const fetchOptions: { items: number; state?: string; since?: number; sort?: string } = { items: experiments };
       if (options.state) fetchOptions.state = options.state;
+      if (options.sort) fetchOptions.sort = options.sort;
       if (lastSeenTimestamp !== undefined) fetchOptions.since = lastSeenTimestamp;
 
       const notes = await fetchAllActivity(client, fetchOptions);
