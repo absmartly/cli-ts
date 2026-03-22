@@ -24,6 +24,8 @@ import { exportCommand } from './export.js';
 import { requestUpdateCommand } from './request-update.js';
 import { cloneCommand } from './clone.js';
 import { refreshFieldsCommand } from './refresh-fields.js';
+import { diffCommand } from './diff.js';
+import { watchCommand } from './watch.js';
 
 const subcommands = [
   listCommand, getCommand, searchCommand, createCommand, cloneCommand, updateCommand,
@@ -32,6 +34,8 @@ const subcommands = [
   parentCommand, accessCommand, followCommand, unfollowCommand,
   annotationsCommand, alertsCommand, recommendationsCommand, exportCommand, requestUpdateCommand,
   refreshFieldsCommand,
+  diffCommand,
+  watchCommand,
 ];
 
 export const experimentsCommand = new Command('experiments')
