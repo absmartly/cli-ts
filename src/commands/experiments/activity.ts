@@ -3,7 +3,7 @@ import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseNoteId } from '../../lib/utils/validators.js';
 import { parseExperimentIdOrName } from './resolve-id.js';
-import { formatNoteText } from '../activity/index.js';
+import { formatNoteText, type NoteLookups } from '../activity/index.js';
 import type { NoteId } from '../../lib/api/branded-types.js';
 import type { Note } from '../../api-client/types.js';
 
@@ -44,6 +44,19 @@ const listActivityCommand = new Command('list')
       return;
     }
 
+    let lookups: NoteLookups = {};
+    if (options.notes) {
+      const [users, teams] = await Promise.all([
+        client.listUsers({ items: 500 }),
+        client.listTeams(false, 500),
+      ]);
+      const userMap = new Map<number, string>();
+      for (const u of users) userMap.set(u.id, [u.first_name, u.last_name].filter(Boolean).join(' ') || u.email);
+      const teamMap = new Map<number, string>();
+      for (const t of teams) teamMap.set(t.id, t.name);
+      lookups = { users: userMap, teams: teamMap };
+    }
+
     for (const note of notes) {
       const ts = note.created_at ? formatTimestamp(note.created_at) : 'unknown';
       const user = getUserName(note);
@@ -54,7 +67,7 @@ const listActivityCommand = new Command('list')
       );
 
       if (options.notes && note.note) {
-        const formatted = formatNoteText(note.note);
+        const formatted = formatNoteText(note.note, lookups);
         if (formatted) console.log(`  ${chalk.white(`→ ${formatted}`)}`);
       }
     }

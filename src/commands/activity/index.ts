@@ -2,6 +2,7 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import { Marked } from 'marked';
 import { markedTerminal } from 'marked-terminal';
+import { highlight } from 'cli-highlight';
 import { getAPIClientFromOptions, getGlobalOptions, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseDateFlagOrUndefined } from '../../lib/utils/date-parser.js';
 import { startPolling } from '../../lib/utils/polling.js';
@@ -31,7 +32,18 @@ export interface NoteLookups {
   teams?: Map<number, string>;
 }
 
-const terminalMarked = new Marked(markedTerminal() as any);
+const terminalMarked = new Marked(markedTerminal({
+  code: (code: string, lang: string) => {
+    try {
+      return highlight(code, { language: lang || 'text', ignoreIllegals: true }) + '\n';
+    } catch {
+      return chalk.yellow(code) + '\n';
+    }
+  },
+  blockquote: chalk.gray.italic,
+  listitem: chalk.white,
+  bullet: chalk.cyan('  ● '),
+} as any) as any);
 
 export function resolveMentions(text: string, lookups: NoteLookups = {}): string {
   return text
