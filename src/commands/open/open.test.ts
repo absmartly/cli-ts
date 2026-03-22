@@ -1,11 +1,14 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { mkdtempSync } from 'fs';
-import { join } from 'path';
-import { tmpdir } from 'os';
 import open from 'open';
 import { openCommand } from './index.js';
 
-const fakeHome = mkdtempSync(join(tmpdir(), 'abs-open-test-'));
+const { fakeHome } = vi.hoisted(() => {
+  const { mkdtempSync } = require('fs');
+  const { join } = require('path');
+  const { tmpdir } = require('os');
+  return { fakeHome: mkdtempSync(join(tmpdir(), 'abs-open-test-')) as string };
+});
+
 vi.mock('os', async (importOriginal) => {
   const mod = await importOriginal<typeof import('os')>();
   return { ...mod, homedir: () => fakeHome };
