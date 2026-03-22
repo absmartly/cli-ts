@@ -1,64 +1,104 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
-import { parseExperimentId, parseNoteId } from '../../lib/utils/validators.js';
-import type { ExperimentId, NoteId } from '../../lib/api/branded-types.js';
+import { parseNoteId } from '../../lib/utils/validators.js';
+import { parseExperimentIdOrName } from './resolve-id.js';
+import { formatNoteText } from '../activity/index.js';
+import type { NoteId } from '../../lib/api/branded-types.js';
+import type { Note } from '../../api-client/types.js';
+
+function formatTimestamp(dateStr: string): string {
+  const d = new Date(dateStr);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function getUserName(note: Note): string {
+  const createdBy = note.created_by as { first_name?: string; last_name?: string } | undefined;
+  if (!createdBy) return 'System';
+  const parts = [createdBy.first_name, createdBy.last_name].filter(Boolean);
+  return parts.length > 0 ? parts.join(' ') : 'System';
+}
 
 export const activityCommand = new Command('activity').description('Activity operations');
 
 const listActivityCommand = new Command('list')
   .description('List all activity notes for an experiment')
-  .argument('<id>', 'experiment ID', parseExperimentId)
-  .action(withErrorHandling(async (id: ExperimentId) => {
+  .argument('<id>', 'experiment ID or name', parseExperimentIdOrName)
+  .option('--notes', 'show note text for each entry')
+  .action(withErrorHandling(async (nameOrId: string, options) => {
     const globalOptions = getGlobalOptions(listActivityCommand);
     const client = await getAPIClientFromOptions(globalOptions);
+    const id = await client.resolveExperimentId(nameOrId);
 
     const notes = await client.listExperimentActivity(id);
 
     if (notes.length === 0) {
-      console.log(chalk.blue('ℹ No activity found'));
+      console.log(chalk.blue('No activity found'));
       return;
     }
 
-    printFormatted(notes, globalOptions);
+    const useRaw = globalOptions.output === 'json' || globalOptions.output === 'yaml';
+    if (useRaw) {
+      printFormatted(notes, globalOptions);
+      return;
+    }
+
+    for (const note of notes) {
+      const ts = note.created_at ? formatTimestamp(note.created_at) : 'unknown';
+      const user = getUserName(note);
+      const action = note.action ?? 'unknown';
+
+      console.log(
+        `${chalk.gray(`[${ts}]`)} ${chalk.white(`${user}: ${action}`)}`
+      );
+
+      if (options.notes && note.note) {
+        const formatted = formatNoteText(note.note);
+        if (formatted) console.log(`  ${chalk.white(`→ ${formatted}`)}`);
+      }
+    }
   }));
 
 const createActivityCommand = new Command('create')
   .description('Create a new activity note for an experiment')
-  .argument('<id>', 'experiment ID', parseExperimentId)
+  .argument('<id>', 'experiment ID or name', parseExperimentIdOrName)
   .requiredOption('--note <text>', 'note text')
-  .action(withErrorHandling(async (id: ExperimentId, options) => {
+  .action(withErrorHandling(async (nameOrId: string, options) => {
     const globalOptions = getGlobalOptions(createActivityCommand);
     const client = await getAPIClientFromOptions(globalOptions);
+    const id = await client.resolveExperimentId(nameOrId);
 
     const note = await client.createExperimentNote(id, options.note);
-    printFormatted(note, globalOptions);
+    console.log(chalk.green(`✓ Note created (id: ${note.id})`));
   }));
 
 const editActivityCommand = new Command('edit')
   .description('Edit an existing activity note')
-  .argument('<experimentId>', 'experiment ID', parseExperimentId)
+  .argument('<experimentId>', 'experiment ID or name', parseExperimentIdOrName)
   .argument('<noteId>', 'note ID', parseNoteId)
   .requiredOption('--note <text>', 'updated note text')
-  .action(withErrorHandling(async (experimentId: ExperimentId, noteId: NoteId, options) => {
+  .action(withErrorHandling(async (expNameOrId: string, noteId: NoteId, options) => {
     const globalOptions = getGlobalOptions(editActivityCommand);
     const client = await getAPIClientFromOptions(globalOptions);
+    const id = await client.resolveExperimentId(expNameOrId);
 
-    const note = await client.editExperimentNote(experimentId, noteId, options.note);
-    printFormatted(note, globalOptions);
+    await client.editExperimentNote(id, noteId, options.note);
+    console.log(chalk.green(`✓ Note ${noteId} updated`));
   }));
 
 const replyActivityCommand = new Command('reply')
   .description('Reply to an existing activity note')
-  .argument('<experimentId>', 'experiment ID', parseExperimentId)
+  .argument('<experimentId>', 'experiment ID or name', parseExperimentIdOrName)
   .argument('<noteId>', 'note ID', parseNoteId)
   .requiredOption('--note <text>', 'reply text')
-  .action(withErrorHandling(async (experimentId: ExperimentId, noteId: NoteId, options) => {
+  .action(withErrorHandling(async (expNameOrId: string, noteId: NoteId, options) => {
     const globalOptions = getGlobalOptions(replyActivityCommand);
     const client = await getAPIClientFromOptions(globalOptions);
+    const id = await client.resolveExperimentId(expNameOrId);
 
-    const note = await client.replyToExperimentNote(experimentId, noteId, options.note);
-    printFormatted(note, globalOptions);
+    const note = await client.replyToExperimentNote(id, noteId, options.note);
+    console.log(chalk.green(`✓ Reply created (id: ${note.id})`));
   }));
 
 activityCommand.addCommand(listActivityCommand);

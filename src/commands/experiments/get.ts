@@ -1,14 +1,13 @@
 import { Command } from 'commander';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling, resolveEndpoint, resolveAPIKey } from '../../lib/utils/api-helper.js';
-import { parseExperimentId } from '../../lib/utils/validators.js';
 import { experimentToMarkdown } from '../../api-client/template/serializer.js';
 import { summarizeExperiment } from '../../api-client/experiment-summary.js';
 import { fetchAndDisplayImage, supportsInlineImages } from '../../lib/utils/terminal-image.js';
-import type { ExperimentId } from '../../lib/api/branded-types.js';
+import { parseExperimentIdOrName } from './resolve-id.js';
 
 export const getCommand = new Command('get')
   .description('Get experiment details')
-  .argument('<id>', 'experiment ID', parseExperimentId)
+  .argument('<id>', 'experiment ID or name', parseExperimentIdOrName)
   .option('--activity', 'include activity notes in the output')
   .option('--raw', 'show full API response without summarizing')
   .option('--show <fields...>', 'include additional fields in summary (e.g. --show audience archived)')
@@ -16,9 +15,10 @@ export const getCommand = new Command('get')
   .option('--embed-screenshots', 'embed screenshots as base64 data URIs in template output')
   .option('--screenshots-dir <path>', 'save screenshots to directory in template output')
   .option('--show-images [cols]', 'display screenshots inline, optional width in columns (default: 40)', parseInt)
-  .action(withErrorHandling(async (id: ExperimentId, options) => {
+  .action(withErrorHandling(async (nameOrId: string, options) => {
     const globalOptions = getGlobalOptions(getCommand);
     const client = await getAPIClientFromOptions(globalOptions);
+    const id = await client.resolveExperimentId(nameOrId);
 
     const experiment = await client.getExperiment(id);
 

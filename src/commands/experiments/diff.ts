@@ -1,24 +1,24 @@
 import { Command } from 'commander';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
-import { parseExperimentId } from '../../lib/utils/validators.js';
 import { summarizeExperiment } from '../../api-client/experiment-summary.js';
 import { diffExperiments } from '../../api-client/experiment-diff.js';
-import type { ExperimentId } from '../../lib/api/branded-types.js';
+import { parseExperimentIdOrName } from './resolve-id.js';
 
 export const diffCommand = new Command('diff')
   .description('Compare two experiments or an experiment with a previous iteration')
-  .argument('<id1>', 'first experiment ID', parseExperimentId)
-  .argument('[id2]', 'second experiment ID (optional if using --iteration)', (v) => parseExperimentId(v))
+  .argument('<id1>', 'first experiment ID or name', parseExperimentIdOrName)
+  .argument('[id2]', 'second experiment ID or name (optional if using --iteration)', (v) => parseExperimentIdOrName(v))
   .option('--iteration <n>', 'compare with iteration number n', parseInt)
   .option('--raw', 'diff full API response instead of summary')
-  .action(withErrorHandling(async (id1: ExperimentId, id2: ExperimentId | undefined, options) => {
+  .action(withErrorHandling(async (nameOrId1: string, nameOrId2: string | undefined, options) => {
     const globalOptions = getGlobalOptions(diffCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
-    if (!id2 && options.iteration === undefined) {
+    if (!nameOrId2 && options.iteration === undefined) {
       throw new Error('Provide a second experiment ID or use --iteration <n>');
     }
 
+    const id1 = await client.resolveExperimentId(nameOrId1);
     const exp1 = await client.getExperiment(id1);
 
     let exp2: Record<string, unknown>;
@@ -35,7 +35,8 @@ export const diffCommand = new Command('diff')
       }
       exp2 = target as Record<string, unknown>;
     } else {
-      exp2 = await client.getExperiment(id2!) as Record<string, unknown>;
+      const id2 = await client.resolveExperimentId(nameOrId2!);
+      exp2 = await client.getExperiment(id2) as Record<string, unknown>;
     }
 
     const left = options.raw

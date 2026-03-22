@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { activityCommand } from './activity.js';
-import { getAPIClientFromOptions, getGlobalOptions, printFormatted } from '../../lib/utils/api-helper.js';
+import { getAPIClientFromOptions, getGlobalOptions } from '../../lib/utils/api-helper.js';
 import { resetCommand } from '../../test/helpers/command-reset.js';
 
 vi.mock('../../lib/utils/api-helper.js', async (importOriginal) => {
@@ -14,10 +14,11 @@ describe('activity command', () => {
   let processExitSpy: ReturnType<typeof vi.spyOn>;
 
   const mockClient = {
+    resolveExperimentId: vi.fn().mockImplementation((v: string) => Promise.resolve(Number(v))),
     listExperimentActivity: vi.fn(),
-    createExperimentNote: vi.fn(),
-    editExperimentNote: vi.fn(),
-    replyToExperimentNote: vi.fn(),
+    createExperimentNote: vi.fn().mockResolvedValue({ id: 1 }),
+    editExperimentNote: vi.fn().mockResolvedValue({ id: 1 }),
+    replyToExperimentNote: vi.fn().mockResolvedValue({ id: 2 }),
   };
 
   beforeEach(() => {
@@ -25,7 +26,6 @@ describe('activity command', () => {
     resetCommand(activityCommand);
     vi.mocked(getAPIClientFromOptions).mockResolvedValue(mockClient as any);
     vi.mocked(getGlobalOptions).mockReturnValue({ output: 'table' } as any);
-    vi.mocked(printFormatted).mockImplementation(() => {});
     consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     processExitSpy = vi.spyOn(process, 'exit').mockImplementation((code?) => {
@@ -39,13 +39,18 @@ describe('activity command', () => {
     processExitSpy.mockRestore();
   });
 
-  it('should list activity and print formatted results', async () => {
-    mockClient.listExperimentActivity.mockResolvedValue([{ id: 1, text: 'started' }]);
+  it('should list activity with formatted output', async () => {
+    mockClient.listExperimentActivity.mockResolvedValue([
+      { id: 1, created_at: '2026-03-22T14:30:00Z', action: 'start', created_by: { first_name: 'Alice', last_name: 'Smith' } },
+    ]);
 
     await activityCommand.parseAsync(['node', 'test', 'list', '42']);
 
+    expect(mockClient.resolveExperimentId).toHaveBeenCalledWith('42');
     expect(mockClient.listExperimentActivity).toHaveBeenCalledWith(42);
-    expect(printFormatted).toHaveBeenCalled();
+    const output = consoleSpy.mock.calls.flat().join('\n');
+    expect(output).toContain('Alice Smith');
+    expect(output).toContain('start');
   });
 
   it('should show message when no activity found', async () => {
@@ -55,36 +60,37 @@ describe('activity command', () => {
 
     const output = consoleSpy.mock.calls.flat().join(' ');
     expect(output).toContain('No activity found');
-    expect(printFormatted).not.toHaveBeenCalled();
   });
 
   it('should create an activity note', async () => {
-    const mockNote = { id: 1, note: 'test note' };
-    mockClient.createExperimentNote.mockResolvedValue(mockNote);
-
     await activityCommand.parseAsync(['node', 'test', 'create', '42', '--note', 'test note']);
 
     expect(mockClient.createExperimentNote).toHaveBeenCalledWith(42, 'test note');
-    expect(printFormatted).toHaveBeenCalledWith(mockNote, expect.anything());
+    const output = consoleSpy.mock.calls.flat().join(' ');
+    expect(output).toContain('Note created');
   });
 
   it('should edit an activity note', async () => {
-    const mockNote = { id: 5, note: 'edited note' };
-    mockClient.editExperimentNote.mockResolvedValue(mockNote);
+    await activityCommand.parseAsync(['node', 'test', 'edit', '42', '1', '--note', 'updated']);
 
-    await activityCommand.parseAsync(['node', 'test', 'edit', '42', '5', '--note', 'edited note']);
-
-    expect(mockClient.editExperimentNote).toHaveBeenCalledWith(42, 5, 'edited note');
-    expect(printFormatted).toHaveBeenCalledWith(mockNote, expect.anything());
+    expect(mockClient.editExperimentNote).toHaveBeenCalledWith(42, 1, 'updated');
+    const output = consoleSpy.mock.calls.flat().join(' ');
+    expect(output).toContain('updated');
   });
 
   it('should reply to an activity note', async () => {
-    const mockNote = { id: 6, note: 'reply text' };
-    mockClient.replyToExperimentNote.mockResolvedValue(mockNote);
+    await activityCommand.parseAsync(['node', 'test', 'reply', '42', '1', '--note', 'reply text']);
 
-    await activityCommand.parseAsync(['node', 'test', 'reply', '42', '5', '--note', 'reply text']);
+    expect(mockClient.replyToExperimentNote).toHaveBeenCalledWith(42, 1, 'reply text');
+    const output = consoleSpy.mock.calls.flat().join(' ');
+    expect(output).toContain('Reply created');
+  });
 
-    expect(mockClient.replyToExperimentNote).toHaveBeenCalledWith(42, 5, 'reply text');
-    expect(printFormatted).toHaveBeenCalledWith(mockNote, expect.anything());
+  it('should resolve experiment name to ID', async () => {
+    mockClient.listExperimentActivity.mockResolvedValue([]);
+
+    await activityCommand.parseAsync(['node', 'test', 'list', 'my_experiment']);
+
+    expect(mockClient.resolveExperimentId).toHaveBeenCalledWith('my_experiment');
   });
 });

@@ -40,6 +40,7 @@ describe('diff command', () => {
   let processExitSpy: ReturnType<typeof vi.spyOn>;
 
   const mockClient = {
+    resolveExperimentId: vi.fn().mockImplementation((v: string) => Promise.resolve(Number(v))),
     getExperiment: vi.fn(),
     listExperiments: vi.fn(),
   };

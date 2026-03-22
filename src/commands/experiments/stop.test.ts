@@ -14,6 +14,7 @@ describe('stop command', () => {
   let processExitSpy: ReturnType<typeof vi.spyOn>;
 
   const mockClient = {
+    resolveExperimentId: vi.fn().mockImplementation((v: string) => Promise.resolve(Number(v))),
     stopExperiment: vi.fn().mockResolvedValue({ id: 42, state: 'stopped' }),
   };
 

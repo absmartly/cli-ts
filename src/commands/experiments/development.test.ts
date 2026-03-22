@@ -62,6 +62,7 @@ describe('development command', () => {
   let processExitSpy: ReturnType<typeof vi.spyOn>;
 
   const mockClient = {
+    resolveExperimentId: vi.fn().mockImplementation((v: string) => Promise.resolve(Number(v))),
     developmentExperiment: vi.fn().mockResolvedValue({ id: 42, state: 'development' }),
   };
 

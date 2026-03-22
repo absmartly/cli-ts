@@ -3,12 +3,11 @@ import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseExperimentFile } from '../../lib/template/parser.js';
 import { buildPayloadFromTemplate } from '../../api-client/template/build-from-template.js';
-import { parseExperimentId } from '../../lib/utils/validators.js';
 import { experimentToMarkdown } from '../../api-client/template/serializer.js';
 import { parseExperimentMarkdown } from '../../api-client/template/parser.js';
 import { runInteractiveEditor } from '../../lib/interactive/run.js';
-import type { ExperimentId } from '../../lib/api/branded-types.js';
 import type { ExperimentInput } from '../../api-client/index.js';
+import { parseExperimentIdOrName } from './resolve-id.js';
 import { getDefaultType } from './default-type.js';
 import { registerCustomFieldOptions, extractCustomFieldValues } from './custom-field-options.js';
 
@@ -23,7 +22,7 @@ const VALID_RESTART_TYPES = ['feature', 'experiment'] as const;
 
 export const restartCommand = new Command('restart')
   .description('Restart a stopped experiment')
-  .argument('<id>', 'experiment ID', parseExperimentId)
+  .argument('<id>', 'experiment ID or name', parseExperimentIdOrName)
   .option('--from-file <path>', 'apply template changes before restarting')
   .option('--note <text>', 'note about the restart', 'Restarted via CLI')
   .option('--reason <reason>', `reason for restart (${VALID_REASONS.join(', ')})`)
@@ -37,9 +36,10 @@ restartCommand
   .option('-i, --interactive', 'interactive step-by-step editor')
   .option('--dry-run', 'show the changes without restarting');
 
-restartCommand.action(withErrorHandling(async (id: ExperimentId, options) => {
+restartCommand.action(withErrorHandling(async (nameOrId: string, options) => {
     const globalOptions = getGlobalOptions(restartCommand);
     const client = await getAPIClientFromOptions(globalOptions);
+    const id = await client.resolveExperimentId(nameOrId);
 
     if (options.reason && !VALID_REASONS.includes(options.reason)) {
       throw new Error(

@@ -47,6 +47,7 @@ describe('get command', () => {
   let processExitSpy: ReturnType<typeof vi.spyOn>;
 
   const mockClient = {
+    resolveExperimentId: vi.fn().mockImplementation((v: string) => Promise.resolve(Number(v))),
     getExperiment: vi.fn().mockResolvedValue(fullExperiment),
     listExperimentActivity: vi.fn().mockResolvedValue([{ id: 1, text: 'note' }]),
   };

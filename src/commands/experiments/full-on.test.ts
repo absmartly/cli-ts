@@ -62,6 +62,7 @@ describe('full-on command', () => {
   let processExitSpy: ReturnType<typeof vi.spyOn>;
 
   const mockClient = {
+    resolveExperimentId: vi.fn().mockImplementation((v: string) => Promise.resolve(Number(v))),
     fullOnExperiment: vi.fn().mockResolvedValue({ id: 42, state: 'full_on' }),
   };
 

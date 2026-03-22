@@ -14,6 +14,7 @@ describe('start command', () => {
   let processExitSpy: ReturnType<typeof vi.spyOn>;
 
   const mockClient = {
+    resolveExperimentId: vi.fn().mockImplementation((v: string) => Promise.resolve(Number(v))),
     getExperiment: vi.fn().mockResolvedValue({ id: 42, state: 'ready' }),
     startExperiment: vi.fn().mockResolvedValue({ id: 42, state: 'running' }),
   };
@@ -50,8 +51,8 @@ describe('start command', () => {
     expect(mockClient.startExperiment).toHaveBeenCalledWith(42, 'my note');
   });
 
-  it('should reject invalid ID', async () => {
-    await expect(startCommand.parseAsync(['node', 'test', 'abc']))
-      .rejects.toThrow('is not a valid number');
+  it('should accept experiment name and resolve it', async () => {
+    await startCommand.parseAsync(['node', 'test', 'my-experiment']);
+    expect(mockClient.resolveExperimentId).toHaveBeenCalledWith('my-experiment');
   });
 });

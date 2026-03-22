@@ -14,6 +14,7 @@ describe('archive command', () => {
   let processExitSpy: ReturnType<typeof vi.spyOn>;
 
   const mockClient = {
+    resolveExperimentId: vi.fn().mockImplementation((v: string) => Promise.resolve(Number(v))),
     archiveExperiment: vi.fn().mockResolvedValue(undefined),
   };
 

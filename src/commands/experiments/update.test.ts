@@ -16,6 +16,7 @@ describe('update command', () => {
   let processExitSpy: ReturnType<typeof vi.spyOn>;
 
   const mockClient = {
+    resolveExperimentId: vi.fn().mockImplementation((v: string) => Promise.resolve(Number(v))),
     updateExperiment: vi.fn().mockResolvedValue({ id: 42 }),
     getExperiment: vi.fn().mockResolvedValue({ id: 42, name: 'test' }),
     listApplications: vi.fn().mockResolvedValue([]),

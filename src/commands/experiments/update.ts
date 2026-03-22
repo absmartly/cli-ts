@@ -9,15 +9,14 @@ import { buildSecondaryMetrics } from '../../api-client/payload/metrics-builder.
 import { parseCSV } from '../../api-client/payload/parse-csv.js';
 import { runInteractiveEditor } from '../../lib/interactive/run.js';
 import { parseScreenshotEntries } from '../../api-client/payload/screenshot-parser.js';
-import { parseExperimentId } from '../../lib/utils/validators.js';
-import type { ExperimentId } from '../../lib/api/branded-types.js';
 import type { ExperimentInput } from '../../api-client/index.js';
+import { parseExperimentIdOrName } from './resolve-id.js';
 import { getDefaultType } from './default-type.js';
 import { registerCustomFieldOptions, extractCustomFieldValues } from './custom-field-options.js';
 
 export const updateCommand = new Command('update')
   .description('Update an existing experiment')
-  .argument('<id>', 'experiment ID', parseExperimentId)
+  .argument('<id>', 'experiment ID or name', parseExperimentIdOrName)
   .option('--from-file <path>', 'update from markdown template file')
   .option('--name <name>', 'experiment name')
   .option('--display-name <name>', 'new display name')
@@ -49,9 +48,10 @@ updateCommand
   .option('-i, --interactive', 'interactive step-by-step editor')
   .option('--dry-run', 'show the request payload without making the API call');
 
-updateCommand.action(withErrorHandling(async (id: ExperimentId, options) => {
+updateCommand.action(withErrorHandling(async (nameOrId: string, options) => {
     const globalOptions = getGlobalOptions(updateCommand);
     const client = await getAPIClientFromOptions(globalOptions);
+    const id = await client.resolveExperimentId(nameOrId);
 
     const changes: Partial<ExperimentInput> & Record<string, unknown> = {};
 

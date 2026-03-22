@@ -14,6 +14,7 @@ describe('experiments metrics', () => {
   let processExitSpy: ReturnType<typeof vi.spyOn>;
 
   const mockClient = {
+    resolveExperimentId: vi.fn().mockImplementation((v: string) => Promise.resolve(Number(v))),
     getExperiment: vi.fn().mockResolvedValue({
       primary_metric_id: 1,
       primary_metric: { name: 'Conversions' },
