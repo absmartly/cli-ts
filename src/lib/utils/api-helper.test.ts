@@ -209,7 +209,7 @@ describe('API Helper', () => {
         /Invalid output format: 'invalid'/
       );
       expect(() => getGlobalOptions(mockCommand)).toThrow(
-        /Must be one of: table, json, yaml, plain, markdown, template, vertical/
+        /Must be one of: table, json, yaml, plain, markdown, rendered, template, vertical/
       );
     });
 

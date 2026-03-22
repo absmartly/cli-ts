@@ -1,8 +1,25 @@
 import Table from 'cli-table3';
 import yaml from 'js-yaml';
 import chalk from 'chalk';
+import { Marked } from 'marked';
+import { markedTerminal } from 'marked-terminal';
+import { highlight } from 'cli-highlight';
 
-export type OutputFormat = 'table' | 'json' | 'yaml' | 'plain' | 'markdown' | 'template' | 'vertical';
+const terminalMarked = new Marked(markedTerminal({
+  code: (code: string, lang: string) => {
+    try {
+      return highlight(code, { language: lang || 'text', ignoreIllegals: true }) + '\n';
+    } catch {
+      return chalk.yellow(code) + '\n';
+    }
+  },
+  blockquote: (text: string) => {
+    const lines = text.trim().split('\n');
+    return lines.map(line => chalk.gray('│ ') + chalk.italic(line.replace(/^ {1,4}/, ''))).join('\n') + '\n';
+  },
+} as any) as any);
+
+export type OutputFormat = 'table' | 'json' | 'yaml' | 'plain' | 'markdown' | 'rendered' | 'template' | 'vertical';
 
 export interface OutputOptions {
   format?: OutputFormat;
@@ -32,6 +49,8 @@ export function formatOutput(
       return formatPlain(data, options);
     case 'markdown':
       return formatMarkdown(data, options);
+    case 'rendered':
+      return (terminalMarked.parse(formatMarkdown(data, options)) as string).replace(/^( *)(\* )/gm, '$1● ').trim();
     case 'vertical':
       return formatVertical(data, options);
     case 'table':

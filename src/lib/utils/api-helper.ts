@@ -61,7 +61,7 @@ export interface GlobalOptions extends Record<string, unknown> {
   full?: boolean;
 }
 
-const VALID_FORMATS: OutputFormat[] = ['table', 'json', 'yaml', 'plain', 'markdown', 'template', 'vertical'];
+const VALID_FORMATS: OutputFormat[] = ['table', 'json', 'yaml', 'plain', 'markdown', 'rendered', 'template', 'vertical'];
 
 export function getGlobalOptions(cmd: Command): GlobalOptions {
   const opts = cmd.optsWithGlobals();
