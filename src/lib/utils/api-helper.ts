@@ -100,6 +100,13 @@ export function printFormatted(data: unknown, globalOptions: GlobalOptions): voi
 
 function handleCommandError(error: unknown): never {
   console.error('Error:', error instanceof Error ? error.message : error);
+  const apiError = error as { statusCode?: number; response?: unknown };
+  if (apiError.response && typeof apiError.response === 'object') {
+    const resp = apiError.response as Record<string, unknown>;
+    if (resp.errors && Array.isArray(resp.errors) && resp.errors.length > 0) {
+      for (const e of resp.errors) console.error(' ', e);
+    }
+  }
   process.exit(1);
 }
 

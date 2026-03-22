@@ -1,6 +1,6 @@
-import { resolveScreenshot } from '../template/screenshot.js';
 import { buildSecondaryMetrics } from './metrics-builder.js';
 import { parseCSV } from './parse-csv.js';
+import { parseScreenshotEntries } from './screenshot-parser.js';
 import type { APIClient } from '../api-client.js';
 import {
   DEFAULT_ANALYSIS_TYPE, DEFAULT_STATE, DEFAULT_TRAFFIC,
@@ -84,28 +84,7 @@ export async function buildPayloadFromOptions(input: CreateFromOptionsInput, cli
     data.primary_metric = { metric_id: input.primaryMetric };
   }
   if (input.screenshot && input.screenshot.length > 0) {
-    const screenshots: Array<Record<string, unknown>> = [];
-    for (const entry of input.screenshot) {
-      const colonIdx = entry.indexOf(':');
-      if (colonIdx === -1) {
-        throw new Error(
-          `Invalid --screenshot format: "${entry}"\n` +
-          `Expected: <variant_index>:<file_path_or_url>\n` +
-          `Example: --screenshot 0:./control.png --screenshot 1:https://example.com/treatment.png`
-        );
-      }
-      const variantIdx = parseInt(entry.substring(0, colonIdx), 10);
-      const source = entry.substring(colonIdx + 1);
-      if (isNaN(variantIdx)) {
-        throw new Error(`Invalid variant index in --screenshot: "${entry}"`);
-      }
-      const variantName = variants[variantIdx]?.name || `variant_${variantIdx}`;
-      const resolved = await resolveScreenshot(source, variantName);
-      if (resolved) {
-        screenshots.push({ variant: variantIdx, file_upload: resolved });
-      }
-    }
-    data.variant_screenshots = screenshots;
+    data.variant_screenshots = await parseScreenshotEntries(input.screenshot, variants);
   }
 
   if (input.ownerIds && input.ownerIds.length > 0) {

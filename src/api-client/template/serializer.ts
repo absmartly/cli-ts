@@ -229,7 +229,9 @@ export async function experimentToMarkdown(experiment: Experiment, options: Seri
             const userIds = (parsed.selected as Array<{ userId: number }>)?.map(s => s.userId) ?? [];
             const resolved = userIds.map(id => userLookup.get(id) ?? `user:${id}`);
             value = resolved.join(', ');
-          } catch { /* keep raw value */ }
+          } catch {
+            console.error(`Warning: Custom field "${title}" has non-JSON user value, keeping raw value`);
+          }
         }
 
         if (sectionTitle !== currentSection) {

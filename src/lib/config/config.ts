@@ -157,7 +157,9 @@ export function saveConfig(config: Config): void {
   } catch (error) {
     try {
       unlinkSync(tempPath);
-    } catch {}
+    } catch (cleanupErr) {
+      if (process.env.DEBUG) console.error(`Warning: Could not clean up temp file ${tempPath}: ${cleanupErr instanceof Error ? cleanupErr.message : cleanupErr}`);
+    }
 
     if (error instanceof Error) {
       if (error.message.includes('ENOSPC')) {

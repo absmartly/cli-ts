@@ -1214,43 +1214,35 @@ export class APIClient {
     await this.request('PUT', `/experiment_annotations/${id}/archive`, { data: { archive: !unarchive } });
   }
 
-  async getVelocityInsights(params: {
-    from: number;
-    to: number;
-    aggregation: string;
-    unit_type_ids?: number[];
-    team_ids?: number[];
-    owner_ids?: number[];
-  }): Promise<unknown> {
-    const queryParams: Record<string, string> = {
-      from: String(params.from),
-      to: String(params.to),
-      aggregation: params.aggregation,
+  private buildInsightParams(params: {
+    from: number; to: number; aggregation: string;
+    unit_type_ids?: number[]; team_ids?: number[]; owner_ids?: number[];
+    teams?: string; applications?: string;
+  }): Record<string, string> {
+    const q: Record<string, string> = {
+      from: String(params.from), to: String(params.to), aggregation: params.aggregation,
     };
-    if (params.unit_type_ids) queryParams.unit_type_ids = params.unit_type_ids.join(',');
-    if (params.team_ids) queryParams.team_ids = params.team_ids.join(',');
-    if (params.owner_ids) queryParams.owner_ids = params.owner_ids.join(',');
-    const response = await this.request('GET', '/insights/velocity/summary', { params: queryParams });
+    if (params.unit_type_ids) q.unit_type_ids = params.unit_type_ids.join(',');
+    if (params.team_ids) q.team_ids = params.team_ids.join(',');
+    if (params.owner_ids) q.owner_ids = params.owner_ids.join(',');
+    if (params.teams) q.teams = params.teams;
+    if (params.applications) q.applications = params.applications;
+    return q;
+  }
+
+  async getVelocityInsights(params: {
+    from: number; to: number; aggregation: string;
+    unit_type_ids?: number[]; team_ids?: number[]; owner_ids?: number[];
+  }): Promise<unknown> {
+    const response = await this.request('GET', '/insights/velocity/summary', { params: this.buildInsightParams(params) });
     return response.data;
   }
 
   async getDecisionInsights(params: {
-    from: number;
-    to: number;
-    aggregation: string;
-    unit_type_ids?: number[];
-    team_ids?: number[];
-    owner_ids?: number[];
+    from: number; to: number; aggregation: string;
+    unit_type_ids?: number[]; team_ids?: number[]; owner_ids?: number[];
   }): Promise<unknown> {
-    const queryParams: Record<string, string> = {
-      from: String(params.from),
-      to: String(params.to),
-      aggregation: params.aggregation,
-    };
-    if (params.unit_type_ids) queryParams.unit_type_ids = params.unit_type_ids.join(',');
-    if (params.team_ids) queryParams.team_ids = params.team_ids.join(',');
-    if (params.owner_ids) queryParams.owner_ids = params.owner_ids.join(',');
-    const response = await this.request('GET', '/insights/decisions/widgets', { params: queryParams });
+    const response = await this.request('GET', '/insights/decisions/widgets', { params: this.buildInsightParams(params) });
     return response.data;
   }
 
@@ -1553,12 +1545,7 @@ export class APIClient {
     from: number; to: number; aggregation: string;
     teams?: string; applications?: string;
   }): Promise<unknown> {
-    const queryParams: Record<string, string> = {
-      from: String(params.from), to: String(params.to), aggregation: params.aggregation,
-    };
-    if (params.teams) queryParams.teams = params.teams;
-    if (params.applications) queryParams.applications = params.applications;
-    const response = await this.request('GET', '/insights/velocity/summary/detail', { params: queryParams });
+    const response = await this.request('GET', '/insights/velocity/summary/detail', { params: this.buildInsightParams(params) });
     return response.data;
   }
 
@@ -1566,12 +1553,7 @@ export class APIClient {
     from: number; to: number; aggregation: string;
     teams?: string; applications?: string;
   }): Promise<unknown> {
-    const queryParams: Record<string, string> = {
-      from: String(params.from), to: String(params.to), aggregation: params.aggregation,
-    };
-    if (params.teams) queryParams.teams = params.teams;
-    if (params.applications) queryParams.applications = params.applications;
-    const response = await this.request('GET', '/insights/decisions/history', { params: queryParams });
+    const response = await this.request('GET', '/insights/decisions/history', { params: this.buildInsightParams(params) });
     return response.data;
   }
 

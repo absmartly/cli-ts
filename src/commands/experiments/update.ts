@@ -8,7 +8,7 @@ import { buildPayloadFromTemplate } from '../../api-client/template/build-from-t
 import { buildSecondaryMetrics } from '../../api-client/payload/metrics-builder.js';
 import { parseCSV } from '../../api-client/payload/parse-csv.js';
 import { runInteractiveEditor } from '../../lib/interactive/run.js';
-import { resolveScreenshot } from '../../api-client/template/screenshot.js';
+import { parseScreenshotEntries } from '../../api-client/payload/screenshot-parser.js';
 import { parseExperimentId } from '../../lib/utils/validators.js';
 import type { ExperimentId } from '../../lib/api/branded-types.js';
 import type { ExperimentInput } from '../../api-client/index.js';
@@ -100,7 +100,7 @@ export const updateCommand = new Command('update')
     }
 
     if (options.screenshot?.length || options.screenshotId?.length) {
-      const screenshotEntries: Array<{ variant: number; screenshot_file_upload_id: number }> = [];
+      const screenshotEntries: Array<Record<string, unknown>> = [];
 
       if (options.screenshotId?.length) {
         for (const entry of options.screenshotId as string[]) {
@@ -114,15 +114,8 @@ export const updateCommand = new Command('update')
       }
 
       if (options.screenshot?.length) {
-        for (const entry of options.screenshot as string[]) {
-          const colonIdx = entry.indexOf(':');
-          if (colonIdx === -1) throw new Error(`Invalid --screenshot format: "${entry}". Expected: <variant_index>:<file_path_or_url>`);
-          const variantIdx = parseInt(entry.substring(0, colonIdx), 10);
-          const source = entry.substring(colonIdx + 1);
-          if (isNaN(variantIdx)) throw new Error(`Invalid variant index in --screenshot: "${entry}"`);
-          const resolved = await resolveScreenshot(source, `variant_${variantIdx}`);
-          if (resolved) screenshotEntries.push({ variant: variantIdx, file_upload: resolved } as any);
-        }
+        const parsed = await parseScreenshotEntries(options.screenshot as string[]);
+        screenshotEntries.push(...parsed);
       }
 
       changes.variant_screenshots = screenshotEntries as ExperimentInput['variant_screenshots'];

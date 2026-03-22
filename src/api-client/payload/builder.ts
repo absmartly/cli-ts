@@ -304,6 +304,7 @@ export async function buildExperimentPayload(
     try {
       payload.audience = JSON.stringify(JSON.parse(template.audience));
     } catch {
+      warnings.push('Audience value is not valid JSON and will be sent as-is. Verify the syntax in your template.');
       payload.audience = template.audience;
     }
   }
