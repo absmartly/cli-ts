@@ -40,9 +40,10 @@ const terminalMarked = new Marked(markedTerminal({
       return chalk.yellow(code) + '\n';
     }
   },
-  blockquote: chalk.gray.italic,
-  listitem: chalk.white,
-  bullet: chalk.cyan('  ● '),
+  blockquote: (text: string) => {
+    const lines = text.split('\n');
+    return lines.map(line => chalk.gray(`  │ `) + chalk.italic(line)).join('\n') + '\n';
+  },
 } as any) as any);
 
 export function resolveMentions(text: string, lookups: NoteLookups = {}): string {
@@ -60,7 +61,9 @@ export function resolveMentions(text: string, lookups: NoteLookups = {}): string
 export function formatNoteText(text: string, lookups: NoteLookups = {}): string {
   const resolved = resolveMentions(text, lookups);
   const rendered = terminalMarked.parse(resolved) as string;
-  return rendered.trim();
+  return rendered
+    .replace(/^( *)(\* )/gm, '$1● ')
+    .trim();
 }
 
 function printActivityNotes(items: ActivityNote[], showNotes = false, lookups: NoteLookups = {}): void {
