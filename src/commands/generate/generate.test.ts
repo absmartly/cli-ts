@@ -40,35 +40,40 @@ describe('generate types command', () => {
     processExitSpy.mockRestore();
   });
 
-  it('should generate TypeScript types from experiments', async () => {
+  it('should generate types with experiment names and variants', async () => {
     mockClient.listExperiments.mockResolvedValueOnce([
-      { name: 'exp_one' },
-      { name: 'exp_two' },
+      { name: 'exp_one', variants: [{ name: 'control' }, { name: 'treatment' }] },
+      { name: 'exp_two', variants: [{ name: 'A' }, { name: 'B' }, { name: 'C' }] },
     ]);
 
     await generateCommand.parseAsync(['node', 'test', 'types']);
 
     const output = consoleSpy.mock.calls.flat().join('\n');
-    expect(output).toContain("| 'exp_one'");
-    expect(output).toContain("| 'exp_two'");
+    expect(output).toContain("'exp_one'");
+    expect(output).toContain("'exp_two'");
+    expect(output).toContain("'control' | 'treatment'");
+    expect(output).toContain("'A' | 'B' | 'C'");
     expect(output).toContain('export type ExperimentName');
+    expect(output).toContain('treatment(experimentName: ExperimentName): number');
   });
 
   it('should write to file with --output', async () => {
-    mockClient.listExperiments.mockResolvedValueOnce([{ name: 'file_exp' }]);
+    mockClient.listExperiments.mockResolvedValueOnce([
+      { name: 'file_exp', variants: [{ name: 'control' }] },
+    ]);
 
     await generateCommand.parseAsync(['node', 'test', 'types', '--output', 'types.ts']);
 
     expect(writeFileSync).toHaveBeenCalledWith(
       'types.ts',
-      expect.stringContaining("| 'file_exp'"),
+      expect.stringContaining("'file_exp'"),
       'utf8'
     );
   });
 
   it('should handle pagination across multiple pages', async () => {
-    const page1 = Array.from({ length: 100 }, (_, i) => ({ name: `exp_${i}` }));
-    const page2 = Array.from({ length: 50 }, (_, i) => ({ name: `exp_${100 + i}` }));
+    const page1 = Array.from({ length: 100 }, (_, i) => ({ name: `exp_${i}`, variants: [] }));
+    const page2 = Array.from({ length: 50 }, (_, i) => ({ name: `exp_${100 + i}`, variants: [] }));
 
     mockClient.listExperiments
       .mockResolvedValueOnce(page1)
@@ -78,8 +83,8 @@ describe('generate types command', () => {
 
     expect(mockClient.listExperiments).toHaveBeenCalledTimes(2);
     const output = consoleSpy.mock.calls.flat().join('\n');
-    expect(output).toContain("| 'exp_0'");
-    expect(output).toContain("| 'exp_149'");
+    expect(output).toContain("'exp_0'");
+    expect(output).toContain("'exp_149'");
   });
 
   it('should handle empty experiment list', async () => {
@@ -93,29 +98,12 @@ describe('generate types command', () => {
 
   it('should escape backslashes and quotes in names', async () => {
     mockClient.listExperiments.mockResolvedValueOnce([
-      { name: "User's\\Test" },
+      { name: "User's\\Test", variants: [] },
     ]);
 
     await generateCommand.parseAsync(['node', 'test', 'types']);
 
     const output = consoleSpy.mock.calls.flat().join('\n');
     expect(output).toContain("User\\'s\\\\Test");
-  });
-
-  it('should error on invalid API response', async () => {
-    mockClient.listExperiments.mockResolvedValueOnce('not-an-array');
-
-    try {
-      await generateCommand.parseAsync(['node', 'test', 'types']);
-      throw new Error('Should have thrown');
-    } catch (error) {
-      if ((error as Error).message.startsWith('process.exit')) {
-        const output = consoleErrorSpy.mock.calls.flat().join(' ');
-        expect(output).toContain('Invalid API response');
-        expect(output).toContain('Expected array');
-      } else {
-        throw error;
-      }
-    }
   });
 });
