@@ -54,11 +54,11 @@ const loginCommand = new Command('login')
 
 const statusCommand = new Command('status')
   .description('Show current authentication status')
-  .option('--profile <name>', 'profile name')
   .option('--show-key', 'show last 4 characters of API key')
-  .action(withErrorHandling(async (options) => {
+  .action(withErrorHandling(async (options, command) => {
     const config = loadConfig();
-    const profileName = options.profile || config['default-profile'];
+    const parentOpts = command.parent?.parent?.opts() || {};
+    const profileName = parentOpts.profile || config['default-profile'];
 
     try {
       const profile = getProfile(profileName);
@@ -84,10 +84,10 @@ const statusCommand = new Command('status')
 
 const logoutCommand = new Command('logout')
   .description('Clear stored credentials')
-  .option('--profile <name>', 'profile name')
-  .action(withErrorHandling(async (options) => {
+  .action(withErrorHandling(async (_options, command) => {
     const config = loadConfig();
-    const profileName = options.profile || config['default-profile'];
+    const parentOpts = command.parent?.parent?.opts() || {};
+    const profileName = parentOpts.profile || config['default-profile'];
 
     await deleteAPIKey(profileName);
     console.log(`✓ Logged out (profile: ${profileName})`);

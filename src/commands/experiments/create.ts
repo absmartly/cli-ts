@@ -38,12 +38,14 @@ export const createCommand = new Command('create')
   .option('--analysis-type <type>', 'analysis type (group_sequential, fixed_horizon)')
   .option('--required-alpha <value>', 'required alpha (significance level)')
   .option('--required-power <value>', 'required power')
-  .option('--baseline-participants <n>', 'baseline participants per day')
+  .option('--baseline-participants <n>', 'baseline participants per day');
+
+registerCustomFieldOptions(createCommand, getDefaultType());
+
+createCommand
   .option('-i, --interactive', 'interactive step-by-step editor')
   .option('--dry-run', 'show the request payload without making the API call')
   .option('--as-curl', 'output as curl command instead of making the API call');
-
-registerCustomFieldOptions(createCommand, getDefaultType());
 
 createCommand.action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(createCommand);

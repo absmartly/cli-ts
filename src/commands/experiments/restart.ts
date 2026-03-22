@@ -10,6 +10,7 @@ import { runInteractiveEditor } from '../../lib/interactive/run.js';
 import type { ExperimentId } from '../../lib/api/branded-types.js';
 import type { ExperimentInput } from '../../api-client/index.js';
 import { getDefaultType } from './default-type.js';
+import { registerCustomFieldOptions, extractCustomFieldValues } from './custom-field-options.js';
 
 const VALID_REASONS = [
   'hypothesis_rejected', 'hypothesis_iteration', 'user_feedback', 'data_issue',
@@ -28,10 +29,15 @@ export const restartCommand = new Command('restart')
   .option('--reason <reason>', `reason for restart (${VALID_REASONS.join(', ')})`)
   .option('--reshuffle', 'reshuffle variant assignments')
   .option('--state <state>', 'target state: running or development', 'running')
-  .option('--as-type <type>', `convert type on restart (${VALID_RESTART_TYPES.join(', ')})`)
+  .option('--as-type <type>', `convert type on restart (${VALID_RESTART_TYPES.join(', ')})`);
+
+registerCustomFieldOptions(restartCommand, getDefaultType());
+
+restartCommand
   .option('-i, --interactive', 'interactive step-by-step editor')
-  .option('--dry-run', 'show the changes without restarting')
-  .action(withErrorHandling(async (id: ExperimentId, options) => {
+  .option('--dry-run', 'show the changes without restarting');
+
+restartCommand.action(withErrorHandling(async (id: ExperimentId, options) => {
     const globalOptions = getGlobalOptions(restartCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
@@ -79,6 +85,25 @@ export const restartCommand = new Command('restart')
       }
 
       changes = result.payload as Partial<ExperimentInput>;
+    }
+
+    const customFieldValues = extractCustomFieldValues(options, getDefaultType());
+    if (Object.keys(customFieldValues).length > 0) {
+      if (!changes) changes = {} as Partial<ExperimentInput>;
+      const allFields = await client.listCustomSectionFields();
+      const expType = getDefaultType();
+      const relevant = allFields.filter(f => !f.archived && f.custom_section?.type === expType && !f.custom_section?.archived);
+      const fieldValues: Record<string, { type: string; value: string }> = {};
+      for (const field of relevant) {
+        const title = (field as { title?: string }).title ?? field.name ?? '';
+        const cliValue = customFieldValues[title];
+        if (cliValue !== undefined) {
+          fieldValues[field.id] = { type: field.type, value: cliValue };
+        }
+      }
+      if (Object.keys(fieldValues).length > 0) {
+        (changes as Record<string, unknown>).custom_section_field_values = fieldValues;
+      }
     }
 
     const restartOptions: Parameters<typeof client.restartExperiment>[1] = { note: options.note };

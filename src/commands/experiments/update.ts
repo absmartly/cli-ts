@@ -41,11 +41,13 @@ export const updateCommand = new Command('update')
   .option('--analysis-type <type>', 'analysis type (group_sequential, fixed_horizon)')
   .option('--required-alpha <value>', 'required alpha (significance level)')
   .option('--required-power <value>', 'required power')
-  .option('--baseline-participants <n>', 'baseline participants per day')
-  .option('-i, --interactive', 'interactive step-by-step editor')
-  .option('--dry-run', 'show the request payload without making the API call');
+  .option('--baseline-participants <n>', 'baseline participants per day');
 
 registerCustomFieldOptions(updateCommand, getDefaultType());
+
+updateCommand
+  .option('-i, --interactive', 'interactive step-by-step editor')
+  .option('--dry-run', 'show the request payload without making the API call');
 
 updateCommand.action(withErrorHandling(async (id: ExperimentId, options) => {
     const globalOptions = getGlobalOptions(updateCommand);
