@@ -66,47 +66,60 @@ export function parseMetricData(
   }));
 }
 
-export function formatResultRow(r: MetricResult, variantNames: Map<number, string>): Record<string, unknown> {
+function variantLabel(idx: number, variantNames: Map<number, string>): string {
+  const name = variantNames.get(idx);
+  if (name) return name;
+  return `Variant ${String.fromCharCode(65 + idx)}`;
+}
+
+export function formatResultRows(r: MetricResult, variantNames: Map<number, string>): Record<string, unknown>[] {
   const control = r.variants.find(v => v.variant === 0);
-  const treatment = r.variants.find(v => v.variant > 0);
-  if (!treatment || treatment.impact === null) {
-    return { metric: r.name, type: r.type, impact: '', confidence: '', samples: '' };
+  const treatments = r.variants.filter(v => v.variant > 0);
+  if (treatments.length === 0) {
+    return [{ metric: r.name, type: r.type, impact: '', confidence: '', samples: '' }];
   }
-
-  const ci = treatment.impact_lower !== null && treatment.impact_upper !== null
-    ? renderCIBar(treatment.impact_lower, treatment.impact_upper, treatment.impact)
-    : '';
-
-  const confidence = treatment.pvalue !== null
-    ? formatConfidenceValue(treatment.pvalue)
-    : '';
-
-  const variantLabel = variantNames.get(treatment.variant) || `v${treatment.variant}`;
 
   const formatNum = (n: number | null) => n !== null ? n.toLocaleString(undefined, { maximumFractionDigits: 4 }) : '';
   const formatMean = (n: number | null) => n !== null ? n.toLocaleString(undefined, { maximumFractionDigits: 6 }) : '';
+  const controlLabel = variantLabel(0, variantNames);
 
-  const row: Record<string, unknown> = {
-    metric: r.name,
-    type: r.type,
-    variant: variantLabel,
-    impact: `${formatPct(treatment.impact)} ${ci}`,
-    confidence,
-    samples: treatment.unit_count.toLocaleString(),
-  };
+  return treatments.map(treatment => {
+    const ci = treatment.impact !== null && treatment.impact_lower !== null && treatment.impact_upper !== null
+      ? renderCIBar(treatment.impact_lower, treatment.impact_upper, treatment.impact)
+      : '';
 
-  if (control) {
-    row.control_count = formatNum(control.count);
-    row.control_mean = formatMean(control.mean);
-  }
-  row.treatment_count = formatNum(treatment.count);
-  row.treatment_mean = formatMean(treatment.mean);
+    const confidence = treatment.pvalue !== null
+      ? formatConfidenceValue(treatment.pvalue)
+      : '';
 
-  if (treatment.abs_impact !== null) {
-    row.abs_impact = formatNum(treatment.abs_impact);
-  }
+    const tLabel = variantLabel(treatment.variant, variantNames);
 
-  return row;
+    const row: Record<string, unknown> = {
+      metric: r.name,
+      type: r.type,
+      variant: tLabel,
+      impact: treatment.impact !== null ? `${formatPct(treatment.impact)} ${ci}` : '',
+      confidence,
+      samples: treatment.unit_count.toLocaleString(),
+    };
+
+    if (control) {
+      row[`${controlLabel} count`] = formatNum(control.count);
+      row[`${controlLabel} mean`] = formatMean(control.mean);
+    }
+    row[`${tLabel} count`] = formatNum(treatment.count);
+    row[`${tLabel} mean`] = formatMean(treatment.mean);
+
+    if (treatment.abs_impact !== null) {
+      row.abs_impact = formatNum(treatment.abs_impact);
+    }
+
+    return row;
+  });
+}
+
+export function formatResultRow(r: MetricResult, variantNames: Map<number, string>): Record<string, unknown> {
+  return formatResultRows(r, variantNames)[0] ?? { metric: r.name, type: r.type, impact: '', confidence: '', samples: '' };
 }
 
 export interface MetricInfo {

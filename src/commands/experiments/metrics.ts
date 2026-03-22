@@ -3,7 +3,7 @@ import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseExperimentId, parseMetricId } from '../../lib/utils/validators.js';
 import type { ExperimentId, MetricId } from '../../lib/api/branded-types.js';
-import { extractMetricInfos, extractVariantNames, fetchAllMetricResults, formatResultRow, metricOwners } from '../../api-client/metric-results.js';
+import { extractMetricInfos, extractVariantNames, fetchAllMetricResults, formatResultRows, metricOwners } from '../../api-client/metric-results.js';
 
 export const metricsCommand = new Command('metrics')
   .description('Manage experiment metrics');
@@ -120,7 +120,7 @@ const resultsCommand = new Command('results')
     if (useRaw) {
       printFormatted(results, globalOptions);
     } else {
-      const rows = results.map(r => formatResultRow(r, variantNames));
+      const rows = results.flatMap(r => formatResultRows(r, variantNames));
       printFormatted(rows, globalOptions);
     }
   }));

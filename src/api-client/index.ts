@@ -113,6 +113,7 @@ export type { MetricResult, MetricInfo } from './metric-results.js';
 export {
   parseMetricData,
   formatResultRow,
+  formatResultRows,
   metricOwners,
   extractMetricInfos,
   extractVariantNames,
