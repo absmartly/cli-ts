@@ -115,4 +115,26 @@ describe('events command', () => {
     });
     expect(printFormatted).toHaveBeenCalled();
   });
+
+  it('should error on unit-data with invalid format (no colon)', async () => {
+    await expect(
+      eventsCommand.parseAsync(['node', 'test', 'unit-data', 'invalidformat'])
+    ).rejects.toThrow('process.exit');
+
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.stringContaining('Invalid unit format'),
+    );
+  });
+
+  it('should error on unit-data with non-numeric unit_type_id', async () => {
+    await expect(
+      eventsCommand.parseAsync(['node', 'test', 'unit-data', 'abc:user123'])
+    ).rejects.toThrow('process.exit');
+
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.stringContaining('Invalid unit_type_id'),
+    );
+  });
 });
