@@ -2,7 +2,7 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseTagId, requireAtLeastOneField } from '../../lib/utils/validators.js';
-import { addPaginationOptions, printPaginationFooter } from '../../lib/utils/pagination.js';
+import { createListCommand } from '../../lib/utils/list-command.js';
 import type { TagId } from '../../lib/api/branded-types.js';
 
 export const tagsCommand = new Command('tags')
@@ -10,17 +10,10 @@ export const tagsCommand = new Command('tags')
   .alias('experiment-tags')
   .description('Experiment tag commands');
 
-const listCommand = addPaginationOptions(
-  new Command('list')
-    .description('List all experiment tags'),
-).action(withErrorHandling(async (options) => {
-    const globalOptions = getGlobalOptions(listCommand);
-    const client = await getAPIClientFromOptions(globalOptions);
-
-    const tags = await client.listExperimentTags(options.items, options.page);
-    printFormatted(tags, globalOptions);
-    printPaginationFooter(tags.length, options.items, options.page, globalOptions.output as string);
-  }));
+const listCommand = createListCommand({
+  description: 'List all experiment tags',
+  fetch: (client, options) => client.listExperimentTags(options.items as number, options.page as number),
+});
 
 const getCommand = new Command('get')
   .description('Get experiment tag details')

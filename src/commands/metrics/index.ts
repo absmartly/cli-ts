@@ -2,9 +2,9 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseMetricId, requireAtLeastOneField } from '../../lib/utils/validators.js';
-import { addPaginationOptions, printPaginationFooter } from '../../lib/utils/pagination.js';
 import type { MetricId } from '../../lib/api/branded-types.js';
 import { applyShowExclude, summarizeMetric, summarizeMetricRow } from '../../api-client/entity-summary.js';
+import { createListCommand } from '../../lib/utils/list-command.js';
 import { accessCommand } from './access.js';
 import { reviewCommand } from './review.js';
 import { followCommand, unfollowCommand } from './follow.js';
@@ -13,25 +13,13 @@ export const metricsCommand = new Command('metrics')
   .alias('metric')
   .description('Metric commands');
 
-const listCommand = addPaginationOptions(
-  new Command('list')
-    .description('List all metrics')
-    .option('--archived', 'include archived metrics')
-    .option('--raw', 'show full API response without summarizing')
-    .option('--show <fields...>', 'include additional fields from API response')
-    .option('--exclude <fields...>', 'hide fields from summary'),
-  100,
-).action(withErrorHandling(async (options) => {
-    const globalOptions = getGlobalOptions(listCommand);
-    const client = await getAPIClientFromOptions(globalOptions);
-    const show = (options.show as string[] | undefined) ?? [];
-    const exclude = (options.exclude as string[] | undefined) ?? [];
-
-    const metrics = await client.listMetrics({ items: options.items, page: options.page, archived: options.archived });
-    const data = options.raw ? metrics : (metrics as Array<Record<string, unknown>>).map(m => applyShowExclude(summarizeMetricRow(m), m, show, exclude));
-    printFormatted(data, globalOptions);
-    printPaginationFooter(metrics.length, options.items, options.page, globalOptions.output as string);
-  }));
+const listCommand = createListCommand({
+  description: 'List all metrics',
+  defaultItems: 100,
+  fetch: (client, options) => client.listMetrics({ items: options.items as number, page: options.page as number, archived: options.archived as boolean }),
+  summarizeRow: summarizeMetricRow,
+  extraOptions: (cmd) => cmd.option('--archived', 'include archived metrics'),
+});
 
 const getCommand = new Command('get')
   .description('Get metric details')

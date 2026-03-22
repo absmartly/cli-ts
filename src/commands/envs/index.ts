@@ -2,6 +2,7 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseEnvironmentId, requireAtLeastOneField } from '../../lib/utils/validators.js';
+import { createListCommand } from '../../lib/utils/list-command.js';
 import type { EnvironmentId } from '../../lib/api/branded-types.js';
 
 export const envsCommand = new Command('envs')
@@ -9,15 +10,11 @@ export const envsCommand = new Command('envs')
   .alias('environment')
   .description('Environment commands');
 
-const listCommand = new Command('list')
-  .description('List all environments')
-  .action(withErrorHandling(async () => {
-    const globalOptions = getGlobalOptions(listCommand);
-    const client = await getAPIClientFromOptions(globalOptions);
-
-    const envs = await client.listEnvironments();
-    printFormatted(envs, globalOptions);
-  }));
+const listCommand = createListCommand({
+  description: 'List all environments',
+  defaultItems: 100,
+  fetch: (client, options) => client.listEnvironments(options.items as number, options.page as number),
+});
 
 const getCommand = new Command('get')
   .description('Get environment details')

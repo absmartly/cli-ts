@@ -2,30 +2,18 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseTeamId, requireAtLeastOneField } from '../../lib/utils/validators.js';
-import { addPaginationOptions, printPaginationFooter } from '../../lib/utils/pagination.js';
 import { applyShowExclude, summarizeTeam, summarizeTeamRow } from '../../api-client/entity-summary.js';
+import { createListCommand } from '../../lib/utils/list-command.js';
 import type { TeamId } from '../../lib/api/branded-types.js';
 
 export const teamsCommand = new Command('teams').alias('team').description('Team commands');
 
-const listCommand = addPaginationOptions(
-  new Command('list')
-    .description('List all teams')
-    .option('--include-archived', 'include archived teams')
-    .option('--raw', 'show full API response without summarizing')
-    .option('--show <fields...>', 'include additional fields from API response')
-    .option('--exclude <fields...>', 'hide fields from summary'),
-).action(withErrorHandling(async (options) => {
-    const globalOptions = getGlobalOptions(listCommand);
-    const client = await getAPIClientFromOptions(globalOptions);
-    const show = (options.show as string[] | undefined) ?? [];
-    const exclude = (options.exclude as string[] | undefined) ?? [];
-
-    const teams = await client.listTeams(options.includeArchived, options.items, options.page);
-    const data = options.raw ? teams : (teams as Array<Record<string, unknown>>).map(t => applyShowExclude(summarizeTeamRow(t), t, show, exclude));
-    printFormatted(data, globalOptions);
-    printPaginationFooter(teams.length, options.items, options.page, globalOptions.output as string);
-  }));
+const listCommand = createListCommand({
+  description: 'List all teams',
+  fetch: (client, options) => client.listTeams(options.includeArchived as boolean, options.items as number, options.page as number),
+  summarizeRow: summarizeTeamRow,
+  extraOptions: (cmd) => cmd.option('--include-archived', 'include archived teams'),
+});
 
 const getCommand = new Command('get')
   .description('Get team details')

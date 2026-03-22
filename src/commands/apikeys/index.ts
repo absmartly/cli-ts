@@ -2,24 +2,17 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseApiKeyId, requireAtLeastOneField } from '../../lib/utils/validators.js';
-import { addPaginationOptions, printPaginationFooter } from '../../lib/utils/pagination.js';
+import { createListCommand } from '../../lib/utils/list-command.js';
 import type { ApiKeyId } from '../../lib/api/branded-types.js';
 
 export const apiKeysCommand = new Command('api-keys')
   .aliases(['apikeys', 'apikey', 'api-key'])
   .description('API key commands');
 
-const listCommand = addPaginationOptions(
-  new Command('list')
-    .description('List all API keys'),
-).action(withErrorHandling(async (options) => {
-    const globalOptions = getGlobalOptions(listCommand);
-    const client = await getAPIClientFromOptions(globalOptions);
-
-    const apiKeys = await client.listApiKeys(options.items, options.page);
-    printFormatted(apiKeys, globalOptions);
-    printPaginationFooter(apiKeys.length, options.items, options.page, globalOptions.output as string);
-  }));
+const listCommand = createListCommand({
+  description: 'List all API keys',
+  fetch: (client, options) => client.listApiKeys(options.items as number, options.page as number),
+});
 
 const getCommand = new Command('get')
   .description('Get API key details')
