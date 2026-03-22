@@ -33,7 +33,7 @@ abs experiments get 123
 
 ## Authentication
 
-The CLI stores credentials in your OS keychain and configuration in `~/.config/absmartly/config.yaml`.
+The CLI stores credentials in your OS keychain (via keytar) and configuration in `~/.config/absmartly/config.yaml`. On headless systems without a keychain service, credentials fall back to `~/.config/absmartly/credentials.json` (chmod 600).
 
 ```bash
 # Login with API key
@@ -44,7 +44,8 @@ abs auth login --api-key YOUR_KEY --endpoint https://staging.absmartly.com/v1 --
 
 # Check authentication status
 abs auth status
-abs auth status --show-key    # reveal last 4 chars of key
+abs auth status --show-key    # reveal full API key
+abs auth status --profile staging
 
 # Show current authenticated user
 abs auth whoami
@@ -138,6 +139,8 @@ abs experiments create --name my-experiment --secondary-metrics "Revenue,Booking
 abs experiments create --name my-experiment --teams "Product" --tags "v1"
 abs experiments create --name my-experiment --audience '{"filter":[]}'
 abs experiments create --name my-experiment --analysis-type fixed_horizon
+abs experiments create --name my-experiment --hypothesis "We believe X"  # custom fields
+abs experiments create --name my-experiment --field "Hypothesis=We believe X"  # generic fallback
 abs experiments create --from-file experiment.md         # from template
 abs experiments create --name my-experiment --dry-run    # preview payload
 abs experiments create --name my-experiment --as-curl    # output as curl command
@@ -230,6 +233,38 @@ abs experiments schedule delete 123 456
 
 # Generate a markdown template for experiment creation
 abs experiments generate-template -o experiment.md
+
+# Refresh custom fields cache (enables custom fields as --help options)
+abs experiments refresh-fields
+```
+
+#### Custom field options
+
+After running `abs experiments refresh-fields`, custom fields from your ABsmartly instance appear as native CLI options:
+
+```bash
+abs experiments create --help
+# Shows: --hypothesis <value>, --jira-url <value>, etc.
+
+abs experiments create --name test --hypothesis "We believe X" --jira-url "https://jira.example.com/IT-1"
+abs experiments update 123 --hypothesis "Updated hypothesis"
+abs experiments restart 123 --hypothesis "New iteration"
+
+# Generic fallback (works without cache)
+abs experiments create --name test --field "Hypothesis=We believe X"
+```
+
+#### Summary output
+
+All `list` and `get` commands return summarized output by default. Use `--raw` for the full API response.
+
+```bash
+abs experiments get 123 -o json                          # clean summary as JSON
+abs experiments get 123 -o json --raw                    # full API response
+abs experiments list --show experiment_report archived    # add extra fields
+abs experiments list --exclude owner impact confidence    # hide fields
+abs metrics list --show description --exclude effect      # works on all entities
+abs goals get 1 --show created_by_user_id
 ```
 
 #### Experiment list filters
@@ -821,8 +856,10 @@ profiles:
 
 | Variable | Description |
 |---|---|
-| `ABSMARTLY_API_KEY` | API key (overrides keychain) |
-| `ABSMARTLY_API_ENDPOINT` | API endpoint URL |
+| `ABSMARTLY_API_KEY` | API key (overrides keychain and credentials file) |
+| `ABSMARTLY_API_ENDPOINT` | API endpoint URL (overrides profile config) |
+
+API key resolution order: `--api-key` flag > `ABSMARTLY_API_KEY` env > OS keychain > `~/.config/absmartly/credentials.json`
 
 ## Experiment templates
 
