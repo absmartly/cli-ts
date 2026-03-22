@@ -43,6 +43,7 @@ import { eventsCommand } from './commands/events/index.js';
 import { storageConfigsCommand } from './commands/storageconfigs/index.js';
 import { statisticsCommand } from './commands/statistics/index.js';
 import { actionDialogFieldsCommand } from './commands/actiondialogfields/index.js';
+import { activityFeedCommand } from './commands/activity/index.js';
 import { handleFatalError } from './lib/utils/error-handler.js';
 
 const program = new Command();
@@ -106,6 +107,7 @@ program.addCommand(eventsCommand);
 program.addCommand(storageConfigsCommand);
 program.addCommand(statisticsCommand);
 program.addCommand(actionDialogFieldsCommand);
+program.addCommand(activityFeedCommand);
 process.on('unhandledRejection', (reason) => handleFatalError('unhandled promise rejection', reason));
 process.on('uncaughtException', (error) => handleFatalError('uncaught exception', error));
 
