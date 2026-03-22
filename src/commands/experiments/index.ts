@@ -26,6 +26,7 @@ import { cloneCommand } from './clone.js';
 import { refreshFieldsCommand } from './refresh-fields.js';
 import { diffCommand } from './diff.js';
 import { watchCommand } from './watch.js';
+import { bulkCommand } from './bulk.js';
 
 const subcommands = [
   listCommand, getCommand, searchCommand, createCommand, cloneCommand, updateCommand,
@@ -36,6 +37,7 @@ const subcommands = [
   refreshFieldsCommand,
   diffCommand,
   watchCommand,
+  bulkCommand,
 ];
 
 export const experimentsCommand = new Command('experiments')
