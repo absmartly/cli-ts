@@ -75,6 +75,8 @@
     "gray-matter": "^4.0.3",
     "js-yaml": "^4.1.0",
     "keytar": "^7.9.0",
+    "marked": "^17.0.5",
+    "marked-terminal": "^7.3.0",
     "open": "^10.1.0"
   },
   "devDependencies": {

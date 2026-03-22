@@ -1,5 +1,7 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
+import { Marked } from 'marked';
+import { markedTerminal } from 'marked-terminal';
 import { getAPIClientFromOptions, getGlobalOptions, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseDateFlagOrUndefined } from '../../lib/utils/date-parser.js';
 import { startPolling } from '../../lib/utils/polling.js';
@@ -24,23 +26,32 @@ function getUserName(note: Note): string {
   return parts.length > 0 ? parts.join(' ') : 'System';
 }
 
-export function formatNoteText(text: string): string {
-  return text
-    .replace(/!\[([^\]]*)\]\([^)]+\)/g, '[image: $1]')
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-    .replace(/\[@user_id:(\d+)\]/g, 'user:$1')
-    .replace(/\[@team_id:(\d+)\]/g, 'team:$1')
-    .replace(/<img[^>]*alt="([^"]*)"[^>]*>/g, '[image: $1]')
-    .replace(/<img[^>]*>/g, '[image]')
-    .replace(/<a[^>]*href="([^"]*)"[^>]*>([^<]*)<\/a>/g, '$2 ($1)')
-    .replace(/<[^>]+>/g, '')
-    .replace(/\*\*([^*]+)\*\*/g, '$1')
-    .replace(/\*([^*]+)\*/g, '$1')
-    .replace(/`([^`]+)`/g, '$1')
-    .trim();
+export interface NoteLookups {
+  users?: Map<number, string>;
+  teams?: Map<number, string>;
 }
 
-function printActivityNotes(items: ActivityNote[], showNotes = false): void {
+const terminalMarked = new Marked(markedTerminal() as any);
+
+export function resolveMentions(text: string, lookups: NoteLookups = {}): string {
+  return text
+    .replace(/\[@user_id:(\d+)\]/g, (_, id) => {
+      const name = lookups.users?.get(parseInt(id, 10));
+      return name ? `**@${name}**` : `@user:${id}`;
+    })
+    .replace(/\[@team_id:(\d+)\]/g, (_, id) => {
+      const name = lookups.teams?.get(parseInt(id, 10));
+      return name ? `**@${name}**` : `@team:${id}`;
+    });
+}
+
+export function formatNoteText(text: string, lookups: NoteLookups = {}): string {
+  const resolved = resolveMentions(text, lookups);
+  const rendered = terminalMarked.parse(resolved) as string;
+  return rendered.trim();
+}
+
+function printActivityNotes(items: ActivityNote[], showNotes = false, lookups: NoteLookups = {}): void {
   if (items.length === 0) {
     console.log(chalk.blue('No activity found'));
     return;
@@ -56,7 +67,7 @@ function printActivityNotes(items: ActivityNote[], showNotes = false): void {
     );
 
     if (showNotes && note.note) {
-      const formatted = formatNoteText(note.note);
+      const formatted = formatNoteText(note.note, lookups);
       if (formatted) {
         console.log(`  ${chalk.white(`→ ${formatted}`)}`);
       }
@@ -101,6 +112,23 @@ async function fetchAllActivity(
   return allNotes;
 }
 
+async function buildLookups(client: APIClient): Promise<NoteLookups> {
+  const [users, teams] = await Promise.all([
+    client.listUsers({ items: 500 }),
+    client.listTeams(false, 500),
+  ]);
+  const userMap = new Map<number, string>();
+  for (const u of users) {
+    const name = [u.first_name, u.last_name].filter(Boolean).join(' ') || u.email;
+    userMap.set(u.id, name);
+  }
+  const teamMap = new Map<number, string>();
+  for (const t of teams) {
+    teamMap.set(t.id, t.name);
+  }
+  return { users: userMap, teams: teamMap };
+}
+
 export const activityFeedCommand = new Command('activity-feed')
   .description('Global activity feed across experiments');
 
@@ -121,9 +149,12 @@ const listCommand = new Command('list')
     if (options.state) fetchOptions.state = options.state;
     if (since !== undefined) fetchOptions.since = since;
 
-    const notes = await fetchAllActivity(client, fetchOptions);
+    const [notes, lookups] = await Promise.all([
+      fetchAllActivity(client, fetchOptions),
+      options.notes ? buildLookups(client) : Promise.resolve({}),
+    ]);
 
-    printActivityNotes(notes, options.notes);
+    printActivityNotes(notes, options.notes, lookups);
   }));
 
 const watchCommand = new Command('watch')
@@ -140,6 +171,7 @@ const watchCommand = new Command('watch')
     const items = parseInt(options.items, 10);
 
     let lastSeenTimestamp: number | undefined;
+    const lookups = options.notes ? await buildLookups(client) : {};
 
     console.log(chalk.blue(`Watching activity (polling every ${intervalSeconds}s)... Press Ctrl+C to stop\n`));
 
@@ -151,7 +183,7 @@ const watchCommand = new Command('watch')
       const notes = await fetchAllActivity(client, fetchOptions);
 
       if (notes.length > 0) {
-        printActivityNotes(notes, options.notes);
+        printActivityNotes(notes, options.notes, lookups);
 
         const newestTimestamp = Math.max(
           ...notes.map((n) =>

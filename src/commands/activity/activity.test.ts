@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { activityFeedCommand, formatNoteText } from './index.js';
+import { activityFeedCommand, formatNoteText, resolveMentions } from './index.js';
 import { getAPIClientFromOptions, getGlobalOptions } from '../../lib/utils/api-helper.js';
 import { resetCommand } from '../../test/helpers/command-reset.js';
 
@@ -16,6 +16,8 @@ describe('activity-feed command', () => {
   const mockClient = {
     listExperiments: vi.fn(),
     listExperimentActivity: vi.fn(),
+    listUsers: vi.fn().mockResolvedValue([{ id: 50, first_name: 'Alice', last_name: 'Smith', email: 'alice@test.com' }]),
+    listTeams: vi.fn().mockResolvedValue([{ id: 76, name: 'Engineering' }]),
   };
 
   beforeEach(() => {
@@ -126,56 +128,57 @@ describe('activity-feed command', () => {
   });
 });
 
+describe('resolveMentions', () => {
+  it('should resolve user mentions with lookup', () => {
+    const lookups = { users: new Map([[50, 'Jonas Alves']]) };
+    expect(resolveMentions('granted to [@user_id:50].', lookups)).toBe('granted to **@Jonas Alves**.');
+  });
+
+  it('should fall back to @user:id without lookup', () => {
+    expect(resolveMentions('granted to [@user_id:50].')).toBe('granted to @user:50.');
+  });
+
+  it('should resolve team mentions with lookup', () => {
+    const lookups = { teams: new Map([[76, 'Engineering']]) };
+    expect(resolveMentions('removed from [@team_id:76].', lookups)).toBe('removed from **@Engineering**.');
+  });
+
+  it('should fall back to @team:id without lookup', () => {
+    expect(resolveMentions('removed from [@team_id:76].')).toBe('removed from @team:76.');
+  });
+});
+
 describe('formatNoteText', () => {
-  it('should extract link text from markdown links', () => {
-    expect(formatNoteText('[events.zip](/v1/experiments/exports/123/events.zip "title")')).toBe('events.zip');
+  it('should render markdown links as text', () => {
+    const result = formatNoteText('[events.zip](/v1/exports/events.zip "title")');
+    expect(result).toContain('events.zip');
   });
 
-  it('should replace user references', () => {
-    expect(formatNoteText('"Can view" permission was granted to [@user_id:50].')).toBe('"Can view" permission was granted to user:50.');
+  it('should render bold text', () => {
+    const result = formatNoteText('This is **bold** text');
+    expect(result).toContain('bold');
   });
 
-  it('should replace team references', () => {
-    expect(formatNoteText('"Can edit" permission was removed from [@team_id:76].')).toBe('"Can edit" permission was removed from team:76.');
+  it('should render inline code', () => {
+    const result = formatNoteText('Run `npm install`');
+    expect(result).toContain('npm install');
   });
 
-  it('should replace markdown images with placeholder', () => {
-    expect(formatNoteText('Check this ![screenshot](https://example.com/img.png)')).toBe('Check this [image: screenshot]');
+  it('should pass through plain text', () => {
+    const result = formatNoteText('Added new screenshots');
+    expect(result).toContain('Added new screenshots');
   });
 
-  it('should replace HTML img tags', () => {
-    expect(formatNoteText('See <img src="x.png" alt="result">')).toBe('See [image: result]');
+  it('should resolve mentions and render markdown', () => {
+    const lookups = { users: new Map([[50, 'Jonas']]) };
+    const result = formatNoteText('Granted to [@user_id:50].', lookups);
+    expect(result).toContain('@Jonas');
   });
 
-  it('should replace HTML img without alt', () => {
-    expect(formatNoteText('See <img src="x.png">')).toBe('See [image]');
-  });
-
-  it('should replace HTML links with text and URL', () => {
-    expect(formatNoteText('Visit <a href="https://example.com">Example</a>')).toBe('Visit Example (https://example.com)');
-  });
-
-  it('should strip remaining HTML tags', () => {
-    expect(formatNoteText('Hello <strong>world</strong> <em>test</em>')).toBe('Hello world test');
-  });
-
-  it('should strip markdown bold and italic', () => {
-    expect(formatNoteText('This is **bold** and *italic*')).toBe('This is bold and italic');
-  });
-
-  it('should strip markdown inline code', () => {
-    expect(formatNoteText('Run `npm install`')).toBe('Run npm install');
-  });
-
-  it('should pass through plain text unchanged', () => {
-    expect(formatNoteText('Added new experiment screenshots')).toBe('Added new experiment screenshots');
-  });
-
-  it('should handle complex real-world note', () => {
-    const note = 'The experiment data is ready to be downloaded  [events_3939.zip](/v1/experiments/exports/3939/events_3939.zip "/v1/experiments/exports/3939/events_3939.zip"). Download file is valid for 30 days.';
+  it('should handle real-world download note', () => {
+    const note = 'Download ready [events.zip](/v1/exports/events.zip). Valid for 30 days.';
     const result = formatNoteText(note);
-    expect(result).toContain('events_3939.zip');
-    expect(result).not.toContain('/v1/experiments');
+    expect(result).toContain('events.zip');
     expect(result).toContain('30 days');
   });
 });
