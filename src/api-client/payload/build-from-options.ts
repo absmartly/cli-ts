@@ -34,6 +34,7 @@ export interface CreateFromOptionsInput {
   requiredAlpha?: string;
   requiredPower?: string;
   baselineParticipants?: string;
+  customFields?: Record<string, string>;
 }
 
 export async function buildPayloadFromOptions(input: CreateFromOptionsInput, client?: APIClient): Promise<Record<string, unknown>> {
@@ -127,9 +128,14 @@ export async function buildPayloadFromOptions(input: CreateFromOptionsInput, cli
       const ownerId = input.ownerIds?.[0];
       const fieldValues: Record<string, { type: string; value: string }> = {};
       for (const field of relevantFields) {
+        const title = (field as { title?: string }).title ?? field.name ?? '';
         let value = field.default_value ?? '';
         if (field.type === 'user' && ownerId) {
           value = JSON.stringify({ selected: [{ userId: ownerId }] });
+        }
+        if (input.customFields) {
+          const cliValue = input.customFields[title];
+          if (cliValue !== undefined) value = cliValue;
         }
         fieldValues[field.id] = { type: field.type, value };
       }

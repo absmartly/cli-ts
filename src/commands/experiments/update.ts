@@ -13,6 +13,7 @@ import { parseExperimentId } from '../../lib/utils/validators.js';
 import type { ExperimentId } from '../../lib/api/branded-types.js';
 import type { ExperimentInput } from '../../api-client/index.js';
 import { getDefaultType } from './default-type.js';
+import { registerCustomFieldOptions, extractCustomFieldValues } from './custom-field-options.js';
 
 export const updateCommand = new Command('update')
   .description('Update an existing experiment')
@@ -42,8 +43,11 @@ export const updateCommand = new Command('update')
   .option('--required-power <value>', 'required power')
   .option('--baseline-participants <n>', 'baseline participants per day')
   .option('-i, --interactive', 'interactive step-by-step editor')
-  .option('--dry-run', 'show the request payload without making the API call')
-  .action(withErrorHandling(async (id: ExperimentId, options) => {
+  .option('--dry-run', 'show the request payload without making the API call');
+
+registerCustomFieldOptions(updateCommand, getDefaultType());
+
+updateCommand.action(withErrorHandling(async (id: ExperimentId, options) => {
     const globalOptions = getGlobalOptions(updateCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
@@ -119,6 +123,24 @@ export const updateCommand = new Command('update')
       }
 
       changes.variant_screenshots = screenshotEntries as ExperimentInput['variant_screenshots'];
+    }
+
+    const customFieldValues = extractCustomFieldValues(options, getDefaultType());
+    if (Object.keys(customFieldValues).length > 0) {
+      const allFields = await client.listCustomSectionFields();
+      const expType = getDefaultType();
+      const relevant = allFields.filter(f => !f.archived && f.custom_section?.type === expType && !f.custom_section?.archived);
+      const fieldValues: Record<string, { type: string; value: string }> = {};
+      for (const field of relevant) {
+        const title = (field as { title?: string }).title ?? field.name ?? '';
+        const cliValue = customFieldValues[title];
+        if (cliValue !== undefined) {
+          fieldValues[field.id] = { type: field.type, value: cliValue };
+        }
+      }
+      if (Object.keys(fieldValues).length > 0) {
+        changes.custom_section_field_values = fieldValues as ExperimentInput['custom_section_field_values'];
+      }
     }
 
     if (options.fromFile) {

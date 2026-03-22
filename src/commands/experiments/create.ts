@@ -7,6 +7,7 @@ import { buildPayloadFromOptions } from '../../api-client/payload/build-from-opt
 import { runInteractiveEditor } from '../../lib/interactive/run.js';
 
 import { getDefaultType } from './default-type.js';
+import { registerCustomFieldOptions, extractCustomFieldValues } from './custom-field-options.js';
 
 function shellEscape(s: string): string {
   return "'" + s.replace(/'/g, "'\\''") + "'";
@@ -40,8 +41,11 @@ export const createCommand = new Command('create')
   .option('--baseline-participants <n>', 'baseline participants per day')
   .option('-i, --interactive', 'interactive step-by-step editor')
   .option('--dry-run', 'show the request payload without making the API call')
-  .option('--as-curl', 'output as curl command instead of making the API call')
-  .action(withErrorHandling(async (options) => {
+  .option('--as-curl', 'output as curl command instead of making the API call');
+
+registerCustomFieldOptions(createCommand, getDefaultType());
+
+createCommand.action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(createCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
@@ -97,6 +101,7 @@ export const createCommand = new Command('create')
         requiredAlpha: options.requiredAlpha,
         requiredPower: options.requiredPower,
         baselineParticipants: options.baselineParticipants,
+        customFields: extractCustomFieldValues(options, getDefaultType()),
       }, client);
     }
 

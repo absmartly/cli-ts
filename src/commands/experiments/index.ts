@@ -23,6 +23,7 @@ import { recommendationsCommand } from './recommendations.js';
 import { exportCommand } from './export.js';
 import { requestUpdateCommand } from './request-update.js';
 import { cloneCommand } from './clone.js';
+import { refreshFieldsCommand } from './refresh-fields.js';
 
 const subcommands = [
   listCommand, getCommand, searchCommand, createCommand, cloneCommand, updateCommand,
@@ -30,6 +31,7 @@ const subcommands = [
   developmentCommand, restartCommand, fullOnCommand, scheduleCommand, metricsCommand,
   parentCommand, accessCommand, followCommand, unfollowCommand,
   annotationsCommand, alertsCommand, recommendationsCommand, exportCommand, requestUpdateCommand,
+  refreshFieldsCommand,
 ];
 
 export const experimentsCommand = new Command('experiments')
