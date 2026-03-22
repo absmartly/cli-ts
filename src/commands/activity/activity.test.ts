@@ -75,7 +75,7 @@ describe('activity-feed command', () => {
       { id: 11, created_at: '2026-03-22T14:30:00Z', action: 'comment', note: 'Recent note', created_by: { first_name: 'Bob', last_name: 'Jones' } },
     ]);
 
-    await activityFeedCommand.parseAsync(['node', 'test', 'list', '--since', '2026-03-21']);
+    await activityFeedCommand.parseAsync(['node', 'test', 'list', '--since', '2026-03-21', '--notes']);
 
     const output = consoleSpy.mock.calls.flat().join('\n');
     expect(output).toContain('Recent note');

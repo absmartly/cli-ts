@@ -24,7 +24,7 @@ function getUserName(note: Note): string {
   return parts.length > 0 ? parts.join(' ') : 'System';
 }
 
-function printActivityNotes(items: ActivityNote[]): void {
+function printActivityNotes(items: ActivityNote[], showNotes = false): void {
   if (items.length === 0) {
     console.log(chalk.blue('No activity found'));
     return;
@@ -39,7 +39,7 @@ function printActivityNotes(items: ActivityNote[]): void {
       `${chalk.gray(`[${ts}]`)} ${chalk.cyan(`${experiment.name}`)} ${chalk.gray(`(id:${experiment.id})`)} — ${chalk.white(`${user}: ${action}`)}`
     );
 
-    if (note.note) {
+    if (showNotes && note.note) {
       console.log(`  ${chalk.white(`→ "${note.note}"`)}`);
     }
   }
@@ -90,6 +90,7 @@ const listCommand = new Command('list')
   .option('--items <n>', 'number of experiments to fetch activity from', '20')
   .option('--since <date>', 'only show activity after this date (e.g. 7d, 2w, 2026-01-01)')
   .option('--state <state>', 'filter experiments by state')
+  .option('--notes', 'show note text for each activity entry')
   .action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(listCommand);
     const client = await getAPIClientFromOptions(globalOptions);
@@ -103,7 +104,7 @@ const listCommand = new Command('list')
 
     const notes = await fetchAllActivity(client, fetchOptions);
 
-    printActivityNotes(notes);
+    printActivityNotes(notes, options.notes);
   }));
 
 const watchCommand = new Command('watch')
@@ -111,6 +112,7 @@ const watchCommand = new Command('watch')
   .option('--interval <seconds>', 'poll interval in seconds', '30')
   .option('--items <n>', 'number of experiments to watch', '20')
   .option('--state <state>', 'filter experiments by state')
+  .option('--notes', 'show note text for each activity entry')
   .action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(watchCommand);
     const client = await getAPIClientFromOptions(globalOptions);
@@ -130,7 +132,7 @@ const watchCommand = new Command('watch')
       const notes = await fetchAllActivity(client, fetchOptions);
 
       if (notes.length > 0) {
-        printActivityNotes(notes);
+        printActivityNotes(notes, options.notes);
 
         const newestTimestamp = Math.max(
           ...notes.map((n) =>
