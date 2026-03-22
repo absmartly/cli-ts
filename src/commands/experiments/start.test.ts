@@ -39,9 +39,15 @@ describe('start command', () => {
   it('should start experiment by ID', async () => {
     await startCommand.parseAsync(['node', 'test', '42']);
 
-    expect(mockClient.startExperiment).toHaveBeenCalledWith(42);
+    expect(mockClient.startExperiment).toHaveBeenCalledWith(42, undefined);
     const output = consoleSpy.mock.calls.flat().join(' ');
     expect(output).toContain('Experiment 42 started');
+  });
+
+  it('should pass --note to startExperiment', async () => {
+    await startCommand.parseAsync(['node', 'test', '42', '--note', 'my note']);
+
+    expect(mockClient.startExperiment).toHaveBeenCalledWith(42, 'my note');
   });
 
   it('should reject invalid ID', async () => {

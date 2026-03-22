@@ -38,7 +38,7 @@ describe('archive command', () => {
   it('should archive experiment', async () => {
     await archiveCommand.parseAsync(['node', 'test', '42']);
 
-    expect(mockClient.archiveExperiment).toHaveBeenCalledWith(42, undefined);
+    expect(mockClient.archiveExperiment).toHaveBeenCalledWith(42, undefined, undefined);
     const output = consoleSpy.mock.calls.flat().join(' ');
     expect(output).toContain('archived');
     expect(output).not.toContain('unarchived');
@@ -47,8 +47,14 @@ describe('archive command', () => {
   it('should unarchive with --unarchive flag', async () => {
     await archiveCommand.parseAsync(['node', 'test', '42', '--unarchive']);
 
-    expect(mockClient.archiveExperiment).toHaveBeenCalledWith(42, true);
+    expect(mockClient.archiveExperiment).toHaveBeenCalledWith(42, true, undefined);
     const output = consoleSpy.mock.calls.flat().join(' ');
     expect(output).toContain('unarchived');
+  });
+
+  it('should pass --note to archiveExperiment', async () => {
+    await archiveCommand.parseAsync(['node', 'test', '42', '--note', 'my note']);
+
+    expect(mockClient.archiveExperiment).toHaveBeenCalledWith(42, undefined, 'my note');
   });
 });

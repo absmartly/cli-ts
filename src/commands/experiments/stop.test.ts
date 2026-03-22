@@ -35,11 +35,17 @@ describe('stop command', () => {
     processExitSpy.mockRestore();
   });
 
-  it('should stop experiment by ID', async () => {
-    await stopCommand.parseAsync(['node', 'test', '42']);
+  it('should stop experiment with --reason flag', async () => {
+    await stopCommand.parseAsync(['node', 'test', '42', '--reason', 'other']);
 
-    expect(mockClient.stopExperiment).toHaveBeenCalledWith(42);
+    expect(mockClient.stopExperiment).toHaveBeenCalledWith(42, 'other', undefined);
     const output = consoleSpy.mock.calls.flat().join(' ');
     expect(output).toContain('Experiment 42 stopped');
+  });
+
+  it('should pass --note to stopExperiment', async () => {
+    await stopCommand.parseAsync(['node', 'test', '42', '--reason', 'testing', '--note', 'my note']);
+
+    expect(mockClient.stopExperiment).toHaveBeenCalledWith(42, 'testing', 'my note');
   });
 });

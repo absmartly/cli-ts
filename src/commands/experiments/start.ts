@@ -7,7 +7,8 @@ import type { ExperimentId } from '../../lib/api/branded-types.js';
 export const startCommand = new Command('start')
   .description('Start experiment')
   .argument('<id>', 'experiment ID', parseExperimentId)
-  .action(withErrorHandling(async (id: ExperimentId) => {
+  .option('--note <text>', 'activity log note')
+  .action(withErrorHandling(async (id: ExperimentId, options) => {
     const globalOptions = getGlobalOptions(startCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
@@ -16,6 +17,6 @@ export const startCommand = new Command('start')
       throw new Error(`Experiment ${id} is in draft (created) state.\nSet it to 'ready' before starting: abs experiments update ${id} --state ready`);
     }
 
-    await client.startExperiment(id);
+    await client.startExperiment(id, options.note);
     console.log(chalk.green(`✓ Experiment ${id} started`));
   }));

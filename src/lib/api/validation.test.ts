@@ -63,7 +63,7 @@ describe.skipIf(isLiveMode)('APIClient - Validation and Error Scenarios', () => 
 
     it('should reject stopping non-running experiment', async () => {
       try {
-        await client.stopExperiment(888);
+        await client.stopExperiment(888, 'other');
         expect.fail('Should have thrown');
       } catch (error: any) {
         expect(error.statusCode).toBe(400);

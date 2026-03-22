@@ -694,8 +694,10 @@ export class APIClient {
     this.validateOkResponse(response, 'reorderCustomSections');
   }
 
-  async listApplications(): Promise<Application[]> {
-    const response = await this.request('GET', '/applications');
+  async listApplications(items = 100, page = 1): Promise<Application[]> {
+    const response = await this.request('GET', '/applications', {
+      params: { items: String(items), page: String(page) },
+    });
     return this.validateListResponse<Application>(response, 'applications', 'listApplications');
   }
 
@@ -704,8 +706,10 @@ export class APIClient {
     return this.validateEntityResponse<Application>(response, 'application', 'getApplication');
   }
 
-  async listEnvironments(): Promise<Environment[]> {
-    const response = await this.request('GET', '/environments');
+  async listEnvironments(items = 100, page = 1): Promise<Environment[]> {
+    const response = await this.request('GET', '/environments', {
+      params: { items: String(items), page: String(page) },
+    });
     return this.validateListResponse<Environment>(response, 'environments', 'listEnvironments');
   }
 
