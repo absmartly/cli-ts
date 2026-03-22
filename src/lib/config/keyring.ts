@@ -1,6 +1,9 @@
-import keytar from 'keytar';
+import { homedir } from 'os';
+import { join } from 'path';
+import { existsSync, readFileSync, writeFileSync, mkdirSync, chmodSync } from 'fs';
 
 const SERVICE_NAME = 'absmartly-cli';
+const CREDENTIALS_FILE = join(homedir(), '.config', 'absmartly', 'credentials.json');
 
 export interface KeyringOptions {
   profile?: string;
@@ -11,13 +14,35 @@ function getKeyName(key: string, profile?: string): string {
   return `${key}${profileSuffix}`;
 }
 
-function keyringError(action: string, key: string, profile: string | undefined, error: unknown): Error {
-  const profileInfo = profile ? ` for profile "${profile}"` : '';
-  const errorMsg = error instanceof Error ? error.message : 'unknown error';
-  return new Error(
-    `Failed to ${action} "${key}"${profileInfo} ${action === 'save' ? 'to' : 'from'} system keychain: ${errorMsg}\n` +
-    `Please ensure your system keychain is unlocked and accessible.`
-  );
+let keytarModule: typeof import('keytar') | null | false = null;
+
+async function getKeytar(): Promise<typeof import('keytar') | null> {
+  if (keytarModule === false) return null;
+  if (keytarModule !== null) return keytarModule;
+  try {
+    keytarModule = await import('keytar');
+    await keytarModule.getPassword(SERVICE_NAME, '__probe__');
+    return keytarModule;
+  } catch {
+    keytarModule = false;
+    return null;
+  }
+}
+
+function readCredentialsFile(): Record<string, string> {
+  try {
+    if (!existsSync(CREDENTIALS_FILE)) return {};
+    return JSON.parse(readFileSync(CREDENTIALS_FILE, 'utf8'));
+  } catch {
+    return {};
+  }
+}
+
+function writeCredentialsFile(data: Record<string, string>): void {
+  const dir = join(homedir(), '.config', 'absmartly');
+  if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+  writeFileSync(CREDENTIALS_FILE, JSON.stringify(data, null, 2), 'utf8');
+  try { chmodSync(CREDENTIALS_FILE, 0o600); } catch { /* best effort */ }
 }
 
 export async function setPassword(
@@ -25,36 +50,54 @@ export async function setPassword(
   value: string,
   options: KeyringOptions = {}
 ): Promise<void> {
-  try {
-    const keyName = getKeyName(key, options.profile);
-    await keytar.setPassword(SERVICE_NAME, keyName, value);
-  } catch (error) {
-    throw keyringError('save', key, options.profile, error);
+  const keyName = getKeyName(key, options.profile);
+  const keytar = await getKeytar();
+  if (keytar) {
+    try {
+      await keytar.setPassword(SERVICE_NAME, keyName, value);
+      return;
+    } catch { /* fall through to file store */ }
   }
+  const creds = readCredentialsFile();
+  creds[keyName] = value;
+  writeCredentialsFile(creds);
 }
 
 export async function getPassword(
   key: string,
   options: KeyringOptions = {}
 ): Promise<string | null> {
-  try {
-    const keyName = getKeyName(key, options.profile);
-    return await keytar.getPassword(SERVICE_NAME, keyName);
-  } catch (error) {
-    throw keyringError('read', key, options.profile, error);
+  const keyName = getKeyName(key, options.profile);
+  const keytar = await getKeytar();
+  if (keytar) {
+    try {
+      const value = await keytar.getPassword(SERVICE_NAME, keyName);
+      if (value !== null) return value;
+    } catch { /* fall through to file store */ }
   }
+  const creds = readCredentialsFile();
+  return creds[keyName] ?? null;
 }
 
 export async function deletePassword(
   key: string,
   options: KeyringOptions = {}
 ): Promise<boolean> {
-  try {
-    const keyName = getKeyName(key, options.profile);
-    return await keytar.deletePassword(SERVICE_NAME, keyName);
-  } catch (error) {
-    throw keyringError('delete', key, options.profile, error);
+  const keyName = getKeyName(key, options.profile);
+  let deleted = false;
+  const keytar = await getKeytar();
+  if (keytar) {
+    try {
+      deleted = await keytar.deletePassword(SERVICE_NAME, keyName);
+    } catch { /* fall through */ }
   }
+  const creds = readCredentialsFile();
+  if (keyName in creds) {
+    delete creds[keyName];
+    writeCredentialsFile(creds);
+    deleted = true;
+  }
+  return deleted;
 }
 
 export async function setAPIKey(apiKey: string, profile?: string): Promise<void> {

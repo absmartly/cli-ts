@@ -1,181 +1,80 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import keytar from 'keytar';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { existsSync, readFileSync, writeFileSync, mkdirSync, chmodSync, unlinkSync } from 'fs';
+import { join } from 'path';
+import { homedir } from 'os';
 
-vi.mock('keytar', () => ({
-  default: {
-    setPassword: vi.fn(),
-    getPassword: vi.fn(),
-    deletePassword: vi.fn(),
-  },
-}));
+const CREDENTIALS_FILE = join(homedir(), '.config', 'absmartly', 'credentials.json');
 
-import { setAPIKey, getAPIKey, deleteAPIKey, setPassword, getPassword, deletePassword } from './keyring.js';
+vi.mock('keytar', () => {
+  throw new Error('keytar not available');
+});
 
-describe('Keyring', () => {
+describe('Keyring (file fallback)', () => {
+  let savedContent: string | null = null;
+
   beforeEach(() => {
-    vi.clearAllMocks();
+    try {
+      savedContent = existsSync(CREDENTIALS_FILE) ? readFileSync(CREDENTIALS_FILE, 'utf8') : null;
+    } catch { savedContent = null; }
   });
 
-  describe('profile-specific key naming', () => {
-    it('should use key without suffix for default profile', async () => {
-      (keytar.setPassword as any).mockResolvedValue(undefined);
-
-      await setAPIKey('test-key', 'default');
-
-      expect(keytar.setPassword).toHaveBeenCalledWith(
-        'absmartly-cli',
-        'api-key',
-        'test-key'
-      );
-    });
-
-    it('should add profile suffix for non-default profiles', async () => {
-      (keytar.setPassword as any).mockResolvedValue(undefined);
-
-      await setAPIKey('staging-key', 'staging');
-
-      expect(keytar.setPassword).toHaveBeenCalledWith(
-        'absmartly-cli',
-        'api-key-staging',
-        'staging-key'
-      );
-    });
-
-    it('should retrieve correct key for profile', async () => {
-      (keytar.getPassword as any).mockResolvedValue('staging-key');
-
-      const key = await getAPIKey('staging');
-
-      expect(keytar.getPassword).toHaveBeenCalledWith(
-        'absmartly-cli',
-        'api-key-staging'
-      );
-      expect(key).toBe('staging-key');
-    });
-
-    it('should delete correct key for profile', async () => {
-      (keytar.deletePassword as any).mockResolvedValue(true);
-
-      const result = await deleteAPIKey('production');
-
-      expect(keytar.deletePassword).toHaveBeenCalledWith(
-        'absmartly-cli',
-        'api-key-production'
-      );
-      expect(result).toBe(true);
-    });
-
-    it('should handle undefined profile as default', async () => {
-      (keytar.setPassword as any).mockResolvedValue(undefined);
-
-      await setAPIKey('default-key');
-
-      expect(keytar.setPassword).toHaveBeenCalledWith(
-        'absmartly-cli',
-        'api-key',
-        'default-key'
-      );
-    });
+  afterEach(() => {
+    if (savedContent !== null) {
+      writeFileSync(CREDENTIALS_FILE, savedContent, 'utf8');
+    } else {
+      try { unlinkSync(CREDENTIALS_FILE); } catch {}
+    }
   });
 
-  describe('error handling', () => {
-    it('should throw helpful error on keyring access denied', async () => {
-      (keytar.setPassword as any).mockRejectedValue(new Error('Access denied'));
-
-      await expect(setPassword('test-key', 'value')).rejects.toThrow(
-        /Failed to save "test-key" to system keychain: Access denied[\s\S]*keychain is unlocked and accessible/
-      );
-    });
-
-    it('should throw helpful error on keyring unavailable', async () => {
-      (keytar.getPassword as any).mockRejectedValue(new Error('Keyring not available'));
-
-      await expect(getPassword('test-key')).rejects.toThrow(
-        /Failed to read "test-key" from system keychain: Keyring not available[\s\S]*keychain is unlocked and accessible/
-      );
-    });
-
-    it('should throw helpful error on delete failure', async () => {
-      (keytar.deletePassword as any).mockRejectedValue(new Error('Permission denied'));
-
-      await expect(deletePassword('test-key')).rejects.toThrow(
-        /Failed to delete "test-key" from system keychain: Permission denied[\s\S]*keychain is unlocked and accessible/
-      );
-    });
-
-    it('should return null for non-existent keys', async () => {
-      (keytar.getPassword as any).mockResolvedValue(null);
-
-      const key = await getAPIKey('nonexistent');
-      expect(key).toBeNull();
-    });
-
-    it('should handle keychain locked error', async () => {
-      (keytar.getPassword as any).mockRejectedValue(new Error('The user name or passphrase you entered is not correct'));
-
-      await expect(getAPIKey()).rejects.toThrow(/Failed to read "api-key" from system keychain/);
-    });
+  it('should store and retrieve API key via file fallback', async () => {
+    const { setAPIKey, getAPIKey } = await import('./keyring.js');
+    await setAPIKey('test-file-key', 'default');
+    const key = await getAPIKey('default');
+    expect(key).toBe('test-file-key');
   });
 
-  describe('profile isolation', () => {
-    it('should keep keys separate by profile', async () => {
-      (keytar.setPassword as any).mockResolvedValue(undefined);
-
-      await setAPIKey('dev-key', 'dev');
-      await setAPIKey('prod-key', 'prod');
-
-      expect(keytar.setPassword).toHaveBeenNthCalledWith(
-        1,
-        'absmartly-cli',
-        'api-key-dev',
-        'dev-key'
-      );
-      expect(keytar.setPassword).toHaveBeenNthCalledWith(
-        2,
-        'absmartly-cli',
-        'api-key-prod',
-        'prod-key'
-      );
-    });
-
-    it('should retrieve profile-specific keys', async () => {
-      (keytar.getPassword as any).mockImplementation((service, key) => {
-        if (key === 'api-key-dev') return Promise.resolve('dev-key');
-        if (key === 'api-key-prod') return Promise.resolve('prod-key');
-        return Promise.resolve(null);
-      });
-
-      const devKey = await getAPIKey('dev');
-      const prodKey = await getAPIKey('prod');
-
-      expect(devKey).toBe('dev-key');
-      expect(prodKey).toBe('prod-key');
-    });
+  it('should use key without suffix for default profile', async () => {
+    const { setAPIKey } = await import('./keyring.js');
+    await setAPIKey('default-key', 'default');
+    const creds = JSON.parse(readFileSync(CREDENTIALS_FILE, 'utf8'));
+    expect(creds['api-key']).toBe('default-key');
   });
 
-  describe('generic key operations', () => {
-    it('should handle custom key names with profile', async () => {
-      (keytar.setPassword as any).mockResolvedValue(undefined);
+  it('should add profile suffix for non-default profiles', async () => {
+    const { setAPIKey } = await import('./keyring.js');
+    await setAPIKey('staging-key', 'staging');
+    const creds = JSON.parse(readFileSync(CREDENTIALS_FILE, 'utf8'));
+    expect(creds['api-key-staging']).toBe('staging-key');
+  });
 
-      await setPassword('custom-key', 'value', { profile: 'staging' });
+  it('should keep keys separate by profile', async () => {
+    const { setAPIKey, getAPIKey } = await import('./keyring.js');
+    await setAPIKey('dev-key', 'dev');
+    await setAPIKey('prod-key', 'prod');
+    expect(await getAPIKey('dev')).toBe('dev-key');
+    expect(await getAPIKey('prod')).toBe('prod-key');
+  });
 
-      expect(keytar.setPassword).toHaveBeenCalledWith(
-        'absmartly-cli',
-        'custom-key-staging',
-        'value'
-      );
-    });
+  it('should delete keys', async () => {
+    const { setAPIKey, getAPIKey, deleteAPIKey } = await import('./keyring.js');
+    await setAPIKey('delete-me', 'temp');
+    expect(await getAPIKey('temp')).toBe('delete-me');
+    await deleteAPIKey('temp');
+    expect(await getAPIKey('temp')).toBeNull();
+  });
 
-    it('should retrieve custom keys', async () => {
-      (keytar.getPassword as any).mockResolvedValue('custom-value');
+  it('should return null for non-existent keys', async () => {
+    const { getAPIKey } = await import('./keyring.js');
+    const key = await getAPIKey('nonexistent-profile-xyz');
+    expect(key).toBeNull();
+  });
 
-      const value = await getPassword('custom-key', { profile: 'test' });
-
-      expect(keytar.getPassword).toHaveBeenCalledWith(
-        'absmartly-cli',
-        'custom-key-test'
-      );
-      expect(value).toBe('custom-value');
-    });
+  it('should set file permissions to 600', async () => {
+    const { setAPIKey } = await import('./keyring.js');
+    await setAPIKey('perm-test', 'default');
+    const { statSync } = await import('fs');
+    const stats = statSync(CREDENTIALS_FILE);
+    const mode = (stats.mode & 0o777).toString(8);
+    expect(mode).toBe('600');
   });
 });

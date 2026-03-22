@@ -7,7 +7,7 @@ import { formatOutput, type OutputFormat } from '../output/formatter.js';
 export async function resolveAPIKey(options: Record<string, unknown>): Promise<string> {
   const config = loadConfig();
   const profileName = (options.profile as string) || config['default-profile'];
-  const apiKey = (options.apiKey as string) || (await getAPIKey(profileName));
+  const apiKey = (options.apiKey as string) || process.env.ABSMARTLY_API_KEY || (await getAPIKey(profileName));
 
   if (!apiKey) {
     throw new Error(
@@ -24,14 +24,14 @@ export function resolveEndpoint(options: Record<string, unknown>): string {
   const config = loadConfig();
   const profileName = (options.profile as string) || config['default-profile'];
   const profile = getProfile(profileName);
-  return (options.endpoint as string) || profile.api.endpoint;
+  return (options.endpoint as string) || process.env.ABSMARTLY_API_ENDPOINT || profile.api.endpoint;
 }
 
 export async function getAPIClientFromOptions(options: Record<string, unknown>): Promise<APIClient> {
   const config = loadConfig();
   const profileName = (options.profile as string) || config['default-profile'];
   const profile = getProfile(profileName);
-  const endpoint = (options.endpoint as string) || profile.api.endpoint;
+  const endpoint = (options.endpoint as string) || process.env.ABSMARTLY_API_ENDPOINT || profile.api.endpoint;
 
   if (!endpoint) {
     throw new Error(

@@ -25,8 +25,21 @@ import { createAPIClient } from '../api/client.js';
 import { formatOutput } from '../output/formatter.js';
 
 describe('API Helper', () => {
+  const savedEnv: Record<string, string | undefined> = {};
+
   beforeEach(() => {
     vi.clearAllMocks();
+    savedEnv.ABSMARTLY_API_KEY = process.env.ABSMARTLY_API_KEY;
+    savedEnv.ABSMARTLY_API_ENDPOINT = process.env.ABSMARTLY_API_ENDPOINT;
+    delete process.env.ABSMARTLY_API_KEY;
+    delete process.env.ABSMARTLY_API_ENDPOINT;
+  });
+
+  afterEach(() => {
+    if (savedEnv.ABSMARTLY_API_KEY !== undefined) process.env.ABSMARTLY_API_KEY = savedEnv.ABSMARTLY_API_KEY;
+    else delete process.env.ABSMARTLY_API_KEY;
+    if (savedEnv.ABSMARTLY_API_ENDPOINT !== undefined) process.env.ABSMARTLY_API_ENDPOINT = savedEnv.ABSMARTLY_API_ENDPOINT;
+    else delete process.env.ABSMARTLY_API_ENDPOINT;
   });
 
   describe('getAPIClientFromOptions', () => {
