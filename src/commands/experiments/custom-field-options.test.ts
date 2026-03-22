@@ -3,7 +3,6 @@ import { Command } from 'commander';
 
 vi.mock('../../lib/config/custom-fields-cache', () => ({
   loadCachedFields: vi.fn(),
-  loadAllCachedFields: vi.fn(),
 }));
 
 vi.mock('../../lib/config/config', () => ({
@@ -11,7 +10,7 @@ vi.mock('../../lib/config/config', () => ({
 }));
 
 import { registerCustomFieldOptions, extractCustomFieldValues } from './custom-field-options.js';
-import { loadCachedFields, loadAllCachedFields } from '../../lib/config/custom-fields-cache.js';
+import { loadCachedFields } from '../../lib/config/custom-fields-cache.js';
 import { loadConfig } from '../../lib/config/config.js';
 
 const makeField = (title: string, type: string, archived = false, sectionArchived = false) => ({
@@ -28,7 +27,7 @@ describe('registerCustomFieldOptions', () => {
   });
 
   it('should register options from cached fields', () => {
-    (loadAllCachedFields as any).mockReturnValue([
+    (loadCachedFields as any).mockReturnValue([
       makeField('Hypothesis', 'experiment'),
       makeField('Owner Name', 'experiment'),
     ]);
@@ -42,7 +41,7 @@ describe('registerCustomFieldOptions', () => {
   });
 
   it('should add --field option', () => {
-    (loadAllCachedFields as any).mockReturnValue([]);
+    (loadCachedFields as any).mockReturnValue([]);
 
     const cmd = new Command('test');
     registerCustomFieldOptions(cmd, 'experiment');
@@ -52,7 +51,7 @@ describe('registerCustomFieldOptions', () => {
   });
 
   it('should skip archived fields', () => {
-    (loadAllCachedFields as any).mockReturnValue([
+    (loadCachedFields as any).mockReturnValue([
       makeField('Active Field', 'experiment'),
       makeField('Archived Field', 'experiment', true),
     ]);

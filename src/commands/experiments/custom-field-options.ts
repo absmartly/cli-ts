@@ -1,5 +1,5 @@
 import type { Command } from 'commander';
-import { loadCachedFields, loadAllCachedFields } from '../../lib/config/custom-fields-cache.js';
+import { loadCachedFields } from '../../lib/config/custom-fields-cache.js';
 import { loadConfig } from '../../lib/config/config.js';
 
 function titleToFlag(title: string): string {
@@ -10,7 +10,9 @@ function titleToFlag(title: string): string {
 }
 
 export function registerCustomFieldOptions(command: Command, type: string): void {
-  const fields = loadAllCachedFields(type);
+  const config = loadConfig();
+  const profile = config['default-profile'] || 'default';
+  const fields = loadCachedFields(profile, type);
 
   const relevantFields = fields.filter(
     f => !f.archived && f.custom_section?.type === type && !f.custom_section?.archived
