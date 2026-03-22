@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { activityFeedCommand } from './index.js';
+import { activityFeedCommand, formatNoteText } from './index.js';
 import { getAPIClientFromOptions, getGlobalOptions } from '../../lib/utils/api-helper.js';
 import { resetCommand } from '../../test/helpers/command-reset.js';
 
@@ -123,5 +123,59 @@ describe('activity-feed command', () => {
     expect(mockClient.listExperiments).toHaveBeenCalledWith(
       expect.objectContaining({ state: 'running' })
     );
+  });
+});
+
+describe('formatNoteText', () => {
+  it('should extract link text from markdown links', () => {
+    expect(formatNoteText('[events.zip](/v1/experiments/exports/123/events.zip "title")')).toBe('events.zip');
+  });
+
+  it('should replace user references', () => {
+    expect(formatNoteText('"Can view" permission was granted to [@user_id:50].')).toBe('"Can view" permission was granted to user:50.');
+  });
+
+  it('should replace team references', () => {
+    expect(formatNoteText('"Can edit" permission was removed from [@team_id:76].')).toBe('"Can edit" permission was removed from team:76.');
+  });
+
+  it('should replace markdown images with placeholder', () => {
+    expect(formatNoteText('Check this ![screenshot](https://example.com/img.png)')).toBe('Check this [image: screenshot]');
+  });
+
+  it('should replace HTML img tags', () => {
+    expect(formatNoteText('See <img src="x.png" alt="result">')).toBe('See [image: result]');
+  });
+
+  it('should replace HTML img without alt', () => {
+    expect(formatNoteText('See <img src="x.png">')).toBe('See [image]');
+  });
+
+  it('should replace HTML links with text and URL', () => {
+    expect(formatNoteText('Visit <a href="https://example.com">Example</a>')).toBe('Visit Example (https://example.com)');
+  });
+
+  it('should strip remaining HTML tags', () => {
+    expect(formatNoteText('Hello <strong>world</strong> <em>test</em>')).toBe('Hello world test');
+  });
+
+  it('should strip markdown bold and italic', () => {
+    expect(formatNoteText('This is **bold** and *italic*')).toBe('This is bold and italic');
+  });
+
+  it('should strip markdown inline code', () => {
+    expect(formatNoteText('Run `npm install`')).toBe('Run npm install');
+  });
+
+  it('should pass through plain text unchanged', () => {
+    expect(formatNoteText('Added new experiment screenshots')).toBe('Added new experiment screenshots');
+  });
+
+  it('should handle complex real-world note', () => {
+    const note = 'The experiment data is ready to be downloaded  [events_3939.zip](/v1/experiments/exports/3939/events_3939.zip "/v1/experiments/exports/3939/events_3939.zip"). Download file is valid for 30 days.';
+    const result = formatNoteText(note);
+    expect(result).toContain('events_3939.zip');
+    expect(result).not.toContain('/v1/experiments');
+    expect(result).toContain('30 days');
   });
 });

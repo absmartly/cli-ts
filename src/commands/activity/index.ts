@@ -24,6 +24,22 @@ function getUserName(note: Note): string {
   return parts.length > 0 ? parts.join(' ') : 'System';
 }
 
+export function formatNoteText(text: string): string {
+  return text
+    .replace(/!\[([^\]]*)\]\([^)]+\)/g, '[image: $1]')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/\[@user_id:(\d+)\]/g, 'user:$1')
+    .replace(/\[@team_id:(\d+)\]/g, 'team:$1')
+    .replace(/<img[^>]*alt="([^"]*)"[^>]*>/g, '[image: $1]')
+    .replace(/<img[^>]*>/g, '[image]')
+    .replace(/<a[^>]*href="([^"]*)"[^>]*>([^<]*)<\/a>/g, '$2 ($1)')
+    .replace(/<[^>]+>/g, '')
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/\*([^*]+)\*/g, '$1')
+    .replace(/`([^`]+)`/g, '$1')
+    .trim();
+}
+
 function printActivityNotes(items: ActivityNote[], showNotes = false): void {
   if (items.length === 0) {
     console.log(chalk.blue('No activity found'));
@@ -40,7 +56,10 @@ function printActivityNotes(items: ActivityNote[], showNotes = false): void {
     );
 
     if (showNotes && note.note) {
-      console.log(`  ${chalk.white(`→ "${note.note}"`)}`);
+      const formatted = formatNoteText(note.note);
+      if (formatted) {
+        console.log(`  ${chalk.white(`→ ${formatted}`)}`);
+      }
     }
   }
 }
