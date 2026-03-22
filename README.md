@@ -825,18 +825,6 @@ abs api -X POST "/experiments/123/metrics/145" -o json   # fetch metric data
 abs api /experiments -H "X-Custom: value"
 ```
 
-### Code generation
-
-Generate TypeScript types from your ABSmartly configuration.
-
-```bash
-abs generate types
-abs generate types -o src/absmartly-types.ts
-abs generate types --app my-app
-```
-
-This outputs a TypeScript file with union types for all experiment names in your account, useful for type-safe SDK integration.
-
 ### Utilities
 
 ```bash
