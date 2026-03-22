@@ -1,6 +1,6 @@
 import { formatExtraField, formatImpact, formatConfidence, formatProgress, formatOwnerName } from './format-helpers.js';
 
-export function summarizeExperiment(exp: Record<string, unknown>, extraFields: string[] = []): Record<string, unknown> {
+export function summarizeExperiment(exp: Record<string, unknown>, extraFields: string[] = [], excludeFields: string[] = []): Record<string, unknown> {
   const apps = exp.applications as Array<Record<string, unknown>> | undefined;
   const unitType = exp.unit_type as Record<string, unknown> | undefined;
   const primaryMetric = exp.primary_metric as Record<string, unknown> | undefined;
@@ -102,6 +102,10 @@ export function summarizeExperiment(exp: Record<string, unknown>, extraFields: s
     }
   }
 
+  if (excludeFields.length > 0) {
+    for (const field of excludeFields) delete summary[field];
+  }
+
   return summary;
 }
 
@@ -116,7 +120,7 @@ export function stateToDate(state: string, exp: Record<string, unknown>): string
   return (date ?? '').slice(0, 10);
 }
 
-export function summarizeExperimentRow(exp: Record<string, unknown>, extraFields: string[] = []): Record<string, unknown> {
+export function summarizeExperimentRow(exp: Record<string, unknown>, extraFields: string[] = [], excludeFields: string[] = []): Record<string, unknown> {
   const apps = exp.applications as Array<Record<string, unknown>> | undefined;
   const unitType = exp.unit_type as Record<string, unknown> | undefined;
   const primaryMetric = exp.primary_metric as Record<string, unknown> | undefined;
@@ -146,6 +150,10 @@ export function summarizeExperimentRow(exp: Record<string, unknown>, extraFields
     if (!(field in row) && field in exp) {
       row[field] = formatExtraField(field, exp[field]);
     }
+  }
+
+  if (excludeFields.length > 0) {
+    for (const field of excludeFields) delete row[field];
   }
 
   return row;

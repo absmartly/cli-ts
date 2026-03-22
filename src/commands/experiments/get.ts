@@ -35,23 +35,16 @@ export const getCommand = new Command('get')
     }
 
     const extraFields = (options.show as string[] | undefined) ?? [];
-    const excludeFields = new Set((options.exclude as string[] | undefined) ?? []);
+    const excludeFields = (options.exclude as string[] | undefined) ?? [];
 
     let data: unknown;
     if (options.raw) {
       data = options.activity ? { ...experiment, activity: await client.listExperimentActivity(id) } : experiment;
     } else {
-      let summary = summarizeExperiment(experiment as Record<string, unknown>, extraFields);
+      let summary = summarizeExperiment(experiment as Record<string, unknown>, extraFields, excludeFields);
       if (options.activity) {
         const notes = await client.listExperimentActivity(id);
         summary = { ...summary, activity: notes };
-      }
-      if (excludeFields.size > 0) {
-        const filtered: Record<string, unknown> = {};
-        for (const [k, v] of Object.entries(summary)) {
-          if (!excludeFields.has(k)) filtered[k] = v;
-        }
-        summary = filtered;
       }
       data = summary;
     }

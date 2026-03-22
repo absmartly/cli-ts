@@ -110,17 +110,8 @@ export const listCommand = new Command('list')
       printFormatted(experiments, globalOptions);
     } else {
       const extraFields = (options.show as string[] | undefined) ?? [];
-      const excludeFields = new Set((options.exclude as string[] | undefined) ?? []);
-      let rows = (experiments as Array<Record<string, unknown>>).map(e => summarizeExperimentRow(e, extraFields));
-      if (excludeFields.size > 0) {
-        rows = rows.map(row => {
-          const filtered: Record<string, unknown> = {};
-          for (const [k, v] of Object.entries(row)) {
-            if (!excludeFields.has(k)) filtered[k] = v;
-          }
-          return filtered;
-        });
-      }
+      const excludeFields = (options.exclude as string[] | undefined) ?? [];
+      const rows = (experiments as Array<Record<string, unknown>>).map(e => summarizeExperimentRow(e, extraFields, excludeFields));
       printFormatted(rows, globalOptions);
     }
 
