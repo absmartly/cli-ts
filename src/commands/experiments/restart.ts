@@ -87,7 +87,7 @@ restartCommand.action(withErrorHandling(async (id: ExperimentId, options) => {
       changes = result.payload as Partial<ExperimentInput>;
     }
 
-    const customFieldValues = extractCustomFieldValues(options, getDefaultType());
+    const customFieldValues = extractCustomFieldValues(options, getDefaultType(), globalOptions.profile as string);
     if (Object.keys(customFieldValues).length > 0) {
       if (!changes) changes = {} as Partial<ExperimentInput>;
       const allFields = await client.listCustomSectionFields();

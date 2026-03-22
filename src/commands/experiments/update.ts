@@ -127,7 +127,7 @@ updateCommand.action(withErrorHandling(async (id: ExperimentId, options) => {
       changes.variant_screenshots = screenshotEntries as ExperimentInput['variant_screenshots'];
     }
 
-    const customFieldValues = extractCustomFieldValues(options, getDefaultType());
+    const customFieldValues = extractCustomFieldValues(options, getDefaultType(), globalOptions.profile as string);
     if (Object.keys(customFieldValues).length > 0) {
       const allFields = await client.listCustomSectionFields();
       const expType = getDefaultType();

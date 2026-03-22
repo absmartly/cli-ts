@@ -103,7 +103,7 @@ createCommand.action(withErrorHandling(async (options) => {
         requiredAlpha: options.requiredAlpha,
         requiredPower: options.requiredPower,
         baselineParticipants: options.baselineParticipants,
-        customFields: extractCustomFieldValues(options, getDefaultType()),
+        customFields: extractCustomFieldValues(options, getDefaultType(), globalOptions.profile as string),
       }, client);
     }
 

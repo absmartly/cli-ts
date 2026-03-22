@@ -32,10 +32,11 @@ export function registerCustomFieldOptions(command: Command, type: string): void
 export function extractCustomFieldValues(
   options: Record<string, unknown>,
   type: string,
+  profile?: string,
 ): Record<string, string> {
   const config = loadConfig();
-  const profile = config['default-profile'] || 'default';
-  const fields = loadCachedFields(profile, type);
+  const effectiveProfile = profile || config['default-profile'] || 'default';
+  const fields = loadCachedFields(effectiveProfile, type);
   const result: Record<string, string> = {};
 
   const relevantFields = fields.filter(
