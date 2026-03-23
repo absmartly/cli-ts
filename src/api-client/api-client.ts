@@ -382,8 +382,22 @@ export class APIClient {
     return this.validateListResponse<unknown>(response, 'experiment_metrics', 'listExperimentMetrics');
   }
 
-  async getExperimentMetricData(experimentId: ExperimentId, metricId: number | 'main'): Promise<{ columnNames: string[]; rows: unknown[][] }> {
-    const response = await this.request<Record<string, unknown>>('POST', `/experiments/${experimentId}/metrics/${metricId}`);
+  async getExperimentMetricData(
+    experimentId: ExperimentId,
+    metricId: number | 'main',
+    body?: {
+      segment_id?: number;
+      segment_source?: string;
+      filters?: {
+        segments?: string;
+        from?: number;
+        to?: number;
+      };
+    },
+  ): Promise<{ columnNames: string[]; rows: unknown[][] }> {
+    const response = await this.request<Record<string, unknown>>('POST', `/experiments/${experimentId}/metrics/${metricId}`, {
+      ...(body && { data: body }),
+    });
     const data = response.data;
     if (!data || !Array.isArray(data.columnNames) || !Array.isArray(data.rows)) {
       throw new Error(`Invalid metric data response for experiment ${experimentId}, metric ${metricId}`);

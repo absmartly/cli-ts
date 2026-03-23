@@ -4,7 +4,7 @@ import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHan
 import { parseMetricId } from '../../lib/utils/validators.js';
 import type { MetricId } from '../../lib/api/branded-types.js';
 import { parseExperimentIdOrName } from './resolve-id.js';
-import { extractMetricInfos, extractVariantNames, fetchAllMetricResults, formatResultRows, metricOwners } from '../../api-client/metric-results.js';
+import { extractMetricInfos, extractVariantNames, fetchAllMetricResults, formatResultRows, metricOwners, type MetricInfo } from '../../api-client/metric-results.js';
 
 export const metricsCommand = new Command('metrics')
   .description('Manage experiment metrics');
@@ -106,23 +106,46 @@ const removeImpactCommand = new Command('remove-impact')
 const resultsCommand = new Command('results')
   .description('Show metric results for an experiment')
   .argument('<id>', 'experiment ID or name', parseExperimentIdOrName)
-  .action(withErrorHandling(async (nameOrId: string) => {
+  .option('--metric <id>', 'specific metric ID (can query any metric, not just assigned ones)', parseInt)
+  .option('--segment <id>', 'segment ID for breakdown', parseInt)
+  .option('--segment-filter <json>', 'segment filter JSON')
+  .option('--from <timestamp>', 'start time filter (epoch ms)', parseInt)
+  .option('--to <timestamp>', 'end time filter (epoch ms)', parseInt)
+  .action(withErrorHandling(async (nameOrId: string, options) => {
     const globalOptions = getGlobalOptions(resultsCommand);
     const client = await getAPIClientFromOptions(globalOptions);
     const id = await client.resolveExperimentId(nameOrId);
 
     const experiment = await client.getExperiment(id);
     const exp = experiment as Record<string, unknown>;
-    const metricInfos = extractMetricInfos(exp);
     const variantNames = extractVariantNames(exp);
+
+    const queryBody: Record<string, unknown> = {};
+    if (options.segment) queryBody.segment_id = options.segment;
+    if (options.segmentFilter) queryBody.filters = { segments: options.segmentFilter };
+    if (options.from || options.to) {
+      const filters = (queryBody.filters as Record<string, unknown>) ?? {};
+      if (options.from) filters.from = options.from;
+      if (options.to) filters.to = options.to;
+      queryBody.filters = filters;
+    }
+    const body = Object.keys(queryBody).length > 0 ? queryBody as any : undefined;
+
+    let metricInfos: MetricInfo[];
+    if (options.metric) {
+      const metric = await client.getMetric(options.metric);
+      metricInfos = [{ id: options.metric, name: (metric as Record<string, unknown>).name as string ?? String(options.metric), type: 'custom' }];
+    } else {
+      metricInfos = extractMetricInfos(exp);
+    }
 
     if (metricInfos.length === 0) {
       console.log(chalk.blue('No metrics assigned to this experiment.'));
       return;
     }
 
-    console.log(chalk.gray(`Fetching results for ${metricInfos.length} metrics...`));
-    const results = await fetchAllMetricResults(client, id, metricInfos);
+    console.log(chalk.gray(`Fetching results for ${metricInfos.length} metric(s)...`));
+    const results = await fetchAllMetricResults(client, id, metricInfos, body);
 
     const useRaw = globalOptions.output === 'json' || globalOptions.output === 'yaml';
     if (useRaw) {

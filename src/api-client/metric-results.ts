@@ -162,8 +162,13 @@ export async function fetchAllMetricResults(
   client: APIClient,
   experimentId: ExperimentId,
   metricInfos: MetricInfo[],
+  queryBody?: {
+    segment_id?: number;
+    segment_source?: string;
+    filters?: { segments?: string; from?: number; to?: number };
+  },
 ): Promise<MetricResult[]> {
-  const dataPromises = metricInfos.map(m => client.getExperimentMetricData(experimentId, m.id));
+  const dataPromises = metricInfos.map(m => client.getExperimentMetricData(experimentId, m.id, queryBody));
   const allData = await Promise.all(dataPromises);
   const results: MetricResult[] = [];
   for (let i = 0; i < metricInfos.length; i++) {
