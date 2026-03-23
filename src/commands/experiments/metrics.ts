@@ -153,7 +153,7 @@ const resultsCommand = new Command('results')
     if (options.metric) {
       const metric = await client.getMetric(options.metric);
       const m = metric as Record<string, unknown>;
-      metricInfos = [{ id: options.metric, name: m.name as string ?? String(options.metric), type: 'custom', effect: m.effect as string }];
+      metricInfos = [{ id: options.metric as MetricId, name: m.name as string ?? String(options.metric), type: 'custom', effect: m.effect as string }];
     } else {
       metricInfos = extractMetricInfos(exp);
     }

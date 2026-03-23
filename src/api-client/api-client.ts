@@ -3,6 +3,9 @@ import { experimentToInput } from './experiment-transform.js';
 import type { ExperimentInput } from './experiment-transform.js';
 import { resolveBySearch } from './payload/search-resolver.js';
 import { resolveByName } from './payload/resolver.js';
+import {
+  ExperimentId,
+} from './types.js';
 import type {
   Experiment,
   ListOptions,
@@ -25,7 +28,6 @@ import type {
   ApiKey,
   Webhook,
   ScheduledAction,
-  ExperimentId,
   GoalId,
   SegmentId,
   TeamId,
@@ -469,7 +471,7 @@ export class APIClient {
   async resolveExperimentId(nameOrId: string): Promise<ExperimentId> {
     const asInt = parseInt(nameOrId, 10);
     if (!isNaN(asInt) && String(asInt) === nameOrId.trim()) {
-      return asInt as ExperimentId;
+      return ExperimentId(asInt);
     }
     const results = await this.searchExperiments(nameOrId);
     const exact = results.filter(e => e.name === nameOrId);

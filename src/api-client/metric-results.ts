@@ -1,5 +1,5 @@
 import type { APIClient } from './api-client.js';
-import type { ExperimentId } from './types.js';
+import type { ExperimentId, MetricId } from './types.js';
 import { formatConfidenceValue, formatOwnerLabel, formatImpactWithCI } from './format-helpers.js';
 
 export interface VariantResult {
@@ -129,7 +129,7 @@ export function formatResultRow(r: MetricResult, variantNames: Map<number, strin
 }
 
 export interface MetricInfo {
-  id: number;
+  id: MetricId;
   name: string;
   type: string;
   effect?: string;
@@ -138,7 +138,7 @@ export interface MetricInfo {
 export function extractMetricInfos(experiment: Record<string, unknown>): MetricInfo[] {
   const infos: MetricInfo[] = [];
   const primaryMetric = experiment.primary_metric as Record<string, unknown> | undefined;
-  const primaryMetricId = experiment.primary_metric_id as number | undefined;
+  const primaryMetricId = experiment.primary_metric_id as MetricId | undefined;
   if (primaryMetricId && primaryMetric) {
     infos.push({ id: primaryMetricId, name: primaryMetric.name as string, type: 'primary', effect: primaryMetric.effect as string });
   }
@@ -147,7 +147,7 @@ export function extractMetricInfos(experiment: Record<string, unknown>): MetricI
     for (const m of secondaryMetrics) {
       const metric = m.metric as Record<string, unknown> | undefined;
       infos.push({
-        id: m.metric_id as number,
+        id: m.metric_id as MetricId,
         name: (metric?.name as string) || String(m.metric_id),
         type: (m.type as string) || 'secondary',
         effect: metric?.effect as string,
