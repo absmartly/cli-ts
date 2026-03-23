@@ -108,7 +108,7 @@ const resultsCommand = new Command('results')
   .description('Show metric results for an experiment')
   .argument('<id>', 'experiment ID or name', parseExperimentIdOrName)
   .option('--metric <id>', 'specific metric ID (can query any metric, not just assigned ones)', parseInt)
-  .option('--segment <name-or-id>', 'segment name or ID for breakdown (e.g. Device, Country, 1)')
+  .option('--segment <names...>', 'segment names or IDs for breakdown (e.g. Device Country)')
   .option('--filter <json>', 'raw segment filter JSON payload')
   .option('--from <date>', 'start time filter (see date formats)')
   .option('--to <date>', 'end time filter (see date formats)')
@@ -121,34 +121,31 @@ const resultsCommand = new Command('results')
     const exp = experiment as Record<string, unknown>;
     const variantNames = extractVariantNames(exp);
 
-    const queryBody: Record<string, unknown> = {};
-
-    if (options.segment) {
-      const segRef = options.segment as string;
-      const asInt = parseInt(segRef, 10);
-      if (!isNaN(asInt) && String(asInt) === segRef.trim()) {
-        queryBody.segment_id = asInt;
-      } else {
-        const segments = await client.listSegments(200, 1);
-        const match = segments.find(s => (s as Record<string, unknown>).name?.toString().toLowerCase() === segRef.toLowerCase());
-        if (!match) {
-          const available = segments.map(s => `  ${s.id} ${(s as Record<string, unknown>).name}`).join('\n');
-          throw new Error(`Segment "${segRef}" not found. Available segments:\n${available}`);
-        }
-        queryBody.segment_id = match.id;
-      }
-    }
-
-    if (options.filter) queryBody.filters = { segments: options.filter };
+    const baseFilters: Record<string, unknown> = {};
+    if (options.filter) baseFilters.segments = options.filter;
     const fromTs = parseDateFlagOrUndefined(options.from);
     const toTs = parseDateFlagOrUndefined(options.to);
-    if (fromTs !== undefined || toTs !== undefined) {
-      const filters = (queryBody.filters as Record<string, unknown>) ?? {};
-      if (fromTs !== undefined) filters.from = fromTs;
-      if (toTs !== undefined) filters.to = toTs;
-      queryBody.filters = filters;
+    if (fromTs !== undefined) baseFilters.from = fromTs;
+    if (toTs !== undefined) baseFilters.to = toTs;
+
+    let segmentIds: number[] = [];
+    if (options.segment) {
+      const segRefs = options.segment as string[];
+      const allSegments = await client.listSegments(200, 1);
+      for (const ref of segRefs) {
+        const asInt = parseInt(ref, 10);
+        if (!isNaN(asInt) && String(asInt) === ref.trim()) {
+          segmentIds.push(asInt);
+        } else {
+          const match = allSegments.find(s => (s as Record<string, unknown>).name?.toString().toLowerCase() === ref.toLowerCase());
+          if (!match) {
+            const available = allSegments.map(s => `  ${s.id} ${(s as Record<string, unknown>).name}`).join('\n');
+            throw new Error(`Segment "${ref}" not found. Available segments:\n${available}`);
+          }
+          segmentIds.push(match.id);
+        }
+      }
     }
-    const body = Object.keys(queryBody).length > 0 ? queryBody as any : undefined;
 
     let metricInfos: MetricInfo[];
     if (options.metric) {
@@ -163,15 +160,40 @@ const resultsCommand = new Command('results')
       return;
     }
 
-    console.log(chalk.gray(`Fetching results for ${metricInfos.length} metric(s)...`));
-    const results = await fetchAllMetricResults(client, id, metricInfos, body);
+    const hasFilters = Object.keys(baseFilters).length > 0;
 
-    const useRaw = globalOptions.output === 'json' || globalOptions.output === 'yaml';
-    if (useRaw) {
-      printFormatted(results, globalOptions);
+    if (segmentIds.length <= 1) {
+      const body = segmentIds.length === 1
+        ? { segment_id: segmentIds[0], ...(hasFilters && { filters: baseFilters }) } as any
+        : hasFilters ? { filters: baseFilters } as any : undefined;
+
+      console.log(chalk.gray(`Fetching results for ${metricInfos.length} metric(s)...`));
+      const results = await fetchAllMetricResults(client, id, metricInfos, body);
+
+      const useRaw = globalOptions.output === 'json' || globalOptions.output === 'yaml';
+      if (useRaw) {
+        printFormatted(results, globalOptions);
+      } else {
+        const rows = results.flatMap(r => formatResultRows(r, variantNames));
+        printFormatted(rows, globalOptions);
+      }
     } else {
-      const rows = results.flatMap(r => formatResultRows(r, variantNames));
-      printFormatted(rows, globalOptions);
+      console.log(chalk.gray(`Fetching results for ${metricInfos.length} metric(s) across ${segmentIds.length} segments...`));
+      const allRows: Record<string, unknown>[] = [];
+
+      for (const segId of segmentIds) {
+        const body = { segment_id: segId, ...(hasFilters && { filters: baseFilters }) } as any;
+        const results = await fetchAllMetricResults(client, id, metricInfos, body);
+        const rows = results.flatMap(r => formatResultRows(r, variantNames));
+        allRows.push(...rows);
+      }
+
+      const useRaw = globalOptions.output === 'json' || globalOptions.output === 'yaml';
+      if (useRaw) {
+        printFormatted(allRows, globalOptions);
+      } else {
+        printFormatted(allRows, globalOptions);
+      }
     }
   }));
 
