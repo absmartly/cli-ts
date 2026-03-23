@@ -285,8 +285,8 @@ export class APIClient {
     return this.validateEntityResponse<Experiment>(response, 'parent_experiment', 'getParentExperiment');
   }
 
-  async developmentExperiment(id: ExperimentId, note: string): Promise<Experiment> {
-    const response = await this.request('PUT', `/experiments/${id}/development`, { data: { note } });
+  async developmentExperiment(id: ExperimentId, note?: string): Promise<Experiment> {
+    const response = await this.request('PUT', `/experiments/${id}/development`, { data: { ...(note && { note }) } });
     return this.validateEntityResponse<Experiment>(response, 'experiment', 'developmentExperiment');
   }
 
@@ -355,9 +355,9 @@ export class APIClient {
     return experiment as Experiment;
   }
 
-  async fullOnExperiment(id: ExperimentId, fullOnVariant: number, note: string): Promise<Experiment> {
+  async fullOnExperiment(id: ExperimentId, fullOnVariant: number, note?: string): Promise<Experiment> {
     const response = await this.request('PUT', `/experiments/${id}/full_on`, {
-      data: { full_on_variant: fullOnVariant, note },
+      data: { full_on_variant: fullOnVariant, ...(note && { note }) },
     });
     return this.validateEntityResponse<Experiment>(response, 'experiment', 'fullOnExperiment');
   }

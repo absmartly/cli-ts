@@ -1,9 +1,19 @@
+let _forceStdinTTY: boolean | undefined;
+let _forceStdoutTTY: boolean | undefined;
+
+export function setTTYOverride(opts: { stdin?: boolean; stdout?: boolean }): void {
+  _forceStdinTTY = opts.stdin;
+  _forceStdoutTTY = opts.stdout;
+}
+
 export function isStdinPiped(): boolean {
-  return process.stdin.isTTY === false;
+  if (_forceStdinTTY !== undefined) return !_forceStdinTTY;
+  return !process.stdin.isTTY;
 }
 
 export function isStdoutPiped(): boolean {
-  return process.stdout.isTTY === false;
+  if (_forceStdoutTTY !== undefined) return !_forceStdoutTTY;
+  return !process.stdout.isTTY;
 }
 
 export async function readLinesFromStdin(): Promise<string[]> {

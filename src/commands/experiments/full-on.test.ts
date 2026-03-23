@@ -87,7 +87,7 @@ describe('full-on command', () => {
   it('should set full-on with --variant', async () => {
     await fullOnCommand.parseAsync(['node', 'test', '42', '--variant', '2']);
 
-    expect(mockClient.fullOnExperiment).toHaveBeenCalledWith(42, 2, 'Set to full-on via CLI');
+    expect(mockClient.fullOnExperiment).toHaveBeenCalledWith(42, 2, undefined);
     const output = consoleSpy.mock.calls.flat().join(' ');
     expect(output).toContain('full-on');
     expect(output).toContain('variant 2');

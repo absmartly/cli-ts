@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterAll } from 'vitest';
 import { createAPIClient } from '../../lib/api/client.js';
 import { parseExperimentMarkdown } from '../../api-client/template/parser.js';
 import { experimentToMarkdown } from '../../api-client/template/serializer.js';
@@ -24,11 +24,20 @@ describe('experiment round-trip: create → export → modify → update', () =>
   let experimentId: number;
   let exportedMarkdown: string;
 
+  const handlers = createStatefulExperimentHandlers(TEST_BASE_URL);
+
   beforeAll(async () => {
     if (isLiveMode) return;
     const { server } = await import('../../test/mocks/server.js');
-    server.use(...createStatefulExperimentHandlers(TEST_BASE_URL));
+    server.use(...handlers);
   });
+
+  if (!isLiveMode) {
+    beforeEach(async () => {
+      const { server } = await import('../../test/mocks/server.js');
+      server.use(...handlers);
+    });
+  }
 
   it('should build resolver context from API', async () => {
     const [apps, unitTypes, metrics, goals, customFields] = await Promise.all([

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterAll } from 'vitest';
 import { http, HttpResponse } from 'msw';
 import { server } from '../../test/mocks/server.js';
 import { createAPIClient } from './client.js';
@@ -15,15 +15,19 @@ describe('APIClient - Experiments', () => {
   let expId: ExperimentId;
   let expName: string;
 
+  const handlers = !isLiveMode ? createStatefulExperimentHandlers(BASE_URL) : [];
+
   beforeAll(async () => {
-    if (!isLiveMode) {
-      server.use(...createStatefulExperimentHandlers(BASE_URL));
-    }
+    if (!isLiveMode) server.use(...handlers);
     const meta = await fetchLiveMetadata(client);
     const data = buildExperimentData(meta);
     expName = data.name;
     const created = await client.createExperiment(data as any);
     expId = created.id as ExperimentId;
+  });
+
+  beforeEach(() => {
+    if (!isLiveMode) server.use(...handlers);
   });
 
   afterAll(async () => {

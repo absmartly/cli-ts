@@ -84,10 +84,10 @@ describe('development command', () => {
     processExitSpy.mockRestore();
   });
 
-  it('should use default note', async () => {
+  it('should call with undefined note when not provided', async () => {
     await developmentCommand.parseAsync(['node', 'test', '42']);
 
-    expect(mockClient.developmentExperiment).toHaveBeenCalledWith(42, 'Started development via CLI');
+    expect(mockClient.developmentExperiment).toHaveBeenCalledWith(42, undefined);
     const output = consoleSpy.mock.calls.flat().join(' ');
     expect(output).toContain('set to development mode');
   });

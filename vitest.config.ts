@@ -11,6 +11,7 @@ export default defineConfig({
     testTimeout: isLiveMode ? 15_000 : 5_000,
     hookTimeout: isLiveMode ? 15_000 : 10_000,
     setupFiles: ['./src/test/setup.ts'],
+    fileParallelism: false,
     server: {
       deps: {
         inline: ['absmartly-api-mocks'],

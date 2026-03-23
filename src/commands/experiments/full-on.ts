@@ -3,6 +3,8 @@ import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseExperimentIdOrName } from './resolve-id.js';
 import { isStdinPiped, isStdoutPiped, readLinesFromStdin } from '../../lib/utils/stdin.js';
+import { resolveNote } from './resolve-note.js';
+import { getDefaultType } from './default-type.js';
 
 export const fullOnCommand = new Command('full-on')
   .description('Set experiment(s) to full-on mode. Reads IDs from stdin when piped.')
@@ -14,17 +16,21 @@ export const fullOnCommand = new Command('full-on')
     }
     return num;
   })
-  .option('--note <text>', 'note about the action', 'Set to full-on via CLI')
+  .option('--note <text>', 'note about the action')
+  .option('-i, --interactive', 'prompt for note interactively')
   .action(withErrorHandling(async (nameOrId: string | undefined, options) => {
     const globalOptions = getGlobalOptions(fullOnCommand);
     const client = await getAPIClientFromOptions(globalOptions);
+
     const ids: string[] = nameOrId ? [nameOrId] : isStdinPiped() ? await readLinesFromStdin() : [];
     if (ids.length === 0) throw new Error('Provide an experiment ID or pipe IDs from stdin');
     const outputPiped = isStdoutPiped();
 
+    const note = await resolveNote(options, 'full_on', getDefaultType(), globalOptions.profile);
+
     for (const idStr of ids) {
       const id = await client.resolveExperimentId(idStr);
-      await client.fullOnExperiment(id, options.variant, options.note);
+      await client.fullOnExperiment(id, options.variant, note);
       if (outputPiped) {
         console.log(id);
         console.error(chalk.green(`✓ Experiment ${id} set to full-on (variant ${options.variant})`));

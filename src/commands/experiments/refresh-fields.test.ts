@@ -18,6 +18,10 @@ vi.mock('../../lib/config/custom-fields-cache.js', () => ({
   saveCachedFields: vi.fn(),
 }));
 
+vi.mock('../../lib/config/action-dialog-cache.js', () => ({
+  saveCachedActionDialogFields: vi.fn(),
+}));
+
 describe('refresh-fields command', () => {
   let consoleSpy: ReturnType<typeof vi.spyOn>;
   let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
@@ -29,8 +33,14 @@ describe('refresh-fields command', () => {
     { name: 'old-field', type: 'text', archived: true, custom_section: { type: 'test', archived: false } },
   ];
 
+  const mockActionFields = [
+    { id: 1, type: 'test', action_type: 'stop', required: true, default_value: null },
+    { id: 2, type: 'test', action_type: 'start', required: false, default_value: null },
+  ];
+
   const mockClient = {
     listCustomSectionFields: vi.fn().mockResolvedValue(mockFields),
+    listExperimentActionDialogFields: vi.fn().mockResolvedValue(mockActionFields),
   };
 
   beforeEach(() => {

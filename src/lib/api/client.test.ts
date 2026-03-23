@@ -14,14 +14,18 @@ describe('APIClient', () => {
 
   let expId: ExperimentId;
 
+  const handlers = !isLiveMode ? createStatefulExperimentHandlers(BASE_URL) : [];
+
   beforeAll(async () => {
-    if (!isLiveMode) {
-      server.use(...createStatefulExperimentHandlers(BASE_URL));
-    }
+    if (!isLiveMode) server.use(...handlers);
     const meta = await fetchLiveMetadata(client);
     const data = buildExperimentData(meta, '_client');
     const created = await client.createExperiment(data as any);
     expId = created.id as ExperimentId;
+  });
+
+  beforeEach(() => {
+    if (!isLiveMode) server.use(...handlers);
   });
 
   afterAll(async () => {
