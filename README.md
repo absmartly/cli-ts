@@ -188,11 +188,13 @@ abs experiments archive 123 --unarchive
 
 # Metric results (--from/--to accept all date formats, see [date formats](#date-formats))
 abs experiments metrics list 123                         # list assigned metrics
-abs experiments metrics results 123                      # show results with CI bars
+abs experiments metrics results 123                      # show results with CI as [lower, upper]
+abs experiments metrics results 123 --ci-bar             # visual CI bar ╌╌╌┊╌══●══╌╌╌
 abs experiments metrics results 123 --metric 6           # any metric, even unassigned
-abs experiments metrics results 123 --segment 1          # segment breakdown (e.g. Device)
+abs experiments metrics results 123 --segment Device     # segment breakdown by name
+abs experiments metrics results 123 --segment Device Country  # multiple segments
+abs experiments metrics results 123 --filter '{"filter":[...]}' # raw segment filter JSON
 abs experiments metrics results 123 --from 7d --to now   # time range filter
-abs experiments metrics results 123 -o vertical          # one metric per block
 abs experiments metrics results 123 -o json              # programmatic metric access
 abs experiments metrics add 123 --metrics 1,2,3
 abs experiments metrics confirm-impact 123 456
@@ -202,6 +204,15 @@ abs experiments metrics include 123 456
 # Metric dependencies
 abs experiments metrics deps 145                         # show experiments using metric
 abs experiments metrics deps 145 -o json                 # as JSON
+```
+
+Impact values are colored by significance and metric effect direction:
+- **Green**: significant positive outcome (e.g. conversion rate up, or cancellations down)
+- **Red**: significant negative outcome (e.g. conversion rate down, or cancellations up)
+- **Purple**: significant but metric has unknown expected direction
+- **No color**: confidence interval crosses zero (result not statistically significant)
+
+```bash
 
 # Activity log
 abs experiments activity list 123
