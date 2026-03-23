@@ -18,7 +18,6 @@ const listCommand = createListCommand({
 const getCommand = new Command('get')
   .description('Get team details')
   .argument('<id>', 'team ID', parseTeamId)
-  .option('--raw', 'show full API response without summarizing')
   .option('--show <fields...>', 'include additional fields from API response')
   .option('--exclude <fields...>', 'hide fields from summary')
   .action(withErrorHandling(async (id: TeamId, options) => {
@@ -28,7 +27,7 @@ const getCommand = new Command('get')
     const exclude = (options.exclude as string[] | undefined) ?? [];
 
     const team = await client.getTeam(id);
-    const data = options.raw ? team : applyShowExclude(summarizeTeam(team as Record<string, unknown>), team as Record<string, unknown>, show, exclude);
+    const data = globalOptions.raw ? team : applyShowExclude(summarizeTeam(team as Record<string, unknown>), team as Record<string, unknown>, show, exclude);
     printFormatted(data, globalOptions);
   }));
 

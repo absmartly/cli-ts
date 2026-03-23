@@ -10,7 +10,6 @@ export const getCommand = new Command('get')
   .description('Get experiment details')
   .argument('<id>', 'experiment ID or name', parseExperimentIdOrName)
   .option('--activity', 'include activity notes in the output')
-  .option('--raw', 'show full API response without summarizing')
   .option('--show <fields...>', 'include additional fields in summary (e.g. --show audience archived)')
   .option('--exclude <fields...>', 'hide fields from summary (e.g. --exclude owners tags)')
   .option('--embed-screenshots', 'embed screenshots as base64 data URIs in template output')
@@ -194,7 +193,7 @@ export const getCommand = new Command('get')
     const excludeFields = (options.exclude as string[] | undefined) ?? [];
 
     let data: unknown;
-    if (options.raw) {
+    if (globalOptions.raw) {
       data = options.activity ? { ...experiment, activity: await client.listExperimentActivity(id) } : experiment;
     } else {
       let summary = summarizeExperiment(experiment as Record<string, unknown>, extraFields, excludeFields);

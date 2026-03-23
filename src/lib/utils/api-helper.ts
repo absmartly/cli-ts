@@ -59,6 +59,7 @@ export interface GlobalOptions extends Record<string, unknown> {
   profile?: string;
   terse?: boolean;
   full?: boolean;
+  raw?: boolean;
 }
 
 const VALID_FORMATS: OutputFormat[] = ['table', 'json', 'yaml', 'plain', 'markdown', 'rendered', 'template', 'vertical'];
@@ -86,6 +87,7 @@ export function getGlobalOptions(cmd: Command): GlobalOptions {
     profile: opts.profile,
     terse: opts.terse || false,
     full: opts.full || false,
+    raw: opts.raw || false,
   };
 }
 

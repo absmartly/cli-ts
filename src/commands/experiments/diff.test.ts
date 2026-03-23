@@ -126,13 +126,14 @@ describe('diff command', () => {
   });
 
   it('should diff raw API response with --raw', async () => {
+    vi.mocked(getGlobalOptions).mockReturnValue({ output: 'table', raw: true } as any);
     const exp1 = makeExperiment({ id: 1, audience: '{"filter":[]}' });
     const exp2 = makeExperiment({ id: 2, audience: '{"filter":["age>18"]}' });
     mockClient.getExperiment.mockImplementation((id: number) =>
       id === 1 ? Promise.resolve(exp1) : Promise.resolve(exp2),
     );
 
-    await diffCommand.parseAsync(['node', 'test', '1', '2', '--raw']);
+    await diffCommand.parseAsync(['node', 'test', '1', '2']);
 
     const rows = vi.mocked(printFormatted).mock.calls[0]![0] as Array<Record<string, string>>;
     const fields = rows.map(r => r.field);

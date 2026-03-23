@@ -62,7 +62,8 @@ program
   .option('-q, --quiet', 'minimal output')
   .option('--profile <name>', 'use specific profile')
   .option('--terse', 'show compact format with truncation')
-  .option('--full', 'show full text without truncation');
+  .option('--full', 'show full text without truncation')
+  .option('--raw', 'show raw API response without summarizing or transforming');
 
 program.addCommand(experimentsCommand);
 program.addCommand(authCommand);

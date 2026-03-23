@@ -24,7 +24,6 @@ const listCommand = createListCommand({
 const getCommand = new Command('get')
   .description('Get metric details')
   .argument('<id>', 'metric ID', parseMetricId)
-  .option('--raw', 'show full API response without summarizing')
   .option('--show <fields...>', 'include additional fields from API response')
   .option('--exclude <fields...>', 'hide fields from summary')
   .action(withErrorHandling(async (id: MetricId, options) => {
@@ -34,7 +33,7 @@ const getCommand = new Command('get')
     const exclude = (options.exclude as string[] | undefined) ?? [];
 
     const metric = await client.getMetric(id);
-    const data = options.raw ? metric : applyShowExclude(summarizeMetric(metric as Record<string, unknown>), metric as Record<string, unknown>, show, exclude);
+    const data = globalOptions.raw ? metric : applyShowExclude(summarizeMetric(metric as Record<string, unknown>), metric as Record<string, unknown>, show, exclude);
     printFormatted(data, globalOptions);
   }));
 

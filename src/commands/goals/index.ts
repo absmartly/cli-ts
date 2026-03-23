@@ -19,7 +19,6 @@ const listCommand = createListCommand({
 const getCommand = new Command('get')
   .description('Get goal details')
   .argument('<id>', 'goal ID', parseGoalId)
-  .option('--raw', 'show full API response without summarizing')
   .option('--show <fields...>', 'include additional fields from API response')
   .option('--exclude <fields...>', 'hide fields from summary')
   .action(withErrorHandling(async (id: GoalId, options) => {
@@ -29,7 +28,7 @@ const getCommand = new Command('get')
     const exclude = (options.exclude as string[] | undefined) ?? [];
 
     const goal = await client.getGoal(id);
-    const data = options.raw ? goal : applyShowExclude(summarizeGoal(goal as Record<string, unknown>), goal as Record<string, unknown>, show, exclude);
+    const data = globalOptions.raw ? goal : applyShowExclude(summarizeGoal(goal as Record<string, unknown>), goal as Record<string, unknown>, show, exclude);
     printFormatted(data, globalOptions);
   }));
 

@@ -104,7 +104,9 @@ describe('get command', () => {
   });
 
   it('should show raw response with --raw', async () => {
-    await getCommand.parseAsync(['node', 'test', '42', '--raw']);
+    vi.mocked(getGlobalOptions).mockReturnValue({ output: 'table', raw: true } as any);
+
+    await getCommand.parseAsync(['node', 'test', '42']);
 
     const data = vi.mocked(printFormatted).mock.calls[0]![0] as Record<string, unknown>;
     expect(data.applications).toBeDefined();
@@ -122,10 +124,10 @@ describe('get command', () => {
     expect(data.applications).toBeUndefined();
   });
 
-  it('should show raw response with --raw', async () => {
-    vi.mocked(getGlobalOptions).mockReturnValue({ output: 'json' } as any);
+  it('should show raw response with --raw -o json', async () => {
+    vi.mocked(getGlobalOptions).mockReturnValue({ output: 'json', raw: true } as any);
 
-    await getCommand.parseAsync(['node', 'test', '42', '--raw']);
+    await getCommand.parseAsync(['node', 'test', '42']);
 
     const data = vi.mocked(printFormatted).mock.calls[0]![0] as Record<string, unknown>;
     expect(data.applications).toBeDefined();

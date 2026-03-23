@@ -44,7 +44,6 @@ export const listCommand = new Command('list')
   .option('--sort <field>', 'sort by field (e.g. created_at, name, state)')
   .option('--asc', 'sort in ascending order')
   .option('--desc', 'sort in descending order')
-  .option('--raw', 'show full API response without summarizing')
   .option('--show <fields...>', 'include additional fields (e.g. --show experiment_report archived)')
   .option('--exclude <fields...>', 'hide fields (e.g. --exclude primary_metric owner)')
   .action(withErrorHandling(async (options) => {
@@ -106,7 +105,7 @@ export const listCommand = new Command('list')
 
     const experiments = await client.listExperiments(listOptions);
 
-    if (options.raw) {
+    if (globalOptions.raw) {
       printFormatted(experiments, globalOptions);
     } else {
       const extraFields = (options.show as string[] | undefined) ?? [];

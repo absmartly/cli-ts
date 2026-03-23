@@ -31,7 +31,6 @@ const listCommand = addPaginationOptions(
   new Command('list')
     .description('List all users')
     .option('--include-archived', 'include archived users')
-    .option('--raw', 'show full API response without summarizing')
     .option('--show <fields...>', 'include additional fields from API response')
     .option('--exclude <fields...>', 'hide fields from summary')
     .option('--show-avatars [cols]', 'display avatars inline, optional width in columns (default: 10)', parseInt),
@@ -42,7 +41,7 @@ const listCommand = addPaginationOptions(
     const exclude = (options.exclude as string[] | undefined) ?? [];
 
     const users = await client.listUsers({ includeArchived: options.includeArchived, items: options.items, page: options.page });
-    const data = options.raw ? users : (users as Array<Record<string, unknown>>).map(u => applyShowExclude(summarizeUserRow(u), u, show, exclude));
+    const data = globalOptions.raw ? users : (users as Array<Record<string, unknown>>).map(u => applyShowExclude(summarizeUserRow(u), u, show, exclude));
     printFormatted(data, globalOptions);
     printPaginationFooter(users.length, options.items, options.page, globalOptions.output as string);
 
@@ -55,7 +54,6 @@ const listCommand = addPaginationOptions(
 const getCommand = new Command('get')
   .description('Get user details')
   .argument('<id>', 'user ID', parseUserId)
-  .option('--raw', 'show full API response without summarizing')
   .option('--show <fields...>', 'include additional fields from API response')
   .option('--exclude <fields...>', 'hide fields from summary')
   .option('--show-avatars [cols]', 'display avatar inline, optional width in columns (default: 15)', parseInt)
@@ -66,7 +64,7 @@ const getCommand = new Command('get')
     const exclude = (options.exclude as string[] | undefined) ?? [];
 
     const user = await client.getUser(id);
-    const data = options.raw ? user : applyShowExclude(summarizeUserDetail(user as Record<string, unknown>), user as Record<string, unknown>, show, exclude);
+    const data = globalOptions.raw ? user : applyShowExclude(summarizeUserDetail(user as Record<string, unknown>), user as Record<string, unknown>, show, exclude);
     printFormatted(data, globalOptions);
 
     if (options.showAvatars !== undefined) {

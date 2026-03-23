@@ -9,7 +9,6 @@ export const diffCommand = new Command('diff')
   .argument('<id1>', 'first experiment ID or name', parseExperimentIdOrName)
   .argument('[id2]', 'second experiment ID or name (optional if using --iteration)', (v) => parseExperimentIdOrName(v))
   .option('--iteration <n>', 'compare with iteration number n', parseInt)
-  .option('--raw', 'diff full API response instead of summary')
   .action(withErrorHandling(async (nameOrId1: string, nameOrId2: string | undefined, options) => {
     const globalOptions = getGlobalOptions(diffCommand);
     const client = await getAPIClientFromOptions(globalOptions);
@@ -39,10 +38,10 @@ export const diffCommand = new Command('diff')
       exp2 = await client.getExperiment(id2) as Record<string, unknown>;
     }
 
-    const left = options.raw
+    const left = globalOptions.raw
       ? exp1 as Record<string, unknown>
       : summarizeExperiment(exp1 as Record<string, unknown>);
-    const right = options.raw
+    const right = globalOptions.raw
       ? exp2
       : summarizeExperiment(exp2);
 

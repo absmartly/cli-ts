@@ -47,7 +47,6 @@ describe('createListCommand', () => {
     const optionNames = cmd.options.map(o => o.long);
     expect(optionNames).toContain('--items');
     expect(optionNames).toContain('--page');
-    expect(optionNames).toContain('--raw');
     expect(optionNames).toContain('--show');
     expect(optionNames).toContain('--exclude');
   });

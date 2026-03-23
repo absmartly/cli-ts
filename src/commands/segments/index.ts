@@ -20,7 +20,6 @@ const listCommand = createListCommand({
 const getCommand = new Command('get')
   .description('Get segment details')
   .argument('<id>', 'segment ID', parseSegmentId)
-  .option('--raw', 'show full API response without summarizing')
   .option('--show <fields...>', 'include additional fields from API response')
   .option('--exclude <fields...>', 'hide fields from summary')
   .action(withErrorHandling(async (id: SegmentId, options) => {
@@ -30,7 +29,7 @@ const getCommand = new Command('get')
     const exclude = (options.exclude as string[] | undefined) ?? [];
 
     const segment = await client.getSegment(id);
-    const data = options.raw ? segment : applyShowExclude(summarizeSegment(segment as Record<string, unknown>), segment as Record<string, unknown>, show, exclude);
+    const data = globalOptions.raw ? segment : applyShowExclude(summarizeSegment(segment as Record<string, unknown>), segment as Record<string, unknown>, show, exclude);
     printFormatted(data, globalOptions);
   }));
 

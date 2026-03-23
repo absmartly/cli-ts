@@ -18,7 +18,6 @@ export function createListCommand(opts: ListCommandOptions): Command {
   if (opts.extraOptions) cmd = opts.extraOptions(cmd);
 
   cmd = addPaginationOptions(cmd, opts.defaultItems ?? 20)
-    .option('--raw', 'show full API response without summarizing')
     .option('--show <fields...>', 'include additional fields from API response')
     .option('--exclude <fields...>', 'hide fields from summary');
 
@@ -31,7 +30,7 @@ export function createListCommand(opts: ListCommandOptions): Command {
     const items = await opts.fetch(client, options);
 
     let data: unknown;
-    if (options.raw || !opts.summarizeRow) {
+    if (globalOptions.raw || !opts.summarizeRow) {
       data = items;
     } else {
       data = (items as Array<Record<string, unknown>>).map(item =>
