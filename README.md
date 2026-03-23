@@ -83,7 +83,7 @@ These options are available on every command:
 | `--endpoint <url>` | Override API endpoint |
 | `--app <name>` | Override default application |
 | `--env <name>` | Override default environment |
-| `-o, --output <format>` | Output format: `table` (default), `json`, `yaml`, `plain`, `markdown`, `vertical`, `template` |
+| `-o, --output <format>` | Output format: `table` (default), `json`, `yaml`, `plain`, `markdown`, `rendered`, `vertical`, `template` |
 | `--no-color` | Disable colored output |
 | `-v, --verbose` | Verbose output |
 | `-q, --quiet` | Minimal output |
@@ -100,6 +100,8 @@ Full lifecycle management for A/B tests and feature flags.
 Aliases: `experiments`, `experiment`, `exp`, `features`, `feature`
 
 Use `abs features` instead of `abs experiments` to auto-filter by `type=feature`.
+
+All experiment commands accept **names or IDs** — e.g. `abs experiments get checkout_redesign` resolves the name to the latest iteration's ID automatically.
 
 ```bash
 # List experiments with filters and pagination
@@ -288,11 +290,14 @@ All `list` and `get` commands return summarized output by default. Use `--raw` f
 ```bash
 abs experiments get 123 -o json                          # clean summary as JSON
 abs experiments get 123 -o json --raw                    # full API response
+abs experiments get 123 -o rendered                      # terminal-rendered markdown with styling
 abs experiments list --show experiment_report archived    # add extra fields
 abs experiments list --exclude owner impact confidence    # hide fields
 abs metrics list --show description --exclude effect      # works on all entities
 abs goals get 1 --show created_by_user_id
 ```
+
+The `rendered` format outputs terminal-styled markdown with bold, tables, syntax-highlighted code blocks, ● bullets, and │ blockquotes.
 
 #### Experiment list filters
 
@@ -356,7 +361,7 @@ abs experiments list --created-after 2024-01-01          # since Jan 1 2024
 
 ### Activity feed
 
-Global activity feed across all experiments.
+Global activity feed across all experiments. Scans recent experiments and aggregates their activity notes.
 
 Aliases: `activity-feed`
 
@@ -364,13 +369,26 @@ Aliases: `activity-feed`
 # List recent activity
 abs activity-feed list
 abs activity-feed list --since 7d
-abs activity-feed list --state running --items 10
+abs activity-feed list --search checkout_redesign         # filter by experiment name
+abs activity-feed list --state running --experiments 100   # scan more experiments
+abs activity-feed list --limit 50                          # show more entries
+
+# Show rendered markdown notes (bold, code, tables, mentions resolved to names)
+abs activity-feed list --notes
+abs activity-feed list --notes --show-images               # inline images in notes
 
 # Watch activity in real-time
-abs activity-feed watch
-abs activity-feed watch --interval 30
+abs activity-feed watch --notes
+abs activity-feed watch --interval 10 --notes
 abs activity-feed watch --state running
+
+# Per-experiment activity (also accepts names)
+abs experiments activity list checkout_redesign --notes
+abs experiments activity list checkout_redesign --notes --show-images
+abs experiments activity create checkout_redesign --note "Deployed to staging"
 ```
+
+Notes render with full markdown support via `marked-terminal`: **bold**, *italic*, `code`, tables, ● bullets, │ blockquotes, syntax-highlighted code blocks, and @mention resolution (user/team names).
 
 ### Feature flags
 
