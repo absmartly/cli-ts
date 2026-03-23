@@ -9,6 +9,7 @@ export const watchCommand = new Command('watch')
   .description('Watch live metric results for a running experiment')
   .argument('<id>', 'experiment ID or name', parseExperimentIdOrName)
   .option('--interval <seconds>', 'poll interval in seconds', '60')
+  .option('--variant-index', 'use variant index (0, 1, 2) instead of names')
   .action(withErrorHandling(async (nameOrId: string, options) => {
     const globalOptions = getGlobalOptions(watchCommand);
     const client = await getAPIClientFromOptions(globalOptions);
@@ -49,7 +50,7 @@ export const watchCommand = new Command('watch')
         if (useRaw) {
           printFormatted(results, globalOptions);
         } else {
-          const rows = results.flatMap(r => formatResultRows(r, variantNames));
+          const rows = results.flatMap(r => formatResultRows(r, variantNames, { variantIndex: options.variantIndex }));
           printFormatted(rows, globalOptions);
         }
 

@@ -172,6 +172,27 @@ describe('formatResultRows', () => {
     expect(rows[0]!['Variant A count']).toBeDefined();
     expect(rows[0]!['Variant B count']).toBeDefined();
   });
+
+  it('should use variant index when variantIndex option is true', () => {
+    const names = new Map<number, string>([[0, 'control'], [1, 'A'], [2, 'B']]);
+    const result: MetricResult = {
+      metric_id: 1,
+      name: 'metric',
+      type: 'secondary',
+      variants: [
+        { variant: 0, unit_count: 500, impact: null, impact_lower: null, impact_upper: null, pvalue: null, mean: 1.0, count: 50, variance: 0.1, abs_impact: null, abs_impact_lower: null, abs_impact_upper: null },
+        { variant: 1, unit_count: 500, impact: 0.03, impact_lower: 0.01, impact_upper: 0.05, pvalue: 0.04, mean: 1.1, count: 55, variance: 0.2, abs_impact: null, abs_impact_lower: null, abs_impact_upper: null },
+        { variant: 2, unit_count: 500, impact: -0.01, impact_lower: -0.03, impact_upper: 0.01, pvalue: 0.5, mean: 0.99, count: 48, variance: 0.15, abs_impact: null, abs_impact_lower: null, abs_impact_upper: null },
+      ],
+    };
+    const rows = formatResultRows(result, names, { variantIndex: true });
+    expect(rows).toHaveLength(2);
+    expect(rows[0]!.variant).toBe('v1');
+    expect(rows[1]!.variant).toBe('v2');
+    expect(rows[0]!['v0 count']).toBeDefined();
+    expect(rows[0]!['v1 count']).toBeDefined();
+    expect(rows[1]!['v2 count']).toBeDefined();
+  });
 });
 
 describe('formatResultRow', () => {

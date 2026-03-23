@@ -71,13 +71,14 @@ export function parseMetricData(
   }));
 }
 
-function variantLabel(idx: number, variantNames: Map<number, string>): string {
+function variantLabel(idx: number, variantNames: Map<number, string>, useIndex?: boolean): string {
+  if (useIndex) return `v${idx}`;
   const name = variantNames.get(idx);
   if (name) return name;
   return `Variant ${String.fromCharCode(65 + idx)}`;
 }
 
-export function formatResultRows(r: MetricResult, variantNames: Map<number, string>, options?: { ciBar?: boolean }): Record<string, unknown>[] {
+export function formatResultRows(r: MetricResult, variantNames: Map<number, string>, options?: { ciBar?: boolean; variantIndex?: boolean }): Record<string, unknown>[] {
   const control = r.variants.find(v => v.variant === 0);
   const treatments = r.variants.filter(v => v.variant > 0);
   if (treatments.length === 0) {
@@ -86,14 +87,15 @@ export function formatResultRows(r: MetricResult, variantNames: Map<number, stri
 
   const formatNum = (n: number | null) => n !== null ? n.toLocaleString(undefined, { maximumFractionDigits: 4 }) : '';
   const formatMean = (n: number | null) => n !== null ? n.toLocaleString(undefined, { maximumFractionDigits: 6 }) : '';
-  const controlLabel = variantLabel(0, variantNames);
+  const useIndex = options?.variantIndex;
+  const controlLabel = variantLabel(0, variantNames, useIndex);
 
   return treatments.map(treatment => {
     const confidence = treatment.pvalue !== null
       ? formatConfidenceValue(treatment.pvalue)
       : '';
 
-    const tLabel = variantLabel(treatment.variant, variantNames);
+    const tLabel = variantLabel(treatment.variant, variantNames, useIndex);
 
     const row: Record<string, unknown> = {
       metric: r.name,
