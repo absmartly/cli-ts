@@ -186,9 +186,12 @@ abs experiments archive 123
 abs experiments archive 123 --note "Cleaning up old experiments"
 abs experiments archive 123 --unarchive
 
-# Metric results
+# Metric results (--from/--to accept all date formats, see [date formats](#date-formats))
 abs experiments metrics list 123                         # list assigned metrics
 abs experiments metrics results 123                      # show results with CI bars
+abs experiments metrics results 123 --metric 6           # any metric, even unassigned
+abs experiments metrics results 123 --segment 1          # segment breakdown (e.g. Device)
+abs experiments metrics results 123 --from 7d --to now   # time range filter
 abs experiments metrics results 123 -o vertical          # one metric per block
 abs experiments metrics results 123 -o json              # programmatic metric access
 abs experiments metrics add 123 --metrics 1,2,3
@@ -373,7 +376,7 @@ abs events list --from 2w --to yesterday
 
 ### Activity feed
 
-Global activity feed across all experiments. Scans recent experiments and aggregates their activity notes.
+Global activity feed across all experiments. Scans recent experiments and aggregates their activity notes. `--since` accepts all [date formats](#date-formats).
 
 Aliases: `activity-feed`
 
@@ -697,7 +700,7 @@ abs custom-sections reorder --sections "1:0,2:1,3:2"
 
 ### Events
 
-View and manage event tracking data.
+View and manage event tracking data. `--from`/`--to` accept all [date formats](#date-formats).
 
 Aliases: `events`, `event`
 
@@ -713,7 +716,7 @@ abs events json-layouts --source unit_attribute --phase after_enrichment
 
 ### Insights
 
-View experiment velocity and decision analytics.
+View experiment velocity and decision analytics. `--from`/`--to` accept ISO dates (see [date formats](#date-formats)).
 
 Aliases: `insights`, `insight`
 
