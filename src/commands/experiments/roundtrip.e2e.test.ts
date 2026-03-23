@@ -1,10 +1,11 @@
-import { describe, it, expect, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { createAPIClient } from '../../lib/api/client.js';
 import { parseExperimentMarkdown } from '../../api-client/template/parser.js';
 import { experimentToMarkdown } from '../../api-client/template/serializer.js';
 import { buildExperimentPayload } from '../../api-client/payload/builder.js';
 import { isLiveMode, TEST_BASE_URL, TEST_API_KEY } from '../../test/helpers/test-config.js';
-import { fetchLiveMetadata, buildExperimentData } from '../../test/helpers/live-helpers.js';
+import { fetchLiveMetadata } from '../../test/helpers/live-helpers.js';
+import { createStatefulExperimentHandlers } from '../../test/helpers/stateful-handlers.js';
 import type { ResolverContext } from '../../api-client/payload/resolver.js';
 
 const client = createAPIClient(TEST_BASE_URL, TEST_API_KEY);
@@ -22,6 +23,12 @@ describe('experiment round-trip: create → export → modify → update', () =>
   let context: ResolverContext;
   let experimentId: number;
   let exportedMarkdown: string;
+
+  beforeAll(async () => {
+    if (isLiveMode) return;
+    const { server } = await import('../../test/mocks/server.js');
+    server.use(...createStatefulExperimentHandlers(TEST_BASE_URL));
+  });
 
   it('should build resolver context from API', async () => {
     const [apps, unitTypes, metrics, goals, customFields] = await Promise.all([
@@ -84,18 +91,12 @@ description: Testing the full roundtrip flow
     expect(template.display_name).toBe('Roundtrip E2E Test');
     expect(template.variants).toHaveLength(2);
 
-    let payload: Record<string, unknown>;
-    if (isLiveMode) {
-      const meta = await fetchLiveMetadata(client);
-      const result = await buildExperimentPayload(template, context);
-      payload = result.payload;
-      payload.owners = [{ user_id: meta.userId }];
-      if (Object.keys(meta.customFieldValues).length > 0) {
-        payload.custom_section_field_values = meta.customFieldValues;
-      }
-    } else {
-      const result = await buildExperimentPayload(template, context);
-      payload = result.payload;
+    const meta = await fetchLiveMetadata(client);
+    const result = await buildExperimentPayload(template, context);
+    const payload = result.payload;
+    payload.owners = [{ user_id: meta.userId }];
+    if (Object.keys(meta.customFieldValues).length > 0) {
+      payload.custom_section_field_values = meta.customFieldValues;
     }
 
     const created = await client.createExperiment(payload);
@@ -141,29 +142,21 @@ description: Testing the full roundtrip flow
 
     const updated = await client.updateExperiment(experimentId, updateData);
     expect(updated.id).toBe(experimentId);
-
-    if (isLiveMode) {
-      expect(updated.display_name).toBe('Updated Roundtrip Test');
-      expect(updated.percentage_of_traffic).toBe(60);
-    }
+    expect(updated.display_name).toBe('Updated Roundtrip Test');
+    expect(updated.percentage_of_traffic).toBe(60);
   });
 
   it('should verify update persisted by re-fetching', async () => {
     const experiment = await client.getExperiment(experimentId);
 
     expect(experiment.id).toBe(experimentId);
-
-    if (isLiveMode) {
-      expect(experiment.display_name).toBe('Updated Roundtrip Test');
-      expect(experiment.percentage_of_traffic).toBe(60);
-    }
+    expect(experiment.display_name).toBe('Updated Roundtrip Test');
+    expect(experiment.percentage_of_traffic).toBe(60);
 
     const reExportedMd = await experimentToMarkdown(experiment as any);
     const reParsed = parseExperimentMarkdown(reExportedMd);
 
-    if (isLiveMode) {
-      expect(reParsed.display_name).toBe('Updated Roundtrip Test');
-      expect(reParsed.percentage_of_traffic).toBe(60);
-    }
+    expect(reParsed.display_name).toBe('Updated Roundtrip Test');
+    expect(reParsed.percentage_of_traffic).toBe(60);
   });
 });

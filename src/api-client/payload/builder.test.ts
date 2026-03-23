@@ -171,7 +171,7 @@ describe('buildExperimentPayload', () => {
       };
 
       const { payload } = await buildExperimentPayload(template, baseContext);
-      expect(payload.variant_screenshots).toBeUndefined();
+      expect(payload.variant_screenshots).toEqual([]);
     });
   });
 

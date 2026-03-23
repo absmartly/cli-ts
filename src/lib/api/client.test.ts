@@ -4,6 +4,7 @@ import { server } from '../../test/mocks/server.js';
 import { http, HttpResponse } from 'msw';
 import { isLiveMode, TEST_BASE_URL, TEST_API_KEY } from '../../test/helpers/test-config.js';
 import { fetchLiveMetadata, buildExperimentData } from '../../test/helpers/live-helpers.js';
+import { createStatefulExperimentHandlers } from '../../test/helpers/stateful-handlers.js';
 import type { ExperimentId } from './branded-types.js';
 
 const BASE_URL = TEST_BASE_URL;
@@ -14,6 +15,9 @@ describe('APIClient', () => {
   let expId: ExperimentId;
 
   beforeAll(async () => {
+    if (!isLiveMode) {
+      server.use(...createStatefulExperimentHandlers(BASE_URL));
+    }
     const meta = await fetchLiveMetadata(client);
     const data = buildExperimentData(meta, '_client');
     const created = await client.createExperiment(data as any);
@@ -75,23 +79,10 @@ describe('APIClient', () => {
 
   describe('updateExperiment', () => {
     it('should send update and return unwrapped experiment with merged fields', async () => {
-      server.use(
-        http.put(`${BASE_URL}/experiments/:id`, async ({ params, request }) => {
-          const body = await request.json() as Record<string, unknown>;
-          const data = (typeof body.data === 'object' && body.data !== null) ? body.data as Record<string, unknown> : {};
-          return HttpResponse.json({
-            ok: true,
-            experiment: { id: Number(params.id), name: 'test', display_name: data.display_name ?? 'default', state: 'created' },
-            errors: [],
-          });
-        })
-      );
-
       const experiment = await client.updateExperiment(expId, { display_name: 'Updated Name' });
 
       expect(experiment.id).toBe(expId);
-      expect(experiment).toHaveProperty('display_name');
-      if (isLiveMode) expect(experiment.display_name).toBe('Updated Name');
+      expect(experiment.display_name).toBe('Updated Name');
       expect(experiment).not.toHaveProperty('ok');
     });
   });
@@ -102,6 +93,17 @@ describe('APIClient', () => {
     });
 
     it('should throw on invalid API key', async () => {
+      if (!isLiveMode) {
+        server.use(
+          http.get(`${BASE_URL}/experiments`, ({ request }) => {
+            const auth = request.headers.get('Authorization') ?? '';
+            if (auth.includes('invalid-key')) {
+              return HttpResponse.json({ error: 'Unauthorized' }, { status: 401 });
+            }
+            return HttpResponse.json({ experiments: [] });
+          }),
+        );
+      }
       const badClient = createAPIClient(BASE_URL, 'invalid-key-that-does-not-exist');
       await expect(badClient.listExperiments()).rejects.toThrow(/Unauthorized/);
     });

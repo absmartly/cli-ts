@@ -4,6 +4,7 @@ import { server } from '../../test/mocks/server.js';
 import { createAPIClient } from './client.js';
 import { isLiveMode, TEST_BASE_URL, TEST_API_KEY } from '../../test/helpers/test-config.js';
 import { fetchLiveMetadata, buildExperimentData } from '../../test/helpers/live-helpers.js';
+import { createStatefulExperimentHandlers } from '../../test/helpers/stateful-handlers.js';
 import type { ExperimentId } from './branded-types.js';
 
 const BASE_URL = TEST_BASE_URL;
@@ -15,6 +16,9 @@ describe('APIClient - Experiments', () => {
   let expName: string;
 
   beforeAll(async () => {
+    if (!isLiveMode) {
+      server.use(...createStatefulExperimentHandlers(BASE_URL));
+    }
     const meta = await fetchLiveMetadata(client);
     const data = buildExperimentData(meta);
     expName = data.name;
@@ -102,23 +106,9 @@ describe('APIClient - Experiments', () => {
 
   describe('updateExperiment', () => {
     it('should send update data and extract experiment from response', async () => {
-      server.use(
-        http.put(`${BASE_URL}/experiments/:id`, async ({ params, request }) => {
-          const body = await request.json() as Record<string, unknown>;
-          const inputData = (typeof body.data === 'object' && body.data !== null) ? body.data as Record<string, unknown> : {};
-          return HttpResponse.json({
-            ok: true,
-            experiment: { id: Number(params.id), name: 'test', display_name: inputData.display_name ?? 'default', state: 'created' },
-            errors: [],
-          });
-        })
-      );
-
-      const data = { display_name: 'Updated Name' };
-      const experiment = await client.updateExperiment(expId, data);
+      const experiment = await client.updateExperiment(expId, { display_name: 'Updated Name' });
       expect(experiment.id).toBe(expId);
-      expect(experiment).toHaveProperty('display_name');
-      if (isLiveMode) expect(experiment.display_name).toBe('Updated Name');
+      expect(experiment.display_name).toBe('Updated Name');
     });
 
     it.runIf(isLiveMode)('should transition experiment to ready state', async () => {

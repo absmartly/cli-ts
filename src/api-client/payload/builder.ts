@@ -208,9 +208,7 @@ export async function buildExperimentPayload(
   };
 
   const builtScreenshots = await buildVariantScreenshots(template, warnings);
-  if (builtScreenshots.length > 0) {
-    payload.variant_screenshots = builtScreenshots;
-  }
+  payload.variant_screenshots = builtScreenshots;
 
   if (template.application) {
     const app = resolveByName(context.applications, template.application, 'Application');
