@@ -1,6 +1,17 @@
+import chalk from 'chalk';
 import type { APIClient } from './api-client.js';
 import type { ExperimentId } from './types.js';
 import { renderCIBar, formatPct, formatConfidenceValue, formatOwnerLabel } from './format-helpers.js';
+
+function colorByEffect(text: string, impact: number, effect?: string): string {
+  if (effect === 'negative') {
+    return impact < 0 ? chalk.green(text) : impact > 0 ? chalk.red(text) : text;
+  }
+  if (effect === 'positive') {
+    return impact > 0 ? chalk.green(text) : impact < 0 ? chalk.red(text) : text;
+  }
+  return impact !== 0 ? chalk.yellow(text) : text;
+}
 
 export interface VariantResult {
   segment?: string;
@@ -22,6 +33,7 @@ export interface MetricResult {
   metric_id: number;
   name: string;
   type: string;
+  effect?: string;
   variants: VariantResult[];
 }
 
@@ -103,7 +115,7 @@ export function formatResultRows(r: MetricResult, variantNames: Map<number, stri
       type: r.type,
       ...(treatment.segment !== undefined && { segment: treatment.segment }),
       variant: tLabel,
-      impact: treatment.impact !== null ? `${formatPct(treatment.impact)} ${ci}` : '',
+      impact: treatment.impact !== null ? colorByEffect(`${formatPct(treatment.impact)} ${ci}`, treatment.impact, r.effect) : '',
       confidence,
       samples: treatment.unit_count.toLocaleString(),
     };
@@ -131,6 +143,7 @@ export interface MetricInfo {
   id: number;
   name: string;
   type: string;
+  effect?: string;
 }
 
 export function extractMetricInfos(experiment: Record<string, unknown>): MetricInfo[] {
@@ -138,7 +151,7 @@ export function extractMetricInfos(experiment: Record<string, unknown>): MetricI
   const primaryMetric = experiment.primary_metric as Record<string, unknown> | undefined;
   const primaryMetricId = experiment.primary_metric_id as number | undefined;
   if (primaryMetricId && primaryMetric) {
-    infos.push({ id: primaryMetricId, name: primaryMetric.name as string, type: 'primary' });
+    infos.push({ id: primaryMetricId, name: primaryMetric.name as string, type: 'primary', effect: primaryMetric.effect as string });
   }
   const secondaryMetrics = experiment.secondary_metrics as Array<Record<string, unknown>> | undefined;
   if (secondaryMetrics) {
@@ -148,6 +161,7 @@ export function extractMetricInfos(experiment: Record<string, unknown>): MetricI
         id: m.metric_id as number,
         name: (metric?.name as string) || String(m.metric_id),
         type: (m.type as string) || 'secondary',
+        effect: metric?.effect as string,
       });
     }
   }
@@ -180,7 +194,9 @@ export async function fetchAllMetricResults(
     const info = metricInfos[i]!;
     const data = allData[i]!;
     const parsed = parseMetricData(info.id, data);
-    results.push({ metric_id: info.id, name: info.name, type: info.type, variants: parsed });
+    const result: MetricResult = { metric_id: info.id, name: info.name, type: info.type, variants: parsed };
+    if (info.effect) result.effect = info.effect;
+    results.push(result);
   }
   return results;
 }
