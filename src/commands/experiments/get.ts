@@ -3,6 +3,7 @@ import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHan
 import { experimentToMarkdown } from '../../api-client/template/serializer.js';
 import { summarizeExperiment } from '../../api-client/experiment-summary.js';
 import { fetchAndDisplayImage, supportsInlineImages } from '../../lib/utils/terminal-image.js';
+import { formatNoteText } from '../activity/index.js';
 import { parseExperimentIdOrName } from './resolve-id.js';
 
 export const getCommand = new Command('get')
@@ -22,15 +23,18 @@ export const getCommand = new Command('get')
 
     const experiment = await client.getExperiment(id);
 
-    if (globalOptions.output === 'template') {
-      const needsAuth = options.embedScreenshots || options.screenshotsDir;
+    if (globalOptions.output === 'template' || globalOptions.output === 'rendered') {
       const md = await experimentToMarkdown(experiment, {
         embedScreenshots: options.embedScreenshots,
         screenshotsDir: options.screenshotsDir,
         apiEndpoint: resolveEndpoint(globalOptions),
-        ...(needsAuth && { apiKey: await resolveAPIKey(globalOptions) }),
+        ...((options.embedScreenshots || options.screenshotsDir) && { apiKey: await resolveAPIKey(globalOptions) }),
       });
-      console.log(md);
+      if (globalOptions.output === 'rendered') {
+        console.log(formatNoteText(md));
+      } else {
+        console.log(md);
+      }
       return;
     }
 
