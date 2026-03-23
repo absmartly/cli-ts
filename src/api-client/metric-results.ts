@@ -3,6 +3,7 @@ import type { ExperimentId } from './types.js';
 import { renderCIBar, formatPct, formatConfidenceValue, formatOwnerLabel } from './format-helpers.js';
 
 export interface VariantResult {
+  segment?: string;
   variant: number;
   unit_count: number;
   impact: number | null;
@@ -47,10 +48,13 @@ export function parseMetricData(
   const absImpactLIdx = col('_abs_impact_ci_lower');
   const absImpactUIdx = col('_abs_impact_ci_upper');
 
+  const segmentIdx = cols.findIndex(c => c.startsWith('segment_'));
+
   const num = (row: unknown[], idx: number): number | null =>
     idx >= 0 ? (row[idx] as number | null) : null;
 
   return data.rows.map(row => ({
+    ...(segmentIdx >= 0 && { segment: row[segmentIdx] as string }),
     variant: row[variantIdx] as number,
     unit_count: row[unitIdx] as number,
     impact: num(row, impactIdx),
@@ -97,6 +101,7 @@ export function formatResultRows(r: MetricResult, variantNames: Map<number, stri
     const row: Record<string, unknown> = {
       metric: r.name,
       type: r.type,
+      ...(treatment.segment !== undefined && { segment: treatment.segment }),
       variant: tLabel,
       impact: treatment.impact !== null ? `${formatPct(treatment.impact)} ${ci}` : '',
       confidence,

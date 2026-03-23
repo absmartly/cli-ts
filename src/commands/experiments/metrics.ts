@@ -108,10 +108,10 @@ const resultsCommand = new Command('results')
   .description('Show metric results for an experiment')
   .argument('<id>', 'experiment ID or name', parseExperimentIdOrName)
   .option('--metric <id>', 'specific metric ID (can query any metric, not just assigned ones)', parseInt)
-  .option('--segment <id>', 'segment ID for breakdown', parseInt)
-  .option('--segment-filter <json>', 'segment filter JSON')
-  .option('--from <date>', 'start time filter (e.g. 7d, 2w, 2026-01-01, epoch ms)')
-  .option('--to <date>', 'end time filter (e.g. 7d, 2w, 2026-01-01, epoch ms)')
+  .option('--segment <name-or-id>', 'segment name or ID for breakdown (e.g. Device, Country, 1)')
+  .option('--filter <json>', 'raw segment filter JSON payload')
+  .option('--from <date>', 'start time filter (see date formats)')
+  .option('--to <date>', 'end time filter (see date formats)')
   .action(withErrorHandling(async (nameOrId: string, options) => {
     const globalOptions = getGlobalOptions(resultsCommand);
     const client = await getAPIClientFromOptions(globalOptions);
@@ -122,8 +122,24 @@ const resultsCommand = new Command('results')
     const variantNames = extractVariantNames(exp);
 
     const queryBody: Record<string, unknown> = {};
-    if (options.segment) queryBody.segment_id = options.segment;
-    if (options.segmentFilter) queryBody.filters = { segments: options.segmentFilter };
+
+    if (options.segment) {
+      const segRef = options.segment as string;
+      const asInt = parseInt(segRef, 10);
+      if (!isNaN(asInt) && String(asInt) === segRef.trim()) {
+        queryBody.segment_id = asInt;
+      } else {
+        const segments = await client.listSegments(200, 1);
+        const match = segments.find(s => (s as Record<string, unknown>).name?.toString().toLowerCase() === segRef.toLowerCase());
+        if (!match) {
+          const available = segments.map(s => `  ${s.id} ${(s as Record<string, unknown>).name}`).join('\n');
+          throw new Error(`Segment "${segRef}" not found. Available segments:\n${available}`);
+        }
+        queryBody.segment_id = match.id;
+      }
+    }
+
+    if (options.filter) queryBody.filters = { segments: options.filter };
     const fromTs = parseDateFlagOrUndefined(options.from);
     const toTs = parseDateFlagOrUndefined(options.to);
     if (fromTs !== undefined || toTs !== undefined) {
