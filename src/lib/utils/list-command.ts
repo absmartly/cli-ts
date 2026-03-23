@@ -1,5 +1,6 @@
 import { Command } from 'commander';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from './api-helper.js';
+import { isStdoutPiped } from './stdin.js';
 import { addPaginationOptions, printPaginationFooter } from './pagination.js';
 import { applyShowExclude } from '../../api-client/entity-summary.js';
 import type { APIClient } from '../../api-client/api-client.js';
@@ -28,6 +29,11 @@ export function createListCommand(opts: ListCommandOptions): Command {
     const exclude = (options.exclude as string[] | undefined) ?? [];
 
     const items = await opts.fetch(client, options);
+
+    if (isStdoutPiped() && globalOptions.output === 'table') {
+      for (const item of items) console.log((item as Record<string, unknown>).id);
+      return;
+    }
 
     let data: unknown;
     if (globalOptions.raw || !opts.summarizeRow) {

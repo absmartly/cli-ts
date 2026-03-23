@@ -3,6 +3,7 @@ import chalk from 'chalk';
 import { select } from '@inquirer/prompts';
 import { getAPIClientFromOptions, getGlobalOptions, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseExperimentIdOrName } from './resolve-id.js';
+import { isStdinPiped, isStdoutPiped, readLinesFromStdin } from '../../lib/utils/stdin.js';
 
 const VALID_REASONS = [
   'hypothesis_rejected', 'hypothesis_iteration', 'user_feedback', 'data_issue',
@@ -12,20 +13,30 @@ const VALID_REASONS = [
 ] as const;
 
 export const stopCommand = new Command('stop')
-  .description('Stop experiment')
-  .argument('<id>', 'experiment ID or name', parseExperimentIdOrName)
+  .description('Stop experiment(s). Reads IDs from stdin when piped.')
+  .argument('[id]', 'experiment ID or name', parseExperimentIdOrName)
   .option('--reason <reason>', 'reason for stopping')
   .option('--note <text>', 'activity log note')
-  .action(withErrorHandling(async (nameOrId: string, options) => {
+  .action(withErrorHandling(async (nameOrId: string | undefined, options) => {
     const globalOptions = getGlobalOptions(stopCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    const id = await client.resolveExperimentId(nameOrId);
+    const ids: string[] = nameOrId ? [nameOrId] : isStdinPiped() ? await readLinesFromStdin() : [];
+    if (ids.length === 0) throw new Error('Provide an experiment ID or pipe IDs from stdin');
+    const outputPiped = isStdoutPiped();
 
-    const reason = options.reason || await select({
+    const reason = options.reason || (outputPiped ? 'other' : await select({
       message: 'Reason for stopping',
       choices: VALID_REASONS.map(r => ({ value: r, name: r.replace(/_/g, ' ') })),
-    });
+    }));
 
-    await client.stopExperiment(id, reason, options.note);
-    console.log(chalk.green(`✓ Experiment ${id} stopped`));
+    for (const idStr of ids) {
+      const id = await client.resolveExperimentId(idStr);
+      await client.stopExperiment(id, reason, options.note);
+      if (outputPiped) {
+        console.log(id);
+        console.error(chalk.green(`✓ Experiment ${id} stopped`));
+      } else {
+        console.log(chalk.green(`✓ Experiment ${id} stopped`));
+      }
+    }
   }));

@@ -31,17 +31,11 @@ interface BulkResult {
   error?: string;
 }
 
+import { isStdinPiped, readLinesFromStdin } from '../../lib/utils/stdin.js';
+
 async function readStdinIds(): Promise<ExperimentId[]> {
-  const chunks: Buffer[] = [];
-  for await (const chunk of process.stdin) {
-    chunks.push(chunk as Buffer);
-  }
-  const text = Buffer.concat(chunks).toString('utf-8');
-  return text
-    .split('\n')
-    .map(line => line.trim())
-    .filter(line => line.length > 0)
-    .map(line => parseExperimentId(line));
+  const lines = await readLinesFromStdin();
+  return lines.map(line => parseExperimentId(line));
 }
 
 async function collectIds(
@@ -49,7 +43,7 @@ async function collectIds(
   rawIds: string[],
   options: BulkOptions,
 ): Promise<ExperimentId[]> {
-  if (options.stdin) {
+  if (options.stdin || (isStdinPiped() && rawIds.length === 0)) {
     return readStdinIds();
   }
 

@@ -2,10 +2,11 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseExperimentIdOrName } from './resolve-id.js';
+import { isStdinPiped, isStdoutPiped, readLinesFromStdin } from '../../lib/utils/stdin.js';
 
 export const fullOnCommand = new Command('full-on')
-  .description('Set experiment to full-on mode with a specific variant')
-  .argument('<id>', 'experiment ID or name', parseExperimentIdOrName)
+  .description('Set experiment(s) to full-on mode. Reads IDs from stdin when piped.')
+  .argument('[id]', 'experiment ID or name', parseExperimentIdOrName)
   .requiredOption('--variant <number>', 'variant number to set as full-on (>= 1)', (v) => {
     const num = parseInt(v, 10);
     if (!Number.isInteger(num) || num < 1) {
@@ -14,11 +15,21 @@ export const fullOnCommand = new Command('full-on')
     return num;
   })
   .option('--note <text>', 'note about the action', 'Set to full-on via CLI')
-  .action(withErrorHandling(async (nameOrId: string, options) => {
+  .action(withErrorHandling(async (nameOrId: string | undefined, options) => {
     const globalOptions = getGlobalOptions(fullOnCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    const id = await client.resolveExperimentId(nameOrId);
+    const ids: string[] = nameOrId ? [nameOrId] : isStdinPiped() ? await readLinesFromStdin() : [];
+    if (ids.length === 0) throw new Error('Provide an experiment ID or pipe IDs from stdin');
+    const outputPiped = isStdoutPiped();
 
-    await client.fullOnExperiment(id, options.variant, options.note);
-    console.log(chalk.green(`✓ Experiment ${id} set to full-on (variant ${options.variant})`));
+    for (const idStr of ids) {
+      const id = await client.resolveExperimentId(idStr);
+      await client.fullOnExperiment(id, options.variant, options.note);
+      if (outputPiped) {
+        console.log(id);
+        console.error(chalk.green(`✓ Experiment ${id} set to full-on (variant ${options.variant})`));
+      } else {
+        console.log(chalk.green(`✓ Experiment ${id} set to full-on (variant ${options.variant})`));
+      }
+    }
   }));

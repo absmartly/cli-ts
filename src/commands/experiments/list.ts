@@ -5,6 +5,7 @@ import { parseDateFlagOrUndefined } from '../../lib/utils/date-parser.js';
 import type { ListOptions } from '../../lib/api/types.js';
 import { summarizeExperimentRow } from '../../api-client/experiment-summary.js';
 import { getDefaultType } from './default-type.js';
+import { isStdoutPiped } from '../../lib/utils/stdin.js';
 
 export const listCommand = new Command('list')
   .description('List experiments')
@@ -104,6 +105,11 @@ export const listCommand = new Command('list')
     };
 
     const experiments = await client.listExperiments(listOptions);
+
+    if (isStdoutPiped() && globalOptions.output === 'table') {
+      for (const exp of experiments) console.log(exp.id);
+      return;
+    }
 
     if (globalOptions.raw) {
       printFormatted(experiments, globalOptions);
