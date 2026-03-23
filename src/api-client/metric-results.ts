@@ -1,35 +1,6 @@
-import chalk from 'chalk';
 import type { APIClient } from './api-client.js';
 import type { ExperimentId } from './types.js';
-import { renderCIBar, formatPct, formatConfidenceValue, formatOwnerLabel } from './format-helpers.js';
-
-function colorByEffect(text: string, impact: number, effect?: string): string {
-  if (effect === 'negative') {
-    return impact < 0 ? chalk.green(text) : impact > 0 ? chalk.red(text) : text;
-  }
-  if (effect === 'positive') {
-    return impact > 0 ? chalk.green(text) : impact < 0 ? chalk.red(text) : text;
-  }
-  if (effect === 'unknown') return chalk.magenta(text);
-  return chalk.gray(text);
-}
-
-function colorCIInterval(bar: string, lower: number | null, upper: number | null, effect?: string): string {
-  if (!bar || lower === null || upper === null) return bar;
-  const crossesZero = Math.sign(lower) !== Math.sign(upper);
-  if (crossesZero) {
-    return bar;
-  }
-  const direction = lower > 0;
-  let color: (t: string) => string;
-  if (!effect || effect === 'unknown') {
-    color = chalk.magenta;
-  } else {
-    const expected = effect === 'positive';
-    color = direction === expected ? chalk.green : chalk.red;
-  }
-  return bar.replace(/[═●]+/g, match => color(match));
-}
+import { formatConfidenceValue, formatOwnerLabel, formatImpactWithCI } from './format-helpers.js';
 
 export interface VariantResult {
   segment?: string;
@@ -106,7 +77,7 @@ function variantLabel(idx: number, variantNames: Map<number, string>): string {
   return `Variant ${String.fromCharCode(65 + idx)}`;
 }
 
-export function formatResultRows(r: MetricResult, variantNames: Map<number, string>): Record<string, unknown>[] {
+export function formatResultRows(r: MetricResult, variantNames: Map<number, string>, options?: { ciBar?: boolean }): Record<string, unknown>[] {
   const control = r.variants.find(v => v.variant === 0);
   const treatments = r.variants.filter(v => v.variant > 0);
   if (treatments.length === 0) {
@@ -118,10 +89,6 @@ export function formatResultRows(r: MetricResult, variantNames: Map<number, stri
   const controlLabel = variantLabel(0, variantNames);
 
   return treatments.map(treatment => {
-    const ci = treatment.impact !== null && treatment.impact_lower !== null && treatment.impact_upper !== null
-      ? renderCIBar(treatment.impact_lower, treatment.impact_upper, treatment.impact)
-      : '';
-
     const confidence = treatment.pvalue !== null
       ? formatConfidenceValue(treatment.pvalue)
       : '';
@@ -133,11 +100,9 @@ export function formatResultRows(r: MetricResult, variantNames: Map<number, stri
       type: r.type,
       ...(treatment.segment !== undefined && { segment: treatment.segment }),
       variant: tLabel,
-      impact: treatment.impact !== null ? (() => {
-        const crossesZero = treatment.impact_lower !== null && treatment.impact_upper !== null && Math.sign(treatment.impact_lower) !== Math.sign(treatment.impact_upper);
-        const pctText = crossesZero ? formatPct(treatment.impact) : colorByEffect(formatPct(treatment.impact), treatment.impact, r.effect);
-        return `${pctText} ${colorCIInterval(ci, treatment.impact_lower, treatment.impact_upper, r.effect)}`;
-      })() : '',
+      impact: treatment.impact !== null
+        ? formatImpactWithCI(treatment.impact, treatment.impact_lower, treatment.impact_upper, { ...(r.effect && { effect: r.effect }), ...(options?.ciBar && { ciBar: true }) })
+        : '',
       confidence,
       samples: treatment.unit_count.toLocaleString(),
     };

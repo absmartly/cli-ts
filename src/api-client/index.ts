@@ -94,6 +94,9 @@ export { buildPayloadFromTemplate } from './template/build-from-template.js';
 export {
   formatExtraField,
   formatImpact,
+  formatImpactWithCI,
+  colorByEffect,
+  colorCIInterval,
   formatConfidence,
   formatProgress,
   renderCIBar,

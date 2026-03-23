@@ -67,20 +67,28 @@ describe('formatImpact', () => {
     })).toBe('');
   });
 
-  it('should format positive impact with CI bar', () => {
+  it('should format positive impact with text CI by default', () => {
     const result = formatImpact({
       preview_variants: [{ variant: 1, impact: 0.05, impact_lower: 0.01, impact_upper: 0.09 }],
     });
     expect(result).toContain('+5.00%');
+    expect(result).toContain('[+1.00%, +9.00%]');
+  });
+
+  it('should format with CI bar when ciBar=true', () => {
+    const result = formatImpact({
+      preview_variants: [{ variant: 1, impact: 0.05, impact_lower: 0.01, impact_upper: 0.09 }],
+    }, true);
+    expect(result).toContain('+5.00%');
     expect(result).toContain('●');
   });
 
-  it('should format negative impact with CI bar', () => {
+  it('should format negative impact with text CI', () => {
     const result = formatImpact({
       preview_variants: [{ variant: 1, impact: -0.03, impact_lower: -0.06, impact_upper: -0.01 }],
     });
     expect(result).toContain('-3.00%');
-    expect(result).toContain('●');
+    expect(result).toContain('[-6.00%, -1.00%]');
   });
 
   it('should use confidence_variant to find the correct variant', () => {

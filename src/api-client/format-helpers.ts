@@ -1,3 +1,49 @@
+import chalk from 'chalk';
+
+export function colorByEffect(text: string, impact: number, effect?: string): string {
+  if (effect === 'negative') {
+    return impact < 0 ? chalk.green(text) : impact > 0 ? chalk.red(text) : text;
+  }
+  if (effect === 'positive') {
+    return impact > 0 ? chalk.green(text) : impact < 0 ? chalk.red(text) : text;
+  }
+  if (effect === 'unknown') return chalk.magenta(text);
+  return chalk.gray(text);
+}
+
+export function colorCIInterval(bar: string, lower: number | null, upper: number | null, effect?: string): string {
+  if (!bar || lower === null || upper === null) return bar;
+  if (Math.sign(lower) !== Math.sign(upper)) return bar;
+  const direction = lower > 0;
+  let color: (t: string) => string;
+  if (!effect || effect === 'unknown') {
+    color = chalk.magenta;
+  } else {
+    const expected = effect === 'positive';
+    color = direction === expected ? chalk.green : chalk.red;
+  }
+  return bar.replace(/[═●]+/g, match => color(match));
+}
+
+export function formatImpactWithCI(
+  impact: number, lower: number | null, upper: number | null,
+  options?: { effect?: string; ciBar?: boolean },
+): string {
+  const crossesZero = lower !== null && upper !== null && Math.sign(lower) !== Math.sign(upper);
+  const pctText = crossesZero ? formatPct(impact) : colorByEffect(formatPct(impact), impact, options?.effect);
+
+  if (lower === null || upper === null) return pctText;
+
+  if (options?.ciBar) {
+    const bar = renderCIBar(lower, upper, impact);
+    return `${pctText} ${colorCIInterval(bar, lower, upper, options?.effect)}`;
+  }
+
+  const ciText = `[${formatPct(lower)}, ${formatPct(upper)}]`;
+  const coloredCI = crossesZero ? ciText : colorByEffect(ciText, impact, options?.effect);
+  return `${pctText} ${coloredCI}`;
+}
+
 export function formatExtraField(key: string, value: unknown): unknown {
   if (key === 'experiment_report' && typeof value === 'object' && value !== null) {
     const report = value as Record<string, unknown>;
@@ -12,7 +58,7 @@ export function formatExtraField(key: string, value: unknown): unknown {
   return value;
 }
 
-export function formatImpact(exp: Record<string, unknown>): string {
+export function formatImpact(exp: Record<string, unknown>, ciBar = false): string {
   const previewVariants = exp.preview_variants as Array<Record<string, unknown>> | undefined;
   if (!previewVariants || previewVariants.length === 0) return '';
 
@@ -23,10 +69,9 @@ export function formatImpact(exp: Record<string, unknown>): string {
   const impact = result.impact as number | null;
   const impactLower = result.impact_lower as number | null;
   const impactUpper = result.impact_upper as number | null;
-  if (impact === null || impactLower === null || impactUpper === null) return '';
+  if (impact === null) return '';
 
-  const bar = renderCIBar(impactLower, impactUpper, impact);
-  return `${formatPct(impact)} ${bar}`;
+  return formatImpactWithCI(impact, impactLower, impactUpper, { ciBar });
 }
 
 const CI_WIDTH = 20;

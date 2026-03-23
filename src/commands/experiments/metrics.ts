@@ -112,6 +112,7 @@ const resultsCommand = new Command('results')
   .option('--filter <json>', 'raw segment filter JSON payload')
   .option('--from <date>', 'start time filter (see date formats)')
   .option('--to <date>', 'end time filter (see date formats)')
+  .option('--ci-bar', 'show visual CI bar instead of text [lower, upper]')
   .action(withErrorHandling(async (nameOrId: string, options) => {
     const globalOptions = getGlobalOptions(resultsCommand);
     const client = await getAPIClientFromOptions(globalOptions);
@@ -175,7 +176,7 @@ const resultsCommand = new Command('results')
       if (useRaw) {
         printFormatted(results, globalOptions);
       } else {
-        const rows = results.flatMap(r => formatResultRows(r, variantNames));
+        const rows = results.flatMap(r => formatResultRows(r, variantNames, { ciBar: options.ciBar }));
         printFormatted(rows, globalOptions);
       }
     } else {
@@ -185,7 +186,7 @@ const resultsCommand = new Command('results')
       for (const segId of segmentIds) {
         const body = { segment_id: segId, ...(hasFilters && { filters: baseFilters }) } as any;
         const results = await fetchAllMetricResults(client, id, metricInfos, body);
-        const rows = results.flatMap(r => formatResultRows(r, variantNames));
+        const rows = results.flatMap(r => formatResultRows(r, variantNames, { ciBar: options.ciBar }));
         allRows.push(...rows);
       }
 
