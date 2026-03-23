@@ -339,7 +339,7 @@ The `rendered` format outputs terminal-styled markdown with bold, tables, syntax
 
 #### Date formats
 
-All date/timestamp filters (`--created-after`, `--started-before`, etc.) accept:
+All `--from`, `--to`, `--since`, `--created-after`, `--started-before`, and other date/timestamp options across the CLI accept the same formats:
 
 | Format | Example |
 |---|---|
@@ -352,11 +352,23 @@ All date/timestamp filters (`--created-after`, `--started-before`, etc.) accept:
 
 Relative units: `m` (minutes), `h` (hours), `d` (days), `w` (weeks), `mo` (months), `y` (years). Case-insensitive.
 
+Commands using date formats:
+- `abs experiments list --created-after`, `--created-before`, `--started-after`, `--started-before`, `--stopped-after`, `--stopped-before`
+- `abs experiments metrics results --from`, `--to`
+- `abs activity-feed list --since`
+- `abs events list --from`, `--to`
+- `abs events history --from`, `--to`
+- `abs events json-values --from`, `--to`
+- `abs events json-layouts --from`, `--to`
+
 ```bash
 abs experiments list --created-after 7d                  # last 7 days
 abs experiments list --stopped-after "30 days ago"       # stopped in last month
 abs experiments list --started-after yesterday
 abs experiments list --created-after 2024-01-01          # since Jan 1 2024
+abs experiments metrics results 123 --from 7d --to now
+abs activity-feed list --since 1h
+abs events list --from 2w --to yesterday
 ```
 
 ### Activity feed
