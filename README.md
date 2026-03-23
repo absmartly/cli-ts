@@ -348,6 +348,16 @@ abs experiments list --state running | head -5 | abs experiments stop --reason o
 
 When piped, status messages (✓ Experiment N stopped) go to stderr so they don't interfere with the ID stream on stdout. Use `-o json` or `-o yaml` to get full structured output even when piped.
 
+By default, failed IDs are **not** passed through the pipe — only successfully processed IDs flow to the next command. Use `--pass-through` to pass all IDs (including failures) so a downstream command can attempt its own operation:
+
+```bash
+# Default: only successfully stopped experiments get archived
+abs experiments list --state running | abs experiments stop --reason other | abs experiments archive
+
+# With --pass-through: all IDs flow through even if stop fails
+abs experiments list --state running | abs experiments stop --reason other --pass-through | abs experiments archive
+```
+
 #### Action dialog configuration
 
 Action commands (`stop`, `start`, `archive`, etc.) respect the action dialog field configuration from your ABsmartly dashboard. After running `abs experiments refresh-fields`, the CLI will:

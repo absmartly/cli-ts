@@ -11,6 +11,7 @@ export const startCommand = new Command('start')
   .argument('[id]', 'experiment ID or name', parseExperimentIdOrName)
   .option('--note <text>', 'activity log note')
   .option('-i, --interactive', 'prompt for note interactively')
+  .option('--pass-through', 'pass failed IDs through in pipe mode')
   .action(withErrorHandling(async (nameOrId: string | undefined, options) => {
     const globalOptions = getGlobalOptions(startCommand);
     const client = await getAPIClientFromOptions(globalOptions);
@@ -22,18 +23,24 @@ export const startCommand = new Command('start')
     const note = await resolveNote(options, 'start', getDefaultType(), globalOptions.profile);
 
     for (const idStr of ids) {
-      const id = await client.resolveExperimentId(idStr);
-      const experiment = await client.getExperiment(id);
-      if (experiment.state === 'created') {
-        console.error(chalk.yellow(`⚠ Experiment ${id} is in draft state, skipping`));
-        continue;
-      }
-      await client.startExperiment(id, note);
-      if (outputPiped) {
-        console.log(id);
-        console.error(chalk.green(`✓ Experiment ${id} started`));
-      } else {
-        console.log(chalk.green(`✓ Experiment ${id} started`));
+      try {
+        const id = await client.resolveExperimentId(idStr);
+        const experiment = await client.getExperiment(id);
+        if (experiment.state === 'created') {
+          console.error(chalk.yellow(`⚠ Experiment ${id} is in draft state, skipping`));
+          if (outputPiped && options.passThrough) console.log(id);
+          continue;
+        }
+        await client.startExperiment(id, note);
+        if (outputPiped) {
+          console.log(id);
+          console.error(chalk.green(`✓ Experiment ${id} started`));
+        } else {
+          console.log(chalk.green(`✓ Experiment ${id} started`));
+        }
+      } catch (e) {
+        if (outputPiped && options.passThrough) console.log(idStr);
+        console.error(chalk.red(`✗ Experiment ${idStr}: ${e instanceof Error ? e.message : e}`));
       }
     }
   }));

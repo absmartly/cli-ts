@@ -12,6 +12,7 @@ export const developmentCommand = new Command('development')
   .argument('[id]', 'experiment ID or name', parseExperimentIdOrName)
   .option('--note <text>', 'note about the action')
   .option('-i, --interactive', 'prompt for note interactively')
+  .option('--pass-through', 'pass failed IDs through in pipe mode')
   .action(withErrorHandling(async (nameOrId: string | undefined, options) => {
     const globalOptions = getGlobalOptions(developmentCommand);
     const client = await getAPIClientFromOptions(globalOptions);
@@ -23,13 +24,18 @@ export const developmentCommand = new Command('development')
     const note = await resolveNote(options, 'development', getDefaultType(), globalOptions.profile);
 
     for (const idStr of ids) {
-      const id = await client.resolveExperimentId(idStr);
-      await client.developmentExperiment(id, note);
-      if (outputPiped) {
-        console.log(id);
-        console.error(chalk.green(`✓ Experiment ${id} set to development mode`));
-      } else {
-        console.log(chalk.green(`✓ Experiment ${id} set to development mode`));
+      try {
+        const id = await client.resolveExperimentId(idStr);
+        await client.developmentExperiment(id, note);
+        if (outputPiped) {
+          console.log(id);
+          console.error(chalk.green(`✓ Experiment ${id} set to development mode`));
+        } else {
+          console.log(chalk.green(`✓ Experiment ${id} set to development mode`));
+        }
+      } catch (e) {
+        if (outputPiped && options.passThrough) console.log(idStr);
+        console.error(chalk.red(`✗ Experiment ${idStr}: ${e instanceof Error ? e.message : e}`));
       }
     }
   }));

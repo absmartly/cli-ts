@@ -18,6 +18,7 @@ export const fullOnCommand = new Command('full-on')
   })
   .option('--note <text>', 'note about the action')
   .option('-i, --interactive', 'prompt for note interactively')
+  .option('--pass-through', 'pass failed IDs through in pipe mode')
   .action(withErrorHandling(async (nameOrId: string | undefined, options) => {
     const globalOptions = getGlobalOptions(fullOnCommand);
     const client = await getAPIClientFromOptions(globalOptions);
@@ -29,13 +30,18 @@ export const fullOnCommand = new Command('full-on')
     const note = await resolveNote(options, 'full_on', getDefaultType(), globalOptions.profile);
 
     for (const idStr of ids) {
-      const id = await client.resolveExperimentId(idStr);
-      await client.fullOnExperiment(id, options.variant, note);
-      if (outputPiped) {
-        console.log(id);
-        console.error(chalk.green(`✓ Experiment ${id} set to full-on (variant ${options.variant})`));
-      } else {
-        console.log(chalk.green(`✓ Experiment ${id} set to full-on (variant ${options.variant})`));
+      try {
+        const id = await client.resolveExperimentId(idStr);
+        await client.fullOnExperiment(id, options.variant, note);
+        if (outputPiped) {
+          console.log(id);
+          console.error(chalk.green(`✓ Experiment ${id} set to full-on (variant ${options.variant})`));
+        } else {
+          console.log(chalk.green(`✓ Experiment ${id} set to full-on (variant ${options.variant})`));
+        }
+      } catch (e) {
+        if (outputPiped && options.passThrough) console.log(idStr);
+        console.error(chalk.red(`✗ Experiment ${idStr}: ${e instanceof Error ? e.message : e}`));
       }
     }
   }));

@@ -12,6 +12,7 @@ export const archiveCommand = new Command('archive')
   .option('--unarchive', 'unarchive the experiment')
   .option('--note <text>', 'activity log note')
   .option('-i, --interactive', 'prompt for note interactively')
+  .option('--pass-through', 'pass failed IDs through in pipe mode')
   .action(withErrorHandling(async (nameOrId: string | undefined, options) => {
     const globalOptions = getGlobalOptions(archiveCommand);
     const client = await getAPIClientFromOptions(globalOptions);
@@ -25,13 +26,18 @@ export const archiveCommand = new Command('archive')
     const note = await resolveNote(options, actionType, getDefaultType(), globalOptions.profile);
 
     for (const idStr of ids) {
-      const id = await client.resolveExperimentId(idStr);
-      await client.archiveExperiment(id, options.unarchive, note);
-      if (outputPiped) {
-        console.log(id);
-        console.error(chalk.green(`✓ Experiment ${id} ${actionLabel}`));
-      } else {
-        console.log(chalk.green(`✓ Experiment ${id} ${actionLabel}`));
+      try {
+        const id = await client.resolveExperimentId(idStr);
+        await client.archiveExperiment(id, options.unarchive, note);
+        if (outputPiped) {
+          console.log(id);
+          console.error(chalk.green(`✓ Experiment ${id} ${actionLabel}`));
+        } else {
+          console.log(chalk.green(`✓ Experiment ${id} ${actionLabel}`));
+        }
+      } catch (e) {
+        if (outputPiped && options.passThrough) console.log(idStr);
+        console.error(chalk.red(`✗ Experiment ${idStr}: ${e instanceof Error ? e.message : e}`));
       }
     }
   }));

@@ -20,6 +20,7 @@ export const stopCommand = new Command('stop')
   .option('--reason <reason>', 'reason for stopping')
   .option('--note <text>', 'activity log note')
   .option('-i, --interactive', 'prompt for note and reason interactively')
+  .option('--pass-through', 'pass failed IDs through in pipe mode')
   .action(withErrorHandling(async (nameOrId: string | undefined, options) => {
     const globalOptions = getGlobalOptions(stopCommand);
     const client = await getAPIClientFromOptions(globalOptions);
@@ -36,13 +37,18 @@ export const stopCommand = new Command('stop')
     const note = await resolveNote(options, 'stop', getDefaultType(), globalOptions.profile);
 
     for (const idStr of ids) {
-      const id = await client.resolveExperimentId(idStr);
-      await client.stopExperiment(id, reason, note);
-      if (outputPiped) {
-        console.log(id);
-        console.error(chalk.green(`✓ Experiment ${id} stopped`));
-      } else {
-        console.log(chalk.green(`✓ Experiment ${id} stopped`));
+      try {
+        const id = await client.resolveExperimentId(idStr);
+        await client.stopExperiment(id, reason, note);
+        if (outputPiped) {
+          console.log(id);
+          console.error(chalk.green(`✓ Experiment ${id} stopped`));
+        } else {
+          console.log(chalk.green(`✓ Experiment ${id} stopped`));
+        }
+      } catch (e) {
+        if (outputPiped && options.passThrough) console.log(idStr);
+        console.error(chalk.red(`✗ Experiment ${idStr}: ${e instanceof Error ? e.message : e}`));
       }
     }
   }));
