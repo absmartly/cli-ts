@@ -90,6 +90,7 @@ These options are available on every command:
 | `--profile <name>` | Use a specific profile |
 | `--terse` | Compact format with truncation |
 | `--full` | Full text without truncation |
+| `--raw` | Show raw API response without summarizing or transforming |
 
 ## Commands
 
@@ -190,6 +191,7 @@ abs experiments archive 123 --unarchive
 abs experiments metrics list 123                         # list assigned metrics
 abs experiments metrics results 123                      # show results with CI as [lower, upper]
 abs experiments metrics results 123 --ci-bar             # visual CI bar ╌╌╌┊╌══●══╌╌╌
+abs experiments metrics results 123 --variant-index      # use v0, v1, v2 instead of names
 abs experiments metrics results 123 --metric 6           # any metric, even unassigned
 abs experiments metrics results 123 --segment Device     # segment breakdown by name
 abs experiments metrics results 123 --segment Device Country  # multiple segments
@@ -264,6 +266,7 @@ abs experiments diff 22838 22839 --raw                   # diff full API respons
 # Watch live results
 abs experiments watch 22838                              # poll metrics every 60s
 abs experiments watch 22838 --interval 30                # poll every 30s
+abs experiments watch 22838 --variant-index              # use v0, v1, v2 instead of names
 
 # Bulk operations
 abs experiments bulk start 123 456 789 --note "Resuming"
@@ -312,6 +315,8 @@ abs goals get 1 --show created_by_user_id
 ```
 
 The `rendered` format outputs terminal-styled markdown with bold, tables, syntax-highlighted code blocks, ● bullets, and │ blockquotes.
+
+JSON and YAML outputs include syntax highlighting by default. Use `--no-color` to disable it.
 
 #### Experiment list filters
 
@@ -716,9 +721,14 @@ View and manage event tracking data. `--from`/`--to` accept all [date formats](#
 Aliases: `events`, `event`
 
 ```bash
-abs events list --from 1711929600000 --to 1712016000000
+abs events list --from 7d --to now
+abs events list --event-name my-experiment --event-type exposure --from 5h
 abs events list --app 1 --unit-type 2 --event-type exposure --items 50
-abs events history --from 1711929600000 --to 1712016000000 --period 1d
+abs events list --unit-uid user123 --env-type production
+abs events list --effective-exposures --from 1d              # only assignment-changing exposures
+abs events list --event-name exp1 --event-name exp2          # multiple names (all filters repeatable)
+abs events history --from 7d --period 1d
+abs events history --event-name my-experiment --env-type production
 abs events unit-data 1:user123 2:device456
 abs events delete-unit-data 1:user123
 abs events json-values --event-type exposure --path "variant" --experiment-id 123
