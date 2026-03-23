@@ -35,7 +35,7 @@ describe('auth status command', () => {
       });
     });
 
-    it('should show first and last 4 chars by default', async () => {
+    it('should show masked key with last 4 chars by default', async () => {
       vi.mocked(keyring.getAPIKey).mockResolvedValue('sk-1234567890abcdef');
 
       const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
@@ -43,7 +43,7 @@ describe('auth status command', () => {
       const statusCmd = authCommand.commands.find((cmd) => cmd.name() === 'status');
       await statusCmd?.parseAsync(['node', 'test'], { from: 'user' });
 
-      expect(consoleSpy).toHaveBeenCalledWith('API Key: sk-1...cdef');
+      expect(consoleSpy).toHaveBeenCalledWith('API Key: ****...cdef');
 
       consoleSpy.mockRestore();
     });

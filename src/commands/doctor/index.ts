@@ -88,7 +88,10 @@ export const doctorCommand = new Command('doctor')
           const modeStr = mode.toString(8);
           console.log(chalk.yellow('⚠') + ` Credentials file permissions are ${modeStr} (expected 600)`);
         }
-      } catch {
+      } catch (e) {
+        if (e instanceof Error && (e as NodeJS.ErrnoException).code !== 'ENOENT') {
+          console.log(chalk.yellow('⚠') + ` Could not check credentials file permissions: ${e.message}`);
+        }
       }
 
       if (apiKey) {
@@ -109,7 +112,8 @@ export const doctorCommand = new Command('doctor')
           } else {
             console.log(chalk.green('✓') + ' No stale experiments in created state');
           }
-        } catch {
+        } catch (e) {
+          console.log(chalk.yellow('⚠') + ` Could not check for stale experiments: ${e instanceof Error ? e.message : e}`);
         }
       }
 

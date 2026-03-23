@@ -18,7 +18,7 @@ export const openCommand = new Command('open')
     const profileName = (globalOptions.profile as string) || config['default-profile'];
     const profile = getProfile(profileName);
 
-    let webURL = profile.api.endpoint.replace(/\/v1$/, '');
+    let webURL = profile.api.endpoint.replace(/\/v\d+\/?$/, '');
 
     if (resource) {
       if (!(VALID_RESOURCES as readonly string[]).includes(resource)) {

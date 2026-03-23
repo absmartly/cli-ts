@@ -17,10 +17,11 @@ function cacheKey(profile: string, type: string): string {
 }
 
 function readCache(): CacheData {
+  if (!existsSync(CACHE_FILE)) return {};
   try {
-    if (!existsSync(CACHE_FILE)) return {};
     return JSON.parse(readFileSync(CACHE_FILE, 'utf8'));
-  } catch {
+  } catch (e) {
+    if (process.env.DEBUG) console.error(`Warning: custom fields cache corrupted (${e instanceof Error ? e.message : e})`);
     return {};
   }
 }
@@ -30,8 +31,8 @@ function writeCache(data: CacheData): void {
     const dir = join(homedir(), '.config', 'absmartly');
     if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
     writeFileSync(CACHE_FILE, JSON.stringify(data, null, 2), 'utf8');
-  } catch {
-    // best-effort caching
+  } catch (e) {
+    console.error(`Warning: could not write custom fields cache: ${e instanceof Error ? e.message : e}`);
   }
 }
 

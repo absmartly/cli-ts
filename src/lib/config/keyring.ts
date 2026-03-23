@@ -26,26 +26,31 @@ async function getKeytar(): Promise<typeof import('keytar') | null> {
     await kt.getPassword(SERVICE_NAME, '__probe__');
     keytarModule = kt as typeof import('keytar');
     return keytarModule;
-  } catch {
+  } catch (e) {
     keytarModule = false;
+    const reason = e instanceof Error ? e.message : String(e);
+    console.error(`Warning: OS keyring unavailable (${reason}), credentials will be stored in ${CREDENTIALS_FILE}`);
     return null;
   }
 }
 
 function readCredentialsFile(): Record<string, string> {
+  if (!existsSync(CREDENTIALS_FILE)) return {};
   try {
-    if (!existsSync(CREDENTIALS_FILE)) return {};
     return JSON.parse(readFileSync(CREDENTIALS_FILE, 'utf8'));
-  } catch {
+  } catch (e) {
+    console.error(`Warning: credentials file is corrupted (${e instanceof Error ? e.message : e}), treating as empty`);
     return {};
   }
 }
 
 function writeCredentialsFile(data: Record<string, string>): void {
   const dir = join(homedir(), '.config', 'absmartly');
-  if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+  if (!existsSync(dir)) mkdirSync(dir, { recursive: true, mode: 0o700 });
   writeFileSync(CREDENTIALS_FILE, JSON.stringify(data, null, 2), 'utf8');
-  try { chmodSync(CREDENTIALS_FILE, 0o600); } catch { /* best effort */ }
+  try { chmodSync(CREDENTIALS_FILE, 0o600); } catch (e) {
+    console.error(`Warning: could not set restrictive permissions on ${CREDENTIALS_FILE}: ${e instanceof Error ? e.message : e}`);
+  }
 }
 
 export async function setPassword(
@@ -56,8 +61,12 @@ export async function setPassword(
   const keyName = getKeyName(key, options.profile);
   const keytar = await getKeytar();
   if (keytar) {
-    await keytar.setPassword(SERVICE_NAME, keyName, value);
-    return;
+    try {
+      await keytar.setPassword(SERVICE_NAME, keyName, value);
+      return;
+    } catch (e) {
+      console.error(`Warning: could not save to OS keyring (${e instanceof Error ? e.message : e}), falling back to file storage`);
+    }
   }
   const creds = readCredentialsFile();
   creds[keyName] = value;
