@@ -23,17 +23,120 @@ export const getCommand = new Command('get')
 
     const experiment = await client.getExperiment(id);
 
-    if (globalOptions.output === 'template' || globalOptions.output === 'rendered') {
+    if (globalOptions.output === 'template') {
       const md = await experimentToMarkdown(experiment, {
         embedScreenshots: options.embedScreenshots,
         screenshotsDir: options.screenshotsDir,
         apiEndpoint: resolveEndpoint(globalOptions),
         ...((options.embedScreenshots || options.screenshotsDir) && { apiKey: await resolveAPIKey(globalOptions) }),
       });
-      if (globalOptions.output === 'rendered') {
-        console.log(formatNoteText(md));
-      } else {
-        console.log(md);
+      console.log(md);
+      return;
+    }
+
+    if (globalOptions.output === 'rendered') {
+      const exp = experiment as Record<string, unknown>;
+      const summary = summarizeExperiment(exp, ['audience']);
+      const lines: string[] = [];
+
+      lines.push(`# ${summary.display_name || summary.name}`);
+      lines.push('');
+      lines.push(`| | |`);
+      lines.push(`|---|---|`);
+      for (const key of ['id', 'name', 'type', 'state', 'application', 'unit_type', 'percentage_of_traffic', 'percentages', 'primary_metric']) {
+        if (summary[key] !== undefined && summary[key] !== '') lines.push(`| **${key}** | ${summary[key]} |`);
+      }
+      lines.push('');
+
+      if (summary.secondary_metrics) lines.push(`**Secondary metrics:** ${summary.secondary_metrics}`);
+      if (summary.guardrail_metrics) lines.push(`**Guardrail metrics:** ${summary.guardrail_metrics}`);
+      if (summary.exploratory_metrics) lines.push(`**Exploratory metrics:** ${summary.exploratory_metrics}`);
+      lines.push('');
+
+      if (summary.owners) lines.push(`**Owners:** ${summary.owners}`);
+      if (summary.teams && String(summary.teams).replace(/,\s*/g, '').trim()) lines.push(`**Teams:** ${summary.teams}`);
+      if (summary.tags && String(summary.tags).replace(/,\s*/g, '').trim()) lines.push(`**Tags:** ${summary.tags}`);
+      lines.push('');
+
+      for (const key of Object.keys(summary)) {
+        const val = String(summary[key] ?? '');
+        if (val.startsWith('n=') && key.startsWith('result')) {
+          lines.push(`**${key}:** ${val}`);
+        }
+      }
+      lines.push('');
+
+      if (summary.audience && String(summary.audience) !== '') {
+        lines.push('## Audience');
+        lines.push('```json');
+        try { lines.push(JSON.stringify(JSON.parse(String(summary.audience)), null, 2)); } catch { lines.push(String(summary.audience)); }
+        lines.push('```');
+        lines.push('');
+      }
+
+      const variants = exp.variants as Array<Record<string, unknown>> | undefined;
+      const screenshots = exp.variant_screenshots as Array<Record<string, unknown>> | undefined;
+      if (variants?.length) {
+        lines.push('## Variants');
+        lines.push('');
+        for (const v of variants) {
+          lines.push(`### ${v.name || `Variant ${v.variant}`}`);
+          if (v.config && v.config !== '{}') lines.push(`\`\`\`json\n${v.config}\n\`\`\``);
+          const ss = screenshots?.find(s => s.variant === v.variant);
+          if (ss) {
+            const fileUpload = ss.file_upload as Record<string, unknown> | undefined;
+            if (fileUpload?.base_url) {
+              const endpoint = resolveEndpoint(globalOptions);
+              const baseUrl = endpoint.replace(/\/v\d+\/?$/, '');
+              lines.push(`![${fileUpload.file_name || 'screenshot'}](${baseUrl}${fileUpload.base_url}/${fileUpload.file_name})`);
+            }
+          }
+          lines.push('');
+        }
+      }
+
+      const customFields = exp.custom_section_field_values as Array<Record<string, unknown>> | undefined;
+      if (customFields?.length) {
+        let currentSection = '';
+        for (const cfv of customFields) {
+          const field = cfv.custom_section_field as Record<string, unknown> | undefined;
+          const section = (field?.custom_section as Record<string, unknown>)?.title as string ?? '';
+          const title = (field?.title as string) ?? '';
+          const value = (cfv.value as string) ?? '';
+          if (!title) continue;
+          if (section && section !== currentSection) {
+            lines.push(`## ${section}`);
+            currentSection = section;
+          }
+          lines.push(`### ${title}`);
+          if (value.trim()) lines.push(value);
+          lines.push('');
+        }
+      }
+
+      lines.push(`---`);
+      lines.push(`*Created: ${summary.created_at} | Updated: ${summary.updated_at} | Started: ${summary.start_at || 'N/A'} | Stopped: ${summary.stop_at || 'N/A'}*`);
+
+      const rendered = formatNoteText(lines.join('\n'));
+
+      console.log(rendered);
+
+      if (options.showImages && supportsInlineImages()) {
+        if (screenshots?.length && variants?.length) {
+          const endpoint = resolveEndpoint(globalOptions);
+          const baseUrl = endpoint.replace(/\/v\d+\/?$/, '');
+          const apiKey = await resolveAPIKey(globalOptions);
+          const headers = { Authorization: `Api-Key ${apiKey}` };
+          const width = typeof options.showImages === 'number' ? options.showImages : 40;
+          for (const ss of screenshots) {
+            const fileUpload = ss.file_upload as Record<string, unknown> | undefined;
+            if (!fileUpload?.base_url) continue;
+            const variantName = variants.find(v => v.variant === ss.variant)?.name as string ?? `variant ${ss.variant}`;
+            const fileName = fileUpload.file_name as string ?? 'screenshot';
+            console.log(`\n${variantName}:`);
+            await fetchAndDisplayImage(`${baseUrl}${fileUpload.base_url}/${fileName}`, fileName, { headers, width });
+          }
+        }
       }
       return;
     }
