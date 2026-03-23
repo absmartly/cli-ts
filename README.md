@@ -275,12 +275,24 @@ abs experiments bulk archive 123 456 --yes
 abs experiments bulk full-on 123 --variant 1 --note "Winner confirmed"
 abs experiments bulk development 123 456 --note "Moving to dev"
 abs experiments bulk stop --state running --app my-app --note "Maintenance"
-echo "123\n456" | abs experiments bulk stop --stdin --yes --reason other --note "Automated"
+
+# Unix pipe composition
+# List outputs IDs when piped; action commands read IDs from stdin and pass them through
+abs experiments list --state running | abs experiments stop --reason other --note "Stopping all"
+abs experiments list --state stopped | abs experiments archive --note "Cleanup"
+abs experiments list --search e2e- --state running | abs experiments stop --reason testing | abs experiments archive --note "Done"
+
+# Pipe to bulk (auto-detects stdin)
+abs experiments list --state running --app my-app | abs experiments bulk stop --reason other
+
+# Interactive mode — prompts for note (uses dashboard config for defaults/required)
+abs experiments stop 123 -i
+abs experiments archive 123 -i
 
 # Generate a markdown template for experiment creation
 abs experiments generate-template -o experiment.md
 
-# Refresh custom fields cache (enables custom fields as --help options)
+# Refresh cached fields (custom fields + action dialog config for notes)
 abs experiments refresh-fields
 ```
 
@@ -317,6 +329,39 @@ abs goals get 1 --show created_by_user_id
 The `rendered` format outputs terminal-styled markdown with bold, tables, syntax-highlighted code blocks, ● bullets, and │ blockquotes.
 
 JSON and YAML outputs include syntax highlighting by default. Use `--no-color` to disable it.
+
+#### Unix pipe composition
+
+Commands are composable via standard Unix pipes. When stdout is piped, `list` commands output one ID per line. Action commands (`stop`, `archive`, `start`, `development`, `full-on`) read IDs from stdin when piped, process each experiment, and pass IDs through to stdout for chaining.
+
+```bash
+# Stop all running experiments, then archive them
+abs experiments list --state running | abs experiments stop --reason other --note "Cleanup" | abs experiments archive --note "Done"
+
+# Archive stopped experiments matching a search term
+abs experiments list --search e2e- --state stopped | abs experiments archive --note "Removing test experiments"
+
+# Pipe into other tools
+abs experiments list --state running | wc -l              # count running experiments
+abs experiments list --state running | head -5 | abs experiments stop --reason other
+```
+
+When piped, status messages (✓ Experiment N stopped) go to stderr so they don't interfere with the ID stream on stdout. Use `-o json` or `-o yaml` to get full structured output even when piped.
+
+#### Action dialog configuration
+
+Action commands (`stop`, `start`, `archive`, etc.) respect the action dialog field configuration from your ABsmartly dashboard. After running `abs experiments refresh-fields`, the CLI will:
+
+- Use the configured **default note text** when `--note` is not provided
+- **Require** `--note` when the dashboard marks the note as mandatory
+- Show the configured **description** as the prompt when using `-i` (interactive mode)
+
+```bash
+abs experiments refresh-fields                            # cache action dialog config
+abs experiments stop 123                                  # uses default note from config
+abs experiments stop 123 --note "Custom note"             # overrides default
+abs experiments stop 123 -i                               # interactive prompt with config defaults
+```
 
 #### Experiment list filters
 

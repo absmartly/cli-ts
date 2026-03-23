@@ -1,7 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { Readable } from 'stream';
 import { stopCommand } from './stop.js';
 import { getAPIClientFromOptions, getGlobalOptions } from '../../lib/utils/api-helper.js';
 import { resetCommand } from '../../test/helpers/command-reset.js';
+import { setTTYOverride } from '../../lib/utils/stdin.js';
 
 vi.mock('../../lib/utils/api-helper.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../lib/utils/api-helper.js')>();
@@ -48,5 +50,53 @@ describe('stop command', () => {
     await stopCommand.parseAsync(['node', 'test', '42', '--reason', 'testing', '--note', 'my note']);
 
     expect(mockClient.stopExperiment).toHaveBeenCalledWith(42, 'testing', 'my note');
+  });
+
+  describe('stdin pipe support', () => {
+    let originalStdin: typeof process.stdin;
+
+    beforeEach(() => {
+      originalStdin = process.stdin;
+    });
+
+    afterEach(() => {
+      Object.defineProperty(process, 'stdin', { value: originalStdin, writable: true });
+      setTTYOverride({ stdin: true, stdout: true });
+    });
+
+    it('should read IDs from stdin when piped', async () => {
+      setTTYOverride({ stdin: false, stdout: true });
+      const fakeStdin = Readable.from([Buffer.from('100\n200\n')]);
+      Object.defineProperty(process, 'stdin', { value: fakeStdin, writable: true });
+
+      await stopCommand.parseAsync(['node', 'test', '--reason', 'other', '--note', 'batch']);
+
+      expect(mockClient.stopExperiment).toHaveBeenCalledTimes(2);
+      expect(mockClient.stopExperiment).toHaveBeenCalledWith(100, 'other', 'batch');
+      expect(mockClient.stopExperiment).toHaveBeenCalledWith(200, 'other', 'batch');
+    });
+
+    it('should output IDs to stdout when stdout is piped', async () => {
+      setTTYOverride({ stdin: false, stdout: false });
+      const fakeStdin = Readable.from([Buffer.from('100\n')]);
+      Object.defineProperty(process, 'stdin', { value: fakeStdin, writable: true });
+
+      await stopCommand.parseAsync(['node', 'test', '--reason', 'other', '--note', 'batch']);
+
+      expect(consoleSpy).toHaveBeenCalledWith(100);
+      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Experiment 100 stopped'));
+    });
+
+    it('should show success on stdout when stdout is not piped', async () => {
+      setTTYOverride({ stdin: false, stdout: true });
+      const fakeStdin = Readable.from([Buffer.from('100\n')]);
+      Object.defineProperty(process, 'stdin', { value: fakeStdin, writable: true });
+
+      await stopCommand.parseAsync(['node', 'test', '--reason', 'other', '--note', 'batch']);
+
+      const output = consoleSpy.mock.calls.flat().join(' ');
+      expect(output).toContain('Experiment 100 stopped');
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
+    });
   });
 });

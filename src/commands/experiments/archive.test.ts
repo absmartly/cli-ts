@@ -1,7 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { Readable } from 'stream';
 import { archiveCommand } from './archive.js';
 import { getAPIClientFromOptions, getGlobalOptions } from '../../lib/utils/api-helper.js';
 import { resetCommand } from '../../test/helpers/command-reset.js';
+import { setTTYOverride } from '../../lib/utils/stdin.js';
 
 vi.mock('../../lib/utils/api-helper.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../lib/utils/api-helper.js')>();
@@ -57,5 +59,42 @@ describe('archive command', () => {
     await archiveCommand.parseAsync(['node', 'test', '42', '--note', 'my note']);
 
     expect(mockClient.archiveExperiment).toHaveBeenCalledWith(42, undefined, 'my note');
+  });
+
+  describe('stdin pipe support', () => {
+    let originalStdin: typeof process.stdin;
+
+    beforeEach(() => {
+      originalStdin = process.stdin;
+    });
+
+    afterEach(() => {
+      Object.defineProperty(process, 'stdin', { value: originalStdin, writable: true });
+      setTTYOverride({ stdin: true, stdout: true });
+    });
+
+    it('should read IDs from stdin when piped', async () => {
+      setTTYOverride({ stdin: false, stdout: true });
+      const fakeStdin = Readable.from([Buffer.from('10\n20\n30\n')]);
+      Object.defineProperty(process, 'stdin', { value: fakeStdin, writable: true });
+
+      await archiveCommand.parseAsync(['node', 'test', '--note', 'batch']);
+
+      expect(mockClient.archiveExperiment).toHaveBeenCalledTimes(3);
+      expect(mockClient.archiveExperiment).toHaveBeenCalledWith(10, undefined, 'batch');
+      expect(mockClient.archiveExperiment).toHaveBeenCalledWith(20, undefined, 'batch');
+      expect(mockClient.archiveExperiment).toHaveBeenCalledWith(30, undefined, 'batch');
+    });
+
+    it('should output IDs to stdout when stdout is piped', async () => {
+      setTTYOverride({ stdin: false, stdout: false });
+      const fakeStdin = Readable.from([Buffer.from('10\n')]);
+      Object.defineProperty(process, 'stdin', { value: fakeStdin, writable: true });
+
+      await archiveCommand.parseAsync(['node', 'test', '--note', 'batch']);
+
+      expect(consoleSpy).toHaveBeenCalledWith(10);
+      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('archived'));
+    });
   });
 });
