@@ -51,6 +51,10 @@ export function renderCIBar(lower: number, upper: number, impact: number): strin
     chars[i] = '═';
   }
 
+  if (zeroPos >= lowerPos && zeroPos <= upperPos && zeroPos !== impactPos) {
+    chars[zeroPos] = '┊';
+  }
+
   chars[impactPos] = '●';
 
   return chars.join('');

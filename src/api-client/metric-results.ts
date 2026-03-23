@@ -10,12 +10,25 @@ function colorByEffect(text: string, impact: number, effect?: string): string {
   if (effect === 'positive') {
     return impact > 0 ? chalk.green(text) : impact < 0 ? chalk.red(text) : text;
   }
+  if (effect === 'unknown') return chalk.magenta(text);
   return chalk.gray(text);
 }
 
-function colorCIBar(bar: string, impact: number, effect?: string): string {
-  if (!bar) return '';
-  return bar.replace(/[═●]+/g, match => colorByEffect(match, impact, effect));
+function colorCIInterval(bar: string, lower: number | null, upper: number | null, effect?: string): string {
+  if (!bar || lower === null || upper === null) return bar;
+  const crossesZero = Math.sign(lower) !== Math.sign(upper);
+  if (crossesZero) {
+    return bar;
+  }
+  const direction = lower > 0;
+  let color: (t: string) => string;
+  if (!effect || effect === 'unknown') {
+    color = chalk.magenta;
+  } else {
+    const expected = effect === 'positive';
+    color = direction === expected ? chalk.green : chalk.red;
+  }
+  return bar.replace(/[═●]+/g, match => color(match));
 }
 
 export interface VariantResult {
@@ -120,7 +133,7 @@ export function formatResultRows(r: MetricResult, variantNames: Map<number, stri
       type: r.type,
       ...(treatment.segment !== undefined && { segment: treatment.segment }),
       variant: tLabel,
-      impact: treatment.impact !== null ? `${colorByEffect(formatPct(treatment.impact), treatment.impact, r.effect)} ${colorCIBar(ci, treatment.impact, r.effect)}` : '',
+      impact: treatment.impact !== null ? `${colorByEffect(formatPct(treatment.impact), treatment.impact, r.effect)} ${colorCIInterval(ci, treatment.impact_lower, treatment.impact_upper, r.effect)}` : '',
       confidence,
       samples: treatment.unit_count.toLocaleString(),
     };
