@@ -13,6 +13,11 @@ function colorByEffect(text: string, impact: number, effect?: string): string {
   return chalk.gray(text);
 }
 
+function colorCIBar(bar: string, impact: number, effect?: string): string {
+  if (!bar) return '';
+  return bar.replace(/[═●]+/g, match => colorByEffect(match, impact, effect));
+}
+
 export interface VariantResult {
   segment?: string;
   variant: number;
@@ -115,7 +120,7 @@ export function formatResultRows(r: MetricResult, variantNames: Map<number, stri
       type: r.type,
       ...(treatment.segment !== undefined && { segment: treatment.segment }),
       variant: tLabel,
-      impact: treatment.impact !== null ? colorByEffect(`${formatPct(treatment.impact)} ${ci}`, treatment.impact, r.effect) : '',
+      impact: treatment.impact !== null ? `${colorByEffect(formatPct(treatment.impact), treatment.impact, r.effect)} ${colorCIBar(ci, treatment.impact, r.effect)}` : '',
       confidence,
       samples: treatment.unit_count.toLocaleString(),
     };
