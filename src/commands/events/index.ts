@@ -28,6 +28,19 @@ function parseStringArray(value: string, previous: string[]): string[] {
   return [...previous, value];
 }
 
+function columnarToRows(data: unknown): Record<string, unknown>[] {
+  const d = data as { columnNames?: string[]; rows?: unknown[][] };
+  if (!d || !Array.isArray(d.columnNames) || !Array.isArray(d.rows)) {
+    return Array.isArray(data) ? data as Record<string, unknown>[] : [];
+  }
+  const cols = d.columnNames;
+  return d.rows.map(row => {
+    const obj: Record<string, unknown> = {};
+    for (let i = 0; i < cols.length; i++) obj[cols[i]!] = row[i];
+    return obj;
+  });
+}
+
 export const eventsCommand = new Command('events')
   .aliases(['event'])
   .description('Event management');
@@ -38,7 +51,11 @@ const listCommand = new Command('list')
   .option('--to <date>', 'end time (e.g. 7d, 2w, 2026-01-01, epoch ms)')
   .option('--app <id>', 'application ID (repeatable)', parseNumberArray, [])
   .option('--unit-type <id>', 'unit type ID (repeatable)', parseNumberArray, [])
-  .option('--event-type <type>', 'event type (repeatable)', parseStringArray, [])
+  .option('--event-type <type>', 'event type e.g. exposure, goal (repeatable)', parseStringArray, [])
+  .option('--event-name <name>', 'event/experiment name (repeatable)', parseStringArray, [])
+  .option('--unit-uid <uid>', 'unit UID (repeatable)', parseStringArray, [])
+  .option('--env-type <type>', 'environment type e.g. production, development (repeatable)', parseStringArray, [])
+  .option('--effective-exposures', 'only effective exposures')
   .option('--items <count>', 'number of items to take', Number)
   .option('--skip <count>', 'number of items to skip', Number)
   .action(withErrorHandling(async (options) => {
@@ -53,6 +70,10 @@ const listCommand = new Command('list')
     if (options.app.length > 0) filters.applications = options.app;
     if (options.unitType.length > 0) filters.unit_types = options.unitType;
     if (options.eventType.length > 0) filters.event_types = options.eventType;
+    if (options.eventName.length > 0) filters.event_names = options.eventName;
+    if (options.unitUid.length > 0) filters.unit_uids = options.unitUid;
+    if (options.envType.length > 0) filters.environment_types = options.envType;
+    if (options.effectiveExposures) filters.effective_exposures = true;
 
     const body: Record<string, unknown> = {};
     if (Object.keys(filters).length > 0) body.filters = filters;
@@ -60,13 +81,19 @@ const listCommand = new Command('list')
     if (options.skip !== undefined) body.skip = options.skip;
 
     const result = await client.listEvents(body as Parameters<typeof client.listEvents>[0]);
-    printFormatted(result, globalOptions);
+    printFormatted(globalOptions.raw ? result : columnarToRows(result), globalOptions);
   }));
 
 const historyCommand = new Command('history')
   .description('List events history')
   .option('--from <date>', 'start time (e.g. 7d, 2w, 2026-01-01, epoch ms)')
   .option('--to <date>', 'end time (e.g. 7d, 2w, 2026-01-01, epoch ms)')
+  .option('--app <id>', 'application ID (repeatable)', parseNumberArray, [])
+  .option('--unit-type <id>', 'unit type ID (repeatable)', parseNumberArray, [])
+  .option('--event-type <type>', 'event type e.g. exposure, goal (repeatable)', parseStringArray, [])
+  .option('--event-name <name>', 'event/experiment name (repeatable)', parseStringArray, [])
+  .option('--unit-uid <uid>', 'unit UID (repeatable)', parseStringArray, [])
+  .option('--env-type <type>', 'environment type e.g. production, development (repeatable)', parseStringArray, [])
   .option('--period <period>', 'aggregation period')
   .option('--tz-offset <offset>', 'timezone offset in minutes', Number)
   .action(withErrorHandling(async (options) => {
@@ -78,6 +105,12 @@ const historyCommand = new Command('history')
     const toTs = parseDateFlagOrUndefined(options.to);
     if (fromTs !== undefined) filters.from = fromTs;
     if (toTs !== undefined) filters.to = toTs;
+    if (options.app.length > 0) filters.applications = options.app;
+    if (options.unitType.length > 0) filters.unit_types = options.unitType;
+    if (options.eventType.length > 0) filters.event_types = options.eventType;
+    if (options.eventName.length > 0) filters.event_names = options.eventName;
+    if (options.unitUid.length > 0) filters.unit_uids = options.unitUid;
+    if (options.envType.length > 0) filters.environment_types = options.envType;
 
     const body: Record<string, unknown> = {};
     if (Object.keys(filters).length > 0) body.filters = filters;
@@ -85,7 +118,7 @@ const historyCommand = new Command('history')
     if (options.tzOffset !== undefined) body.tz_offset = options.tzOffset;
 
     const result = await client.listEventsHistory(body as Parameters<typeof client.listEventsHistory>[0]);
-    printFormatted(result, globalOptions);
+    printFormatted(globalOptions.raw ? result : columnarToRows(result), globalOptions);
   }));
 
 const unitDataCommand = new Command('unit-data')
