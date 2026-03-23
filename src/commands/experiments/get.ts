@@ -41,7 +41,7 @@ export const getCommand = new Command('get')
 
       lines.push(`# ${summary.display_name || summary.name}`);
       lines.push('');
-      lines.push(`| | |`);
+      lines.push(`| Field | Value |`);
       lines.push(`|---|---|`);
       for (const key of ['id', 'name', 'type', 'state', 'application', 'unit_type', 'percentage_of_traffic', 'percentages', 'primary_metric']) {
         if (summary[key] !== undefined && summary[key] !== '') lines.push(`| **${key}** | ${summary[key]} |`);
@@ -81,14 +81,18 @@ export const getCommand = new Command('get')
         lines.push('');
         for (const v of variants) {
           lines.push(`### ${v.name || `Variant ${v.variant}`}`);
-          if (v.config && v.config !== '{}') lines.push(`\`\`\`json\n${v.config}\n\`\`\``);
+          const config = String(v.config ?? '{}');
+          if (config && config !== '{}') {
+            try { lines.push(`\`\`\`json\n${JSON.stringify(JSON.parse(config), null, 2)}\n\`\`\``); }
+            catch { lines.push(`\`\`\`json\n${config}\n\`\`\``); }
+          }
           const ss = screenshots?.find(s => s.variant === v.variant);
           if (ss) {
             const fileUpload = ss.file_upload as Record<string, unknown> | undefined;
             if (fileUpload?.base_url) {
               const endpoint = resolveEndpoint(globalOptions);
               const baseUrl = endpoint.replace(/\/v\d+\/?$/, '');
-              lines.push(`![${fileUpload.file_name || 'screenshot'}](${baseUrl}${fileUpload.base_url}/${fileUpload.file_name})`);
+              lines.push(`\x00IMG|${baseUrl}${fileUpload.base_url}/${fileUpload.file_name}|${fileUpload.file_name || 'screenshot'}\x00`);
             }
           }
           lines.push('');
@@ -117,26 +121,35 @@ export const getCommand = new Command('get')
       lines.push(`---`);
       lines.push(`*Created: ${summary.created_at} | Updated: ${summary.updated_at} | Started: ${summary.start_at || 'N/A'} | Stopped: ${summary.stop_at || 'N/A'}*`);
 
-      const rendered = formatNoteText(lines.join('\n'));
+      const md = lines.join('\n');
+      const showImages = options.showImages !== undefined && supportsInlineImages();
 
-      console.log(rendered);
+      if (showImages) {
+        const imgEntries: Array<{ url: string; name: string }> = [];
+        const withPlaceholders = md.replace(/\x00IMG\|([^|]+)\|([^\x00]+)\x00/g, (_, url, name) => {
+          imgEntries.push({ url, name });
+          return `\x00IMGREF:${imgEntries.length - 1}\x00`;
+        });
+        const rendered = formatNoteText(withPlaceholders);
+        const parts = rendered.split(/\x00IMGREF:(\d+)\x00/);
 
-      if (options.showImages && supportsInlineImages()) {
-        if (screenshots?.length && variants?.length) {
-          const endpoint = resolveEndpoint(globalOptions);
-          const baseUrl = endpoint.replace(/\/v\d+\/?$/, '');
-          const apiKey = await resolveAPIKey(globalOptions);
-          const headers = { Authorization: `Api-Key ${apiKey}` };
-          const width = typeof options.showImages === 'number' ? options.showImages : 40;
-          for (const ss of screenshots) {
-            const fileUpload = ss.file_upload as Record<string, unknown> | undefined;
-            if (!fileUpload?.base_url) continue;
-            const variantName = variants.find(v => v.variant === ss.variant)?.name as string ?? `variant ${ss.variant}`;
-            const fileName = fileUpload.file_name as string ?? 'screenshot';
-            console.log(`\n${variantName}:`);
-            await fetchAndDisplayImage(`${baseUrl}${fileUpload.base_url}/${fileName}`, fileName, { headers, width });
+        const apiKey = await resolveAPIKey(globalOptions);
+        const headers = { Authorization: `Api-Key ${apiKey}` };
+        const width = typeof options.showImages === 'number' ? options.showImages : 40;
+
+        for (let i = 0; i < parts.length; i++) {
+          if (i % 2 === 0) {
+            process.stdout.write(parts[i]!);
+          } else {
+            const img = imgEntries[parseInt(parts[i]!, 10)]!;
+            process.stdout.write('\n');
+            await fetchAndDisplayImage(img.url, img.name, { headers, width });
           }
         }
+        if (!rendered.endsWith('\n')) process.stdout.write('\n');
+      } else {
+        const cleaned = md.replace(/\x00IMG\|[^|]+\|([^\x00]+)\x00/g, '[$1]');
+        console.log(formatNoteText(cleaned));
       }
       return;
     }
