@@ -101,13 +101,49 @@ export const getCommand = new Command('get')
 
       const customFields = exp.custom_section_field_values as Array<Record<string, unknown>> | undefined;
       if (customFields?.length) {
+        const users = await client.listUsers({ items: 500 });
+        const userMap = new Map<number, { name: string; email: string }>();
+        for (const u of users) {
+          userMap.set(u.id, {
+            name: [u.first_name, u.last_name].filter(Boolean).join(' '),
+            email: u.email,
+          });
+        }
+        const endpoint = resolveEndpoint(globalOptions);
+        const dashboardUrl = endpoint.replace(/\/v\d+\/?$/, '');
+
         let currentSection = '';
         for (const cfv of customFields) {
           const field = cfv.custom_section_field as Record<string, unknown> | undefined;
           const section = (field?.custom_section as Record<string, unknown>)?.title as string ?? '';
           const title = (field?.title as string) ?? '';
-          const value = (cfv.value as string) ?? '';
+          let value = (cfv.value as string) ?? '';
+          const fieldType = (field?.type as string) ?? (cfv.type as string) ?? '';
           if (!title) continue;
+
+          if (fieldType === 'user' && value) {
+            const formatUser = (userId: number) => {
+              const u = userMap.get(userId);
+              if (!u) return `user:${userId}`;
+              return `[${u.name} <${u.email}>](${dashboardUrl}/users/${userId})`;
+            };
+            try {
+              const parsed = JSON.parse(value);
+              if (typeof parsed === 'number') {
+                value = formatUser(parsed);
+              } else if (parsed?.selected) {
+                const selected = (parsed.selected as Array<{ userId: number }>) ?? [];
+                if (selected.length === 0) continue;
+                value = selected.map(s => formatUser(s.userId)).join(', ');
+              } else {
+                continue;
+              }
+            } catch {
+              const asInt = parseInt(value, 10);
+              if (!isNaN(asInt)) value = formatUser(asInt);
+            }
+          }
+
           if (section && section !== currentSection) {
             lines.push(`## ${section}`);
             currentSection = section;
