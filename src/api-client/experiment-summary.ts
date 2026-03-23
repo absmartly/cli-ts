@@ -120,7 +120,15 @@ export function stateToDate(state: string, exp: Record<string, unknown>): string
   return (date ?? '').slice(0, 10);
 }
 
+const DEFAULT_ROW_EXCLUDES = ['unit_type', 'traffic', 'owner'];
+
 export function summarizeExperimentRow(exp: Record<string, unknown>, extraFields: string[] = [], excludeFields: string[] = []): Record<string, unknown> {
+  const showSet = new Set(extraFields.map(f => f.toLowerCase()));
+  const effectiveExcludes = [
+    ...DEFAULT_ROW_EXCLUDES.filter(f => !showSet.has(f)),
+    ...excludeFields,
+  ];
+  excludeFields = effectiveExcludes;
   const apps = exp.applications as Array<Record<string, unknown>> | undefined;
   const unitType = exp.unit_type as Record<string, unknown> | undefined;
   const primaryMetric = exp.primary_metric as Record<string, unknown> | undefined;

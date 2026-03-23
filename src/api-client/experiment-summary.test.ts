@@ -199,7 +199,7 @@ describe('summarizeExperimentRow', () => {
     created_at: '2025-03-15T00:00:00Z',
   };
 
-  it('should produce a row with expected fields', () => {
+  it('should produce a row with expected fields (defaults exclude unit_type, traffic, owner)', () => {
     const row = summarizeExperimentRow(baseExperiment);
     expect(row.id).toBe(10);
     expect(row.name).toBe('row-exp');
@@ -207,11 +207,18 @@ describe('summarizeExperimentRow', () => {
     expect(row.state).toBe('running');
     expect(row.state_since).toBe('2025-04-01');
     expect(row.app).toBe('mobile');
+    expect(row.unit_type).toBeUndefined();
+    expect(row.traffic).toBeUndefined();
+    expect(row.primary_metric).toBe('ctr');
+    expect(row.owner).toBeUndefined();
+    expect(row.percentages).toBe('50/50');
+  });
+
+  it('should include unit_type/traffic/owner when --show overrides defaults', () => {
+    const row = summarizeExperimentRow(baseExperiment, ['unit_type', 'traffic', 'owner']);
     expect(row.unit_type).toBe('device_id');
     expect(row.traffic).toBe('80%');
-    expect(row.primary_metric).toBe('ctr');
     expect(row.owner).toBe('Alice B');
-    expect(row.percentages).toBe('50/50');
   });
 
   it('should include impact and confidence when preview_variants present', () => {
@@ -240,8 +247,8 @@ describe('summarizeExperimentRow', () => {
   it('should handle missing optional fields gracefully', () => {
     const row = summarizeExperimentRow({ id: 1, name: 'min', state: 'created', percentage_of_traffic: 100 });
     expect(row.app).toBe('');
-    expect(row.unit_type).toBe('');
     expect(row.primary_metric).toBe('');
-    expect(row.owner).toBe('');
+    expect(row.unit_type).toBeUndefined();
+    expect(row.owner).toBeUndefined();
   });
 });
