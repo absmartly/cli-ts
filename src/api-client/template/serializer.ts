@@ -164,7 +164,7 @@ export async function experimentToMarkdown(experiment: Experiment, options: Seri
           const needsFetch = (options.embedScreenshots || options.screenshotsDir) && options.apiEndpoint;
 
           if (needsFetch) {
-            const baseUrl = options.apiEndpoint!.replace(/\/v1$/, '');
+            const baseUrl = options.apiEndpoint!.replace(/\/v\d+\/?$/, '');
             const result = await fetchScreenshotBuffer(`${baseUrl}${relativePath}`, options.apiKey);
 
             if (result && options.screenshotsDir) {

@@ -82,7 +82,8 @@ async function fetchNames(
       try {
         const exp = await client.getExperiment(id);
         names.set(id, exp.name);
-      } catch {
+      } catch (e) {
+        if (process.env.DEBUG) console.error(`Warning: could not resolve name for experiment ${id}: ${e instanceof Error ? e.message : e}`);
         names.set(id, `(unknown #${id})`);
       }
     }

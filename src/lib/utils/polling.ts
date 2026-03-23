@@ -24,10 +24,11 @@ export function startPolling(options: PollOptions): { stop: () => void } {
     clearInterval(timer);
   };
 
-  process.on('SIGINT', () => {
+  const onSigint = () => {
     stop();
     process.exit(0);
-  });
+  };
+  process.once('SIGINT', onSigint);
 
   return { stop };
 }
