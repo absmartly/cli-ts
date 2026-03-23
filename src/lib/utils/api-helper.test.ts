@@ -196,7 +196,7 @@ describe('API Helper', () => {
       const options = getGlobalOptions(mockCommand);
 
       expect(options.output).toBe('table');
-      expect(options.noColor).toBe(false);
+      expect(options.noColor).toBe(!process.stdout.isTTY);
       expect(options.verbose).toBe(false);
       expect(options.terse).toBe(false);
       expect(options.full).toBe(false);
@@ -272,7 +272,7 @@ describe('API Helper', () => {
       );
     });
 
-    it('should pass noColor as false when --no-color is not set', () => {
+    it('should auto-detect noColor from TTY when --no-color is not set', () => {
       mockCommand.parse(['node', 'test']);
 
       const globalOptions = getGlobalOptions(mockCommand);
@@ -284,7 +284,7 @@ describe('API Helper', () => {
         testData,
         'table',
         expect.objectContaining({
-          noColor: false,
+          noColor: !process.stdout.isTTY,
           full: false,
           terse: false,
         })
