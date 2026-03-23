@@ -133,7 +133,11 @@ export function formatResultRows(r: MetricResult, variantNames: Map<number, stri
       type: r.type,
       ...(treatment.segment !== undefined && { segment: treatment.segment }),
       variant: tLabel,
-      impact: treatment.impact !== null ? `${colorByEffect(formatPct(treatment.impact), treatment.impact, r.effect)} ${colorCIInterval(ci, treatment.impact_lower, treatment.impact_upper, r.effect)}` : '',
+      impact: treatment.impact !== null ? (() => {
+        const crossesZero = treatment.impact_lower !== null && treatment.impact_upper !== null && Math.sign(treatment.impact_lower) !== Math.sign(treatment.impact_upper);
+        const pctText = crossesZero ? formatPct(treatment.impact) : colorByEffect(formatPct(treatment.impact), treatment.impact, r.effect);
+        return `${pctText} ${colorCIInterval(ci, treatment.impact_lower, treatment.impact_upper, r.effect)}`;
+      })() : '',
       confidence,
       samples: treatment.unit_count.toLocaleString(),
     };
