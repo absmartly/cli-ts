@@ -26,10 +26,10 @@ describe('renderCIBar', () => {
     expect(bar).toContain('┊');
   });
 
-  it('should render a bar for zero impact', () => {
+  it('should render a bar for zero impact with ┿ marker', () => {
     const bar = renderCIBar(-0.02, 0.02, 0);
     expect(bar).toHaveLength(20);
-    expect(bar).toContain('●');
+    expect(bar).toContain('┿');
   });
 
   it('should render a bar for wide CI', () => {

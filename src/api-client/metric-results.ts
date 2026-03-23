@@ -28,7 +28,7 @@ function colorCIInterval(bar: string, lower: number | null, upper: number | null
     const expected = effect === 'positive';
     color = direction === expected ? chalk.green : chalk.red;
   }
-  return bar.replace(/[═●]+/g, match => color(match));
+  return bar.replace(/[═●┿]+/g, match => color(match));
 }
 
 export interface VariantResult {
