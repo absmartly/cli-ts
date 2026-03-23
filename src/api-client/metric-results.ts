@@ -10,7 +10,7 @@ function colorByEffect(text: string, impact: number, effect?: string): string {
   if (effect === 'positive') {
     return impact > 0 ? chalk.green(text) : impact < 0 ? chalk.red(text) : text;
   }
-  return impact !== 0 ? chalk.yellow(text) : text;
+  return chalk.gray(text);
 }
 
 export interface VariantResult {
