@@ -2,6 +2,7 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseMetricId } from '../../lib/utils/validators.js';
+import { parseDateFlagOrUndefined } from '../../lib/utils/date-parser.js';
 import type { MetricId } from '../../lib/api/branded-types.js';
 import { parseExperimentIdOrName } from './resolve-id.js';
 import { extractMetricInfos, extractVariantNames, fetchAllMetricResults, formatResultRows, metricOwners, type MetricInfo } from '../../api-client/metric-results.js';
@@ -109,8 +110,8 @@ const resultsCommand = new Command('results')
   .option('--metric <id>', 'specific metric ID (can query any metric, not just assigned ones)', parseInt)
   .option('--segment <id>', 'segment ID for breakdown', parseInt)
   .option('--segment-filter <json>', 'segment filter JSON')
-  .option('--from <timestamp>', 'start time filter (epoch ms)', parseInt)
-  .option('--to <timestamp>', 'end time filter (epoch ms)', parseInt)
+  .option('--from <date>', 'start time filter (e.g. 7d, 2w, 2026-01-01, epoch ms)')
+  .option('--to <date>', 'end time filter (e.g. 7d, 2w, 2026-01-01, epoch ms)')
   .action(withErrorHandling(async (nameOrId: string, options) => {
     const globalOptions = getGlobalOptions(resultsCommand);
     const client = await getAPIClientFromOptions(globalOptions);
@@ -123,10 +124,12 @@ const resultsCommand = new Command('results')
     const queryBody: Record<string, unknown> = {};
     if (options.segment) queryBody.segment_id = options.segment;
     if (options.segmentFilter) queryBody.filters = { segments: options.segmentFilter };
-    if (options.from || options.to) {
+    const fromTs = parseDateFlagOrUndefined(options.from);
+    const toTs = parseDateFlagOrUndefined(options.to);
+    if (fromTs !== undefined || toTs !== undefined) {
       const filters = (queryBody.filters as Record<string, unknown>) ?? {};
-      if (options.from) filters.from = options.from;
-      if (options.to) filters.to = options.to;
+      if (fromTs !== undefined) filters.from = fromTs;
+      if (toTs !== undefined) filters.to = toTs;
       queryBody.filters = filters;
     }
     const body = Object.keys(queryBody).length > 0 ? queryBody as any : undefined;

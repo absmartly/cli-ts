@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
+import { parseDateFlagOrUndefined } from '../../lib/utils/date-parser.js';
 
 function parseUnits(units: string[]): Array<{ unit_type_id: number; uid: string }> {
   const parsed: Array<{ unit_type_id: number; uid: string }> = [];
@@ -33,8 +34,8 @@ export const eventsCommand = new Command('events')
 
 const listCommand = new Command('list')
   .description('List events')
-  .option('--from <epoch>', 'start time in epoch ms', Number)
-  .option('--to <epoch>', 'end time in epoch ms', Number)
+  .option('--from <date>', 'start time (e.g. 7d, 2w, 2026-01-01, epoch ms)')
+  .option('--to <date>', 'end time (e.g. 7d, 2w, 2026-01-01, epoch ms)')
   .option('--app <id>', 'application ID (repeatable)', parseNumberArray, [])
   .option('--unit-type <id>', 'unit type ID (repeatable)', parseNumberArray, [])
   .option('--event-type <type>', 'event type (repeatable)', parseStringArray, [])
@@ -45,8 +46,10 @@ const listCommand = new Command('list')
     const client = await getAPIClientFromOptions(globalOptions);
 
     const filters: Record<string, unknown> = {};
-    if (options.from !== undefined) filters.from = options.from;
-    if (options.to !== undefined) filters.to = options.to;
+    const fromTs = parseDateFlagOrUndefined(options.from);
+    const toTs = parseDateFlagOrUndefined(options.to);
+    if (fromTs !== undefined) filters.from = fromTs;
+    if (toTs !== undefined) filters.to = toTs;
     if (options.app.length > 0) filters.applications = options.app;
     if (options.unitType.length > 0) filters.unit_types = options.unitType;
     if (options.eventType.length > 0) filters.event_types = options.eventType;
@@ -62,8 +65,8 @@ const listCommand = new Command('list')
 
 const historyCommand = new Command('history')
   .description('List events history')
-  .option('--from <epoch>', 'start time in epoch ms', Number)
-  .option('--to <epoch>', 'end time in epoch ms', Number)
+  .option('--from <date>', 'start time (e.g. 7d, 2w, 2026-01-01, epoch ms)')
+  .option('--to <date>', 'end time (e.g. 7d, 2w, 2026-01-01, epoch ms)')
   .option('--period <period>', 'aggregation period')
   .option('--tz-offset <offset>', 'timezone offset in minutes', Number)
   .action(withErrorHandling(async (options) => {
@@ -71,8 +74,10 @@ const historyCommand = new Command('history')
     const client = await getAPIClientFromOptions(globalOptions);
 
     const filters: Record<string, unknown> = {};
-    if (options.from !== undefined) filters.from = options.from;
-    if (options.to !== undefined) filters.to = options.to;
+    const fromTs = parseDateFlagOrUndefined(options.from);
+    const toTs = parseDateFlagOrUndefined(options.to);
+    if (fromTs !== undefined) filters.from = fromTs;
+    if (toTs !== undefined) filters.to = toTs;
 
     const body: Record<string, unknown> = {};
     if (Object.keys(filters).length > 0) body.filters = filters;
@@ -114,8 +119,8 @@ const jsonValuesCommand = new Command('json-values')
   .requiredOption('--path <path>', 'JSON path')
   .option('--experiment-id <id>', 'experiment ID', Number)
   .option('--goal-id <id>', 'goal ID', Number)
-  .option('--from <epoch>', 'start time in epoch ms', Number)
-  .option('--to <epoch>', 'end time in epoch ms', Number)
+  .option('--from <date>', 'start time (e.g. 7d, 2w, 2026-01-01, epoch ms)')
+  .option('--to <date>', 'end time (e.g. 7d, 2w, 2026-01-01, epoch ms)')
   .action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(jsonValuesCommand);
     const client = await getAPIClientFromOptions(globalOptions);
@@ -126,8 +131,10 @@ const jsonValuesCommand = new Command('json-values')
     };
     if (options.experimentId !== undefined) body.experiment_id = options.experimentId;
     if (options.goalId !== undefined) body.goal_id = options.goalId;
-    if (options.from !== undefined) body.from = options.from;
-    if (options.to !== undefined) body.to = options.to;
+    const jvFrom = parseDateFlagOrUndefined(options.from);
+    const jvTo = parseDateFlagOrUndefined(options.to);
+    if (jvFrom !== undefined) body.from = jvFrom;
+    if (jvTo !== undefined) body.to = jvTo;
 
     const result = await client.getEventJsonValues(body as Parameters<typeof client.getEventJsonValues>[0]);
     printFormatted(result, globalOptions);
@@ -139,8 +146,8 @@ const jsonLayoutsCommand = new Command('json-layouts')
   .requiredOption('--phase <phase>', 'phase (before_enrichment|after_enrichment)')
   .option('--prefix <prefix>', 'path prefix')
   .option('--source-id <id>', 'source ID', Number)
-  .option('--from <epoch>', 'start time in epoch ms', Number)
-  .option('--to <epoch>', 'end time in epoch ms', Number)
+  .option('--from <date>', 'start time (e.g. 7d, 2w, 2026-01-01, epoch ms)')
+  .option('--to <date>', 'end time (e.g. 7d, 2w, 2026-01-01, epoch ms)')
   .action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(jsonLayoutsCommand);
     const client = await getAPIClientFromOptions(globalOptions);
@@ -151,8 +158,10 @@ const jsonLayoutsCommand = new Command('json-layouts')
     };
     if (options.prefix !== undefined) body.prefix = options.prefix;
     if (options.sourceId !== undefined) body.source_id = options.sourceId;
-    if (options.from !== undefined) body.from = options.from;
-    if (options.to !== undefined) body.to = options.to;
+    const jlFrom = parseDateFlagOrUndefined(options.from);
+    const jlTo = parseDateFlagOrUndefined(options.to);
+    if (jlFrom !== undefined) body.from = jlFrom;
+    if (jlTo !== undefined) body.to = jlTo;
 
     const result = await client.getEventJsonLayouts(body as Parameters<typeof client.getEventJsonLayouts>[0]);
     printFormatted(result, globalOptions);
