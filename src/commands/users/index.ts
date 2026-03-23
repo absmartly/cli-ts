@@ -1,6 +1,6 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
-import { getAPIClientFromOptions, getGlobalOptions, printFormatted, resolveAPIKey, resolveEndpoint, withErrorHandling } from '../../lib/utils/api-helper.js';
+import { getAPIClientFromOptions, getGlobalOptions, printFormatted, resolveAPIKey, resolveEndpoint, withErrorHandling, type GlobalOptions } from '../../lib/utils/api-helper.js';
 import { parseUserId, requireAtLeastOneField } from '../../lib/utils/validators.js';
 import { addPaginationOptions, printPaginationFooter } from '../../lib/utils/pagination.js';
 import { fetchAndDisplayImage, supportsInlineImages } from '../../lib/utils/terminal-image.js';
@@ -11,7 +11,7 @@ import { resetPasswordCommand } from './reset-password.js';
 
 export const usersCommand = new Command('users').alias('user').description('User commands');
 
-async function displayUserAvatars(users: User[], globalOptions: Record<string, unknown>, width: number): Promise<void> {
+async function displayUserAvatars(users: User[], globalOptions: GlobalOptions, width: number): Promise<void> {
   if (!supportsInlineImages()) return;
   const endpoint = resolveEndpoint(globalOptions);
   const baseUrl = endpoint.replace(/\/v\d+\/?$/, '');

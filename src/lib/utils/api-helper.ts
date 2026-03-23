@@ -4,10 +4,10 @@ import { getAPIKey } from '../config/keyring.js';
 import { Command } from 'commander';
 import { formatOutput, type OutputFormat } from '../output/formatter.js';
 
-export async function resolveAPIKey(options: Record<string, unknown>): Promise<string> {
+export async function resolveAPIKey(options: GlobalOptions): Promise<string> {
   const config = loadConfig();
-  const profileName = (options.profile as string) || config['default-profile'];
-  const apiKey = (options.apiKey as string) || process.env.ABSMARTLY_API_KEY || (await getAPIKey(profileName));
+  const profileName = options.profile || config['default-profile'];
+  const apiKey = options.apiKey || process.env.ABSMARTLY_API_KEY || (await getAPIKey(profileName));
 
   if (!apiKey) {
     throw new Error(
@@ -20,18 +20,18 @@ export async function resolveAPIKey(options: Record<string, unknown>): Promise<s
   return apiKey;
 }
 
-export function resolveEndpoint(options: Record<string, unknown>): string {
+export function resolveEndpoint(options: GlobalOptions): string {
   const config = loadConfig();
-  const profileName = (options.profile as string) || config['default-profile'];
+  const profileName = options.profile || config['default-profile'];
   const profile = getProfile(profileName);
-  return (options.endpoint as string) || process.env.ABSMARTLY_API_ENDPOINT || profile.api.endpoint;
+  return options.endpoint || process.env.ABSMARTLY_API_ENDPOINT || profile.api.endpoint;
 }
 
-export async function getAPIClientFromOptions(options: Record<string, unknown>): Promise<APIClient> {
+export async function getAPIClientFromOptions(options: GlobalOptions): Promise<APIClient> {
   const config = loadConfig();
-  const profileName = (options.profile as string) || config['default-profile'];
+  const profileName = options.profile || config['default-profile'];
   const profile = getProfile(profileName);
-  const endpoint = (options.endpoint as string) || process.env.ABSMARTLY_API_ENDPOINT || profile.api.endpoint;
+  const endpoint = options.endpoint || process.env.ABSMARTLY_API_ENDPOINT || profile.api.endpoint;
 
   if (!endpoint) {
     throw new Error(
@@ -43,10 +43,10 @@ export async function getAPIClientFromOptions(options: Record<string, unknown>):
 
   const apiKey = await resolveAPIKey(options);
 
-  return createAPIClient(endpoint, apiKey, { verbose: options.verbose as boolean });
+  return createAPIClient(endpoint, apiKey, { verbose: options.verbose ?? false });
 }
 
-export interface GlobalOptions extends Record<string, unknown> {
+export interface GlobalOptions {
   config?: string;
   apiKey?: string;
   endpoint?: string;

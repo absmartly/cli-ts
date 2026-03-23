@@ -96,7 +96,7 @@ describe('API Helper', () => {
       expect(createAPIClient).toHaveBeenCalledWith(
         'https://staging.api.com/v1',
         'staging-key',
-        { verbose: undefined }
+        { verbose: false }
       );
     });
 
