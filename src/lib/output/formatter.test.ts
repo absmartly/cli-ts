@@ -72,14 +72,25 @@ describe('Output Formatter', () => {
       { id: 2, name: 'Test 2', value: 200 },
     ];
 
-    it('should format as JSON', () => {
+    it('should format as JSON with syntax highlighting', () => {
       const result = formatOutput(testData, 'json');
-      expect(result).toContain('"id": 1');
+      expect(result).toContain('id');
+      expect(result).toContain('1');
+    });
+
+    it('should format as JSON without highlighting when noColor', () => {
+      const result = formatOutput(testData, 'json', { noColor: true });
       expect(JSON.parse(result)).toEqual(testData);
     });
 
-    it('should format as YAML', () => {
+    it('should format as YAML with syntax highlighting', () => {
       const result = formatOutput(testData, 'yaml');
+      expect(result).toContain('id');
+      expect(result).toContain('Test 1');
+    });
+
+    it('should format as YAML without highlighting when noColor', () => {
+      const result = formatOutput(testData, 'yaml', { noColor: true });
       expect(result).toContain('id: 1');
       expect(result).toContain('name: Test 1');
     });

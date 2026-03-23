@@ -41,10 +41,14 @@ export function formatOutput(
   options: OutputOptions = {}
 ): string {
   switch (format) {
-    case 'json':
-      return JSON.stringify(data, null, 2);
-    case 'yaml':
-      return yaml.dump(data, { indent: 2, lineWidth: 120 });
+    case 'json': {
+      const json = JSON.stringify(data, null, 2);
+      return options.noColor ? json : highlight(json, { language: 'json', ignoreIllegals: true });
+    }
+    case 'yaml': {
+      const yml = yaml.dump(data, { indent: 2, lineWidth: 120 });
+      return options.noColor ? yml : highlight(yml, { language: 'yaml', ignoreIllegals: true });
+    }
     case 'plain':
       return formatPlain(data, options);
     case 'markdown':
