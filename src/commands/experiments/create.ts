@@ -1,6 +1,6 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
-import { getAPIClientFromOptions, getGlobalOptions, resolveAPIKey, withErrorHandling } from '../../lib/utils/api-helper.js';
+import { getAPIClientFromOptions, getGlobalOptions, resolveAPIKey, resolveEndpoint, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseExperimentFile } from '../../lib/template/parser.js';
 import { buildPayloadFromTemplate } from '../../api-client/template/build-from-template.js';
 import { buildPayloadFromOptions } from '../../api-client/payload/build-from-options.js';
@@ -118,7 +118,7 @@ createCommand.action(withErrorHandling(async (options) => {
     }
 
     if (options.asCurl) {
-      const endpoint = globalOptions.endpoint || process.env.ABSMARTLY_API_ENDPOINT || 'https://demo-2.absmartly.com/v1';
+      const endpoint = resolveEndpoint(globalOptions);
       const apiKey = await resolveAPIKey(globalOptions);
 
       console.log(chalk.blue('cURL Command:'));

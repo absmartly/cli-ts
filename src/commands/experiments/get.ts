@@ -168,8 +168,8 @@ export const getCommand = new Command('get')
         const rendered = formatNoteText(withPlaceholders);
         const parts = rendered.split(/\x00IMGREF:(\d+)\x00/);
 
+        const endpointUrl = new URL(resolveEndpoint(globalOptions));
         const apiKey = await resolveAPIKey(globalOptions);
-        const headers = { Authorization: `Api-Key ${apiKey}` };
         const width = typeof options.showImages === 'number' ? options.showImages : 40;
 
         for (let i = 0; i < parts.length; i++) {
@@ -177,8 +177,12 @@ export const getCommand = new Command('get')
             process.stdout.write(parts[i]!);
           } else {
             const img = imgEntries[parseInt(parts[i]!, 10)]!;
+            const imgUrl = new URL(img.url, endpointUrl.origin);
+            const headers = imgUrl.origin === endpointUrl.origin
+              ? { Authorization: `Api-Key ${apiKey}` }
+              : undefined;
             process.stdout.write('\n');
-            await fetchAndDisplayImage(img.url, img.name, { headers, width });
+            await fetchAndDisplayImage(imgUrl.toString(), img.name, { ...(headers && { headers }), width });
           }
         }
         if (!rendered.endsWith('\n')) process.stdout.write('\n');

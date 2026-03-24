@@ -83,10 +83,8 @@ const listActivityCommand = new Command('list')
           const formatted = formatNoteText(withPlaceholders, lookups);
           const parts = formatted.split(/\x00IMG:(\d+)\x00/);
 
-          const endpoint = resolveEndpoint(globalOptions);
-          const baseUrl = endpoint.replace(/\/v\d+\/?$/, '');
+          const endpointUrl = new URL(resolveEndpoint(globalOptions));
           const apiKey = await resolveAPIKey(globalOptions);
-          const headers = { Authorization: `Api-Key ${apiKey}` };
           const width = typeof options.showImages === 'number' ? options.showImages : 30;
 
           process.stdout.write(`  → `);
@@ -95,10 +93,12 @@ const listActivityCommand = new Command('list')
               process.stdout.write(parts[i]!);
             } else {
               const img = images[parseInt(parts[i]!, 10)]!;
-              let imgUrl = img.url;
-              if (imgUrl.startsWith('/')) imgUrl = baseUrl + imgUrl;
+              const imgUrl = new URL(img.url, endpointUrl.origin);
+              const headers = imgUrl.origin === endpointUrl.origin
+                ? { Authorization: `Api-Key ${apiKey}` }
+                : undefined;
               process.stdout.write('\n');
-              await fetchAndDisplayImage(imgUrl, img.alt || 'image', { headers, width });
+              await fetchAndDisplayImage(imgUrl.toString(), img.alt || 'image', { ...(headers && { headers }), width });
             }
           }
           if (!formatted.endsWith('\n')) process.stdout.write('\n');
