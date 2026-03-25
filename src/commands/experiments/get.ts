@@ -54,12 +54,10 @@ export const getCommand = new Command('get')
           lines.push(`| **${key}** | ${val} |`);
         }
       }
-      lines.push('');
-
       for (const key of Object.keys(summary)) {
         const val = String(summary[key] ?? '');
         if (val.startsWith('n=') && key.startsWith('result')) {
-          lines.push(`**${key}:** ${val}`);
+          lines.push(`| **${key}** | ${val} |`);
         }
       }
       lines.push('');
