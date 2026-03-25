@@ -22,10 +22,7 @@ function formatOwner(obj: Record<string, unknown> | undefined): string {
   return [first, last].filter(Boolean).join(' ') || (obj.email as string) || '';
 }
 
-function formatDate(date: unknown): string {
-  if (typeof date !== 'string') return '';
-  return date.slice(0, 10);
-}
+import { formatDate } from './format-helpers.js';
 
 export function summarizeMetric(m: Record<string, unknown>): Record<string, unknown> {
   const goal = m.goal as Record<string, unknown> | undefined;

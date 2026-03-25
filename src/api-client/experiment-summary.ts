@@ -1,4 +1,4 @@
-import { formatExtraField, formatImpact, formatConfidence, formatProgress, formatOwnerName } from './format-helpers.js';
+import { formatExtraField, formatImpact, formatConfidence, formatProgress, formatOwnerName, formatDate } from './format-helpers.js';
 
 export function summarizeExperiment(exp: Record<string, unknown>, extraFields: string[] = [], excludeFields: string[] = []): Record<string, unknown> {
   const apps = exp.applications as Array<Record<string, unknown>> | undefined;
@@ -73,10 +73,10 @@ export function summarizeExperiment(exp: Record<string, unknown>, extraFields: s
   summary.owners = owners?.map(o => formatOwnerName(o)).join(', ') ?? '';
   summary.teams = teams?.map(t => t.name).join(', ') ?? '';
   summary.tags = tags?.map(t => (t.tag as Record<string, unknown>)?.name ?? '').join(', ') ?? '';
-  summary.created_at = exp.created_at ?? '';
-  summary.updated_at = exp.updated_at ?? '';
-  summary.start_at = exp.start_at ?? '';
-  summary.stop_at = exp.stop_at ?? '';
+  summary.created_at = formatDate(exp.created_at);
+  summary.updated_at = formatDate(exp.updated_at);
+  summary.start_at = formatDate(exp.start_at);
+  summary.stop_at = formatDate(exp.stop_at);
 
   const customFieldValues = exp.custom_section_field_values as Array<Record<string, unknown>> | undefined;
   const customFields = new Map<string, string>();
@@ -117,7 +117,7 @@ export function stateToDate(state: string, exp: Record<string, unknown>): string
     case 'archived': date = exp.stop_at as string; break;
     default: date = exp.created_at as string; break;
   }
-  return (date ?? '').slice(0, 10);
+  return formatDate(date);
 }
 
 const DEFAULT_ROW_EXCLUDES = ['unit_type', 'traffic', 'owner'];

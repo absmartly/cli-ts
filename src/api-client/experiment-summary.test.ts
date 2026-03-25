@@ -38,8 +38,8 @@ describe('summarizeExperiment', () => {
     expect(summary.owners).toBe('John Doe');
     expect(summary.teams).toBe('growth');
     expect(summary.tags).toBe('important');
-    expect(summary.created_at).toBe('2025-01-01T00:00:00Z');
-    expect(summary.start_at).toBe('2025-01-03T00:00:00Z');
+    expect(summary.created_at).toBe(new Date('2025-01-01T00:00:00Z').toLocaleDateString());
+    expect(summary.start_at).toBe(new Date('2025-01-03T00:00:00Z').toLocaleDateString());
   });
 
   it('should handle missing optional fields', () => {
@@ -159,19 +159,19 @@ describe('stateToDate', () => {
   };
 
   it('should return start_at for running state', () => {
-    expect(stateToDate('running', exp)).toBe('2025-02-01');
+    expect(stateToDate('running', exp)).toBe(new Date('2025-02-01T12:00:00Z').toLocaleDateString());
   });
 
   it('should return stop_at for stopped state', () => {
-    expect(stateToDate('stopped', exp)).toBe('2025-03-01');
+    expect(stateToDate('stopped', exp)).toBe(new Date('2025-03-01T12:00:00Z').toLocaleDateString());
   });
 
   it('should return stop_at for archived state', () => {
-    expect(stateToDate('archived', exp)).toBe('2025-03-01');
+    expect(stateToDate('archived', exp)).toBe(new Date('2025-03-01T12:00:00Z').toLocaleDateString());
   });
 
   it('should return created_at for other states', () => {
-    expect(stateToDate('created', exp)).toBe('2025-01-01');
+    expect(stateToDate('created', exp)).toBe(new Date('2025-01-01T12:00:00Z').toLocaleDateString());
   });
 
   it('should return empty string for missing date', () => {
@@ -179,7 +179,7 @@ describe('stateToDate', () => {
   });
 
   it('should truncate to date portion only', () => {
-    expect(stateToDate('running', { start_at: '2025-06-15T23:59:59Z' })).toBe('2025-06-15');
+    expect(stateToDate('running', { start_at: '2025-06-15T23:59:59Z' })).toBe(new Date('2025-06-15T23:59:59Z').toLocaleDateString());
   });
 });
 
@@ -205,7 +205,7 @@ describe('summarizeExperimentRow', () => {
     expect(row.name).toBe('row-exp');
     expect(row.type).toBe('ab');
     expect(row.state).toBe('running');
-    expect(row.state_since).toBe('2025-04-01');
+    expect(row.state_since).toBe(new Date('2025-04-01T00:00:00Z').toLocaleDateString());
     expect(row.app).toBe('mobile');
     expect(row.unit_type).toBeUndefined();
     expect(row.traffic).toBeUndefined();

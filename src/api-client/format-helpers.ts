@@ -1,5 +1,19 @@
 import chalk from 'chalk';
 
+export function formatDate(date: unknown): string {
+  if (!date || (typeof date !== 'string' && typeof date !== 'number')) return '';
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return String(date);
+  return d.toLocaleDateString();
+}
+
+export function formatDateTime(date: unknown): string {
+  if (!date || (typeof date !== 'string' && typeof date !== 'number')) return '';
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return String(date);
+  return d.toLocaleString();
+}
+
 export function colorByEffect(text: string, impact: number, effect?: string): string {
   if (effect === 'negative') {
     return impact < 0 ? chalk.green(text) : impact > 0 ? chalk.red(text) : text;

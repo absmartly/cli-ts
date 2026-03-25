@@ -14,11 +14,7 @@ interface ActivityNote {
   experiment: Experiment;
 }
 
-function formatTimestamp(dateStr: string): string {
-  const d = new Date(dateStr);
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
+import { formatDateTime } from '../../api-client/format-helpers.js';
 
 function getUserName(note: Note): string {
   const createdBy = note.created_by as { first_name?: string; last_name?: string } | undefined;
@@ -73,7 +69,7 @@ function printActivityNotes(items: ActivityNote[], showNotes = false, lookups: N
   }
 
   for (const { note, experiment } of items) {
-    const ts = note.created_at ? formatTimestamp(note.created_at) : 'unknown';
+    const ts = note.created_at ? formatDateTime(note.created_at) : 'unknown';
     const user = getUserName(note);
     const action = note.action ?? 'unknown';
 

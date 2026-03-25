@@ -1,4 +1,5 @@
 import type { User } from './types.js';
+import { formatDate } from './format-helpers.js';
 
 export interface UserSummary {
   id: number;
@@ -19,7 +20,7 @@ export function summarizeUser(user: User, apiEndpoint?: string): UserSummary {
     name: [user.first_name, user.last_name].filter(Boolean).join(' '),
     department: user.department ?? '',
     job_title: user.job_title ?? '',
-    last_login_at: user.last_login_at ?? '',
+    last_login_at: formatDate(user.last_login_at),
     avatar_url: user.avatar?.base_url
       ? `${baseUrl}${user.avatar.base_url}/${user.avatar.file_name}`
       : '',
