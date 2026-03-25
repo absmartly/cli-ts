@@ -150,8 +150,13 @@ export const getCommand = new Command('get')
         }
       }
 
+      const fmtDate = (v: unknown) => {
+        if (!v) return 'N/A';
+        const d = new Date(String(v));
+        return isNaN(d.getTime()) ? String(v) : d.toLocaleString();
+      };
       lines.push(`---`);
-      lines.push(`*Created: ${summary.created_at} | Updated: ${summary.updated_at} | Started: ${summary.start_at || 'N/A'} | Stopped: ${summary.stop_at || 'N/A'}*`);
+      lines.push(`*Created: ${fmtDate(summary.created_at)} | Updated: ${fmtDate(summary.updated_at)} | Started: ${fmtDate(summary.start_at)} | Stopped: ${fmtDate(summary.stop_at)}*`);
 
       const md = lines.join('\n');
       const showImages = options.showImages !== undefined && supportsInlineImages();
