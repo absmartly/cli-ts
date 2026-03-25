@@ -42,19 +42,18 @@ export const getCommand = new Command('get')
       lines.push('');
       lines.push(`| Field | Value |`);
       lines.push(`|---|---|`);
-      for (const key of ['id', 'name', 'type', 'state', 'application', 'unit_type', 'percentage_of_traffic', 'percentages', 'primary_metric']) {
-        if (summary[key] !== undefined && summary[key] !== '') lines.push(`| **${key}** | ${summary[key]} |`);
+      const tableFields = [
+        'id', 'name', 'type', 'state', 'application', 'unit_type',
+        'percentage_of_traffic', 'percentages', 'primary_metric',
+        'secondary_metrics', 'guardrail_metrics', 'exploratory_metrics',
+        'owners', 'teams', 'tags',
+      ];
+      for (const key of tableFields) {
+        const val = summary[key];
+        if (val !== undefined && val !== '' && String(val).replace(/,\s*/g, '').trim()) {
+          lines.push(`| **${key}** | ${val} |`);
+        }
       }
-      lines.push('');
-
-      if (summary.secondary_metrics) lines.push(`**Secondary metrics:** ${summary.secondary_metrics}`);
-      if (summary.guardrail_metrics) lines.push(`**Guardrail metrics:** ${summary.guardrail_metrics}`);
-      if (summary.exploratory_metrics) lines.push(`**Exploratory metrics:** ${summary.exploratory_metrics}`);
-      lines.push('');
-
-      if (summary.owners) lines.push(`**Owners:** ${summary.owners}`);
-      if (summary.teams && String(summary.teams).replace(/,\s*/g, '').trim()) lines.push(`**Teams:** ${summary.teams}`);
-      if (summary.tags && String(summary.tags).replace(/,\s*/g, '').trim()) lines.push(`**Tags:** ${summary.tags}`);
       lines.push('');
 
       for (const key of Object.keys(summary)) {
