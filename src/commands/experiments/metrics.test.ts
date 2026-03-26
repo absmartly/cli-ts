@@ -143,8 +143,8 @@ describe('experiments metrics', () => {
 
       expect((mockClient as any).getExperimentMetricsCached).toHaveBeenCalledWith(42);
       expect(printFormatted).toHaveBeenCalled();
-      const output = consoleSpy.mock.calls.flat().join(' ');
-      expect(output).toContain('cached previewer results');
+      const errOutput = consoleErrorSpy.mock.calls.flat().join(' ');
+      expect(errOutput).toContain('cached previewer results');
     });
 
     it('should show pending update request status', async () => {
@@ -166,8 +166,8 @@ describe('experiments metrics', () => {
 
       await metricsCommand.parseAsync(['node', 'test', 'results', '42', '--cached']);
 
-      const output = consoleSpy.mock.calls.flat().join(' ');
-      expect(output).toContain('pending');
+      const errOutput = consoleErrorSpy.mock.calls.flat().join(' ');
+      expect(errOutput).toContain('pending');
     });
   });
 });

@@ -36,7 +36,7 @@ const listCommand = new Command('list')
     }
 
     if (rows.length === 0) {
-      console.log(chalk.blue('No metrics assigned to this experiment.'));
+      console.error(chalk.blue('No metrics assigned to this experiment.'));
       return;
     }
 
@@ -133,14 +133,14 @@ const resultsCommand = new Command('results')
       : extractMetricInfos(exp);
 
     if (metricInfos.length === 0) {
-      console.log(chalk.blue('No metrics assigned to this experiment.'));
+      console.error(chalk.blue('No metrics assigned to this experiment.'));
       return;
     }
 
     const formatOpts = { ciBar: options.ciBar, variantIndex: options.variantIndex };
 
     if (options.cached) {
-      console.log(chalk.gray('Fetching cached previewer results...'));
+      console.error(chalk.gray('Fetching cached previewer results...'));
       const cached = await client.getExperimentMetricsCached(id);
       const results = parseCachedMetricData(metricInfos, cached);
 
@@ -150,10 +150,10 @@ const resultsCommand = new Command('results')
       } else {
         if (cached.snapshot_data) {
           const snap = cached.snapshot_data;
-          if (snap.updated_at) console.log(chalk.gray(`Last updated: ${new Date(snap.updated_at as string).toLocaleString()}`));
+          if (snap.updated_at) console.error(chalk.gray(`Last updated: ${new Date(snap.updated_at as string).toLocaleString()}`));
         }
         if (cached.pending_update_request) {
-          console.log(chalk.yellow('⏳ An update is currently pending'));
+          console.error(chalk.yellow('⏳ An update is currently pending'));
         }
         const rows = results.flatMap(r => formatResultRows(r, variantNames, formatOpts));
         printFormatted(rows, globalOptions);
@@ -194,7 +194,7 @@ const resultsCommand = new Command('results')
         ? { segment_id: segmentIds[0], ...(hasFilters && { filters: baseFilters }) } as any
         : hasFilters ? { filters: baseFilters } as any : undefined;
 
-      console.log(chalk.gray(`Fetching results for ${metricInfos.length} metric(s)...`));
+      console.error(chalk.gray(`Fetching results for ${metricInfos.length} metric(s)...`));
       const results = await fetchAllMetricResults(client, id, metricInfos, body);
 
       const useRaw = globalOptions.output === 'json' || globalOptions.output === 'yaml';
@@ -205,7 +205,7 @@ const resultsCommand = new Command('results')
         printFormatted(rows, globalOptions);
       }
     } else {
-      console.log(chalk.gray(`Fetching results for ${metricInfos.length} metric(s) across ${segmentIds.length} segments...`));
+      console.error(chalk.gray(`Fetching results for ${metricInfos.length} metric(s) across ${segmentIds.length} segments...`));
       const allRows: Record<string, unknown>[] = [];
 
       for (const segId of segmentIds) {
@@ -233,7 +233,7 @@ const depsCommand = new Command('deps')
     }) as Record<string, unknown> | undefined;
 
     if (!metric) {
-      console.log(chalk.yellow(`No usage data found for metric ${metricId}`));
+      console.error(chalk.yellow(`No usage data found for metric ${metricId}`));
       return;
     }
 
