@@ -1,4 +1,5 @@
 import { Command } from 'commander';
+import Table from 'cli-table3';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, resolveAPIKey, resolveEndpoint, withErrorHandling, type GlobalOptions } from '../../lib/utils/api-helper.js';
 import { parseUserId, requireAtLeastOneField } from '../../lib/utils/validators.js';
@@ -52,31 +53,31 @@ const listCommand = addPaginationOptions(
       const apiKey = await resolveAPIKey(globalOptions);
       const headers = { Authorization: `Api-Key ${apiKey}` };
 
-      const avatarMap = new Map<number, Buffer>();
+      const avatarMap = new Map<number, string>();
       await Promise.all((users as User[]).map(async (user) => {
         if (!user.avatar?.base_url) return;
         try {
           const url = `${baseUrl}${user.avatar.base_url}/${user.avatar.file_name}`;
           const response = await fetch(url, { headers });
           if (!response.ok) return;
-          avatarMap.set(user.id, Buffer.from(await response.arrayBuffer()));
+          const buffer = Buffer.from(await response.arrayBuffer());
+          const img = renderInlineImage(buffer, user.avatar.file_name ?? 'avatar', width);
+          if (img) avatarMap.set(user.id, img);
         } catch { /* skip */ }
       }));
 
-      for (const u of users as Array<Record<string, unknown>>) {
-        const row = applyShowExclude(summarizeUserRow(u), u, show, exclude);
-        const buf = avatarMap.get(row.id as number);
-        const parts: string[] = [];
-        if (buf) {
-          const img = renderInlineImage(buf, 'avatar', width);
-          if (img) parts.push(img);
-        }
-        const name = [u.first_name, u.last_name].filter(Boolean).join(' ') || u.email;
-        parts.push(`${row.id} ${name} <${u.email}>`);
-        if (row.department) parts.push(String(row.department));
-        if (row.job_title) parts.push(String(row.job_title));
-        console.log(parts.join(' '));
+      const rows = (users as Array<Record<string, unknown>>).map(u => applyShowExclude(summarizeUserRow(u), u, show, exclude));
+      const keys = rows.length > 0 ? Object.keys(rows[0]!) : [];
+      const head = ['', ...keys.map(k => chalk.bold.cyan(k))];
+      const table = new Table({ head, style: { head: [], border: ['gray'] } });
+
+      for (const row of rows) {
+        const img = avatarMap.get(row.id as number) ?? '';
+        const cells = keys.map(k => String(row[k] ?? ''));
+        table.push([img, ...cells]);
       }
+
+      process.stdout.write(table.toString() + '\n');
     } else {
       const data = globalOptions.raw ? users : (users as Array<Record<string, unknown>>).map(u => applyShowExclude(summarizeUserRow(u), u, show, exclude));
       printFormatted(data, globalOptions);
