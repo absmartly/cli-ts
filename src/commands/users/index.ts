@@ -79,18 +79,20 @@ const listCommand = addPaginationOptions(
       }
 
       const tableStr = table.toString();
-      const tableLines = tableStr.split('\n');
+      process.stdout.write(tableStr + '\n');
 
-      for (let lineIdx = 0; lineIdx < tableLines.length; lineIdx++) {
-        process.stdout.write(tableLines[lineIdx]!);
-        const dataRowIdx = lineIdx - 3;
-        if (dataRowIdx >= 0 && dataRowIdx < rows.length) {
-          const img = avatarMap.get(rows[dataRowIdx]!.id as number);
-          if (img) {
-            process.stdout.write(`\x1b[s\x1b[${tableLines[lineIdx]!.length}D\x1b[1C${img}\x1b[u`);
-          }
-        }
-        process.stdout.write('\n');
+      const tableLineCount = tableStr.split('\n').length;
+      const avatarEntries: Array<{ dataIdx: number; img: string }> = [];
+      for (let i = 0; i < rows.length; i++) {
+        const img = avatarMap.get(rows[i]!.id as number);
+        if (img) avatarEntries.push({ dataIdx: i, img });
+      }
+
+      for (const { dataIdx, img } of avatarEntries.reverse()) {
+        const tableLine = dataIdx + 3;
+        const linesUp = tableLineCount - tableLine;
+        process.stdout.write(`\x1b[${linesUp}A\r\x1b[1C${img}`);
+        process.stdout.write(`\x1b[${linesUp}B\r`);
       }
     } else {
       const data = globalOptions.raw ? users : (users as Array<Record<string, unknown>>).map(u => applyShowExclude(summarizeUserRow(u), u, show, exclude));
