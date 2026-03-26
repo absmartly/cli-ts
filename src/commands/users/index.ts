@@ -92,7 +92,9 @@ const listCommand = addPaginationOptions(
         const tableLine = dataIdx + 3;
         const linesUp = tableLineCount - tableLine;
         process.stdout.write(`\x1b[${linesUp}A\r\x1b[1C${img}`);
-        process.stdout.write(`\x1b[${linesUp}B\r`);
+        const linesDown = linesUp - 1;
+        if (linesDown > 0) process.stdout.write(`\x1b[${linesDown}B`);
+        process.stdout.write('\r');
       }
     } else {
       const data = globalOptions.raw ? users : (users as Array<Record<string, unknown>>).map(u => applyShowExclude(summarizeUserRow(u), u, show, exclude));
