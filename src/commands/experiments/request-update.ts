@@ -1,4 +1,4 @@
-import { Command } from 'commander';
+import { Command, Option } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseExperimentId } from '../../lib/utils/validators.js';
@@ -51,7 +51,13 @@ export const requestUpdateCommand = new Command('request-update')
     '  check_metric_threshold         check metric threshold alerts'
   )
   .argument('<id>', 'experiment ID', parseExperimentId)
-  .option('--tasks <tasks>', 'comma-separated list of tasks to run (default: all)', parseTasks)
+  .addOption(
+    Object.assign(
+      new Option('--tasks <tasks>', 'comma-separated list of tasks to run (default: all)')
+        .argParser(parseTasks),
+      { argChoices: VALID_TASKS },
+    )
+  )
   .option('--replace-gsa', 'recompute group sequential analysis from scratch')
   .action(withErrorHandling(async (id: ExperimentId, options) => {
     const globalOptions = getGlobalOptions(requestUpdateCommand);
