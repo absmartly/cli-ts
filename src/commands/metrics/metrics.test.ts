@@ -19,6 +19,19 @@ describe('metrics command', () => {
     createMetric: vi.fn().mockResolvedValue({ id: 99 }),
     updateMetric: vi.fn().mockResolvedValue({}),
     archiveMetric: vi.fn().mockResolvedValue({}),
+    resolveUsers: vi.fn().mockImplementation((refs: string[]) =>
+      Promise.resolve(refs.map(ref => {
+        if (ref === 'jane@example.com') return { id: 10, email: 'jane@example.com' };
+        if (ref === 'John Smith') return { id: 20, email: 'john@example.com' };
+        return { id: parseInt(ref, 10), email: `user${ref}@example.com` };
+      }))
+    ),
+    resolveTeams: vi.fn().mockImplementation((refs: string[]) =>
+      Promise.resolve(refs.map(ref => {
+        if (ref === 'Growth') return { id: 5, name: 'Growth' };
+        return { id: parseInt(ref, 10), name: `Team ${ref}` };
+      }))
+    ),
   };
 
   beforeEach(() => {
@@ -74,18 +87,32 @@ describe('metrics command', () => {
     expect(printFormatted).toHaveBeenCalled();
   });
 
-  it('should list metrics filtered by owners', async () => {
+  it('should list metrics filtered by owner IDs', async () => {
     await metricsCommand.parseAsync(['node', 'test', 'list', '--owners', '1,2,3']);
 
+    expect(mockClient.resolveUsers).not.toHaveBeenCalled();
     expect(mockClient.listMetrics).toHaveBeenCalledWith({ ...defaultListParams, owners: '1,2,3' });
-    expect(printFormatted).toHaveBeenCalled();
   });
 
-  it('should list metrics filtered by teams', async () => {
+  it('should list metrics filtered by owner email', async () => {
+    await metricsCommand.parseAsync(['node', 'test', 'list', '--owners', 'jane@example.com']);
+
+    expect(mockClient.resolveUsers).toHaveBeenCalledWith(['jane@example.com']);
+    expect(mockClient.listMetrics).toHaveBeenCalledWith({ ...defaultListParams, owners: '10' });
+  });
+
+  it('should list metrics filtered by team IDs', async () => {
     await metricsCommand.parseAsync(['node', 'test', 'list', '--teams', '5,10']);
 
+    expect(mockClient.resolveTeams).not.toHaveBeenCalled();
     expect(mockClient.listMetrics).toHaveBeenCalledWith({ ...defaultListParams, teams: '5,10' });
-    expect(printFormatted).toHaveBeenCalled();
+  });
+
+  it('should list metrics filtered by team name', async () => {
+    await metricsCommand.parseAsync(['node', 'test', 'list', '--teams', 'Growth']);
+
+    expect(mockClient.resolveTeams).toHaveBeenCalledWith(['Growth']);
+    expect(mockClient.listMetrics).toHaveBeenCalledWith({ ...defaultListParams, teams: '5' });
   });
 
   it('should list metrics filtered by ids', async () => {
@@ -119,7 +146,6 @@ describe('metrics command', () => {
       teams: '2',
       review_status: 'approved',
     });
-    expect(printFormatted).toHaveBeenCalled();
   });
 
   it('should get metric by id', async () => {

@@ -5,6 +5,26 @@ import { parseMetricId, requireAtLeastOneField } from '../../lib/utils/validator
 import type { MetricId } from '../../lib/api/branded-types.js';
 import { applyShowExclude, summarizeMetric, summarizeMetricRow } from '../../api-client/entity-summary.js';
 import { createListCommand } from '../../lib/utils/list-command.js';
+import { parseCSV } from '../../api-client/payload/parse-csv.js';
+import type { APIClient } from '../../api-client/api-client.js';
+
+function allNumeric(refs: string[]): boolean {
+  return refs.every(r => !isNaN(parseInt(r, 10)) && String(parseInt(r, 10)) === r.trim());
+}
+
+async function resolveOwnerIds(client: APIClient, raw: string): Promise<string> {
+  const refs = parseCSV(raw);
+  if (allNumeric(refs)) return refs.join(',');
+  const resolved = await client.resolveUsers(refs);
+  return resolved.map(u => u.id).join(',');
+}
+
+async function resolveTeamIds(client: APIClient, raw: string): Promise<string> {
+  const refs = parseCSV(raw);
+  if (allNumeric(refs)) return refs.join(',');
+  const resolved = await client.resolveTeams(refs);
+  return resolved.map(t => t.id).join(',');
+}
 import { accessCommand } from './access.js';
 import { reviewCommand } from './review.js';
 import { followCommand, unfollowCommand } from './follow.js';
@@ -16,18 +36,23 @@ export const metricsCommand = new Command('metrics')
 const listCommand = createListCommand({
   description: 'List all metrics',
   defaultItems: 100,
-  fetch: (client, options) => client.listMetrics({
-    items: options.items as number,
-    page: options.page as number,
-    archived: options.archived as boolean,
-    search: options.search as string | undefined,
-    sort: options.sort as string | undefined,
-    sort_asc: options.asc ? true : options.desc ? false : undefined,
-    ids: options.ids as string | undefined,
-    owners: options.owners as string | undefined,
-    teams: options.teams as string | undefined,
-    review_status: options.reviewStatus as string | undefined,
-  }),
+  fetch: async (client, options) => {
+    const ownerIds = options.owners ? await resolveOwnerIds(client, options.owners as string) : undefined;
+    const teamIds = options.teams ? await resolveTeamIds(client, options.teams as string) : undefined;
+
+    return client.listMetrics({
+      items: options.items as number,
+      page: options.page as number,
+      archived: options.archived as boolean,
+      search: options.search as string | undefined,
+      sort: options.sort as string | undefined,
+      sort_asc: options.asc ? true : options.desc ? false : undefined,
+      ids: options.ids as string | undefined,
+      owners: ownerIds,
+      teams: teamIds,
+      review_status: options.reviewStatus as string | undefined,
+    });
+  },
   summarizeRow: summarizeMetricRow,
   extraOptions: (cmd) => cmd
     .option('--archived', 'include archived metrics')
@@ -36,8 +61,8 @@ const listCommand = createListCommand({
     .option('--asc', 'sort in ascending order')
     .option('--desc', 'sort in descending order')
     .option('--ids <ids>', 'filter by metric IDs (comma-separated)')
-    .option('--owners <ids>', 'filter by owner user IDs (comma-separated)')
-    .option('--teams <ids>', 'filter by team IDs (comma-separated)')
+    .option('--owners <values>', 'filter by owners (comma-separated IDs, names, or emails)')
+    .option('--teams <values>', 'filter by teams (comma-separated IDs or names)')
     .option('--review-status <status>', 'filter by review status (pending, approved, none)'),
 });
 
