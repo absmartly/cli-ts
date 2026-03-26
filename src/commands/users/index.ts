@@ -62,7 +62,7 @@ const listCommand = addPaginationOptions(
           const response = await fetch(thumbUrl, { headers, redirect: 'follow' });
           if (!response.ok) return;
           const buffer = Buffer.from(await response.arrayBuffer());
-          const img = renderInlineImage(buffer, 'avatar.webp', avatarWidth);
+          const img = renderInlineImage(buffer, 'avatar.webp', avatarWidth, 1);
           if (img) avatarMap.set(user.id, img);
         } catch { /* skip */ }
       }));

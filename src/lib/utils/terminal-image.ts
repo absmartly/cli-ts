@@ -14,21 +14,23 @@ function detectProtocol(): ImageProtocol {
   return null;
 }
 
-function renderIterm(buffer: Buffer, fileName: string, width: number): string {
+function renderIterm(buffer: Buffer, fileName: string, width: number, height?: number): string {
   const b64 = buffer.toString('base64');
   const nameB64 = Buffer.from(fileName).toString('base64');
-  return `\x1b]1337;File=name=${nameB64};size=${buffer.length};inline=1;width=${width};preserveAspectRatio=1:${b64}\x07`;
+  const heightParam = height !== undefined ? `;height=${height}` : '';
+  return `\x1b]1337;File=name=${nameB64};size=${buffer.length};inline=1;width=${width}${heightParam};preserveAspectRatio=0:${b64}\x07`;
 }
 
-function renderKitty(buffer: Buffer, width: number): string {
+function renderKitty(buffer: Buffer, width: number, height?: number): string {
   const b64 = buffer.toString('base64');
   const chunkSize = 4096;
   const chunks: string[] = [];
+  const rowParam = height !== undefined ? `,r=${height}` : '';
   for (let i = 0; i < b64.length; i += chunkSize) {
     const chunk = b64.slice(i, i + chunkSize);
     const isLast = i + chunkSize >= b64.length;
     if (i === 0) {
-      chunks.push(`\x1b_Ga=T,f=100,t=d,c=${width},m=${isLast ? 0 : 1};${chunk}\x1b\\`);
+      chunks.push(`\x1b_Ga=T,f=100,t=d,c=${width}${rowParam},m=${isLast ? 0 : 1};${chunk}\x1b\\`);
     } else {
       chunks.push(`\x1b_Gm=${isLast ? 0 : 1};${chunk}\x1b\\`);
     }
@@ -47,15 +49,15 @@ function renderSixel(buffer: Buffer): string | null {
   }
 }
 
-export function renderInlineImage(buffer: Buffer, fileName: string, widthCols = 20): string | null {
+export function renderInlineImage(buffer: Buffer, fileName: string, widthCols = 20, heightRows?: number): string | null {
   const protocol = detectProtocol();
   if (!protocol) return null;
 
   switch (protocol) {
     case 'iterm':
-      return renderIterm(buffer, fileName, widthCols);
+      return renderIterm(buffer, fileName, widthCols, heightRows);
     case 'kitty':
-      return renderKitty(buffer, widthCols);
+      return renderKitty(buffer, widthCols, heightRows);
     case 'sixel':
       return renderSixel(buffer);
   }
