@@ -18,12 +18,13 @@ async function displayUserAvatar(user: User, globalOptions: GlobalOptions, width
   const endpoint = resolveEndpoint(globalOptions);
   const baseUrl = endpoint.replace(/\/v\d+\/?$/, '');
   const apiKey = await resolveAPIKey(globalOptions);
-  const url = `${baseUrl}${user.avatar.base_url}/${user.avatar.file_name}`;
+  const thumbSize = Math.min(width * 16, 128);
+  const thumbUrl = `${baseUrl}${user.avatar.base_url}/crop/${thumbSize}x${thumbSize}.webp`;
   try {
-    const response = await fetch(url, { headers: { Authorization: `Api-Key ${apiKey}` } });
+    const response = await fetch(thumbUrl, { headers: { Authorization: `Api-Key ${apiKey}` }, redirect: 'follow' });
     if (!response.ok) return;
     const buffer = Buffer.from(await response.arrayBuffer());
-    const img = renderInlineImage(buffer, user.avatar.file_name ?? 'avatar', width);
+    const img = renderInlineImage(buffer, 'avatar.webp', width);
     if (img) process.stdout.write(`\n${img}\n`);
   } catch { /* skip */ }
 }
@@ -57,11 +58,11 @@ const listCommand = addPaginationOptions(
       await Promise.all((users as User[]).map(async (user) => {
         if (!user.avatar?.base_url) return;
         try {
-          const url = `${baseUrl}${user.avatar.base_url}/${user.avatar.file_name}`;
-          const response = await fetch(url, { headers });
+          const thumbUrl = `${baseUrl}${user.avatar.base_url}/crop/48x48.webp`;
+          const response = await fetch(thumbUrl, { headers, redirect: 'follow' });
           if (!response.ok) return;
           const buffer = Buffer.from(await response.arrayBuffer());
-          const img = renderInlineImage(buffer, user.avatar.file_name ?? 'avatar', avatarWidth);
+          const img = renderInlineImage(buffer, 'avatar.webp', avatarWidth);
           if (img) avatarMap.set(user.id, img);
         } catch { /* skip */ }
       }));
