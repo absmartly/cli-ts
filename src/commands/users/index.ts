@@ -87,7 +87,7 @@ const listCommand = addPaginationOptions(
       for (let i = 0; i < rows.length; i++) {
         const img = avatarMap.get(rows[i]!.id as number);
         if (!img) continue;
-        const rowLine = i + 2;
+        const rowLine = i + 3;
         const up = totalLines - rowLine;
         process.stdout.write(`\x1b[${up}A\x1b[1C${img}\x1b[${up}B\r`);
       }
