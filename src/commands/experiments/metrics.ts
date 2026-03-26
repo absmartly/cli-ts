@@ -142,10 +142,15 @@ const resultsCommand = new Command('results')
     if (options.cached) {
       console.error(chalk.gray('Fetching cached previewer results...'));
       const cached = await client.getExperimentMetricsCached(id);
-      const results = parseCachedMetricData(metricInfos, cached);
 
-      const useRaw = globalOptions.output === 'json' || globalOptions.output === 'yaml';
-      if (useRaw) {
+      if (globalOptions.raw) {
+        printFormatted(cached, globalOptions);
+        return;
+      }
+
+      const results = parseCachedMetricData(metricInfos, cached);
+      const useStructured = globalOptions.output === 'json' || globalOptions.output === 'yaml';
+      if (useStructured) {
         printFormatted({ results, snapshot_data: cached.snapshot_data, pending_update_request: cached.pending_update_request }, globalOptions);
       } else {
         if (cached.snapshot_data) {
