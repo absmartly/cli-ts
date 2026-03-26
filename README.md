@@ -197,6 +197,7 @@ abs experiments metrics results 123 --segment Device     # segment breakdown by 
 abs experiments metrics results 123 --segment Device Country  # multiple segments
 abs experiments metrics results 123 --filter '{"filter":[...]}' # raw segment filter JSON
 abs experiments metrics results 123 --from 7d --to now   # time range filter
+abs experiments metrics results 123 --cached             # use previewer cached results (fast)
 abs experiments metrics results 123 -o json              # programmatic metric access
 abs experiments metrics add 123 --metrics 1,2,3
 abs experiments metrics confirm-impact 123 456

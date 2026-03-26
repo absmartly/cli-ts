@@ -408,6 +408,19 @@ export class APIClient {
     return data as { columnNames: string[]; rows: unknown[][] };
   }
 
+  async getExperimentMetricsCached(
+    experimentId: ExperimentId,
+  ): Promise<{ columnNames: string[]; rows: unknown[][]; snapshot_data?: Record<string, unknown>; pending_update_request?: Record<string, unknown> }> {
+    const response = await this.request<Record<string, unknown>>('GET', `/experiments/${experimentId}/metrics/main`, {
+      params: { use_cache: '1' },
+    });
+    const data = response.data;
+    if (!data || !Array.isArray(data.columnNames) || !Array.isArray(data.rows)) {
+      throw new Error(`No cached metric data available for experiment ${experimentId}. The previewer may not have processed this experiment yet.`);
+    }
+    return data as { columnNames: string[]; rows: unknown[][]; snapshot_data?: Record<string, unknown>; pending_update_request?: Record<string, unknown> };
+  }
+
   async addExperimentMetrics(id: ExperimentId, metricIds: MetricId[]): Promise<void> {
     const response = await this.request('POST', `/experiments/${id}/metrics`, { data: { metric_ids: metricIds } });
     this.validateOkResponse(response, 'addExperimentMetrics');

@@ -190,6 +190,21 @@ export async function fetchAllMetricResults(
   return results;
 }
 
+export function parseCachedMetricData(
+  metricInfos: MetricInfo[],
+  data: { columnNames: string[]; rows: unknown[][] },
+): MetricResult[] {
+  const results: MetricResult[] = [];
+  for (const info of metricInfos) {
+    const parsed = parseMetricData(info.id, data);
+    if (parsed.length === 0) continue;
+    const result: MetricResult = { metric_id: info.id, name: info.name, type: info.type, variants: parsed };
+    if (info.effect) result.effect = info.effect;
+    results.push(result);
+  }
+  return results;
+}
+
 export function metricOwners(metric: Record<string, unknown> | undefined): string {
   const owners = metric?.owners as Array<Record<string, unknown>> | undefined;
   if (!owners || owners.length === 0) return '';

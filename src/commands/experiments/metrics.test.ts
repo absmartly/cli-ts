@@ -120,4 +120,54 @@ describe('experiments metrics', () => {
       expect(output).toContain('Metric impact removed');
     });
   });
+
+  describe('results --cached', () => {
+    it('should fetch cached previewer results', async () => {
+      const cachedData = {
+        columnNames: ['variant', 'unit_count', 'metric_1_impact', 'metric_1_impact_ci_lower', 'metric_1_impact_ci_upper', 'metric_1_pvalue', 'metric_1_mean', 'metric_1', 'metric_1_var', 'metric_1_abs_impact', 'metric_1_abs_impact_ci_lower', 'metric_1_abs_impact_ci_upper'],
+        rows: [
+          [0, 1000, null, null, null, null, 2.0, 500, 0.5, null, null, null],
+          [1, 1000, 0.05, 0.01, 0.09, 0.02, 2.1, 520, 0.6, 0.1, 0.02, 0.18],
+        ],
+        snapshot_data: { updated_at: '2026-03-26T10:00:00Z' },
+      };
+      (mockClient as any).getExperimentMetricsCached = vi.fn().mockResolvedValue(cachedData);
+      (mockClient as any).getExperiment = vi.fn().mockResolvedValue({
+        primary_metric_id: 1,
+        primary_metric: { name: 'Conversions', effect: 'positive' },
+        secondary_metrics: [],
+        variants: [{ variant: 0, name: 'Control' }, { variant: 1, name: 'Treatment' }],
+      });
+
+      await metricsCommand.parseAsync(['node', 'test', 'results', '42', '--cached']);
+
+      expect((mockClient as any).getExperimentMetricsCached).toHaveBeenCalledWith(42);
+      expect(printFormatted).toHaveBeenCalled();
+      const output = consoleSpy.mock.calls.flat().join(' ');
+      expect(output).toContain('cached previewer results');
+    });
+
+    it('should show pending update request status', async () => {
+      const cachedData = {
+        columnNames: ['variant', 'unit_count', 'metric_1_impact', 'metric_1_impact_ci_lower', 'metric_1_impact_ci_upper', 'metric_1_pvalue', 'metric_1_mean', 'metric_1', 'metric_1_var', 'metric_1_abs_impact', 'metric_1_abs_impact_ci_lower', 'metric_1_abs_impact_ci_upper'],
+        rows: [
+          [0, 1000, null, null, null, null, 2.0, 500, 0.5, null, null, null],
+          [1, 1000, 0.05, 0.01, 0.09, 0.02, 2.1, 520, 0.6, 0.1, 0.02, 0.18],
+        ],
+        pending_update_request: { status: 'pending' },
+      };
+      (mockClient as any).getExperimentMetricsCached = vi.fn().mockResolvedValue(cachedData);
+      (mockClient as any).getExperiment = vi.fn().mockResolvedValue({
+        primary_metric_id: 1,
+        primary_metric: { name: 'Conversions', effect: 'positive' },
+        secondary_metrics: [],
+        variants: [{ variant: 0, name: 'Control' }, { variant: 1, name: 'Treatment' }],
+      });
+
+      await metricsCommand.parseAsync(['node', 'test', 'results', '42', '--cached']);
+
+      const output = consoleSpy.mock.calls.flat().join(' ');
+      expect(output).toContain('pending');
+    });
+  });
 });

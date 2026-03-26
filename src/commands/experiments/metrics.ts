@@ -5,7 +5,7 @@ import { parseMetricId } from '../../lib/utils/validators.js';
 import { parseDateFlagOrUndefined } from '../../lib/utils/date-parser.js';
 import type { MetricId } from '../../lib/api/branded-types.js';
 import { parseExperimentIdOrName } from './resolve-id.js';
-import { extractMetricInfos, extractVariantNames, fetchAllMetricResults, formatResultRows, metricOwners, type MetricInfo } from '../../api-client/metric-results.js';
+import { extractMetricInfos, extractVariantNames, fetchAllMetricResults, formatResultRows, metricOwners, parseCachedMetricData, type MetricInfo } from '../../api-client/metric-results.js';
 
 export const metricsCommand = new Command('metrics')
   .description('Manage experiment metrics');
@@ -112,6 +112,7 @@ const resultsCommand = new Command('results')
   .option('--filter <json>', 'raw segment filter JSON payload')
   .option('--from <date>', 'start time filter (see date formats)')
   .option('--to <date>', 'end time filter (see date formats)')
+  .option('--cached', 'use previewer cached results instead of querying the engine')
   .option('--ci-bar', 'show visual CI bar instead of text [lower, upper]')
   .option('--variant-index', 'use variant index (0, 1, 2) instead of names')
   .action(withErrorHandling(async (nameOrId: string, options) => {
@@ -122,6 +123,43 @@ const resultsCommand = new Command('results')
     const experiment = await client.getExperiment(id);
     const exp = experiment as Record<string, unknown>;
     const variantNames = extractVariantNames(exp);
+
+    const metricInfos: MetricInfo[] = options.metric
+      ? [await (async () => {
+          const metric = await client.getMetric(options.metric);
+          const m = metric as Record<string, unknown>;
+          return { id: options.metric as MetricId, name: m.name as string ?? String(options.metric), type: 'custom', effect: m.effect as string };
+        })()]
+      : extractMetricInfos(exp);
+
+    if (metricInfos.length === 0) {
+      console.log(chalk.blue('No metrics assigned to this experiment.'));
+      return;
+    }
+
+    const formatOpts = { ciBar: options.ciBar, variantIndex: options.variantIndex };
+
+    if (options.cached) {
+      console.log(chalk.gray('Fetching cached previewer results...'));
+      const cached = await client.getExperimentMetricsCached(id);
+      const results = parseCachedMetricData(metricInfos, cached);
+
+      const useRaw = globalOptions.output === 'json' || globalOptions.output === 'yaml';
+      if (useRaw) {
+        printFormatted({ results, snapshot_data: cached.snapshot_data, pending_update_request: cached.pending_update_request }, globalOptions);
+      } else {
+        if (cached.snapshot_data) {
+          const snap = cached.snapshot_data;
+          if (snap.updated_at) console.log(chalk.gray(`Last updated: ${new Date(snap.updated_at as string).toLocaleString()}`));
+        }
+        if (cached.pending_update_request) {
+          console.log(chalk.yellow('⏳ An update is currently pending'));
+        }
+        const rows = results.flatMap(r => formatResultRows(r, variantNames, formatOpts));
+        printFormatted(rows, globalOptions);
+      }
+      return;
+    }
 
     const baseFilters: Record<string, unknown> = {};
     if (options.filter) baseFilters.segments = options.filter;
@@ -149,20 +187,6 @@ const resultsCommand = new Command('results')
       }
     }
 
-    let metricInfos: MetricInfo[];
-    if (options.metric) {
-      const metric = await client.getMetric(options.metric);
-      const m = metric as Record<string, unknown>;
-      metricInfos = [{ id: options.metric as MetricId, name: m.name as string ?? String(options.metric), type: 'custom', effect: m.effect as string }];
-    } else {
-      metricInfos = extractMetricInfos(exp);
-    }
-
-    if (metricInfos.length === 0) {
-      console.log(chalk.blue('No metrics assigned to this experiment.'));
-      return;
-    }
-
     const hasFilters = Object.keys(baseFilters).length > 0;
 
     if (segmentIds.length <= 1) {
@@ -177,7 +201,7 @@ const resultsCommand = new Command('results')
       if (useRaw) {
         printFormatted(results, globalOptions);
       } else {
-        const rows = results.flatMap(r => formatResultRows(r, variantNames, { ciBar: options.ciBar, variantIndex: options.variantIndex }));
+        const rows = results.flatMap(r => formatResultRows(r, variantNames, formatOpts));
         printFormatted(rows, globalOptions);
       }
     } else {
@@ -187,16 +211,11 @@ const resultsCommand = new Command('results')
       for (const segId of segmentIds) {
         const body = { segment_id: segId, ...(hasFilters && { filters: baseFilters }) } as any;
         const results = await fetchAllMetricResults(client, id, metricInfos, body);
-        const rows = results.flatMap(r => formatResultRows(r, variantNames, { ciBar: options.ciBar, variantIndex: options.variantIndex }));
+        const rows = results.flatMap(r => formatResultRows(r, variantNames, formatOpts));
         allRows.push(...rows);
       }
 
-      const useRaw = globalOptions.output === 'json' || globalOptions.output === 'yaml';
-      if (useRaw) {
-        printFormatted(allRows, globalOptions);
-      } else {
-        printFormatted(allRows, globalOptions);
-      }
+      printFormatted(allRows, globalOptions);
     }
   }));
 
