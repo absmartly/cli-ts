@@ -79,17 +79,18 @@ const listCommand = addPaginationOptions(
       }
 
       const tableStr = table.toString();
-      process.stdout.write(tableStr + '\n');
-
       const tableLines = tableStr.split('\n');
-      const totalLines = tableLines.length;
 
-      for (let i = 0; i < rows.length; i++) {
-        const img = avatarMap.get(rows[i]!.id as number);
-        if (!img) continue;
-        const rowLine = i + 3;
-        const up = totalLines - rowLine;
-        process.stdout.write(`\x1b[${up}A\x1b[1C${img}\x1b[${up}B\r`);
+      for (let lineIdx = 0; lineIdx < tableLines.length; lineIdx++) {
+        process.stdout.write(tableLines[lineIdx]!);
+        const dataRowIdx = lineIdx - 3;
+        if (dataRowIdx >= 0 && dataRowIdx < rows.length) {
+          const img = avatarMap.get(rows[dataRowIdx]!.id as number);
+          if (img) {
+            process.stdout.write(`\x1b[s\x1b[${tableLines[lineIdx]!.length}D\x1b[1C${img}\x1b[u`);
+          }
+        }
+        process.stdout.write('\n');
       }
     } else {
       const data = globalOptions.raw ? users : (users as Array<Record<string, unknown>>).map(u => applyShowExclude(summarizeUserRow(u), u, show, exclude));
