@@ -460,8 +460,10 @@ export class APIClient {
     this.validateOkResponse(response, 'exportExperimentData');
   }
 
-  async requestExperimentUpdate(id: ExperimentId): Promise<void> {
-    const response = await this.request('POST', `/experiments/${id}/request_update`, { data: {} });
+  async requestExperimentUpdate(id: ExperimentId, params?: { replaceGroupSequentialAnalysis?: boolean; tasks?: string[] }): Promise<void> {
+    const data: Record<string, unknown> = {};
+    if (params) data.params = params;
+    const response = await this.request('POST', `/experiments/${id}/request_update`, { data });
     this.validateOkResponse(response, 'requestExperimentUpdate');
   }
 

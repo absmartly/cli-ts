@@ -40,9 +40,44 @@ describe('experiments request-update', () => {
 
     await requestUpdateCommand.parseAsync(['node', 'test', '42']);
 
-    expect(mockClient.requestExperimentUpdate).toHaveBeenCalledWith(42);
+    expect(mockClient.requestExperimentUpdate).toHaveBeenCalledWith(42, undefined);
     const output = consoleSpy.mock.calls.flat().join(' ');
     expect(output).toContain('Analysis update requested for experiment 42');
+  });
+
+  it('should pass specific tasks', async () => {
+    mockClient.requestExperimentUpdate.mockResolvedValue(undefined);
+
+    await requestUpdateCommand.parseAsync(['node', 'test', '42', '--tasks', 'preview_metrics,preview_summary']);
+
+    expect(mockClient.requestExperimentUpdate).toHaveBeenCalledWith(42, {
+      tasks: ['preview_metrics', 'preview_summary'],
+    });
+  });
+
+  it('should pass replace-gsa flag', async () => {
+    mockClient.requestExperimentUpdate.mockResolvedValue(undefined);
+
+    await requestUpdateCommand.parseAsync(['node', 'test', '42', '--replace-gsa']);
+
+    expect(mockClient.requestExperimentUpdate).toHaveBeenCalledWith(42, {
+      replaceGroupSequentialAnalysis: true,
+    });
+  });
+
+  it('should pass both tasks and replace-gsa', async () => {
+    mockClient.requestExperimentUpdate.mockResolvedValue(undefined);
+
+    await requestUpdateCommand.parseAsync(['node', 'test', '42', '--tasks', 'preview_group_sequential', '--replace-gsa']);
+
+    expect(mockClient.requestExperimentUpdate).toHaveBeenCalledWith(42, {
+      tasks: ['preview_group_sequential'],
+      replaceGroupSequentialAnalysis: true,
+    });
+  });
+
+  it('should reject invalid task names', async () => {
+    await expect(requestUpdateCommand.parseAsync(['node', 'test', '42', '--tasks', 'invalid_task'])).rejects.toThrow('Invalid task');
   });
 
   it('should reject invalid experiment ID', async () => {

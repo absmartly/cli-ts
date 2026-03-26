@@ -252,6 +252,9 @@ abs experiments access revoke-team 123 --team 1 --role 2
 # Export data and request update
 abs experiments export 123
 abs experiments request-update 123
+abs experiments request-update 123 --tasks preview_metrics,preview_summary
+abs experiments request-update 123 --replace-gsa
+abs experiments request-update 123 --tasks preview_group_sequential --replace-gsa
 
 # Schedule future actions
 abs experiments schedule create 123 --action start --at 2026-04-01T10:00:00Z
