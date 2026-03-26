@@ -42,33 +42,41 @@ const listCommand = addPaginationOptions(
 
     const users = await client.listUsers({ includeArchived: options.includeArchived, items: options.items, page: options.page });
 
-    if (options.showAvatars !== undefined && supportsInlineImages() && !globalOptions.raw) {
+    const wantAvatars = options.showAvatars !== undefined && supportsInlineImages() && !globalOptions.raw
+      && globalOptions.output !== 'json' && globalOptions.output !== 'yaml';
+
+    if (wantAvatars) {
       const width = typeof options.showAvatars === 'number' ? options.showAvatars : 3;
       const endpoint = resolveEndpoint(globalOptions);
       const baseUrl = endpoint.replace(/\/v\d+\/?$/, '');
       const apiKey = await resolveAPIKey(globalOptions);
       const headers = { Authorization: `Api-Key ${apiKey}` };
 
-      const avatarMap = new Map<number, string>();
+      const avatarMap = new Map<number, Buffer>();
       await Promise.all((users as User[]).map(async (user) => {
         if (!user.avatar?.base_url) return;
         try {
           const url = `${baseUrl}${user.avatar.base_url}/${user.avatar.file_name}`;
           const response = await fetch(url, { headers });
           if (!response.ok) return;
-          const buffer = Buffer.from(await response.arrayBuffer());
-          const img = renderInlineImage(buffer, user.avatar.file_name ?? 'avatar', width);
-          if (img) avatarMap.set(user.id, img);
+          avatarMap.set(user.id, Buffer.from(await response.arrayBuffer()));
         } catch { /* skip */ }
       }));
 
-      const data = (users as Array<Record<string, unknown>>).map(u => {
+      for (const u of users as Array<Record<string, unknown>>) {
         const row = applyShowExclude(summarizeUserRow(u), u, show, exclude);
-        const img = avatarMap.get(row.id as number) ?? '';
-        const { id, ...rest } = row;
-        return { id, avatar: img, ...rest };
-      });
-      printFormatted(data, globalOptions);
+        const buf = avatarMap.get(row.id as number);
+        const parts: string[] = [];
+        if (buf) {
+          const img = renderInlineImage(buf, 'avatar', width);
+          if (img) parts.push(img);
+        }
+        const name = [u.first_name, u.last_name].filter(Boolean).join(' ') || u.email;
+        parts.push(`${row.id} ${name} <${u.email}>`);
+        if (row.department) parts.push(String(row.department));
+        if (row.job_title) parts.push(String(row.job_title));
+        console.log(parts.join(' '));
+      }
     } else {
       const data = globalOptions.raw ? users : (users as Array<Record<string, unknown>>).map(u => applyShowExclude(summarizeUserRow(u), u, show, exclude));
       printFormatted(data, globalOptions);
