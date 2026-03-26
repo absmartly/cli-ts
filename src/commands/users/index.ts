@@ -47,7 +47,7 @@ const listCommand = addPaginationOptions(
       && globalOptions.output !== 'json' && globalOptions.output !== 'yaml';
 
     if (wantAvatars) {
-      const width = typeof options.showAvatars === 'number' ? options.showAvatars : 3;
+      const avatarWidth = typeof options.showAvatars === 'number' ? options.showAvatars : 3;
       const endpoint = resolveEndpoint(globalOptions);
       const baseUrl = endpoint.replace(/\/v\d+\/?$/, '');
       const apiKey = await resolveAPIKey(globalOptions);
@@ -61,23 +61,35 @@ const listCommand = addPaginationOptions(
           const response = await fetch(url, { headers });
           if (!response.ok) return;
           const buffer = Buffer.from(await response.arrayBuffer());
-          const img = renderInlineImage(buffer, user.avatar.file_name ?? 'avatar', width);
+          const img = renderInlineImage(buffer, user.avatar.file_name ?? 'avatar', avatarWidth);
           if (img) avatarMap.set(user.id, img);
         } catch { /* skip */ }
       }));
 
       const rows = (users as Array<Record<string, unknown>>).map(u => applyShowExclude(summarizeUserRow(u), u, show, exclude));
       const keys = rows.length > 0 ? Object.keys(rows[0]!) : [];
-      const head = ['', ...keys.map(k => chalk.bold.cyan(k))];
+      const padCol = ' '.repeat(avatarWidth + 1);
+      const head = [padCol, ...keys.map(k => chalk.bold.cyan(k))];
       const table = new Table({ head, style: { head: [], border: ['gray'] } });
 
       for (const row of rows) {
-        const img = avatarMap.get(row.id as number) ?? '';
         const cells = keys.map(k => String(row[k] ?? ''));
-        table.push([img, ...cells]);
+        table.push([padCol, ...cells]);
       }
 
-      process.stdout.write(table.toString() + '\n');
+      const tableStr = table.toString();
+      process.stdout.write(tableStr + '\n');
+
+      const tableLines = tableStr.split('\n');
+      const totalLines = tableLines.length;
+
+      for (let i = 0; i < rows.length; i++) {
+        const img = avatarMap.get(rows[i]!.id as number);
+        if (!img) continue;
+        const rowLine = i + 2;
+        const up = totalLines - rowLine;
+        process.stdout.write(`\x1b[${up}A\x1b[1C${img}\x1b[${up}B\r`);
+      }
     } else {
       const data = globalOptions.raw ? users : (users as Array<Record<string, unknown>>).map(u => applyShowExclude(summarizeUserRow(u), u, show, exclude));
       printFormatted(data, globalOptions);
