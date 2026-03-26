@@ -228,6 +228,10 @@ export function truncateText(text: string, options: OutputOptions = {}): string 
     return text;
   }
 
+  if (text.includes('\x1b]') || text.includes('\x1b_')) {
+    return text;
+  }
+
   const maxLength = options.terse ? 50 : 100;
   if (text.length <= maxLength) {
     return text;

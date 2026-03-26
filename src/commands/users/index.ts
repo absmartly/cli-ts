@@ -12,24 +12,19 @@ import { userApiKeysCommand } from './api-keys.js';
 
 export const usersCommand = new Command('users').alias('user').description('User commands');
 
-async function displayUserAvatars(users: User[], globalOptions: GlobalOptions, width: number): Promise<void> {
-  if (!supportsInlineImages()) return;
+async function displayUserAvatar(user: User, globalOptions: GlobalOptions, width: number): Promise<void> {
+  if (!supportsInlineImages() || !user.avatar?.base_url) return;
   const endpoint = resolveEndpoint(globalOptions);
   const baseUrl = endpoint.replace(/\/v\d+\/?$/, '');
   const apiKey = await resolveAPIKey(globalOptions);
-  const headers = { Authorization: `Api-Key ${apiKey}` };
-
-  console.log('');
-  for (const user of users) {
-    if (!user.avatar?.base_url) continue;
-    const name = [user.first_name, user.last_name].filter(Boolean).join(' ') || user.email;
-    const url = `${baseUrl}${user.avatar.base_url}/${user.avatar.file_name}`;
-    const response = await fetch(url, { headers }).catch(() => null);
-    if (!response?.ok) continue;
+  const url = `${baseUrl}${user.avatar.base_url}/${user.avatar.file_name}`;
+  try {
+    const response = await fetch(url, { headers: { Authorization: `Api-Key ${apiKey}` } });
+    if (!response.ok) return;
     const buffer = Buffer.from(await response.arrayBuffer());
     const img = renderInlineImage(buffer, user.avatar.file_name ?? 'avatar', width);
-    if (img) process.stdout.write(`${img} ${user.id} ${name}\n`);
-  }
+    if (img) process.stdout.write(`\n${img}\n`);
+  } catch { /* skip */ }
 }
 
 const listCommand = addPaginationOptions(
@@ -38,7 +33,7 @@ const listCommand = addPaginationOptions(
     .option('--include-archived', 'include archived users')
     .option('--show <fields...>', 'include additional fields from API response')
     .option('--exclude <fields...>', 'hide fields from summary')
-    .option('--show-avatars [cols]', 'display avatars inline, optional width in columns (default: 10)', parseInt),
+    .option('--show-avatars [cols]', 'display avatars inline, optional width in columns (default: 3)', parseInt),
 ).action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(listCommand);
     const client = await getAPIClientFromOptions(globalOptions);
@@ -46,14 +41,40 @@ const listCommand = addPaginationOptions(
     const exclude = (options.exclude as string[] | undefined) ?? [];
 
     const users = await client.listUsers({ includeArchived: options.includeArchived, items: options.items, page: options.page });
-    const data = globalOptions.raw ? users : (users as Array<Record<string, unknown>>).map(u => applyShowExclude(summarizeUserRow(u), u, show, exclude));
-    printFormatted(data, globalOptions);
-    printPaginationFooter(users.length, options.items, options.page, globalOptions.output as string);
 
-    if (options.showAvatars !== undefined) {
-      const width = typeof options.showAvatars === 'number' ? options.showAvatars : 4;
-      await displayUserAvatars(users as User[], globalOptions, width);
+    if (options.showAvatars !== undefined && supportsInlineImages() && !globalOptions.raw) {
+      const width = typeof options.showAvatars === 'number' ? options.showAvatars : 3;
+      const endpoint = resolveEndpoint(globalOptions);
+      const baseUrl = endpoint.replace(/\/v\d+\/?$/, '');
+      const apiKey = await resolveAPIKey(globalOptions);
+      const headers = { Authorization: `Api-Key ${apiKey}` };
+
+      const avatarMap = new Map<number, string>();
+      await Promise.all((users as User[]).map(async (user) => {
+        if (!user.avatar?.base_url) return;
+        try {
+          const url = `${baseUrl}${user.avatar.base_url}/${user.avatar.file_name}`;
+          const response = await fetch(url, { headers });
+          if (!response.ok) return;
+          const buffer = Buffer.from(await response.arrayBuffer());
+          const img = renderInlineImage(buffer, user.avatar.file_name ?? 'avatar', width);
+          if (img) avatarMap.set(user.id, img);
+        } catch { /* skip */ }
+      }));
+
+      const data = (users as Array<Record<string, unknown>>).map(u => {
+        const row = applyShowExclude(summarizeUserRow(u), u, show, exclude);
+        const img = avatarMap.get(row.id as number) ?? '';
+        const { id, ...rest } = row;
+        return { id, avatar: img, ...rest };
+      });
+      printFormatted(data, globalOptions);
+    } else {
+      const data = globalOptions.raw ? users : (users as Array<Record<string, unknown>>).map(u => applyShowExclude(summarizeUserRow(u), u, show, exclude));
+      printFormatted(data, globalOptions);
     }
+
+    printPaginationFooter(users.length, options.items, options.page, globalOptions.output as string);
   }));
 
 const getCommand = new Command('get')
@@ -74,7 +95,7 @@ const getCommand = new Command('get')
 
     if (options.showAvatars !== undefined) {
       const width = typeof options.showAvatars === 'number' ? options.showAvatars : 15;
-      await displayUserAvatars([user as User], globalOptions, width);
+      await displayUserAvatar(user as User, globalOptions, width);
     }
   }));
 
