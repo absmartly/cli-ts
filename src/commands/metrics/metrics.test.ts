@@ -40,10 +40,85 @@ describe('metrics command', () => {
     processExitSpy.mockRestore();
   });
 
+  const defaultListParams = {
+    items: 100,
+    page: 1,
+    archived: undefined,
+    search: undefined,
+    sort: undefined,
+    sort_asc: undefined,
+    ids: undefined,
+    owners: undefined,
+    teams: undefined,
+    review_status: undefined,
+  };
+
   it('should list metrics', async () => {
     await metricsCommand.parseAsync(['node', 'test', 'list']);
 
-    expect(mockClient.listMetrics).toHaveBeenCalledWith({ items: 100, page: 1, archived: undefined });
+    expect(mockClient.listMetrics).toHaveBeenCalledWith(defaultListParams);
+    expect(printFormatted).toHaveBeenCalled();
+  });
+
+  it('should list metrics with search filter', async () => {
+    await metricsCommand.parseAsync(['node', 'test', 'list', '--search', 'ctr']);
+
+    expect(mockClient.listMetrics).toHaveBeenCalledWith({ ...defaultListParams, search: 'ctr' });
+    expect(printFormatted).toHaveBeenCalled();
+  });
+
+  it('should list metrics with sort and direction', async () => {
+    await metricsCommand.parseAsync(['node', 'test', 'list', '--sort', 'name', '--asc']);
+
+    expect(mockClient.listMetrics).toHaveBeenCalledWith({ ...defaultListParams, sort: 'name', sort_asc: true });
+    expect(printFormatted).toHaveBeenCalled();
+  });
+
+  it('should list metrics filtered by owners', async () => {
+    await metricsCommand.parseAsync(['node', 'test', 'list', '--owners', '1,2,3']);
+
+    expect(mockClient.listMetrics).toHaveBeenCalledWith({ ...defaultListParams, owners: '1,2,3' });
+    expect(printFormatted).toHaveBeenCalled();
+  });
+
+  it('should list metrics filtered by teams', async () => {
+    await metricsCommand.parseAsync(['node', 'test', 'list', '--teams', '5,10']);
+
+    expect(mockClient.listMetrics).toHaveBeenCalledWith({ ...defaultListParams, teams: '5,10' });
+    expect(printFormatted).toHaveBeenCalled();
+  });
+
+  it('should list metrics filtered by ids', async () => {
+    await metricsCommand.parseAsync(['node', 'test', 'list', '--ids', '1,2,3']);
+
+    expect(mockClient.listMetrics).toHaveBeenCalledWith({ ...defaultListParams, ids: '1,2,3' });
+    expect(printFormatted).toHaveBeenCalled();
+  });
+
+  it('should list metrics filtered by review status', async () => {
+    await metricsCommand.parseAsync(['node', 'test', 'list', '--review-status', 'pending']);
+
+    expect(mockClient.listMetrics).toHaveBeenCalledWith({ ...defaultListParams, review_status: 'pending' });
+    expect(printFormatted).toHaveBeenCalled();
+  });
+
+  it('should list metrics with all filters combined', async () => {
+    await metricsCommand.parseAsync([
+      'node', 'test', 'list',
+      '--archived', '--search', 'conversion', '--sort', 'created_at', '--desc',
+      '--owners', '1', '--teams', '2', '--review-status', 'approved',
+    ]);
+
+    expect(mockClient.listMetrics).toHaveBeenCalledWith({
+      ...defaultListParams,
+      archived: true,
+      search: 'conversion',
+      sort: 'created_at',
+      sort_asc: false,
+      owners: '1',
+      teams: '2',
+      review_status: 'approved',
+    });
     expect(printFormatted).toHaveBeenCalled();
   });
 

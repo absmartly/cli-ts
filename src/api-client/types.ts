@@ -409,6 +409,19 @@ export interface PermissionCategory {
   permissions?: Permission[];
 }
 
+export interface ListMetricsOptions {
+  items?: number | undefined;
+  page?: number | undefined;
+  archived?: boolean | undefined;
+  search?: string | undefined;
+  sort?: string | undefined;
+  sort_asc?: boolean | undefined;
+  ids?: string | undefined;
+  owners?: string | undefined;
+  teams?: string | undefined;
+  review_status?: string | undefined;
+}
+
 export interface ListOptions {
   page?: number;
   items?: number;

@@ -8,6 +8,7 @@ import type { UserId } from '../../lib/api/branded-types.js';
 import { applyShowExclude, summarizeUserRow, summarizeUserDetail } from '../../api-client/entity-summary.js';
 import type { User } from '../../api-client/types.js';
 import { resetPasswordCommand } from './reset-password.js';
+import { userApiKeysCommand } from './api-keys.js';
 
 export const usersCommand = new Command('users').alias('user').description('User commands');
 
@@ -133,3 +134,4 @@ usersCommand.addCommand(createCommand);
 usersCommand.addCommand(updateCommand);
 usersCommand.addCommand(archiveCommand);
 usersCommand.addCommand(resetPasswordCommand);
+usersCommand.addCommand(userApiKeysCommand);

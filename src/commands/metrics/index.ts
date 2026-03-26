@@ -16,9 +16,29 @@ export const metricsCommand = new Command('metrics')
 const listCommand = createListCommand({
   description: 'List all metrics',
   defaultItems: 100,
-  fetch: (client, options) => client.listMetrics({ items: options.items as number, page: options.page as number, archived: options.archived as boolean }),
+  fetch: (client, options) => client.listMetrics({
+    items: options.items as number,
+    page: options.page as number,
+    archived: options.archived as boolean,
+    search: options.search as string | undefined,
+    sort: options.sort as string | undefined,
+    sort_asc: options.asc ? true : options.desc ? false : undefined,
+    ids: options.ids as string | undefined,
+    owners: options.owners as string | undefined,
+    teams: options.teams as string | undefined,
+    review_status: options.reviewStatus as string | undefined,
+  }),
   summarizeRow: summarizeMetricRow,
-  extraOptions: (cmd) => cmd.option('--archived', 'include archived metrics'),
+  extraOptions: (cmd) => cmd
+    .option('--archived', 'include archived metrics')
+    .option('--search <query>', 'search by name, tag, goal, or owner')
+    .option('--sort <field>', 'sort by field (e.g. name, created_at, updated_at)')
+    .option('--asc', 'sort in ascending order')
+    .option('--desc', 'sort in descending order')
+    .option('--ids <ids>', 'filter by metric IDs (comma-separated)')
+    .option('--owners <ids>', 'filter by owner user IDs (comma-separated)')
+    .option('--teams <ids>', 'filter by team IDs (comma-separated)')
+    .option('--review-status <status>', 'filter by review status (pending, approved, none)'),
 });
 
 const getCommand = new Command('get')

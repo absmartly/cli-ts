@@ -527,6 +527,11 @@ Aliases: `metrics`, `metric`
 
 ```bash
 abs metrics list
+abs metrics list --search "revenue"
+abs metrics list --owners 1,2 --teams 3
+abs metrics list --review-status pending
+abs metrics list --sort name --asc
+abs metrics list --ids 1,2,3
 abs metrics get 123
 abs metrics create --name "Revenue" --type count
 abs metrics update 123 --description "Updated"
@@ -586,6 +591,14 @@ abs users archive 123 --unarchive
 
 # Reset password
 abs users reset-password 123
+
+# User API keys
+abs users api-keys list --user 42
+abs users api-keys get 1 --user 42
+abs users api-keys create --user 42 --name "CI Key"
+abs users api-keys create --user 42 --name "CI Key" --description "For CI/CD"
+abs users api-keys update 1 --user 42 --name "Renamed"
+abs users api-keys delete 1 --user 42
 ```
 
 ### Tags

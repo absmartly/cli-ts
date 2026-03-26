@@ -8,6 +8,7 @@ import {
 } from './types.js';
 import type {
   Experiment,
+  ListMetricsOptions,
   ListOptions,
   Goal,
   Segment,
@@ -620,12 +621,46 @@ export class APIClient {
     this.validateOkResponse(response, 'resetUserPassword');
   }
 
-  async listMetrics(options: { items?: number; page?: number; archived?: boolean; search?: string } = {}): Promise<Metric[]> {
+  async listUserApiKeysByUserId(userId: UserId, items = 20, page = 1): Promise<unknown[]> {
+    const response = await this.request('GET', `/users/${userId}/api_keys`, {
+      params: { items: String(items), page: String(page) },
+    });
+    return this.validateListResponse<unknown>(response, 'user_api_keys', 'listUserApiKeysByUserId');
+  }
+
+  async getUserApiKeyByUserId(userId: UserId, keyId: number): Promise<unknown> {
+    const response = await this.request('GET', `/users/${userId}/api_keys/${keyId}`);
+    return this.validateEntityResponse<unknown>(response, 'user_api_key', 'getUserApiKeyByUserId');
+  }
+
+  async createUserApiKeyByUserId(userId: UserId, data: { name: string; description?: string }): Promise<{ id: number; name: string; key: string }> {
+    const response = await this.request<Record<string, unknown>>('POST', `/users/${userId}/api_keys`, {
+      data: { name: data.name, description: data.description || '' },
+    });
+    return this.validateEntityResponse<{ id: number; name: string; key: string }>(response, 'user_api_key', 'createUserApiKeyByUserId');
+  }
+
+  async updateUserApiKeyByUserId(userId: UserId, keyId: number, data: { name?: string; description?: string }): Promise<unknown> {
+    const response = await this.request('PUT', `/users/${userId}/api_keys/${keyId}`, { data: { data } });
+    return this.validateEntityResponse<unknown>(response, 'user_api_key', 'updateUserApiKeyByUserId');
+  }
+
+  async deleteUserApiKeyByUserId(userId: UserId, keyId: number): Promise<void> {
+    await this.request('DELETE', `/users/${userId}/api_keys/${keyId}`);
+  }
+
+  async listMetrics(options: ListMetricsOptions = {}): Promise<Metric[]> {
     const params: Record<string, string> = {};
     if (options.items !== undefined) params.items = String(options.items);
     if (options.page !== undefined) params.page = String(options.page);
     if (options.archived) params.archived = 'true';
     if (options.search) params.search = options.search;
+    if (options.sort) params.sort = options.sort;
+    if (options.sort_asc !== undefined) params.sort_asc = String(options.sort_asc);
+    if (options.ids) params.ids = options.ids;
+    if (options.owners) params.owners = options.owners;
+    if (options.teams) params.teams = options.teams;
+    if (options.review_status) params.review_status = options.review_status;
     const response = await this.request('GET', '/metrics', { params });
     return this.validateListResponse<Metric>(response, 'metrics', 'listMetrics');
   }
