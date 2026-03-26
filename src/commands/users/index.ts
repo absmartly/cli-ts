@@ -3,7 +3,7 @@ import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, resolveAPIKey, resolveEndpoint, withErrorHandling, type GlobalOptions } from '../../lib/utils/api-helper.js';
 import { parseUserId, requireAtLeastOneField } from '../../lib/utils/validators.js';
 import { addPaginationOptions, printPaginationFooter } from '../../lib/utils/pagination.js';
-import { fetchAndDisplayImage, supportsInlineImages } from '../../lib/utils/terminal-image.js';
+import { fetchAndDisplayImage, renderInlineImage, supportsInlineImages } from '../../lib/utils/terminal-image.js';
 import type { UserId } from '../../lib/api/branded-types.js';
 import { applyShowExclude, summarizeUserRow, summarizeUserDetail } from '../../api-client/entity-summary.js';
 import type { User } from '../../api-client/types.js';
@@ -42,14 +42,40 @@ const listCommand = addPaginationOptions(
     const exclude = (options.exclude as string[] | undefined) ?? [];
 
     const users = await client.listUsers({ includeArchived: options.includeArchived, items: options.items, page: options.page });
-    const data = globalOptions.raw ? users : (users as Array<Record<string, unknown>>).map(u => applyShowExclude(summarizeUserRow(u), u, show, exclude));
-    printFormatted(data, globalOptions);
-    printPaginationFooter(users.length, options.items, options.page, globalOptions.output as string);
 
-    if (options.showAvatars !== undefined) {
-      const width = typeof options.showAvatars === 'number' ? options.showAvatars : 10;
-      await displayUserAvatars(users as User[], globalOptions, width);
+    if (options.showAvatars !== undefined && supportsInlineImages() && !globalOptions.raw) {
+      const width = typeof options.showAvatars === 'number' ? options.showAvatars : 3;
+      const endpoint = resolveEndpoint(globalOptions);
+      const baseUrl = endpoint.replace(/\/v\d+\/?$/, '');
+      const apiKey = await resolveAPIKey(globalOptions);
+      const headers = { Authorization: `Api-Key ${apiKey}` };
+
+      const avatarMap = new Map<number, string>();
+      const fetchPromises = (users as User[]).map(async (user) => {
+        if (!user.avatar?.base_url) return;
+        const url = `${baseUrl}${user.avatar.base_url}/${user.avatar.file_name}`;
+        try {
+          const response = await fetch(url, { headers });
+          if (!response.ok) return;
+          const buffer = Buffer.from(await response.arrayBuffer());
+          const rendered = renderInlineImage(buffer, user.avatar.file_name ?? 'avatar', width);
+          if (rendered) avatarMap.set(user.id, rendered);
+        } catch { /* skip failed avatars */ }
+      });
+      await Promise.all(fetchPromises);
+
+      const data = (users as Array<Record<string, unknown>>).map(u => {
+        const row = applyShowExclude(summarizeUserRow(u), u, show, exclude);
+        const avatar = avatarMap.get(row.id as number);
+        return { id: row.id, avatar: avatar ?? '', ...Object.fromEntries(Object.entries(row).filter(([k]) => k !== 'id')) };
+      });
+      printFormatted(data, globalOptions);
+    } else {
+      const data = globalOptions.raw ? users : (users as Array<Record<string, unknown>>).map(u => applyShowExclude(summarizeUserRow(u), u, show, exclude));
+      printFormatted(data, globalOptions);
     }
+
+    printPaginationFooter(users.length, options.items, options.page, globalOptions.output as string);
   }));
 
 const getCommand = new Command('get')

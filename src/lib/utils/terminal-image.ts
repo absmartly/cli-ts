@@ -47,23 +47,22 @@ function renderSixel(buffer: Buffer): string | null {
   }
 }
 
-export function displayInlineImage(buffer: Buffer, fileName: string, widthCols = 20): boolean {
+export function renderInlineImage(buffer: Buffer, fileName: string, widthCols = 20): string | null {
   const protocol = detectProtocol();
-  if (!protocol) return false;
+  if (!protocol) return null;
 
-  let output: string | null = null;
   switch (protocol) {
     case 'iterm':
-      output = renderIterm(buffer, fileName, widthCols);
-      break;
+      return renderIterm(buffer, fileName, widthCols);
     case 'kitty':
-      output = renderKitty(buffer, widthCols);
-      break;
+      return renderKitty(buffer, widthCols);
     case 'sixel':
-      output = renderSixel(buffer);
-      break;
+      return renderSixel(buffer);
   }
+}
 
+export function displayInlineImage(buffer: Buffer, fileName: string, widthCols = 20): boolean {
+  const output = renderInlineImage(buffer, fileName, widthCols);
   if (!output) return false;
   process.stdout.write(output + '\n');
   return true;
