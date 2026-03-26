@@ -145,7 +145,7 @@ export function summarizeSegment(s: Record<string, unknown>): Record<string, unk
     id: s.id,
     name: s.name,
     description: s.description ?? '',
-    attribute: s.attribute ?? '',
+    attribute: s.value_source_attribute ?? '',
     created_at: formatDate(s.created_at),
     archived: s.archived ?? false,
   };
@@ -155,7 +155,7 @@ export function summarizeSegmentRow(s: Record<string, unknown>): Record<string, 
   return {
     id: s.id,
     name: s.name,
-    attribute: s.attribute ?? '',
+    attribute: s.value_source_attribute ?? '',
     archived: s.archived ?? false,
   };
 }

@@ -164,7 +164,7 @@ describe('summarizeSegment', () => {
       id: 5,
       name: 'Mobile Users',
       description: 'Users on mobile',
-      attribute: 'device',
+      value_source_attribute: 'device',
       created_at: '2024-04-01T00:00:00Z',
       archived: false,
     });
@@ -180,7 +180,7 @@ describe('summarizeSegmentRow', () => {
     const result = summarizeSegmentRow({
       id: 5,
       name: 'Mobile Users',
-      attribute: 'device',
+      value_source_attribute: 'device',
       archived: false,
     });
     expect(result).toHaveProperty('id', 5);
