@@ -13,6 +13,7 @@ import type { ExperimentInput } from '../../api-client/index.js';
 import { parseExperimentIdOrName } from './resolve-id.js';
 import { getDefaultType } from './default-type.js';
 import { registerCustomFieldOptions, extractCustomFieldValues } from './custom-field-options.js';
+import { resolveNote } from './resolve-note.js';
 
 export const updateCommand = new Command('update')
   .description('Update an existing experiment')
@@ -45,6 +46,7 @@ export const updateCommand = new Command('update')
 registerCustomFieldOptions(updateCommand, getDefaultType());
 
 updateCommand
+  .option('--note <text>', 'activity log note')
   .option('-i, --interactive', 'interactive step-by-step editor')
   .option('--dry-run', 'show the request payload without making the API call');
 
@@ -167,15 +169,22 @@ updateCommand.action(withErrorHandling(async (nameOrId: string, options) => {
       }
     }
 
+    const note = await resolveNote(options, 'update', getDefaultType(), globalOptions.profile);
+
     if (options.dryRun) {
       console.log(chalk.blue('Request Payload (dry-run):'));
       console.log('');
       console.log(`PUT /experiments/${id}`);
       console.log('');
       console.log(JSON.stringify(changes, null, 2));
+      if (note) console.log(`\nNote: ${note}`);
       return;
     }
 
-    await client.updateExperiment(id, changes);
+    if (note !== undefined) {
+      await client.updateExperiment(id, changes, { note });
+    } else {
+      await client.updateExperiment(id, changes);
+    }
     console.log(chalk.green(`Experiment ${id} updated`));
   }));

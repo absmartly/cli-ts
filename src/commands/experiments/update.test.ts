@@ -273,6 +273,16 @@ describe('update command', () => {
     expect(output).toContain('PUT /experiments/42');
   });
 
+  it('should pass --note to updateExperiment', async () => {
+    await updateCommand.parseAsync(['node', 'test', '42', '--display-name', 'New Name', '--note', 'my update note']);
+
+    expect(mockClient.updateExperiment).toHaveBeenCalledWith(
+      42,
+      expect.objectContaining({ display_name: 'New Name' }),
+      { note: 'my update note' }
+    );
+  });
+
   it('should pass partial changes only', async () => {
     await updateCommand.parseAsync(['node', 'test', '42', '--display-name', 'Partial']);
 
