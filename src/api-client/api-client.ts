@@ -753,8 +753,10 @@ export class APIClient {
     await this.request('PUT', `/experiment_custom_section_fields/${id}/archive`, { data: { archive: !unarchive } });
   }
 
-  async listCustomSections(): Promise<unknown[]> {
-    const response = await this.request('GET', '/experiment_custom_sections');
+  async listCustomSections(type?: string): Promise<unknown[]> {
+    const params: Record<string, string> = {};
+    if (type) params.type = type;
+    const response = await this.request('GET', '/experiment_custom_sections', { params });
     return this.validateListResponse<unknown>(response, 'experiment_custom_sections', 'listCustomSections');
   }
 
