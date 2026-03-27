@@ -76,7 +76,7 @@ const listCommand = addPaginationOptions(
       });
 
       for (const row of rows) {
-        table.push(keys.map(k => String(row[k] ?? '')));
+        table.push(keys.map(k => String(row[k] ?? '') + '\n'));
       }
 
       const tableLines = table.toString().split('\n');
