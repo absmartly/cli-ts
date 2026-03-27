@@ -69,33 +69,16 @@ const listCommand = addPaginationOptions(
 
       const rows = (users as Array<Record<string, unknown>>).map(u => applyShowExclude(summarizeUserRow(u), u, show, exclude));
       const keys = rows.length > 0 ? Object.keys(rows[0]!) : [];
-      const padCol = ' '.repeat(avatarWidth + 1);
-      const head = [padCol, ...keys.map(k => chalk.bold.cyan(k))];
+      const head = ['', ...keys.map(k => chalk.bold.cyan(k))];
       const table = new Table({ head, style: { head: [], border: ['gray'] } });
 
       for (const row of rows) {
+        const img = avatarMap.get(row.id as number) ?? '';
         const cells = keys.map(k => String(row[k] ?? ''));
-        table.push([padCol, ...cells]);
+        table.push([img, ...cells]);
       }
 
-      const tableStr = table.toString();
-      process.stdout.write(tableStr + '\n');
-
-      const tableLineCount = tableStr.split('\n').length;
-      const avatarEntries: Array<{ dataIdx: number; img: string }> = [];
-      for (let i = 0; i < rows.length; i++) {
-        const img = avatarMap.get(rows[i]!.id as number);
-        if (img) avatarEntries.push({ dataIdx: i, img });
-      }
-
-      for (const { dataIdx, img } of avatarEntries.reverse()) {
-        const tableLine = dataIdx + 3;
-        const linesUp = tableLineCount - tableLine;
-        process.stdout.write(`\x1b[${linesUp}A\r\x1b[1C${img}`);
-        const linesDown = linesUp - 1;
-        if (linesDown > 0) process.stdout.write(`\x1b[${linesDown}B`);
-        process.stdout.write('\r');
-      }
+      process.stdout.write(table.toString() + '\n');
     } else {
       const data = globalOptions.raw ? users : (users as Array<Record<string, unknown>>).map(u => applyShowExclude(summarizeUserRow(u), u, show, exclude));
       printFormatted(data, globalOptions);
