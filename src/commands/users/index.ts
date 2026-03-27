@@ -62,7 +62,7 @@ const listCommand = addPaginationOptions(
           const response = await fetch(thumbUrl, { headers, redirect: 'follow' });
           if (!response.ok) return;
           const buffer = Buffer.from(await response.arrayBuffer());
-          const img = renderInlineImage(buffer, 'avatar.webp', avatarWidth, 1);
+          const img = renderInlineImage(buffer, 'avatar.webp', avatarWidth);
           if (img) avatarMap.set(user.id, img);
         } catch { /* skip */ }
       }));
@@ -71,39 +71,37 @@ const listCommand = addPaginationOptions(
       const keys = rows.length > 0 ? Object.keys(rows[0]!) : [];
 
       const table = new Table({
-        head: keys.map(k => chalk.bold.cyan(k)),
+        head: [' ', ...keys.map(k => chalk.bold.cyan(k))],
+        colWidths: [avatarWidth + 2],
         style: { head: [], border: ['gray'] },
       });
 
       for (const row of rows) {
-        table.push(keys.map(k => String(row[k] ?? '') + '\n'));
+        table.push([' ', ...keys.map(k => String(row[k] ?? ''))]);
       }
 
       const tableLines = table.toString().split('\n');
-      const pad = ' '.repeat(avatarWidth + 1);
-
+      const stripAnsi = (s: string) => s.replace(/\x1b\[[0-9;]*m/g, '');
       let dataIdx = -1;
-      let isFirstLineOfRow = false;
 
       for (const line of tableLines) {
-        const isBorder = /^[├┌└]/.test(line);
+        const stripped = stripAnsi(line);
+        const isBorder = /^[├┌└]/.test(stripped);
         if (isBorder) {
-          isFirstLineOfRow = !line.startsWith('┌');
-          if (isFirstLineOfRow) dataIdx++;
-          process.stdout.write(pad + line + '\n');
+          if (!stripped.startsWith('┌')) dataIdx++;
+          process.stdout.write(line + '\n');
           continue;
         }
 
-        if (isFirstLineOfRow && dataIdx >= 0 && dataIdx < rows.length) {
+        if (/^│/.test(stripped) && dataIdx >= 0 && dataIdx < rows.length) {
           const img = avatarMap.get(rows[dataIdx]!.id as number);
           if (img) {
-            process.stdout.write(pad + line + '\r' + img);
+            process.stdout.write(line + '\r\x1b[90m│\x1b[0m ' + img + '\r');
           } else {
-            process.stdout.write(pad + line + '\n');
+            process.stdout.write(line + '\n');
           }
-          isFirstLineOfRow = false;
         } else {
-          process.stdout.write(pad + line + '\n');
+          process.stdout.write(line + '\n');
         }
       }
     } else {
