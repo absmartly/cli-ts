@@ -1,4 +1,5 @@
 import { Command } from 'commander';
+import Table from 'cli-table3';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, resolveAPIKey, resolveEndpoint, withErrorHandling, type GlobalOptions } from '../../lib/utils/api-helper.js';
 import { parseUserId, requireAtLeastOneField } from '../../lib/utils/validators.js';
@@ -68,26 +69,41 @@ const listCommand = addPaginationOptions(
 
       const rows = (users as Array<Record<string, unknown>>).map(u => applyShowExclude(summarizeUserRow(u), u, show, exclude));
       const keys = rows.length > 0 ? Object.keys(rows[0]!) : [];
-      const colWidths = new Map<string, number>();
-      for (const k of keys) colWidths.set(k, k.length);
+
+      const table = new Table({
+        head: keys.map(k => chalk.bold.cyan(k)),
+        style: { head: [], border: ['gray'] },
+      });
+
       for (const row of rows) {
-        for (const k of keys) {
-          const len = String(row[k] ?? '').length;
-          if (len > colWidths.get(k)!) colWidths.set(k, len);
-        }
+        table.push(keys.map(k => String(row[k] ?? '') + '\n'));
       }
 
+      const tableLines = table.toString().split('\n');
       const pad = ' '.repeat(avatarWidth + 1);
-      const headerLine = pad + keys.map(k => chalk.bold.cyan(k.padEnd(colWidths.get(k)!))).join('  ');
-      process.stdout.write(headerLine + '\n');
 
-      for (const row of rows) {
-        const img = avatarMap.get(row.id as number);
-        const cells = keys.map(k => String(row[k] ?? '').padEnd(colWidths.get(k)!)).join('  ');
-        if (img) {
-          process.stdout.write(img + ' ' + cells + '\n');
+      let dataIdx = -1;
+      let isFirstLineOfRow = false;
+
+      for (const line of tableLines) {
+        const isBorder = /^[├┌└]/.test(line);
+        if (isBorder) {
+          isFirstLineOfRow = !line.startsWith('┌');
+          if (isFirstLineOfRow) dataIdx++;
+          process.stdout.write(pad + line + '\n');
+          continue;
+        }
+
+        if (isFirstLineOfRow && dataIdx >= 0 && dataIdx < rows.length) {
+          const img = avatarMap.get(rows[dataIdx]!.id as number);
+          if (img) {
+            process.stdout.write(img + ' ' + line + '\n');
+          } else {
+            process.stdout.write(pad + line + '\n');
+          }
+          isFirstLineOfRow = false;
         } else {
-          process.stdout.write(pad + cells + '\n');
+          process.stdout.write(pad + line + '\n');
         }
       }
     } else {
