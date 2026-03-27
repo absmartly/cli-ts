@@ -1,5 +1,15 @@
 import { readFileSync, existsSync } from 'fs';
 import { basename, extname } from 'path';
+import { imageSize } from 'image-size';
+
+function getImageDimensions(buffer: Buffer): { width: number; height: number } {
+  try {
+    const result = imageSize(buffer);
+    return { width: result.width ?? 0, height: result.height ?? 0 };
+  } catch {
+    return { width: 0, height: 0 };
+  }
+}
 
 export interface ScreenshotData {
   data: string;
@@ -61,17 +71,19 @@ function resolveDataUri(uri: string, variantName: string): ScreenshotData {
   const buffer = Buffer.from(base64Data, 'base64');
   const ext = MIME_TO_EXTENSION[contentType] || '.png';
 
+  const dims = getImageDimensions(buffer);
+
   return {
     data: base64Data,
     file_name: `${variantName}${ext}`,
     file_size: buffer.length,
     content_type: contentType,
-    width: 0,
-    height: 0,
+    width: dims.width,
+    height: dims.height,
     crop_left: 0,
     crop_top: 0,
-    crop_width: 0,
-    crop_height: 0,
+    crop_width: dims.width,
+    crop_height: dims.height,
   };
 }
 
@@ -94,17 +106,19 @@ async function resolveUrl(url: string, variantName: string): Promise<ScreenshotD
     ? basename(urlPath)
     : `${variantName}${MIME_TO_EXTENSION[contentType] || '.png'}`;
 
+  const dims = getImageDimensions(buffer);
+
   return {
     data: buffer.toString('base64'),
     file_name: fileName,
     file_size: buffer.length,
     content_type: EXTENSION_TO_MIME[urlExt] || contentType,
-    width: 0,
-    height: 0,
+    width: dims.width,
+    height: dims.height,
     crop_left: 0,
     crop_top: 0,
-    crop_width: 0,
-    crop_height: 0,
+    crop_width: dims.width,
+    crop_height: dims.height,
   };
 }
 
@@ -120,16 +134,18 @@ function resolveFilePath(filePath: string, variantName: string): ScreenshotData 
   const ext = extname(filePath).toLowerCase();
   const contentType = EXTENSION_TO_MIME[ext] || 'application/octet-stream';
 
+  const dims = getImageDimensions(buffer);
+
   return {
     data: buffer.toString('base64'),
     file_name: basename(filePath),
     file_size: buffer.length,
     content_type: contentType,
-    width: 0,
-    height: 0,
+    width: dims.width,
+    height: dims.height,
     crop_left: 0,
     crop_top: 0,
-    crop_width: 0,
-    crop_height: 0,
+    crop_width: dims.width,
+    crop_height: dims.height,
   };
 }
