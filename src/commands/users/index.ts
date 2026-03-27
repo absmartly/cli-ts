@@ -97,7 +97,7 @@ const listCommand = addPaginationOptions(
         if (isFirstLineOfRow && dataIdx >= 0 && dataIdx < rows.length) {
           const img = avatarMap.get(rows[dataIdx]!.id as number);
           if (img) {
-            process.stdout.write(img + ' ' + line + '\n');
+            process.stdout.write(pad + line + '\r' + img);
           } else {
             process.stdout.write(pad + line + '\n');
           }

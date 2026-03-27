@@ -3,6 +3,7 @@ import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseCustomSectionFieldId, requireAtLeastOneField } from '../../lib/utils/validators.js';
 import { createListCommand } from '../../lib/utils/list-command.js';
+import { applyShowExclude, summarizeCustomField, summarizeCustomFieldRow } from '../../api-client/entity-summary.js';
 import type { CustomSectionFieldId } from '../../lib/api/branded-types.js';
 import type { CustomSectionField } from '../../api-client/types.js';
 
@@ -16,17 +17,23 @@ const listCommand = createListCommand({
   description: 'List all experiment custom section fields',
   defaultItems: 100,
   fetch: (client, options) => client.listCustomSectionFields(options.items as number, options.page as number),
+  summarizeRow: summarizeCustomFieldRow,
 });
 
 const getCommand = new Command('get')
   .description('Get custom section field details')
   .argument('<id>', 'field ID', parseCustomSectionFieldId)
-  .action(withErrorHandling(async (id: CustomSectionFieldId) => {
+  .option('--show <fields...>', 'include additional fields from API response')
+  .option('--exclude <fields...>', 'hide fields from summary')
+  .action(withErrorHandling(async (id: CustomSectionFieldId, options) => {
     const globalOptions = getGlobalOptions(getCommand);
     const client = await getAPIClientFromOptions(globalOptions);
+    const show = (options.show as string[] | undefined) ?? [];
+    const exclude = (options.exclude as string[] | undefined) ?? [];
 
     const field = await client.getCustomSectionField(id);
-    printFormatted(field, globalOptions);
+    const data = globalOptions.raw ? field : applyShowExclude(summarizeCustomField(field as unknown as Record<string, unknown>), field as unknown as Record<string, unknown>, show, exclude);
+    printFormatted(data, globalOptions);
   }));
 
 const createCommand = new Command('create')

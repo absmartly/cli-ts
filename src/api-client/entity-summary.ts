@@ -159,3 +159,36 @@ export function summarizeSegmentRow(s: Record<string, unknown>): Record<string, 
     archived: s.archived ?? false,
   };
 }
+
+export function summarizeCustomFieldRow(f: Record<string, unknown>): Record<string, unknown> {
+  const section = f.custom_section as Record<string, unknown> | undefined;
+  return {
+    id: f.id,
+    title: f.title ?? f.name ?? '',
+    type: f.type ?? '',
+    required: f.required ?? false,
+    section: section?.title ?? '',
+    section_type: section?.type ?? '',
+    archived: f.archived ?? false,
+  };
+}
+
+export function summarizeCustomField(f: Record<string, unknown>): Record<string, unknown> {
+  const section = f.custom_section as Record<string, unknown> | undefined;
+  return {
+    id: f.id,
+    title: f.title ?? f.name ?? '',
+    type: f.type ?? '',
+    required: f.required ?? false,
+    help_text: f.help_text ?? '',
+    placeholder: f.placeholder ?? '',
+    default_value: f.default_value ?? '',
+    section: section?.title ?? '',
+    section_type: section?.type ?? '',
+    order_index: f.order_index ?? 0,
+    available_in_sdk: f.available_in_sdk ?? false,
+    sdk_field_name: f.sdk_field_name ?? '',
+    archived: f.archived ?? false,
+    created_at: formatDate(f.created_at),
+  };
+}
