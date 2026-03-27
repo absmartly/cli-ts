@@ -18,7 +18,7 @@ function renderIterm(buffer: Buffer, fileName: string, width: number, height?: n
   const b64 = buffer.toString('base64');
   const nameB64 = Buffer.from(fileName).toString('base64');
   const heightParam = height !== undefined ? `;height=${height}` : '';
-  return `\x1b]1337;File=name=${nameB64};size=${buffer.length};inline=1;width=${width}${heightParam};preserveAspectRatio=1:${b64}\x07`;
+  return `\x1b]1337;File=name=${nameB64};size=${buffer.length};inline=1;width=${width}${heightParam};preserveAspectRatio=0:${b64}\x07`;
 }
 
 function renderKitty(buffer: Buffer, width: number, height?: number): string {
