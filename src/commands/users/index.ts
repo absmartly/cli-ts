@@ -77,16 +77,17 @@ const listCommand = addPaginationOptions(
         }
       }
 
-      const headerLine = '  ' + keys.map(k => chalk.bold.cyan(k.padEnd(colWidths.get(k)!))).join('  ');
+      const pad = ' '.repeat(avatarWidth + 1);
+      const headerLine = pad + keys.map(k => chalk.bold.cyan(k.padEnd(colWidths.get(k)!))).join('  ');
       process.stdout.write(headerLine + '\n');
 
       for (const row of rows) {
         const img = avatarMap.get(row.id as number);
         const cells = keys.map(k => String(row[k] ?? '').padEnd(colWidths.get(k)!)).join('  ');
         if (img) {
-          process.stdout.write(img + cells + '\n');
+          process.stdout.write(img + ' ' + cells + '\n');
         } else {
-          process.stdout.write('  ' + cells + '\n');
+          process.stdout.write(pad + cells + '\n');
         }
       }
     } else {
