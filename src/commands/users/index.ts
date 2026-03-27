@@ -58,7 +58,8 @@ const listCommand = addPaginationOptions(
       await Promise.all((users as User[]).map(async (user) => {
         if (!user.avatar?.base_url) return;
         try {
-          const thumbUrl = `${baseUrl}${user.avatar.base_url}/crop/48x48.webp`;
+          const thumbSize = Math.min(avatarWidth * 16, 256);
+          const thumbUrl = `${baseUrl}${user.avatar.base_url}/crop/${thumbSize}x${thumbSize}.webp`;
           const response = await fetch(thumbUrl, { headers, redirect: 'follow' });
           if (!response.ok) return;
           const buffer = Buffer.from(await response.arrayBuffer());
@@ -69,6 +70,8 @@ const listCommand = addPaginationOptions(
 
       const rows = (users as Array<Record<string, unknown>>).map(u => applyShowExclude(summarizeUserRow(u), u, show, exclude));
       const keys = rows.length > 0 ? Object.keys(rows[0]!) : [];
+
+      const imageHeight = Math.max(1, Math.floor(avatarWidth / 2));
 
       const table = new Table({
         head: [' ', ...keys.map(k => chalk.bold.cyan(k))],
@@ -96,7 +99,12 @@ const listCommand = addPaginationOptions(
         if (/^│/.test(stripped) && dataIdx >= 0 && dataIdx < rows.length) {
           const img = avatarMap.get(rows[dataIdx]!.id as number);
           if (img) {
-            process.stdout.write(line + '\r\x1b[90m│\x1b[0m ' + img + '\r');
+            process.stdout.write(line + '\n');
+            const emptyBorder = stripped.replace(/[^│]/g, ' ').replace(/│/g, '\x1b[90m│\x1b[0m');
+            for (let i = 1; i < imageHeight; i++) {
+              process.stdout.write(emptyBorder + '\n');
+            }
+            process.stdout.write(`\x1b[${imageHeight}A\r\x1b[90m│\x1b[0m ` + img + '\r');
           } else {
             process.stdout.write(line + '\n');
           }
