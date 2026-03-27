@@ -1,5 +1,4 @@
 import { Command } from 'commander';
-import Table from 'cli-table3';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, resolveAPIKey, resolveEndpoint, withErrorHandling, type GlobalOptions } from '../../lib/utils/api-helper.js';
 import { parseUserId, requireAtLeastOneField } from '../../lib/utils/validators.js';
@@ -69,16 +68,27 @@ const listCommand = addPaginationOptions(
 
       const rows = (users as Array<Record<string, unknown>>).map(u => applyShowExclude(summarizeUserRow(u), u, show, exclude));
       const keys = rows.length > 0 ? Object.keys(rows[0]!) : [];
-      const head = ['', ...keys.map(k => chalk.bold.cyan(k))];
-      const table = new Table({ head, style: { head: [], border: ['gray'] } });
-
+      const colWidths = new Map<string, number>();
+      for (const k of keys) colWidths.set(k, k.length);
       for (const row of rows) {
-        const img = avatarMap.get(row.id as number) ?? '';
-        const cells = keys.map(k => String(row[k] ?? ''));
-        table.push([img, ...cells]);
+        for (const k of keys) {
+          const len = String(row[k] ?? '').length;
+          if (len > colWidths.get(k)!) colWidths.set(k, len);
+        }
       }
 
-      process.stdout.write(table.toString() + '\n');
+      const headerLine = '  ' + keys.map(k => chalk.bold.cyan(k.padEnd(colWidths.get(k)!))).join('  ');
+      process.stdout.write(headerLine + '\n');
+
+      for (const row of rows) {
+        const img = avatarMap.get(row.id as number);
+        const cells = keys.map(k => String(row[k] ?? '').padEnd(colWidths.get(k)!)).join('  ');
+        if (img) {
+          process.stdout.write(img + cells + '\n');
+        } else {
+          process.stdout.write('  ' + cells + '\n');
+        }
+      }
     } else {
       const data = globalOptions.raw ? users : (users as Array<Record<string, unknown>>).map(u => applyShowExclude(summarizeUserRow(u), u, show, exclude));
       printFormatted(data, globalOptions);
