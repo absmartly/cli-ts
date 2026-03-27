@@ -68,12 +68,27 @@ const profilesCommand = new Command('profiles').description('Manage configuratio
 profilesCommand
   .command('list')
   .description('List all profiles')
-  .action(withErrorHandling(async () => {
-    const profiles = listProfiles();
+  .option('--detailed', 'show full configuration for each profile')
+  .action(withErrorHandling(async (options) => {
     const config = loadConfig();
-    for (const name of profiles) {
-      const marker = name === config['default-profile'] ? ' (default)' : '';
-      console.log(`${name}${marker}`);
+    const profiles = listProfiles();
+    if (options.detailed) {
+      for (const name of profiles) {
+        const marker = name === config['default-profile'] ? ' (default)' : '';
+        const profile = config.profiles[name]!;
+        console.log(`${name}${marker}`);
+        console.log(`  endpoint: ${profile.api?.endpoint || ''}`);
+        if (profile.api?.token) console.log(`  api-key:  ${profile.api.token.slice(0, 8)}...`);
+        if (profile.expctld?.endpoint) console.log(`  expctld:  ${profile.expctld.endpoint}`);
+        if (profile.application) console.log(`  app:      ${profile.application}`);
+        if (profile.environment) console.log(`  env:      ${profile.environment}`);
+        console.log('');
+      }
+    } else {
+      for (const name of profiles) {
+        const marker = name === config['default-profile'] ? ' (default)' : '';
+        console.log(`${name}${marker}`);
+      }
     }
   }));
 
