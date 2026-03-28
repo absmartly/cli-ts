@@ -3,7 +3,6 @@ import axios from 'axios';
 import { isLiveMode, TEST_BASE_URL, TEST_API_KEY } from '../../test/helpers/test-config.js';
 import { createAPIClient } from '../api/client.js';
 import { generatePKCE } from './pkce.js';
-import { startCallbackServer } from './callback-server.js';
 import { exchangeCodeForToken } from './token-exchange.js';
 
 const LIVE_USERNAME = process.env.LIVE_USERNAME;
@@ -11,6 +10,63 @@ const LIVE_PASSWORD = process.env.LIVE_PASSWORD;
 
 function getOAuthBaseUrl(endpoint: string): string {
   return endpoint.replace(/\/v\d+\/?$/, '');
+}
+
+async function performOAuthBrowserFlow(endpoint: string): Promise<{ code: string; codeVerifier: string; redirectUri: string }> {
+  const { chromium } = await import('playwright');
+  const { codeVerifier, codeChallenge } = generatePKCE();
+  const redirectUri = 'http://localhost:8787/oauth/callback';
+
+  const baseUrl = getOAuthBaseUrl(endpoint);
+  const authUrl = new URL(`${baseUrl}/auth/oauth/authorize`);
+  authUrl.searchParams.set('response_type', 'code');
+  authUrl.searchParams.set('client_id', 'mcp-absmartly-universal');
+  authUrl.searchParams.set('redirect_uri', redirectUri);
+  authUrl.searchParams.set('code_challenge', codeChallenge);
+  authUrl.searchParams.set('code_challenge_method', 'S256');
+  authUrl.searchParams.set('scope', 'mcp:access');
+
+  const browser = await chromium.launch({ headless: true });
+  const context = await browser.newContext({ ignoreHTTPSErrors: true });
+  const page = await context.newPage();
+
+  let capturedCode: string | undefined;
+
+  const codePromise = new Promise<string>((resolve, reject) => {
+    const timeout = setTimeout(() => reject(new Error('OAuth flow timed out')), 30000);
+
+    page.on('request', (request) => {
+      const url = request.url();
+      if (url.startsWith('http://localhost')) {
+        clearTimeout(timeout);
+        try {
+          const parsed = new URL(url);
+          const code = parsed.searchParams.get('code');
+          if (code) resolve(code);
+          else reject(new Error('No code in callback URL'));
+        } catch (e) {
+          reject(e);
+        }
+      }
+    });
+  });
+
+  try {
+    await page.goto(authUrl.toString(), { waitUntil: 'networkidle' });
+    await page.fill('input[type="email"]', LIVE_USERNAME!);
+    await page.fill('input[type="password"]', LIVE_PASSWORD!);
+    await page.click('button[type="submit"]');
+
+    capturedCode = await codePromise;
+
+    if (!capturedCode) {
+      throw new Error('No authorization code received');
+    }
+
+    return { code: capturedCode, codeVerifier, redirectUri };
+  } finally {
+    await browser.close();
+  }
 }
 
 describe.runIf(isLiveMode)('OAuth live API tests', () => {
@@ -84,109 +140,49 @@ describe.runIf(isLiveMode)('OAuth live API tests', () => {
 
   describe.runIf(LIVE_USERNAME && LIVE_PASSWORD)('OAuth browser flow', () => {
     it('completes full OAuth flow and gets a valid JWT', async () => {
-      const { chromium } = await import('playwright');
+      const { code, codeVerifier, redirectUri } = await performOAuthBrowserFlow(TEST_BASE_URL);
 
-      const { codeVerifier, codeChallenge } = generatePKCE();
-      const server = await startCallbackServer();
+      const tokenResponse = await exchangeCodeForToken({
+        endpoint: TEST_BASE_URL,
+        code,
+        codeVerifier,
+        redirectUri,
+        clientId: 'mcp-absmartly-universal',
+      });
 
-      const baseUrl = getOAuthBaseUrl(TEST_BASE_URL);
-      const authUrl = new URL(`${baseUrl}/auth/oauth/authorize`);
-      authUrl.searchParams.set('response_type', 'code');
-      authUrl.searchParams.set('client_id', 'mcp-absmartly-universal');
-      authUrl.searchParams.set('redirect_uri', server.redirectUri);
-      authUrl.searchParams.set('code_challenge', codeChallenge);
-      authUrl.searchParams.set('code_challenge_method', 'S256');
-      authUrl.searchParams.set('scope', 'mcp:access user:info');
+      expect(tokenResponse.accessToken).toBeDefined();
+      expect(tokenResponse.tokenType).toBe('Bearer');
+      expect(tokenResponse.expiresIn).toBeGreaterThan(0);
 
-      const browser = await chromium.launch({ headless: true });
-      const context = await browser.newContext({ ignoreHTTPSErrors: true });
-      const page = await context.newPage();
-
-      try {
-        const codePromise = server.waitForCode(30000);
-
-        await page.goto(authUrl.toString());
-
-        await page.waitForSelector('input[name="email"]', { timeout: 10000 });
-        await page.fill('input[name="email"]', LIVE_USERNAME!);
-        await page.fill('input[name="password"]', LIVE_PASSWORD!);
-        await page.click('button[type="submit"]');
-
-        const code = await codePromise;
-        expect(code).toBeDefined();
-        expect(typeof code).toBe('string');
-
-        const tokenResponse = await exchangeCodeForToken({
-          endpoint: TEST_BASE_URL,
-          code,
-          codeVerifier,
-          redirectUri: server.redirectUri,
-          clientId: 'mcp-absmartly-universal',
-        });
-
-        expect(tokenResponse.accessToken).toBeDefined();
-        expect(tokenResponse.tokenType).toBe('Bearer');
-        expect(tokenResponse.expiresIn).toBeGreaterThan(0);
-
-        const jwtClient = createAPIClient(TEST_BASE_URL, {
-          method: 'oauth-jwt',
-          token: tokenResponse.accessToken,
-        });
-        const user = await jwtClient.getCurrentUser();
-        expect(user).toHaveProperty('id');
-        expect(user).toHaveProperty('email');
-      } finally {
-        await browser.close();
-        server.close();
-      }
+      const jwtClient = createAPIClient(TEST_BASE_URL, {
+        method: 'oauth-jwt',
+        token: tokenResponse.accessToken,
+      });
+      const user = await jwtClient.getCurrentUser();
+      expect(user).toHaveProperty('id');
+      expect(user).toHaveProperty('email');
     }, 60000);
 
     it('creates persistent API key after OAuth flow', async () => {
-      const { chromium } = await import('playwright');
+      const { code, codeVerifier, redirectUri } = await performOAuthBrowserFlow(TEST_BASE_URL);
 
-      const { codeVerifier, codeChallenge } = generatePKCE();
-      const server = await startCallbackServer();
+      const tokenResponse = await exchangeCodeForToken({
+        endpoint: TEST_BASE_URL,
+        code,
+        codeVerifier,
+        redirectUri,
+        clientId: 'mcp-absmartly-universal',
+      });
 
-      const baseUrl = getOAuthBaseUrl(TEST_BASE_URL);
-      const authUrl = new URL(`${baseUrl}/auth/oauth/authorize`);
-      authUrl.searchParams.set('response_type', 'code');
-      authUrl.searchParams.set('client_id', 'mcp-absmartly-universal');
-      authUrl.searchParams.set('redirect_uri', server.redirectUri);
-      authUrl.searchParams.set('code_challenge', codeChallenge);
-      authUrl.searchParams.set('code_challenge_method', 'S256');
-      authUrl.searchParams.set('scope', 'mcp:access user:info');
+      const jwtClient = createAPIClient(TEST_BASE_URL, {
+        method: 'oauth-jwt',
+        token: tokenResponse.accessToken,
+      });
 
-      const browser = await chromium.launch({ headless: true });
-      const context = await browser.newContext({ ignoreHTTPSErrors: true });
-      const page = await context.newPage();
-      let createdKeyId: number | undefined;
+      const keyName = `cli-vitest-persistent-${Date.now()}`;
+      const created = await jwtClient.createUserApiKey(keyName) as { id: number; key: string };
 
       try {
-        const codePromise = server.waitForCode(30000);
-
-        await page.goto(authUrl.toString());
-        await page.waitForSelector('input[name="email"]', { timeout: 10000 });
-        await page.fill('input[name="email"]', LIVE_USERNAME!);
-        await page.fill('input[name="password"]', LIVE_PASSWORD!);
-        await page.click('button[type="submit"]');
-
-        const code = await codePromise;
-        const tokenResponse = await exchangeCodeForToken({
-          endpoint: TEST_BASE_URL,
-          code,
-          codeVerifier,
-          redirectUri: server.redirectUri,
-          clientId: 'mcp-absmartly-universal',
-        });
-
-        const jwtClient = createAPIClient(TEST_BASE_URL, {
-          method: 'oauth-jwt',
-          token: tokenResponse.accessToken,
-        });
-
-        const keyName = `cli-vitest-persistent-${Date.now()}`;
-        const created = await jwtClient.createUserApiKey(keyName) as { id: number; key: string };
-        createdKeyId = created.id;
         expect(created.key).toBeDefined();
 
         const apiKeyClient = createAPIClient(TEST_BASE_URL, created.key);
@@ -194,11 +190,7 @@ describe.runIf(isLiveMode)('OAuth live API tests', () => {
         expect(user).toHaveProperty('id');
         expect(user).toHaveProperty('email');
       } finally {
-        if (createdKeyId) {
-          try { await client.deleteUserApiKey(createdKeyId); } catch {}
-        }
-        await browser.close();
-        server.close();
+        try { await client.deleteUserApiKey(created.id); } catch {}
       }
     }, 60000);
   });

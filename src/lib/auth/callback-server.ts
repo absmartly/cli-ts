@@ -60,7 +60,7 @@ function tryBindServer(port: number): Promise<CallbackServer> {
 
     server.on('error', reject);
 
-    server.listen(port, '127.0.0.1', () => {
+    server.listen(port, 'localhost', () => {
       const address = server.address();
       if (!address || typeof address === 'string') {
         server.close();

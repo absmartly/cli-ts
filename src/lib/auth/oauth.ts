@@ -4,7 +4,7 @@ import { startCallbackServer } from './callback-server.js';
 import { exchangeCodeForToken, type TokenResponse } from './token-exchange.js';
 
 const OAUTH_CLIENT_ID = 'mcp-absmartly-universal';
-const OAUTH_SCOPES = 'mcp:access user:info';
+const OAUTH_SCOPES = 'mcp:access';
 const AUTH_TIMEOUT_MS = 5 * 60 * 1000;
 
 export interface OAuthFlowOptions {

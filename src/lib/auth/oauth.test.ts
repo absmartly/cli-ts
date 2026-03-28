@@ -70,7 +70,7 @@ describe('startOAuthFlow', () => {
     expect(url.searchParams.get('client_id')).toBe('mcp-absmartly-universal');
     expect(url.searchParams.get('code_challenge')).toBe('test-challenge');
     expect(url.searchParams.get('code_challenge_method')).toBe('S256');
-    expect(url.searchParams.get('scope')).toBe('mcp:access user:info');
+    expect(url.searchParams.get('scope')).toBe('mcp:access');
   });
 
   it('handles noBrowser option by not calling open', async () => {
