@@ -17,18 +17,31 @@ const NON_IDEMPOTENT_PUT_PATHS = [
 
 const IDEMPOTENT_METHODS = ['GET', 'HEAD', 'OPTIONS', 'PUT', 'DELETE'];
 
+export type AuthConfig =
+  | { method: 'api-key'; apiKey: string }
+  | { method: 'oauth-jwt'; token: string; onExpired?: () => Promise<AuthConfig> };
+
 export class AxiosHttpClient implements HttpClient {
   private client: AxiosInstance;
   private verbose: boolean;
+  protected authConfig: AuthConfig;
 
-  constructor(endpoint: string, apiKey: string, options: { verbose?: boolean; timeout?: number } = {}) {
+  constructor(endpoint: string, auth: string | AuthConfig, options: { verbose?: boolean; timeout?: number } = {}) {
     this.verbose = options.verbose ?? false;
+
+    this.authConfig = typeof auth === 'string'
+      ? { method: 'api-key', apiKey: auth }
+      : auth;
+
+    const authHeader = this.authConfig.method === 'api-key'
+      ? `Api-Key ${this.authConfig.apiKey}`
+      : `Bearer ${this.authConfig.token}`;
 
     this.client = axios.create({
       baseURL: endpoint,
       timeout: options.timeout ?? DEFAULT_TIMEOUT,
       headers: {
-        Authorization: `Api-Key ${apiKey}`,
+        Authorization: authHeader,
         'Content-Type': 'application/json',
         Accept: 'application/json',
         'User-Agent': `absmartly-cli/${version}`,
@@ -177,8 +190,8 @@ export class AxiosHttpClient implements HttpClient {
 
 export function createAxiosHttpClient(
   endpoint: string,
-  apiKey: string,
+  auth: string | AuthConfig,
   options?: { verbose?: boolean; timeout?: number }
 ): AxiosHttpClient {
-  return new AxiosHttpClient(endpoint, apiKey, options);
+  return new AxiosHttpClient(endpoint, auth, options);
 }

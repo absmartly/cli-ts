@@ -1,5 +1,5 @@
 import { APIClient as EngineAPIClient } from '../../api-client/api-client.js';
-import { createAxiosHttpClient } from './axios-adapter.js';
+import { createAxiosHttpClient, type AuthConfig } from './axios-adapter.js';
 
 export interface ClientOptions {
   verbose?: boolean;
@@ -7,16 +7,16 @@ export interface ClientOptions {
 }
 
 export class APIClient extends EngineAPIClient {
-  constructor(endpoint: string, apiKey: string, options: ClientOptions = {}) {
-    const httpClient = createAxiosHttpClient(endpoint, apiKey, options);
+  constructor(endpoint: string, auth: string | AuthConfig, options: ClientOptions = {}) {
+    const httpClient = createAxiosHttpClient(endpoint, auth, options);
     super(httpClient);
   }
 }
 
 export function createAPIClient(
   endpoint: string,
-  apiKey: string,
+  auth: string | AuthConfig,
   options?: ClientOptions
 ): APIClient {
-  return new APIClient(endpoint, apiKey, options);
+  return new APIClient(endpoint, auth, options);
 }

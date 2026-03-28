@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { http, HttpResponse, passthrough } from 'msw';
 import { server } from '../../test/mocks/server.js';
 import { createAPIClient } from './client.js';
+import { AxiosHttpClient } from './axios-adapter.js';
 import { isLiveMode, TEST_BASE_URL, TEST_API_KEY } from '../../test/helpers/test-config.js';
 
 const BASE_URL = TEST_BASE_URL;
@@ -318,5 +319,28 @@ describe.skipIf(isLiveMode)('APIClient - Error Handling', () => {
 
       await expect(client.deleteSegment(123)).rejects.toThrow();
     });
+  });
+});
+
+describe('AxiosHttpClient auth modes', () => {
+  it('supports api-key auth config', () => {
+    const client = new AxiosHttpClient('https://api.example.com', {
+      method: 'api-key',
+      apiKey: 'test-key-123',
+    });
+    expect(client.getBaseUrl()).toBe('https://api.example.com');
+  });
+
+  it('supports oauth-jwt auth config', () => {
+    const client = new AxiosHttpClient('https://api.example.com', {
+      method: 'oauth-jwt',
+      token: 'jwt-token-abc',
+    });
+    expect(client.getBaseUrl()).toBe('https://api.example.com');
+  });
+
+  it('still supports string apiKey for backwards compatibility', () => {
+    const client = new AxiosHttpClient('https://api.example.com', 'test-key-123');
+    expect(client.getBaseUrl()).toBe('https://api.example.com');
   });
 });
