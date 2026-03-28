@@ -341,12 +341,13 @@ describe.skipIf(isLiveMode)('APIClient core', () => {
       expect(await client.listUsers()).toHaveLength(1);
     });
 
-    it('should reset user password', async () => {
-      server.use(
-        http.put(`${BASE_URL}/users/1/reset-password`, () => HttpResponse.json({ ok: true, errors: [] }))
-      );
-      await client.resetUserPassword(1);
-    });
+      it('should reset user password', async () => {
+        server.use(
+          http.put(`${BASE_URL}/users/1/reset-password`, () => HttpResponse.json({ ok: true, password: 'newPass123', errors: [] }))
+        );
+        const result = await client.resetUserPassword(1);
+        expect(result).toEqual({ password: 'newPass123' });
+      });
   });
 
   describe('metrics CRUD', () => {

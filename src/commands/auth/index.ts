@@ -327,6 +327,20 @@ const editProfileCommand = new Command('edit-profile')
     if (user.job_title) console.log(`  Job Title: ${user.job_title}`);
   }));
 
+const resetMyPasswordCommand = new Command('reset-my-password')
+  .description('Reset password for the currently authenticated user')
+  .action(withErrorHandling(async () => {
+    const globalOptions = getGlobalOptions(resetMyPasswordCommand);
+    const client = await getAPIClientFromOptions(globalOptions);
+
+    const user = await client.getCurrentUser();
+    const result = await client.resetUserPassword(user.id);
+
+    console.log(chalk.green(`✓ Password reset for ${user.email}`));
+    console.log(`  New password: ${result.password}`);
+    console.log(chalk.yellow('  Save this password — it cannot be retrieved later.'));
+  }));
+
 authCommand.addCommand(loginCommand);
 authCommand.addCommand(statusCommand);
 authCommand.addCommand(logoutCommand);
@@ -337,3 +351,4 @@ authCommand.addCommand(getApiKeyCommand);
 authCommand.addCommand(updateApiKeyCommand);
 authCommand.addCommand(deleteApiKeyCommand);
 authCommand.addCommand(editProfileCommand);
+authCommand.addCommand(resetMyPasswordCommand);

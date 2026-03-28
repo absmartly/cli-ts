@@ -11,6 +11,8 @@ export const resetPasswordCommand = new Command('reset-password')
     const globalOptions = getGlobalOptions(resetPasswordCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
-    await client.resetUserPassword(id);
+    const result = await client.resetUserPassword(id);
     console.log(chalk.green(`✓ Password reset for user ${id}`));
+    console.log(`  New password: ${result.password}`);
+    console.log(chalk.yellow('  Save this password — it cannot be retrieved later.'));
   }));

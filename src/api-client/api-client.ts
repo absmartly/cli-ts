@@ -631,9 +631,11 @@ export class APIClient {
     await this.request('PUT', `/users/${id}/archive`, { data: { archive: !unarchive } });
   }
 
-  async resetUserPassword(id: UserId): Promise<void> {
+  async resetUserPassword(id: UserId): Promise<{ password: string }> {
     const response = await this.request('PUT', `/users/${id}/reset-password`);
     this.validateOkResponse(response, 'resetUserPassword');
+    const data = response.data as { password: string };
+    return { password: data.password };
   }
 
   async listUserApiKeysByUserId(userId: UserId, items = 20, page = 1): Promise<unknown[]> {

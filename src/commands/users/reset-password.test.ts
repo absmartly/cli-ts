@@ -37,7 +37,7 @@ describe('reset-password command', () => {
   });
 
   it('should reset user password', async () => {
-    mockClient.resetUserPassword.mockResolvedValue(undefined);
+    mockClient.resetUserPassword.mockResolvedValue({ password: 'new-pass-123' });
 
     await resetPasswordCommand.parseAsync(['node', 'test', '42']);
 
