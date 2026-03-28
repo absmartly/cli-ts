@@ -1,10 +1,14 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
+import { hostname } from 'os';
+import { confirm } from '@inquirer/prompts';
 import { setProfile, getProfile, loadConfig } from '../../lib/config/config.js';
-import { setAPIKey, getAPIKey, deleteAPIKey } from '../../lib/config/keyring.js';
+import { setAPIKey, getAPIKey, deleteAPIKey, setOAuthToken, getOAuthToken, deleteOAuthToken } from '../../lib/config/keyring.js';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, resolveAPIKey, resolveEndpoint, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { fetchAndDisplayImage, supportsInlineImages } from '../../lib/utils/terminal-image.js';
 import { summarizeUser } from '../../api-client/user-summary.js';
+import { startOAuthFlow } from '../../lib/auth/oauth.js';
+import { createAPIClient } from '../../lib/api/client.js';
 
 export const authCommand = new Command('auth').description('Authentication commands');
 
@@ -15,39 +19,118 @@ const loginCommand = new Command('login')
   .option('--app <name>', 'default application name')
   .option('--env <name>', 'default environment name')
   .option('--profile <name>', 'profile name to save credentials under')
+  .option('--no-browser', 'do not open browser (print URL instead)')
+  .option('--session', 'use session-based JWT tokens (skip API key creation)')
+  .option('--persistent', 'create persistent API key (skip prompt)')
   .action(withErrorHandling(async (options, command) => {
     const parentOpts = command.parent?.parent?.opts() || {};
     const apiKey = options.apiKey || parentOpts.apiKey;
     const endpoint = options.endpoint || parentOpts.endpoint;
-
-    if (!apiKey) {
-      throw new Error('--api-key is required');
-    }
-    if (!endpoint) {
-      throw new Error('--endpoint is required');
-    }
-
-    options.apiKey = apiKey;
-    options.endpoint = endpoint;
     const profileName = options.profile || parentOpts.profile || 'default';
 
-    await setAPIKey(options.apiKey, profileName);
+    if (options.session && options.persistent) {
+      throw new Error('Cannot use both --session and --persistent');
+    }
 
-    const profile = {
-      api: {
-        endpoint: options.endpoint,
-      },
-      expctld: {
-        endpoint: '',
-      },
-      application: options.app,
-      environment: options.env,
-    };
+    if (apiKey) {
+      if (!endpoint) {
+        throw new Error('--endpoint is required when using --api-key');
+      }
+      await setAPIKey(apiKey, profileName);
+      const profile = {
+        api: { endpoint, 'auth-method': 'api-key' as const },
+        expctld: { endpoint: '' },
+        application: options.app,
+        environment: options.env,
+      };
+      setProfile(profileName, profile);
+      console.log(`✓ Logged in successfully (profile: ${profileName})`);
+      console.log(`  Endpoint: ${endpoint}`);
+      if (options.app) console.log(`  Application: ${options.app}`);
+      if (options.env) console.log(`  Environment: ${options.env}`);
+      return;
+    }
 
-    setProfile(profileName, profile);
+    let resolvedEndpoint = endpoint;
+    if (!resolvedEndpoint) {
+      try {
+        const existingProfile = getProfile(profileName);
+        resolvedEndpoint = existingProfile.api.endpoint;
+      } catch { /* profile doesn't exist yet */ }
+    }
 
-    console.log(`✓ Logged in successfully (profile: ${profileName})`);
-    console.log(`  Endpoint: ${options.endpoint}`);
+    if (!resolvedEndpoint) {
+      throw new Error(
+        '--endpoint is required for first-time OAuth login.\n' +
+        'Run: abs auth login --endpoint https://your-api.example.com/v1'
+      );
+    }
+
+    console.log(`Authenticating with ${resolvedEndpoint}...`);
+
+    const tokenResponse = await startOAuthFlow(resolvedEndpoint, {
+      noBrowser: options.browser === false,
+    });
+
+    console.log('✓ Authentication successful!');
+
+    let usePersistentKey: boolean;
+    if (options.persistent) {
+      usePersistentKey = true;
+    } else if (options.session) {
+      usePersistentKey = false;
+    } else {
+      usePersistentKey = await confirm({
+        message: 'Create a persistent API key for this machine? (Recommended — avoids re-authenticating every 24h)',
+        default: true,
+      });
+    }
+
+    if (usePersistentKey) {
+      try {
+        const tempClient = createAPIClient(resolvedEndpoint, {
+          method: 'oauth-jwt',
+          token: tokenResponse.accessToken,
+        });
+        const host = hostname().replace(/\.local$/, '');
+        const keyName = `cli-${host}`;
+        const created = await tempClient.createUserApiKey(keyName) as { key: string };
+
+        await setAPIKey(created.key, profileName);
+        const profile = {
+          api: { endpoint: resolvedEndpoint, 'auth-method': 'api-key' as const },
+          expctld: { endpoint: '' },
+          application: options.app,
+          environment: options.env,
+        };
+        setProfile(profileName, profile);
+        console.log(`✓ Persistent API key created and stored (profile: ${profileName})`);
+      } catch (error) {
+        console.warn(`Warning: Could not create API key (${error instanceof Error ? error.message : error})`);
+        console.warn('Falling back to session-based JWT token (expires in 24h).');
+        await setOAuthToken(tokenResponse.accessToken, profileName);
+        const profile = {
+          api: { endpoint: resolvedEndpoint, 'auth-method': 'oauth-jwt' as const },
+          expctld: { endpoint: '' },
+          application: options.app,
+          environment: options.env,
+        };
+        setProfile(profileName, profile);
+      }
+    } else {
+      await setOAuthToken(tokenResponse.accessToken, profileName);
+      const profile = {
+        api: { endpoint: resolvedEndpoint, 'auth-method': 'oauth-jwt' as const },
+        expctld: { endpoint: '' },
+        application: options.app,
+        environment: options.env,
+      };
+      setProfile(profileName, profile);
+      console.log(`✓ Session token stored (profile: ${profileName})`);
+      console.log('  Note: Token expires in 24h. Re-run `abs auth login` to refresh.');
+    }
+
+    console.log(`  Endpoint: ${resolvedEndpoint}`);
     if (options.app) console.log(`  Application: ${options.app}`);
     if (options.env) console.log(`  Environment: ${options.env}`);
   }));
