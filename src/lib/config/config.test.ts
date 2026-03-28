@@ -311,6 +311,28 @@ describe('Config Management', () => {
     });
   });
 
+  describe('profile auth-method', () => {
+    beforeEach(() => {
+      const config = defaultConfig();
+      saveConfig(config);
+    });
+
+    it('stores and retrieves auth-method oauth-jwt', () => {
+      const profile = {
+        api: { endpoint: 'https://example.com/v1', 'auth-method': 'oauth-jwt' as const },
+        expctld: { endpoint: '' },
+      };
+      setProfile('oauth-config-test', profile);
+      const loaded = getProfile('oauth-config-test');
+      expect(loaded.api['auth-method']).toBe('oauth-jwt');
+    });
+
+    it('has no auth-method by default', () => {
+      const profile = getProfile('default');
+      expect(profile.api['auth-method']).toBeUndefined();
+    });
+  });
+
   describe('Security: Empty YAML Handling', () => {
     it('should handle empty config file', () => {
       ensureConfigDir();
