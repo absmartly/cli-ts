@@ -33,20 +33,10 @@ export async function startCallbackServer(preferredPorts: number[] = [8787, 8080
   throw new Error('Could not bind callback server on any port');
 }
 
-type CallbackResult = { code: string } | { error: Error };
-
 function tryBindServer(port: number): Promise<CallbackServer> {
   return new Promise((resolve, reject) => {
-    let result: CallbackResult | undefined;
-    let settle: ((result: CallbackResult) => void) | undefined;
-
-    function dispatch(r: CallbackResult) {
-      if (settle) {
-        settle(r);
-      } else {
-        result = r;
-      }
-    }
+    let codeResolve: ((code: string) => void) | undefined;
+    let codeReject: ((err: Error) => void) | undefined;
 
     const server = http.createServer((req, res) => {
       const url = new URL(req.url ?? '/', `http://localhost`);
@@ -60,11 +50,11 @@ function tryBindServer(port: number): Promise<CallbackServer> {
       if (code) {
         res.writeHead(200, { 'Content-Type': 'text/html' });
         res.end(SUCCESS_HTML);
-        dispatch({ code });
+        codeResolve?.(code);
       } else {
         res.writeHead(400, { 'Content-Type': 'text/html' });
         res.end(ERROR_HTML);
-        dispatch({ error: new Error('No authorization code received in callback') });
+        codeReject?.(new Error('No authorization code received in callback'));
       }
     });
 
@@ -83,33 +73,48 @@ function tryBindServer(port: number): Promise<CallbackServer> {
         port: boundPort,
         redirectUri: `http://localhost:${boundPort}/oauth/callback`,
         waitForCode(timeoutMs: number): Promise<string> {
-          let timeoutId: ReturnType<typeof setTimeout>;
+          let settled = false;
+          let outerResolve: ((code: string) => void) | undefined;
+          let outerReject: ((err: Error) => void) | undefined;
 
-          const codePromise = new Promise<string>((res, rej) => {
-            settle = (r: CallbackResult) => {
-              clearTimeout(timeoutId);
-              server.close();
-              if ('code' in r) {
-                res(r.code);
-              } else {
-                queueMicrotask(() => rej(r.error));
-              }
-            };
-
-            timeoutId = setTimeout(() => {
-              settle = undefined;
-              server.close();
-              rej(new Error(`Authentication timed out after ${Math.round(timeoutMs / 1000)}s — please try again`));
-            }, timeoutMs);
+          const innerPromise = new Promise<string>((res, rej) => {
+            outerResolve = res;
+            outerReject = rej;
           });
 
-          if (result !== undefined) {
-            clearTimeout(timeoutId!);
-            settle!(result);
-          }
+          const outerPromise = innerPromise.then(
+            (code) => code,
+            (err: Error) => { throw err; }
+          );
+          outerPromise.catch(() => {});
 
-          codePromise.catch(() => {});
-          return codePromise;
+          const timer = setTimeout(() => {
+            if (!settled) {
+              settled = true;
+              server.close();
+              outerReject!(new Error(`Authentication timed out after ${Math.round(timeoutMs / 1000)}s — please try again`));
+            }
+          }, timeoutMs);
+
+          codeResolve = (code: string) => {
+            if (!settled) {
+              settled = true;
+              clearTimeout(timer);
+              server.close();
+              outerResolve!(code);
+            }
+          };
+
+          codeReject = (err: Error) => {
+            if (!settled) {
+              settled = true;
+              clearTimeout(timer);
+              server.close();
+              outerReject!(err);
+            }
+          };
+
+          return outerPromise;
         },
         close() {
           server.close();
