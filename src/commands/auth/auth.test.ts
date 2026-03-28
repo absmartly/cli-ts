@@ -158,6 +158,40 @@ describe('auth API key management', () => {
     const output = consoleSpy.mock.calls.flat().join(' ');
     expect(output).toContain('test@test.com');
   });
+
+  describe('reset-my-password', () => {
+    it('should change password when confirmation matches', async () => {
+      const { password: passwordPrompt } = await import('@inquirer/prompts');
+      const mockedPassword = vi.mocked(passwordPrompt);
+      mockedPassword
+        .mockResolvedValueOnce('old-pass')
+        .mockResolvedValueOnce('new-pass')
+        .mockResolvedValueOnce('new-pass');
+
+      await authCommand.parseAsync(['node', 'test', 'reset-my-password']);
+
+      expect(mockClient.updateCurrentUser).toHaveBeenCalledWith({
+        old_password: 'old-pass',
+        new_password: 'new-pass',
+      });
+      const output = consoleSpy.mock.calls.flat().join(' ');
+      expect(output).toContain('Password changed successfully');
+    });
+
+    it('should error when passwords do not match', async () => {
+      const { password: passwordPrompt } = await import('@inquirer/prompts');
+      const mockedPassword = vi.mocked(passwordPrompt);
+      mockedPassword
+        .mockResolvedValueOnce('old-pass')
+        .mockResolvedValueOnce('new-pass')
+        .mockResolvedValueOnce('different-pass');
+
+      await expect(
+        authCommand.parseAsync(['node', 'test', 'reset-my-password'])
+      ).rejects.toThrow('process.exit: 1');
+      expect(consoleErrorSpy).toHaveBeenCalledWith('Error:', 'Passwords do not match.');
+    });
+  });
 });
 
 describe('auth login command', () => {
