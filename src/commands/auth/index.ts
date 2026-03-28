@@ -1,7 +1,7 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { hostname } from 'os';
-import { confirm } from '@inquirer/prompts';
+import { confirm, password as passwordPrompt } from '@inquirer/prompts';
 import { setProfile, getProfile, loadConfig } from '../../lib/config/config.js';
 import { setAPIKey, getAPIKey, deleteAPIKey, setOAuthToken, getOAuthToken, deleteOAuthToken } from '../../lib/config/keyring.js';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, resolveAPIKey, resolveEndpoint, withErrorHandling } from '../../lib/utils/api-helper.js';
@@ -328,17 +328,25 @@ const editProfileCommand = new Command('edit-profile')
   }));
 
 const resetMyPasswordCommand = new Command('reset-my-password')
-  .description('Reset password for the currently authenticated user')
+  .description('Change password for the currently authenticated user')
   .action(withErrorHandling(async () => {
     const globalOptions = getGlobalOptions(resetMyPasswordCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
-    const user = await client.getCurrentUser();
-    const result = await client.resetUserPassword(user.id);
+    const oldPassword = await passwordPrompt({ message: 'Current password:' });
+    const newPassword = await passwordPrompt({ message: 'New password:' });
+    const confirmPassword = await passwordPrompt({ message: 'Confirm new password:' });
 
-    console.log(chalk.green(`✓ Password reset for ${user.email}`));
-    console.log(`  New password: ${result.password}`);
-    console.log(chalk.yellow('  Save this password — it cannot be retrieved later.'));
+    if (newPassword !== confirmPassword) {
+      throw new Error('Passwords do not match.');
+    }
+
+    await client.updateCurrentUser({
+      old_password: oldPassword,
+      new_password: newPassword,
+    } as any);
+
+    console.log(chalk.green('✓ Password changed successfully.'));
   }));
 
 authCommand.addCommand(loginCommand);
