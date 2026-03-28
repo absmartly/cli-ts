@@ -145,15 +145,49 @@ const statusCommand = new Command('status')
 
     try {
       const profile = getProfile(profileName);
-      const apiKey = await getAPIKey(profileName);
-
-      const keyDisplay = apiKey
-        ? (options.showFullKey ? apiKey : `****...${apiKey.slice(-4)}`)
-        : 'not set';
+      const authMethod = profile.api['auth-method'] ?? 'api-key';
 
       console.log(`Profile: ${profileName}`);
       console.log(`Endpoint: ${profile.api.endpoint}`);
-      console.log(`API Key: ${keyDisplay}`);
+      console.log(`Auth Method: ${authMethod}`);
+
+      if (authMethod === 'oauth-jwt') {
+        const token = await getOAuthToken(profileName);
+        if (token) {
+          const tokenDisplay = options.showFullKey
+            ? token
+            : `****...${token.slice(-8)}`;
+          console.log(`OAuth Token: ${tokenDisplay}`);
+
+          try {
+            const [, payload] = token.split('.');
+            if (payload) {
+              const decoded = JSON.parse(Buffer.from(payload, 'base64url').toString());
+              if (decoded.exp) {
+                const expiresAt = new Date(decoded.exp * 1000);
+                const now = new Date();
+                if (expiresAt > now) {
+                  console.log(`Expires: ${expiresAt.toLocaleString()}`);
+                } else {
+                  console.log(chalk.yellow(`Token expired: ${expiresAt.toLocaleString()}`));
+                  console.log(chalk.yellow('Run `abs auth login` to re-authenticate.'));
+                }
+              }
+            }
+          } catch {
+            // not a parseable JWT, skip expiry display
+          }
+        } else {
+          console.log('OAuth Token: not set');
+        }
+      } else {
+        const apiKey = await getAPIKey(profileName);
+        const keyDisplay = apiKey
+          ? (options.showFullKey ? apiKey : `****...${apiKey.slice(-4)}`)
+          : 'not set';
+        console.log(`API Key: ${keyDisplay}`);
+      }
+
       if (profile.application) console.log(`Application: ${profile.application}`);
       if (profile.environment) console.log(`Environment: ${profile.environment}`);
     } catch (error) {
@@ -171,8 +205,15 @@ const logoutCommand = new Command('logout')
     const config = loadConfig();
     const parentOpts = command.parent?.parent?.opts() || {};
     const profileName = parentOpts.profile || config['default-profile'];
+    const profile = getProfile(profileName);
+    const authMethod = profile.api['auth-method'] ?? 'api-key';
 
-    await deleteAPIKey(profileName);
+    if (authMethod === 'oauth-jwt') {
+      await deleteOAuthToken(profileName);
+    } else {
+      await deleteAPIKey(profileName);
+    }
+
     console.log(`✓ Logged out (profile: ${profileName})`);
   }));
 
