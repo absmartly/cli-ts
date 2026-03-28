@@ -344,3 +344,16 @@ describe('AxiosHttpClient auth modes', () => {
     expect(client.getBaseUrl()).toBe('https://api.example.com');
   });
 });
+
+describe('OAuth JWT auto re-auth', () => {
+  it('creates client with onExpired callback in oauth-jwt mode', () => {
+    const onExpired = vi.fn();
+    const client = new AxiosHttpClient('https://api.example.com', {
+      method: 'oauth-jwt',
+      token: 'test-token',
+      onExpired,
+    });
+    expect(client).toBeDefined();
+    expect(client.getBaseUrl()).toBe('https://api.example.com');
+  });
+});

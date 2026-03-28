@@ -77,6 +77,39 @@ export class AxiosHttpClient implements HttpClient {
       });
     }
 
+    if (this.authConfig.method === 'oauth-jwt' && this.authConfig.onExpired) {
+      const onExpired = this.authConfig.onExpired;
+      let isRefreshing = false;
+
+      this.client.interceptors.response.use(undefined, async (error: unknown) => {
+        if (!axios.isAxiosError(error) || error.response?.status !== 401 || isRefreshing) {
+          return Promise.reject(error);
+        }
+
+        isRefreshing = true;
+        try {
+          const newAuth = await onExpired();
+          const newHeader = newAuth.method === 'api-key'
+            ? `Api-Key ${newAuth.apiKey}`
+            : `Bearer ${newAuth.token}`;
+
+          this.client.defaults.headers.common['Authorization'] = newHeader;
+          this.authConfig = newAuth;
+
+          if (error.config) {
+            error.config.headers['Authorization'] = newHeader;
+            return this.client.request(error.config);
+          }
+        } catch {
+          // re-auth failed, propagate original 401
+        } finally {
+          isRefreshing = false;
+        }
+
+        return Promise.reject(error);
+      });
+    }
+
     this.client.interceptors.response.use(
       (response) => response,
       (error: unknown) => {
