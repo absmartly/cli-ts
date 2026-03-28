@@ -78,3 +78,42 @@ describe('Keyring (file fallback)', () => {
     expect(mode).toBe('600');
   });
 });
+
+describe('OAuth token keyring', () => {
+  let savedContent: string | null = null;
+
+  beforeEach(() => {
+    try {
+      savedContent = existsSync(CREDENTIALS_FILE) ? readFileSync(CREDENTIALS_FILE, 'utf8') : null;
+    } catch { savedContent = null; }
+  });
+
+  afterEach(() => {
+    if (savedContent !== null) {
+      writeFileSync(CREDENTIALS_FILE, savedContent, 'utf8');
+    } else {
+      try { unlinkSync(CREDENTIALS_FILE); } catch {}
+    }
+  });
+
+  it('stores and retrieves an OAuth token', async () => {
+    const { setOAuthToken, getOAuthToken } = await import('./keyring.js');
+    await setOAuthToken('test-jwt-token', 'oauth-test-profile');
+    const token = await getOAuthToken('oauth-test-profile');
+    expect(token).toBe('test-jwt-token');
+  });
+
+  it('returns null for missing OAuth token', async () => {
+    const { getOAuthToken } = await import('./keyring.js');
+    const token = await getOAuthToken('nonexistent-oauth-profile');
+    expect(token).toBeNull();
+  });
+
+  it('deletes an OAuth token', async () => {
+    const { setOAuthToken, getOAuthToken, deleteOAuthToken } = await import('./keyring.js');
+    await setOAuthToken('test-jwt-token', 'oauth-delete-test');
+    await deleteOAuthToken('oauth-delete-test');
+    const token = await getOAuthToken('oauth-delete-test');
+    expect(token).toBeNull();
+  });
+});

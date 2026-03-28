@@ -123,3 +123,15 @@ export async function getAPIKey(profile?: string): Promise<string | null> {
 export async function deleteAPIKey(profile?: string): Promise<boolean> {
   return await deletePassword('api-key', profile ? { profile } : {});
 }
+
+export async function setOAuthToken(token: string, profile?: string): Promise<void> {
+  await setPassword('oauth-token', token, profile ? { profile } : {});
+}
+
+export async function getOAuthToken(profile?: string): Promise<string | null> {
+  return await getPassword('oauth-token', profile ? { profile } : {});
+}
+
+export async function deleteOAuthToken(profile?: string): Promise<boolean> {
+  return await deletePassword('oauth-token', profile ? { profile } : {});
+}
