@@ -1,6 +1,7 @@
 import { createAPIClient, APIClient } from '../api/client.js';
 import { getProfile, loadConfig } from '../config/config.js';
-import { getAPIKey } from '../config/keyring.js';
+import { getAPIKey, getOAuthToken } from '../config/keyring.js';
+import type { AuthConfig } from '../api/axios-adapter.js';
 import { Command } from 'commander';
 import { formatOutput, type OutputFormat } from '../output/formatter.js';
 
@@ -27,6 +28,43 @@ export function resolveEndpoint(options: GlobalOptions): string {
   return options.endpoint || process.env.ABSMARTLY_API_ENDPOINT || profile.api.endpoint;
 }
 
+export async function resolveAuth(options: GlobalOptions): Promise<AuthConfig> {
+  if (options.apiKey) {
+    return { method: 'api-key', apiKey: options.apiKey };
+  }
+
+  const envKey = process.env.ABSMARTLY_API_KEY;
+  if (envKey) {
+    return { method: 'api-key', apiKey: envKey };
+  }
+
+  const config = loadConfig();
+  const profileName = options.profile || config['default-profile'];
+  const profile = getProfile(profileName);
+  const authMethod = profile.api['auth-method'] ?? 'api-key';
+
+  if (authMethod === 'oauth-jwt') {
+    const token = await getOAuthToken(profileName);
+    if (!token) {
+      throw new Error(
+        `No OAuth token found for profile "${profileName}".\n` +
+        `Run: abs auth login`
+      );
+    }
+    return { method: 'oauth-jwt', token };
+  }
+
+  const apiKey = await getAPIKey(profileName);
+  if (!apiKey) {
+    throw new Error(
+      `No API key found for profile "${profileName}".\n` +
+      `Run: abs auth login\n` +
+      `Or:  abs --endpoint https://your-api.example.com/v1 --api-key YOUR_KEY <command>`
+    );
+  }
+  return { method: 'api-key', apiKey };
+}
+
 export async function getAPIClientFromOptions(options: GlobalOptions): Promise<APIClient> {
   const config = loadConfig();
   const profileName = options.profile || config['default-profile'];
@@ -36,14 +74,13 @@ export async function getAPIClientFromOptions(options: GlobalOptions): Promise<A
   if (!endpoint) {
     throw new Error(
       `No API endpoint configured for profile "${profileName}".\n` +
-      `Run: abs setup\n` +
+      `Run: abs auth login\n` +
       `Or:  abs --endpoint https://your-api.example.com/v1 --api-key YOUR_KEY <command>`
     );
   }
 
-  const apiKey = await resolveAPIKey(options);
-
-  return createAPIClient(endpoint, apiKey, { verbose: options.verbose ?? false });
+  const auth = await resolveAuth(options);
+  return createAPIClient(endpoint, auth, { verbose: options.verbose ?? false });
 }
 
 export interface GlobalOptions {

@@ -8,6 +8,7 @@ vi.mock('../config/config', () => ({
 
 vi.mock('../config/keyring', () => ({
   getAPIKey: vi.fn(),
+  getOAuthToken: vi.fn(),
 }));
 
 vi.mock('../api/client', () => ({
@@ -18,9 +19,9 @@ vi.mock('../output/formatter', () => ({
   formatOutput: vi.fn((data) => JSON.stringify(data)),
 }));
 
-import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from './api-helper.js';
+import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling, resolveAuth } from './api-helper.js';
 import { loadConfig, getProfile } from '../config/config.js';
-import { getAPIKey } from '../config/keyring.js';
+import { getAPIKey, getOAuthToken } from '../config/keyring.js';
 import { createAPIClient } from '../api/client.js';
 import { formatOutput } from '../output/formatter.js';
 
@@ -57,7 +58,7 @@ describe('API Helper', () => {
         /No API key found for profile "default"/
       );
       await expect(getAPIClientFromOptions({})).rejects.toThrow(
-        /abs setup/
+        /abs auth login/
       );
     });
 
@@ -74,7 +75,7 @@ describe('API Helper', () => {
         /No API endpoint configured for profile "default"/
       );
       await expect(getAPIClientFromOptions({})).rejects.toThrow(
-        /abs setup/
+        /abs auth login/
       );
     });
 
@@ -95,7 +96,7 @@ describe('API Helper', () => {
       expect(getAPIKey).toHaveBeenCalledWith('staging');
       expect(createAPIClient).toHaveBeenCalledWith(
         'https://staging.api.com/v1',
-        'staging-key',
+        { method: 'api-key', apiKey: 'staging-key' },
         { verbose: false }
       );
     });
@@ -115,7 +116,7 @@ describe('API Helper', () => {
 
       expect(createAPIClient).toHaveBeenCalledWith(
         'https://api.absmartly.com/v1',
-        'override-key',
+        { method: 'api-key', apiKey: 'override-key' },
         expect.any(Object)
       );
     });
@@ -135,7 +136,7 @@ describe('API Helper', () => {
 
       expect(createAPIClient).toHaveBeenCalledWith(
         'https://custom.api.com/v1',
-        'test-key',
+        { method: 'api-key', apiKey: 'test-key' },
         expect.any(Object)
       );
     });
@@ -155,7 +156,7 @@ describe('API Helper', () => {
 
       expect(createAPIClient).toHaveBeenCalledWith(
         expect.any(String),
-        expect.any(String),
+        expect.any(Object),
         expect.objectContaining({ verbose: true })
       );
     });
@@ -292,8 +293,7 @@ describe('API Helper', () => {
     });
   });
 
-  describe('withErrorHandling', () => {
-    let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+  describe('withErrorHandling', () => {    let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
     let processExitSpy: ReturnType<typeof vi.spyOn>;
 
     beforeEach(() => {
@@ -343,6 +343,82 @@ describe('API Helper', () => {
       expect(fn).toHaveBeenCalled();
       expect(consoleErrorSpy).not.toHaveBeenCalled();
       expect(processExitSpy).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('resolveAuth', () => {
+    beforeEach(() => {
+      (loadConfig as any).mockReturnValue({
+        'default-profile': 'default',
+        'analytics-opt-out': false,
+        output: 'table',
+        profiles: {
+          default: {
+            api: { endpoint: 'https://api.example.com/v1' },
+            expctld: { endpoint: '' },
+          },
+        },
+      });
+
+      (getProfile as any).mockReturnValue({
+        api: { endpoint: 'https://api.example.com/v1' },
+        expctld: { endpoint: '' },
+      });
+    });
+
+    it('returns api-key auth when --api-key flag is provided', async () => {
+      const auth = await resolveAuth({ apiKey: 'flag-key' });
+      expect(auth).toEqual({ method: 'api-key', apiKey: 'flag-key' });
+    });
+
+    it('returns api-key auth from env var', async () => {
+      process.env.ABSMARTLY_API_KEY = 'env-key';
+      const auth = await resolveAuth({});
+      expect(auth).toEqual({ method: 'api-key', apiKey: 'env-key' });
+    });
+
+    it('returns api-key auth from keyring when auth-method is api-key', async () => {
+      (getAPIKey as any).mockResolvedValue('keyring-api-key');
+      const auth = await resolveAuth({});
+      expect(auth).toEqual({ method: 'api-key', apiKey: 'keyring-api-key' });
+    });
+
+    it('returns oauth-jwt auth from keyring when auth-method is oauth-jwt', async () => {
+      (getProfile as any).mockReturnValue({
+        api: { endpoint: 'https://api.example.com/v1', 'auth-method': 'oauth-jwt' },
+        expctld: { endpoint: '' },
+      });
+      (getOAuthToken as any).mockResolvedValue('jwt-token-from-keyring');
+
+      const auth = await resolveAuth({});
+      expect(auth.method).toBe('oauth-jwt');
+      if (auth.method === 'oauth-jwt') {
+        expect(auth.token).toBe('jwt-token-from-keyring');
+      }
+    });
+
+    it('--api-key flag overrides oauth-jwt auth-method in profile', async () => {
+      (getProfile as any).mockReturnValue({
+        api: { endpoint: 'https://api.example.com/v1', 'auth-method': 'oauth-jwt' },
+        expctld: { endpoint: '' },
+      });
+
+      const auth = await resolveAuth({ apiKey: 'override-key' });
+      expect(auth).toEqual({ method: 'api-key', apiKey: 'override-key' });
+    });
+
+    it('throws when no api key found', async () => {
+      (getAPIKey as any).mockResolvedValue(null);
+      await expect(resolveAuth({})).rejects.toThrow('No API key found');
+    });
+
+    it('throws when no oauth token found', async () => {
+      (getProfile as any).mockReturnValue({
+        api: { endpoint: 'https://api.example.com/v1', 'auth-method': 'oauth-jwt' },
+        expctld: { endpoint: '' },
+      });
+      (getOAuthToken as any).mockResolvedValue(null);
+      await expect(resolveAuth({})).rejects.toThrow('No OAuth token found');
     });
   });
 });
