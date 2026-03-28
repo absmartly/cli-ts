@@ -22,11 +22,20 @@ async function displayUserAvatar(user: User, globalOptions: GlobalOptions, width
   const thumbUrl = `${baseUrl}${user.avatar.base_url}/crop/${thumbSize}x${thumbSize}.webp`;
   try {
     const response = await fetch(thumbUrl, { headers: { Authorization: `Api-Key ${apiKey}` }, redirect: 'follow' });
-    if (!response.ok) return;
+    if (!response.ok) {
+      if (response.status === 401 || response.status === 403) {
+        console.error('Warning: avatar fetch unauthorized -- check API key');
+      }
+      return;
+    }
     const buffer = Buffer.from(await response.arrayBuffer());
     const img = renderInlineImage(buffer, 'avatar.webp', width);
     if (img) process.stdout.write(`\n${img}\n`);
-  } catch { /* skip */ }
+  } catch (e) {
+    if (e instanceof Error && process.env.DEBUG) {
+      console.error(`Warning: avatar fetch failed: ${e.message}`);
+    }
+  }
 }
 
 const listCommand = addPaginationOptions(
@@ -61,11 +70,20 @@ const listCommand = addPaginationOptions(
           const thumbSize = Math.min(avatarWidth * 16, 256);
           const thumbUrl = `${baseUrl}${user.avatar.base_url}/crop/${thumbSize}x${thumbSize}.webp`;
           const response = await fetch(thumbUrl, { headers, redirect: 'follow' });
-          if (!response.ok) return;
+          if (!response.ok) {
+            if (response.status === 401 || response.status === 403) {
+              console.error('Warning: avatar fetch unauthorized -- check API key');
+            }
+            return;
+          }
           const buffer = Buffer.from(await response.arrayBuffer());
           const img = renderInlineImage(buffer, 'avatar.webp', avatarWidth);
           if (img) avatarMap.set(user.id, img);
-        } catch { /* skip */ }
+        } catch (e) {
+          if (e instanceof Error && process.env.DEBUG) {
+            console.error(`Warning: avatar fetch failed: ${e.message}`);
+          }
+        }
       }));
 
       const rows = (users as Array<Record<string, unknown>>).map(u => applyShowExclude(summarizeUserRow(u), u, show, exclude));

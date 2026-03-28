@@ -48,13 +48,13 @@ describe('auth status command', () => {
       consoleSpy.mockRestore();
     });
 
-    it('should show full key with --show-key flag', async () => {
+    it('should show full key with --show-full-key flag', async () => {
       vi.mocked(keyring.getAPIKey).mockResolvedValue('sk-1234567890abcdef');
 
       const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
 
       const statusCmd = authCommand.commands.find((cmd) => cmd.name() === 'status');
-      await statusCmd?.parseAsync(['node', 'test', '--show-key'], { from: 'user' });
+      await statusCmd?.parseAsync(['node', 'test', '--show-full-key'], { from: 'user' });
 
       expect(consoleSpy).toHaveBeenCalledWith('API Key: sk-1234567890abcdef');
 

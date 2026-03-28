@@ -29,6 +29,7 @@ export const fullOnCommand = new Command('full-on')
 
     const note = await resolveNote(options, 'full_on', getDefaultType(), globalOptions.profile);
 
+    let hasFailures = false;
     for (const idStr of ids) {
       try {
         const id = await client.resolveExperimentId(idStr);
@@ -40,8 +41,10 @@ export const fullOnCommand = new Command('full-on')
           console.log(chalk.green(`✓ Experiment ${id} set to full-on (variant ${options.variant})`));
         }
       } catch (e) {
+        hasFailures = true;
         if (outputPiped && options.passThrough) console.log(idStr);
         console.error(chalk.red(`✗ Experiment ${idStr}: ${e instanceof Error ? e.message : e}`));
       }
     }
+    if (hasFailures) process.exitCode = 1;
   }));

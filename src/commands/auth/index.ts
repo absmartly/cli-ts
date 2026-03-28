@@ -54,7 +54,7 @@ const loginCommand = new Command('login')
 
 const statusCommand = new Command('status')
   .description('Show current authentication status')
-  .option('--show-key', 'show last 4 characters of API key')
+  .option('--show-full-key', 'show full API key (use with caution)')
   .action(withErrorHandling(async (options, command) => {
     const config = loadConfig();
     const parentOpts = command.parent?.parent?.opts() || {};
@@ -65,7 +65,7 @@ const statusCommand = new Command('status')
       const apiKey = await getAPIKey(profileName);
 
       const keyDisplay = apiKey
-        ? (options.showKey ? apiKey : `****...${apiKey.slice(-4)}`)
+        ? (options.showFullKey ? apiKey : `****...${apiKey.slice(-4)}`)
         : 'not set';
 
       console.log(`Profile: ${profileName}`);

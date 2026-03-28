@@ -25,6 +25,7 @@ export const archiveCommand = new Command('archive')
 
     const note = await resolveNote(options, actionType, getDefaultType(), globalOptions.profile);
 
+    let hasFailures = false;
     for (const idStr of ids) {
       try {
         const id = await client.resolveExperimentId(idStr);
@@ -36,8 +37,10 @@ export const archiveCommand = new Command('archive')
           console.log(chalk.green(`✓ Experiment ${id} ${actionLabel}`));
         }
       } catch (e) {
+        hasFailures = true;
         if (outputPiped && options.passThrough) console.log(idStr);
         console.error(chalk.red(`✗ Experiment ${idStr}: ${e instanceof Error ? e.message : e}`));
       }
     }
+    if (hasFailures) process.exitCode = 1;
   }));

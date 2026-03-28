@@ -961,6 +961,105 @@ describe.skipIf(isLiveMode)('APIClient core', () => {
     });
   });
 
+  describe('resolveExperimentId', () => {
+    it('should return numeric ID directly for a clean numeric string', async () => {
+      const result = await client.resolveExperimentId('42');
+      expect(result).toBe(42);
+    });
+
+    it('should search when string does not round-trip through parseInt', async () => {
+      server.use(
+        http.get(`${BASE_URL}/experiments`, () =>
+          HttpResponse.json({ experiments: [{ id: 42, name: '042', state: 'running' }] })
+        )
+      );
+      const result = await client.resolveExperimentId('042');
+      expect(result).toBe(42);
+    });
+
+    it('should return exact name match when one exists', async () => {
+      server.use(
+        http.get(`${BASE_URL}/experiments`, () =>
+          HttpResponse.json({ experiments: [{ id: 5, name: 'my-experiment', state: 'running' }] })
+        )
+      );
+      const result = await client.resolveExperimentId('my-experiment');
+      expect(result).toBe(5);
+    });
+
+    it('should pick the highest ID when multiple exact name matches exist', async () => {
+      server.use(
+        http.get(`${BASE_URL}/experiments`, () =>
+          HttpResponse.json({
+            experiments: [
+              { id: 3, name: 'my-experiment', state: 'stopped' },
+              { id: 10, name: 'my-experiment', state: 'running' },
+              { id: 7, name: 'my-experiment', state: 'development' },
+            ],
+          })
+        )
+      );
+      const result = await client.resolveExperimentId('my-experiment');
+      expect(result).toBe(10);
+    });
+
+    it('should return the single non-exact match when only one result exists', async () => {
+      server.use(
+        http.get(`${BASE_URL}/experiments`, () =>
+          HttpResponse.json({ experiments: [{ id: 99, name: 'my-experiment-v2', state: 'running' }] })
+        )
+      );
+      const result = await client.resolveExperimentId('my-experiment');
+      expect(result).toBe(99);
+    });
+
+    it('should throw with suggestions when multiple non-exact matches exist', async () => {
+      server.use(
+        http.get(`${BASE_URL}/experiments`, () =>
+          HttpResponse.json({
+            experiments: [
+              { id: 1, name: 'my-experiment-v1', state: 'stopped' },
+              { id: 2, name: 'my-experiment-v2', state: 'running' },
+            ],
+          })
+        )
+      );
+      await expect(client.resolveExperimentId('my-experiment')).rejects.toThrow(/Did you mean/);
+    });
+
+    it('should throw not found when search returns zero results', async () => {
+      server.use(
+        http.get(`${BASE_URL}/experiments`, () =>
+          HttpResponse.json({ experiments: [] })
+        )
+      );
+      await expect(client.resolveExperimentId('nonexistent')).rejects.toThrow(/not found/);
+    });
+  });
+
+  describe('updateExperiment merge', () => {
+    it('should merge update data with existing experiment data', async () => {
+      server.use(
+        http.get(`${BASE_URL}/experiments/1`, () =>
+          HttpResponse.json({
+            experiment: { id: 1, name: 'test', display_name: 'Original', description: 'Keep me' },
+          })
+        )
+      );
+      let sentBody: Record<string, unknown> = {};
+      server.use(
+        http.put(`${BASE_URL}/experiments/1`, async ({ request }) => {
+          sentBody = await request.json() as Record<string, unknown>;
+          return HttpResponse.json({ ok: true, experiment: { id: 1, ...sentBody }, errors: [] });
+        })
+      );
+      await client.updateExperiment(1, { display_name: 'Updated' } as any);
+      const data = sentBody.data as Record<string, unknown>;
+      expect(data.description).toBe('Keep me');
+      expect(data.display_name).toBe('Updated');
+    });
+  });
+
   describe('file uploads', () => {
     it('should upload a file', async () => {
       const uploadResponse = {

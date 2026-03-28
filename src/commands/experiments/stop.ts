@@ -36,6 +36,7 @@ export const stopCommand = new Command('stop')
 
     const note = await resolveNote(options, 'stop', getDefaultType(), globalOptions.profile);
 
+    let hasFailures = false;
     for (const idStr of ids) {
       try {
         const id = await client.resolveExperimentId(idStr);
@@ -47,8 +48,10 @@ export const stopCommand = new Command('stop')
           console.log(chalk.green(`✓ Experiment ${id} stopped`));
         }
       } catch (e) {
+        hasFailures = true;
         if (outputPiped && options.passThrough) console.log(idStr);
         console.error(chalk.red(`✗ Experiment ${idStr}: ${e instanceof Error ? e.message : e}`));
       }
     }
+    if (hasFailures) process.exitCode = 1;
   }));

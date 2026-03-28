@@ -128,6 +128,7 @@ function printResults(results: BulkResult[], actionLabel: string) {
 
   console.log('');
   console.log(`${chalk.bold('Results:')} ${succeeded.length} succeeded, ${failed.length} failed out of ${results.length}`);
+  if (failed.length > 0) process.exitCode = 1;
 }
 
 function showSummary(ids: ExperimentId[], names: Map<ExperimentId, string>, actionLabel: string) {

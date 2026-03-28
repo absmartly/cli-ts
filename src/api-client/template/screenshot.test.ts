@@ -110,7 +110,7 @@ describe('resolveScreenshot', () => {
       expect(result!.content_type).toBe('image/png');
       expect(result!.file_name).toBe('screenshot.png');
       expect(result!.file_size).toBe(TINY_PNG_BYTES.length);
-      expect(fetch).toHaveBeenCalledWith('https://example.com/images/screenshot.png');
+      expect(fetch).toHaveBeenCalledWith('https://example.com/images/screenshot.png', expect.objectContaining({ signal: expect.any(AbortSignal) }));
     });
 
     it('should derive filename from content-type when URL has no extension', async () => {

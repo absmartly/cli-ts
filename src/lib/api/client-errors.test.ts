@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { http, HttpResponse } from 'msw';
+import { http, HttpResponse, passthrough } from 'msw';
 import { server } from '../../test/mocks/server.js';
 import { createAPIClient } from './client.js';
 import { isLiveMode, TEST_BASE_URL, TEST_API_KEY } from '../../test/helpers/test-config.js';
@@ -186,6 +186,46 @@ describe.skipIf(isLiveMode)('APIClient - Error Handling', () => {
       const result = await client.listExperiments();
       expect(attempts).toBe(2);
       expect(result).toEqual([]);
+    });
+
+    it('should NOT retry PUT to non-idempotent paths on 500 errors', async () => {
+      let callCount = 0;
+      server.use(
+        http.put(`${BASE_URL}/experiments/1/start`, () => {
+          callCount++;
+          return HttpResponse.json({}, { status: 500 });
+        })
+      );
+
+      await expect(client.startExperiment(1)).rejects.toThrow();
+      expect(callCount).toBe(1);
+    });
+
+    it('should retry GET requests on 429 rate limit', async () => {
+      let attempts = 0;
+      server.use(
+        http.get(`${BASE_URL}/experiments`, () => {
+          attempts++;
+          if (attempts < 2) {
+            return HttpResponse.json({ error: 'Rate limit' }, { status: 429 });
+          }
+          return HttpResponse.json({ experiments: [] });
+        })
+      );
+
+      const result = await client.listExperiments();
+      expect(attempts).toBe(2);
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe('Network Errors', () => {
+    it('should provide friendly message on connection refused', async () => {
+      server.use(
+        http.all('http://localhost:1/*', () => passthrough())
+      );
+      const badClient = createAPIClient('http://localhost:1', 'key');
+      await expect(badClient.listExperiments()).rejects.toThrow(/Cannot connect/);
     });
   });
 

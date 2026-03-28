@@ -1793,30 +1793,41 @@ export class APIClient {
     data?: unknown,
     headers?: Record<string, string>
   ): Promise<unknown> {
-    const decodedPath = decodeURIComponent(path);
-
-    if (decodedPath.includes('://') || decodedPath.startsWith('//')) {
-      throw new Error(
-        'Invalid API path: Absolute or protocol-relative URLs are not allowed.\n' +
-        'Paths must be relative to the API endpoint (e.g., /experiments, /goals).'
-      );
+    let decodedPath: string;
+    try {
+      decodedPath = decodeURIComponent(path);
+    } catch {
+      throw new Error('Invalid API path: Contains malformed percent-encoding.');
     }
 
-    if (!decodedPath.startsWith('/')) {
-      throw new Error(
-        'Invalid API path: Must start with "/" (e.g., /experiments, not experiments).'
-      );
+    for (const p of [path, decodedPath]) {
+      if (p.includes('://') || p.startsWith('//')) {
+        throw new Error(
+          'Invalid API path: Absolute or protocol-relative URLs are not allowed.\n' +
+          'Paths must be relative to the API endpoint (e.g., /experiments, /goals).'
+        );
+      }
+
+      if (!p.startsWith('/')) {
+        throw new Error(
+          'Invalid API path: Must start with "/" (e.g., /experiments, not experiments).'
+        );
+      }
+
+      if (p.includes('/../') || p.endsWith('/..') || p.includes('/./') || p === '/..') {
+        throw new Error(
+          'Invalid API path: Path traversal sequences (../, ./) are not allowed.\n' +
+          'Use absolute paths from API root (e.g., /experiments, /goals).'
+        );
+      }
     }
 
-    if (decodedPath.includes('/../') || decodedPath.endsWith('/..') || decodedPath.includes('/./') || decodedPath === '/..') {
-      throw new Error(
-        'Invalid API path: Path traversal sequences (../, ./) are not allowed.\n' +
-        'Use absolute paths from API root (e.g., /experiments, /goals).'
-      );
+    const ALLOWED_METHODS = ['GET', 'POST', 'PUT', 'DELETE'] as const;
+    const normalizedMethod = method.toUpperCase();
+    if (!ALLOWED_METHODS.includes(normalizedMethod as (typeof ALLOWED_METHODS)[number])) {
+      throw new Error(`Unsupported HTTP method: ${method}. Allowed: ${ALLOWED_METHODS.join(', ')}`);
     }
-
-    const normalizedMethod = method.toUpperCase() as 'GET' | 'POST' | 'PUT' | 'DELETE';
-    const response = await this.request(normalizedMethod, decodedPath, {
+    const response = await this.request(normalizedMethod as (typeof ALLOWED_METHODS)[number], decodedPath, {
       ...(data !== undefined && { data }),
       ...(headers && { headers }),
     });

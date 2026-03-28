@@ -6,7 +6,8 @@ function getImageDimensions(buffer: Buffer): { width: number; height: number } {
   try {
     const result = imageSize(buffer);
     return { width: result.width ?? 0, height: result.height ?? 0 };
-  } catch {
+  } catch (e) {
+    console.error(`Warning: could not determine image dimensions: ${e instanceof Error ? e.message : e}`);
     return { width: 0, height: 0 };
   }
 }
@@ -88,7 +89,14 @@ function resolveDataUri(uri: string, variantName: string): ScreenshotData {
 }
 
 async function resolveUrl(url: string, variantName: string): Promise<ScreenshotData> {
-  const response = await fetch(url);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 30000);
+  let response: Response;
+  try {
+    response = await fetch(url, { signal: controller.signal });
+  } finally {
+    clearTimeout(timeout);
+  }
   if (!response.ok) {
     throw new Error(
       `Failed to fetch screenshot from ${url}: ${response.status} ${response.statusText}\n` +

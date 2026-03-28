@@ -22,6 +22,7 @@ export const startCommand = new Command('start')
 
     const note = await resolveNote(options, 'start', getDefaultType(), globalOptions.profile);
 
+    let hasFailures = false;
     for (const idStr of ids) {
       try {
         const id = await client.resolveExperimentId(idStr);
@@ -39,8 +40,10 @@ export const startCommand = new Command('start')
           console.log(chalk.green(`✓ Experiment ${id} started`));
         }
       } catch (e) {
+        hasFailures = true;
         if (outputPiped && options.passThrough) console.log(idStr);
         console.error(chalk.red(`✗ Experiment ${idStr}: ${e instanceof Error ? e.message : e}`));
       }
     }
+    if (hasFailures) process.exitCode = 1;
   }));

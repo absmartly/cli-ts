@@ -121,6 +121,7 @@ createCommand.action(withErrorHandling(async (options) => {
       const endpoint = resolveEndpoint(globalOptions);
       const apiKey = await resolveAPIKey(globalOptions);
 
+      console.error(chalk.yellow('Warning: The following command contains your API key.'));
       console.log(chalk.blue('cURL Command:'));
       console.log('');
       console.log(`curl -X POST ${shellEscape(endpoint + '/experiments')} \\`);

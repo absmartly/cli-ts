@@ -23,6 +23,7 @@ export const developmentCommand = new Command('development')
 
     const note = await resolveNote(options, 'development', getDefaultType(), globalOptions.profile);
 
+    let hasFailures = false;
     for (const idStr of ids) {
       try {
         const id = await client.resolveExperimentId(idStr);
@@ -34,8 +35,10 @@ export const developmentCommand = new Command('development')
           console.log(chalk.green(`✓ Experiment ${id} set to development mode`));
         }
       } catch (e) {
+        hasFailures = true;
         if (outputPiped && options.passThrough) console.log(idStr);
         console.error(chalk.red(`✗ Experiment ${idStr}: ${e instanceof Error ? e.message : e}`));
       }
     }
+    if (hasFailures) process.exitCode = 1;
   }));

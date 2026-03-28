@@ -1,6 +1,6 @@
 import { homedir } from 'os';
 import { join } from 'path';
-import { existsSync, readFileSync, writeFileSync, mkdirSync, chmodSync } from 'fs';
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs';
 
 const SERVICE_NAME = 'absmartly-cli';
 const CREDENTIALS_FILE = join(homedir(), '.config', 'absmartly', 'credentials.json');
@@ -38,18 +38,18 @@ function readCredentialsFile(): Record<string, string> {
   if (!existsSync(CREDENTIALS_FILE)) return {};
   try {
     return JSON.parse(readFileSync(CREDENTIALS_FILE, 'utf8'));
-  } catch (e) {
-    console.error(`Warning: credentials file is corrupted (${e instanceof Error ? e.message : e}), treating as empty`);
-    return {};
+  } catch {
+    throw new Error(`Credentials file is corrupted: ${CREDENTIALS_FILE}\nBack up this file and run: abs auth login`);
   }
 }
 
 function writeCredentialsFile(data: Record<string, string>): void {
   const dir = join(homedir(), '.config', 'absmartly');
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true, mode: 0o700 });
-  writeFileSync(CREDENTIALS_FILE, JSON.stringify(data, null, 2), 'utf8');
-  try { chmodSync(CREDENTIALS_FILE, 0o600); } catch (e) {
-    console.error(`Warning: could not set restrictive permissions on ${CREDENTIALS_FILE}: ${e instanceof Error ? e.message : e}`);
+  try {
+    writeFileSync(CREDENTIALS_FILE, JSON.stringify(data, null, 2), { encoding: 'utf8', mode: 0o600 });
+  } catch (e) {
+    throw new Error(`Could not write credentials file ${CREDENTIALS_FILE}: ${e instanceof Error ? e.message : e}`);
   }
 }
 
@@ -80,7 +80,11 @@ export async function getPassword(
   const keyName = getKeyName(key, options.profile);
   const keytar = await getKeytar();
   if (keytar) {
-    return await keytar.getPassword(SERVICE_NAME, keyName);
+    try {
+      return await keytar.getPassword(SERVICE_NAME, keyName);
+    } catch {
+      // fall through to file storage
+    }
   }
   const creds = readCredentialsFile();
   return creds[keyName] ?? null;
@@ -93,7 +97,11 @@ export async function deletePassword(
   const keyName = getKeyName(key, options.profile);
   const keytar = await getKeytar();
   if (keytar) {
-    return await keytar.deletePassword(SERVICE_NAME, keyName);
+    try {
+      return await keytar.deletePassword(SERVICE_NAME, keyName);
+    } catch {
+      // fall through to file storage
+    }
   }
   const creds = readCredentialsFile();
   if (keyName in creds) {

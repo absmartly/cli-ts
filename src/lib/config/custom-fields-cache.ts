@@ -29,8 +29,8 @@ function readCache(): CacheData {
 function writeCache(data: CacheData): void {
   try {
     const dir = join(homedir(), '.config', 'absmartly');
-    if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-    writeFileSync(CACHE_FILE, JSON.stringify(data, null, 2), 'utf8');
+    if (!existsSync(dir)) mkdirSync(dir, { recursive: true, mode: 0o700 });
+    writeFileSync(CACHE_FILE, JSON.stringify(data, null, 2), { encoding: 'utf8', mode: 0o600 });
   } catch (e) {
     console.error(`Warning: could not write custom fields cache: ${e instanceof Error ? e.message : e}`);
   }

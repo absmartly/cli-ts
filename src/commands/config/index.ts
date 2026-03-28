@@ -78,7 +78,7 @@ profilesCommand
         const profile = config.profiles[name]!;
         console.log(`${name}${marker}`);
         console.log(`  endpoint: ${profile.api?.endpoint || ''}`);
-        if (profile.api?.token) console.log(`  api-key:  ${profile.api.token.slice(0, 8)}...`);
+        if (profile.api?.token) console.log(`  api-key:  ****...${profile.api.token.slice(-4)}`);
         if (profile.expctld?.endpoint) console.log(`  expctld:  ${profile.expctld.endpoint}`);
         if (profile.application) console.log(`  app:      ${profile.application}`);
         if (profile.environment) console.log(`  env:      ${profile.environment}`);

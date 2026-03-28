@@ -51,6 +51,8 @@ export class AxiosHttpClient implements HttpClient {
 
         if (axiosRetry.isNetworkError(error)) return true;
 
+        if (error.response?.status === 429) return true;
+
         return (error.response?.status ?? 0) >= 500;
       },
     });
@@ -64,8 +66,11 @@ export class AxiosHttpClient implements HttpClient {
 
     this.client.interceptors.response.use(
       (response) => response,
-      (error: AxiosError) => {
-        throw this.handleError(error);
+      (error: unknown) => {
+        if (axios.isAxiosError(error)) {
+          throw this.handleError(error);
+        }
+        throw error;
       }
     );
   }
