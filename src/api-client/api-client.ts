@@ -1,8 +1,10 @@
-import type { HttpClient, HttpRequestConfig, HttpResponse, APIError } from './http-client.js';
+import { APIError } from './http-client.js';
+import type { HttpClient, HttpRequestConfig, HttpResponse } from './http-client.js';
 import { experimentToInput } from './experiment-transform.js';
 import type { ExperimentInput } from './experiment-transform.js';
 import { resolveBySearch } from './payload/search-resolver.js';
 import { resolveByName } from './payload/resolver.js';
+import { stripApiVersionPath } from '../lib/utils/url.js';
 import {
   ExperimentId,
 } from './types.js';
@@ -59,12 +61,11 @@ import type {
 } from './types.js';
 
 function createAPIError(message: string, response?: HttpResponse): APIError {
-  const error = new Error(message) as APIError;
-  if (response) {
-    error.statusCode = response.status;
-    error.response = response.data;
-  }
-  return error;
+  return new APIError(
+    message,
+    response?.status,
+    response?.data,
+  );
 }
 
 
@@ -77,7 +78,7 @@ export class APIClient {
 
   private getRootUrl(): string {
     const baseUrl = this.httpClient.getBaseUrl?.() ?? '';
-    return baseUrl.replace(/\/v\d+\/?$/, '');
+    return stripApiVersionPath(baseUrl);
   }
 
   private async request<T>(
@@ -265,6 +266,7 @@ export class APIClient {
     const response = await this.request('PUT', `/experiments/${id}/start`, {
       data: { ...(note !== undefined && { note }) },
     });
+    this.validateOkResponse(response, 'startExperiment');
     return this.validateEntityResponse<Experiment>(response, 'experiment', 'startExperiment');
   }
 
@@ -272,6 +274,7 @@ export class APIClient {
     const response = await this.request('PUT', `/experiments/${id}/stop`, {
       data: { reason, ...(note !== undefined && { note }) },
     });
+    this.validateOkResponse(response, 'stopExperiment');
     return this.validateEntityResponse<Experiment>(response, 'experiment', 'stopExperiment');
   }
 
@@ -287,7 +290,8 @@ export class APIClient {
   }
 
   async developmentExperiment(id: ExperimentId, note?: string): Promise<Experiment> {
-    const response = await this.request('PUT', `/experiments/${id}/development`, { data: { ...(note && { note }) } });
+    const response = await this.request('PUT', `/experiments/${id}/development`, { data: { ...(note !== undefined && { note }) } });
+    this.validateOkResponse(response, 'developmentExperiment');
     return this.validateEntityResponse<Experiment>(response, 'experiment', 'developmentExperiment');
   }
 
@@ -358,8 +362,9 @@ export class APIClient {
 
   async fullOnExperiment(id: ExperimentId, fullOnVariant: number, note?: string): Promise<Experiment> {
     const response = await this.request('PUT', `/experiments/${id}/full_on`, {
-      data: { full_on_variant: fullOnVariant, ...(note && { note }) },
+      data: { full_on_variant: fullOnVariant, ...(note !== undefined && { note }) },
     });
+    this.validateOkResponse(response, 'fullOnExperiment');
     return this.validateEntityResponse<Experiment>(response, 'experiment', 'fullOnExperiment');
   }
 
@@ -406,6 +411,20 @@ export class APIClient {
       throw new Error(`Invalid metric data response for experiment ${experimentId}, metric ${metricId}`);
     }
     return data as { columnNames: string[]; rows: unknown[][] };
+  }
+
+  async estimateMaxParticipants(params: {
+    from: number;
+    unit_type_id: number;
+    applications: number[];
+    audience?: string;
+  }): Promise<{ columnNames: string[]; columnTypes: string[]; rows: unknown[][] }> {
+    const response = await this.request<Record<string, unknown>>('POST', '/experiments/estimate/max_participants', { data: params });
+    const data = response.data;
+    if (!data || !Array.isArray(data.columnNames) || !Array.isArray(data.rows)) {
+      throw new Error('Invalid response from estimateMaxParticipants');
+    }
+    return data as { columnNames: string[]; columnTypes: string[]; rows: unknown[][] };
   }
 
   async getExperimentMetricsCached(
@@ -671,6 +690,7 @@ export class APIClient {
     if (options.items !== undefined) params.items = String(options.items);
     if (options.page !== undefined) params.page = String(options.page);
     if (options.archived) params.archived = 'true';
+    if (options.include_drafts) params.include_drafts = 'true';
     if (options.search) params.search = options.search;
     if (options.sort) params.sort = options.sort;
     if (options.sort_asc !== undefined) params.sort_asc = String(options.sort_asc);
@@ -1762,6 +1782,7 @@ export class APIClient {
     first_name?: string; last_name?: string;
     department?: string; job_title?: string;
     date_format_locale?: string;
+    old_password?: string; new_password?: string;
   }): Promise<User> {
     const rootUrl = this.getRootUrl();
     const response = await this.request('PUT', `${rootUrl}/auth/current-user`, { data: { data } });

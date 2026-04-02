@@ -28,6 +28,7 @@ import { diffCommand } from './diff.js';
 import { watchCommand } from './watch.js';
 import { bulkCommand } from './bulk.js';
 import { customFieldsCommand } from './custom-fields.js';
+import { estimateParticipantsCommand } from './estimate-participants.js';
 
 const subcommands = [
   listCommand, getCommand, searchCommand, createCommand, cloneCommand, updateCommand,
@@ -40,6 +41,7 @@ const subcommands = [
   watchCommand,
   bulkCommand,
   customFieldsCommand,
+  estimateParticipantsCommand,
 ];
 
 export const experimentsCommand = new Command('experiments')

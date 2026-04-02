@@ -298,6 +298,13 @@ abs experiments generate-template -o experiment.md
 
 # Refresh cached fields (custom fields + action dialog config for notes)
 abs experiments refresh-fields
+
+# Estimate maximum participants for an experiment
+abs experiments estimate-participants --unit-type user_id --application absmartly.com
+abs experiments estimate-participants --unit-type 42 --application 1 --application 2
+abs experiments estimate-participants --unit-type user_id --application absmartly.com --from 90d
+abs experiments estimate-participants --unit-type user_id --application absmartly.com --audience '{"filter":{"and":[{"eq":[{"var":{"path":"application"}},{"value":"absmartly.com"}]}]}}'
+abs experiments estimate-participants --unit-type user_id --application absmartly.com -o json
 ```
 
 #### Custom field options
@@ -1116,13 +1123,13 @@ baseline_participants: 143
 
 name: Control
 config: {}
-screenshot: ./screenshots/control.png
+![Control variant](./screenshots/control.png)
 
 ### variant_1
 
 name: Treatment
 config: {"feature_enabled": true}
-screenshot: ./screenshots/treatment.png
+![Treatment variant](./screenshots/treatment.png)
 
 ## Description
 
