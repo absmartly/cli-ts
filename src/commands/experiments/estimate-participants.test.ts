@@ -226,15 +226,22 @@ describe('estimate-participants command', () => {
       expect(consoleSpy.mock.calls.flat().join('\n')).toContain('"unit_count" not present');
     });
 
-    it('should warn when API returns multiple rows', async () => {
+    it('should display all rows when API returns multiple', async () => {
       mockClient.estimateMaxParticipants.mockResolvedValueOnce({
         ...ESTIMATE_RESPONSE,
-        rows: [[0, 1769812802910, 1774995544371, 0, 1000000], [0, 1769812802910, 1774995544371, 0, 945010]],
+        rows: [
+          [0, 1769812802910, 1774995544371, 0, 1000000],
+          [0, 1769812802910, 1774995544371, 0, 945010],
+        ],
       });
 
       await estimateParticipantsCommand.parseAsync(['node', 'test', '--unit-type', '42']);
 
-      expect(consoleSpy.mock.calls.flat().join('\n')).toContain('2 rows');
+      const output = consoleSpy.mock.calls.flat().join('\n');
+      expect(output).toContain('1,000,000');
+      expect(output).toContain('945,010');
+      expect(output).toContain('Row 1');
+      expect(output).toContain('Row 2');
     });
   });
 

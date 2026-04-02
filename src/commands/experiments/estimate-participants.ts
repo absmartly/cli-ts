@@ -67,25 +67,26 @@ export const estimateParticipantsCommand = new Command('estimate-participants')
       return;
     }
 
-    if (result.rows.length > 1) {
-      console.log(chalk.yellow(`Note: API returned ${result.rows.length} rows; displaying only the first. Use -o json for full output.`));
-    }
-
     const colIndex = (name: string) => result.columnNames.indexOf(name);
     const unitCountIdx = colIndex('unit_count');
     const firstExposureIdx = colIndex('first_exposure_at');
     const lastExposureIdx = colIndex('last_exposure_at');
 
-    const row = result.rows[0]!;
-
-    if (unitCountIdx >= 0) {
-      const unitCount = row[unitCountIdx] as number;
-      console.log(chalk.green(`Estimated max participants: ${unitCount.toLocaleString()}`));
-    } else {
+    if (unitCountIdx < 0) {
       console.log(chalk.yellow('Warning: "unit_count" not present in API response. Use -o json to inspect the raw response.'));
     }
 
-    if (firstExposureIdx >= 0) console.log(`  First exposure: ${formatTimestampMs(row[firstExposureIdx] as number)}`);
-    if (lastExposureIdx >= 0)  console.log(`  Last exposure:  ${formatTimestampMs(row[lastExposureIdx] as number)}`);
+    for (let i = 0; i < result.rows.length; i++) {
+      const row = result.rows[i]!;
+
+      if (result.rows.length > 1) console.log(chalk.bold(`Row ${i + 1}:`));
+
+      if (unitCountIdx >= 0) {
+        console.log(chalk.green(`  Estimated max participants: ${(row[unitCountIdx] as number).toLocaleString()}`));
+      }
+      if (firstExposureIdx >= 0) console.log(`  First exposure: ${formatTimestampMs(row[firstExposureIdx] as number)}`);
+      if (lastExposureIdx >= 0)  console.log(`  Last exposure:  ${formatTimestampMs(row[lastExposureIdx] as number)}`);
+    }
+
     console.log(`  Window from:    ${formatTimestampMs(from)}`);
   }));
