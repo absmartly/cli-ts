@@ -195,4 +195,80 @@ describe('APIClient - Resources', () => {
       expect(unit).toHaveProperty('name');
     });
   });
+
+  describe('estimateMaxParticipants', () => {
+    it('should return columnar response with expected columns', async () => {
+      if (!isLiveMode) {
+        server.use(
+          http.post(`${BASE_URL}/experiments/estimate/max_participants`, () =>
+            HttpResponse.json({
+              columnNames: ['variant', 'first_exposure_at', 'last_exposure_at', 'last_event_at', 'unit_count'],
+              columnTypes: ['UInt8', 'Int64', 'Int64', 'Int64', 'UInt32'],
+              rows: [[0, 1769812802910, 1774995544371, 0, 1945010]],
+            })
+          )
+        );
+      }
+
+      const [apps, units] = await Promise.all([
+        client.listApplications(),
+        client.listUnitTypes(),
+      ]);
+
+      const result = await client.estimateMaxParticipants({
+        from: Date.now() - 30 * 24 * 60 * 60 * 1000,
+        unit_type_id: units[0].id,
+        applications: [apps[0].id],
+      });
+
+      expect(result).toHaveProperty('columnNames');
+      expect(result).toHaveProperty('rows');
+      expect(Array.isArray(result.columnNames)).toBe(true);
+      expect(Array.isArray(result.rows)).toBe(true);
+      if (result.rows.length > 0) {
+        expect(result.columnNames).toContain('unit_count');
+      }
+    });
+
+    it('should work without applications parameter', async () => {
+      if (!isLiveMode) {
+        server.use(
+          http.post(`${BASE_URL}/experiments/estimate/max_participants`, () =>
+            HttpResponse.json({
+              columnNames: ['variant', 'first_exposure_at', 'last_exposure_at', 'last_event_at', 'unit_count'],
+              columnTypes: ['UInt8', 'Int64', 'Int64', 'Int64', 'UInt32'],
+              rows: [[0, 1769812802910, 1774995544371, 0, 500000]],
+            })
+          )
+        );
+      }
+
+      const units = await client.listUnitTypes();
+
+      const result = await client.estimateMaxParticipants({
+        from: Date.now() - 30 * 24 * 60 * 60 * 1000,
+        unit_type_id: units[0].id,
+      });
+
+      expect(Array.isArray(result.rows)).toBe(true);
+      expect(Array.isArray(result.columnNames)).toBe(true);
+    });
+
+    it.skipIf(isLiveMode)('should throw on invalid response shape', async () => {
+      server.use(
+        http.post(`${BASE_URL}/experiments/estimate/max_participants`, () =>
+          HttpResponse.json({ error: 'bad request' })
+        )
+      );
+
+      const units = await client.listUnitTypes();
+
+      await expect(
+        client.estimateMaxParticipants({
+          from: Date.now(),
+          unit_type_id: units[0].id,
+        })
+      ).rejects.toThrow(/columnNames/);
+    });
+  });
 });
