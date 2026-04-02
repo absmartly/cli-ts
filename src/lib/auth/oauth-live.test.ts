@@ -4,20 +4,17 @@ import { isLiveMode, TEST_BASE_URL, TEST_API_KEY } from '../../test/helpers/test
 import { createAPIClient } from '../api/client.js';
 import { generatePKCE } from './pkce.js';
 import { exchangeCodeForToken } from './token-exchange.js';
+import { stripApiVersionPath } from '../utils/url.js';
 
 const LIVE_USERNAME = process.env.LIVE_USERNAME;
 const LIVE_PASSWORD = process.env.LIVE_PASSWORD;
-
-function getOAuthBaseUrl(endpoint: string): string {
-  return endpoint.replace(/\/v\d+\/?$/, '');
-}
 
 async function performOAuthBrowserFlow(endpoint: string): Promise<{ code: string; codeVerifier: string; redirectUri: string }> {
   const { chromium } = await import('playwright');
   const { codeVerifier, codeChallenge } = generatePKCE();
   const redirectUri = 'http://localhost:8787/oauth/callback';
 
-  const baseUrl = getOAuthBaseUrl(endpoint);
+  const baseUrl = stripApiVersionPath(endpoint);
   const authUrl = new URL(`${baseUrl}/auth/oauth/authorize`);
   authUrl.searchParams.set('response_type', 'code');
   authUrl.searchParams.set('client_id', 'mcp-absmartly-universal');
@@ -74,7 +71,7 @@ describe.runIf(isLiveMode)('OAuth live API tests', () => {
 
   describe('OAuth discovery endpoint', () => {
     it('returns OAuth authorization server metadata', async () => {
-      const baseUrl = getOAuthBaseUrl(TEST_BASE_URL);
+      const baseUrl = stripApiVersionPath(TEST_BASE_URL);
       const response = await axios.get(
         `${baseUrl}/auth/oauth/.well-known/oauth-authorization-server`,
         { httpsAgent: new (await import('https')).Agent({ rejectUnauthorized: false }) }

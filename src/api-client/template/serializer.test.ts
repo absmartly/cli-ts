@@ -275,7 +275,7 @@ describe('experimentToMarkdown', () => {
     }));
 
     expect(md).toContain('### variant_0');
-    expect(md).toContain('screenshot: /files/variant_screenshots/abc123/control.png');
+    expect(md).toContain('![control.png](/files/variant_screenshots/abc123/control.png)');
   });
 
   it('should match screenshot to correct variant', async () => {
@@ -305,10 +305,10 @@ describe('experimentToMarkdown', () => {
     }));
 
     const v0Section = md.split('### variant_0')[1]?.split('### variant_1')[0] ?? '';
-    expect(v0Section).not.toContain('screenshot:');
+    expect(v0Section).not.toContain('![');
 
     const v1Section = md.split('### variant_1')[1] ?? '';
-    expect(v1Section).toContain('screenshot: /files/variant_screenshots/def456/treatment.png');
+    expect(v1Section).toContain('![treatment.png](/files/variant_screenshots/def456/treatment.png)');
   });
 
   it('should produce output that round-trips through the parser', async () => {

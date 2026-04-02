@@ -38,7 +38,15 @@ export const createCommand = new Command('create')
   .option('--analysis-type <type>', 'analysis type (group_sequential, fixed_horizon)')
   .option('--required-alpha <value>', 'required alpha (significance level)')
   .option('--required-power <value>', 'required power')
-  .option('--baseline-participants <n>', 'baseline participants per day');
+  .option('--baseline-participants <n>', 'baseline participants per day')
+  .option('--mde <value>', 'minimum detectable effect (0.1-1000.0)')
+  .option('--baseline-mean <value>', 'baseline primary metric mean')
+  .option('--baseline-stdev <value>', 'baseline primary metric standard deviation')
+  .option('--gs-futility-type <type>', 'group sequential futility type (binding, non_binding)')
+  .option('--gs-analysis-count <n>', 'group sequential number of analyses')
+  .option('--gs-min-analysis-interval <interval>', 'group sequential min analysis interval (e.g. 1d)')
+  .option('--gs-first-analysis-interval <interval>', 'group sequential first analysis interval (e.g. 7d)')
+  .option('--gs-max-duration-interval <interval>', 'group sequential max duration interval (e.g. 6w)');
 
 registerCustomFieldOptions(createCommand, getDefaultType());
 
@@ -103,6 +111,14 @@ createCommand.action(withErrorHandling(async (options) => {
         requiredAlpha: options.requiredAlpha,
         requiredPower: options.requiredPower,
         baselineParticipants: options.baselineParticipants,
+        minimumDetectableEffect: options.mde,
+        baselinePrimaryMetricMean: options.baselineMean,
+        baselinePrimaryMetricStdev: options.baselineStdev,
+        groupSequentialFutilityType: options.gsFutilityType,
+        groupSequentialAnalysisCount: options.gsAnalysisCount,
+        groupSequentialMinAnalysisInterval: options.gsMinAnalysisInterval,
+        groupSequentialFirstAnalysisInterval: options.gsFirstAnalysisInterval,
+        groupSequentialMaxDurationInterval: options.gsMaxDurationInterval,
         customFields: extractCustomFieldValues(options, getDefaultType(), globalOptions.profile as string),
       }, client);
     }

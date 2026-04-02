@@ -2,6 +2,7 @@ import { Command } from 'commander';
 import open from 'open';
 import { getProfile, loadConfig } from '../../lib/config/config.js';
 import { withErrorHandling, getGlobalOptions } from '../../lib/utils/api-helper.js';
+import { stripApiVersionPath } from '../../lib/utils/url.js';
 
 const VALID_RESOURCES = [
   'experiments', 'experiment', 'metrics', 'metric', 'goals', 'goal',
@@ -18,7 +19,7 @@ export const openCommand = new Command('open')
     const profileName = (globalOptions.profile as string) || config['default-profile'];
     const profile = getProfile(profileName);
 
-    let webURL = profile.api.endpoint.replace(/\/v\d+\/?$/, '');
+    let webURL = stripApiVersionPath(profile.api.endpoint);
 
     if (resource) {
       if (!(VALID_RESOURCES as readonly string[]).includes(resource)) {

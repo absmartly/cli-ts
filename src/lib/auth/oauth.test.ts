@@ -49,6 +49,7 @@ describe('startOAuthFlow', () => {
       codeVerifier: 'test-verifier',
       redirectUri: 'http://localhost:8787/oauth/callback',
       clientId: 'mcp-absmartly-universal',
+      insecure: false,
     });
 
     expect(result.accessToken).toBe('jwt-access-token');

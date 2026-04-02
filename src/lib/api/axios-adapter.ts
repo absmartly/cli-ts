@@ -1,11 +1,14 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
+import https from 'https';
 import axiosRetry from 'axios-retry';
 import { version } from '../utils/version.js';
+import {
+  APIError,
+} from '../../api-client/http-client.js';
 import type {
   HttpClient,
   HttpRequestConfig,
   HttpResponse,
-  APIError,
 } from '../../api-client/http-client.js';
 
 const DEFAULT_TIMEOUT = 30000;
@@ -26,7 +29,7 @@ export class AxiosHttpClient implements HttpClient {
   private verbose: boolean;
   protected authConfig: AuthConfig;
 
-  constructor(endpoint: string, auth: string | AuthConfig, options: { verbose?: boolean; timeout?: number } = {}) {
+  constructor(endpoint: string, auth: string | AuthConfig, options: { verbose?: boolean; timeout?: number; insecure?: boolean } = {}) {
     this.verbose = options.verbose ?? false;
 
     this.authConfig = typeof auth === 'string'
@@ -40,6 +43,7 @@ export class AxiosHttpClient implements HttpClient {
     this.client = axios.create({
       baseURL: endpoint,
       timeout: options.timeout ?? DEFAULT_TIMEOUT,
+      ...(options.insecure && { httpsAgent: new https.Agent({ rejectUnauthorized: false }) }),
       headers: {
         Authorization: authHeader,
         'Content-Type': 'application/json',
@@ -100,8 +104,9 @@ export class AxiosHttpClient implements HttpClient {
             error.config.headers['Authorization'] = newHeader;
             return this.client.request(error.config);
           }
-        } catch {
-          // re-auth failed, propagate original 401
+        } catch (refreshError) {
+          const msg = refreshError instanceof Error ? refreshError.message : String(refreshError);
+          console.error(`Warning: Token refresh failed: ${msg}`);
         } finally {
           isRefreshing = false;
         }
@@ -161,39 +166,32 @@ export class AxiosHttpClient implements HttpClient {
   }
 
   private handleError(error: AxiosError): APIError {
-    const apiError: APIError = new Error('API error');
-    if (error.response?.status !== undefined) {
-      apiError.statusCode = error.response.status;
-    }
-    if (error.response?.data !== undefined) {
-      apiError.response = error.response.data;
-    }
-
     const endpoint = error.config?.url || 'unknown endpoint';
     const method = error.config?.method?.toUpperCase() || 'unknown method';
     const status = error.response?.status;
 
+    let message: string;
     switch (status) {
       case 401:
-        apiError.message =
+        message =
           `Unauthorized: Invalid or expired API key.\n` +
           `Endpoint: ${method} ${endpoint}\n` +
           `Run: abs auth login --api-key YOUR_KEY`;
         break;
       case 403:
-        apiError.message =
+        message =
           `Forbidden: Insufficient permissions for this operation.\n` +
           `Endpoint: ${method} ${endpoint}\n` +
           `Please check your API key has the required permissions.`;
         break;
       case 404:
-        apiError.message =
+        message =
           `Not found: Resource does not exist.\n` +
           `Endpoint: ${method} ${endpoint}`;
         break;
       case 429: {
         const retryAfter = error.response?.headers['retry-after'];
-        apiError.message =
+        message =
           `Rate limit exceeded.\n` +
           `Endpoint: ${method} ${endpoint}\n` +
           (retryAfter ? `Retry after: ${retryAfter} seconds` : 'Please try again later.');
@@ -201,30 +199,30 @@ export class AxiosHttpClient implements HttpClient {
       }
       default:
         if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
-          apiError.message =
+          message =
             `Cannot connect to API server.\n` +
             `Endpoint: ${endpoint}\n` +
             `Please check your network connection and API endpoint configuration.`;
         } else if (error.code === 'ETIMEDOUT') {
-          apiError.message =
+          message =
             `Request timeout.\n` +
             `Endpoint: ${method} ${endpoint}\n` +
             `The server took too long to respond. Please try again.`;
         } else {
-          apiError.message =
+          message =
             `API error: ${error.message || 'unknown error'}\n` +
             `Endpoint: ${method} ${endpoint}`;
         }
     }
 
-    return apiError;
+    return new APIError(message, status, error.response?.data);
   }
 }
 
 export function createAxiosHttpClient(
   endpoint: string,
   auth: string | AuthConfig,
-  options?: { verbose?: boolean; timeout?: number }
+  options?: { verbose?: boolean; timeout?: number; insecure?: boolean }
 ): AxiosHttpClient {
   return new AxiosHttpClient(endpoint, auth, options);
 }

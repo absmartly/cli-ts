@@ -21,16 +21,17 @@ const ERROR_HTML = `<!DOCTYPE html>
 
 export async function startCallbackServer(preferredPorts: number[] = [8787, 8080]): Promise<CallbackServer> {
   const portsToTry = [...preferredPorts, 0];
+  const errors: string[] = [];
 
   for (const port of portsToTry) {
     try {
       return await tryBindServer(port);
-    } catch {
-      continue;
+    } catch (e) {
+      errors.push(`port ${port}: ${e instanceof Error ? e.message : e}`);
     }
   }
 
-  throw new Error('Could not bind callback server on any port');
+  throw new Error(`Could not bind callback server on any port:\n${errors.map(e => `  - ${e}`).join('\n')}`);
 }
 
 function tryBindServer(port: number): Promise<CallbackServer> {

@@ -1,5 +1,6 @@
 import type { User } from './types.js';
 import { formatDate } from './format-helpers.js';
+import { stripApiVersionPath } from '../lib/utils/url.js';
 
 export interface UserSummary {
   id: number;
@@ -12,7 +13,7 @@ export interface UserSummary {
 }
 
 export function summarizeUser(user: User, apiEndpoint?: string): UserSummary {
-  const baseUrl = apiEndpoint?.replace(/\/v\d+\/?$/, '') ?? '';
+  const baseUrl = apiEndpoint ? stripApiVersionPath(apiEndpoint) : '';
 
   return {
     id: user.id,

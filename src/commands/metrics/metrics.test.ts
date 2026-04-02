@@ -57,6 +57,7 @@ describe('metrics command', () => {
     items: 100,
     page: 1,
     archived: undefined,
+    include_drafts: undefined,
     search: undefined,
     sort: undefined,
     sort_asc: undefined,
@@ -148,6 +149,13 @@ describe('metrics command', () => {
     });
   });
 
+  it('should list metrics with include-drafts flag', async () => {
+    await metricsCommand.parseAsync(['node', 'test', 'list', '--include-drafts']);
+
+    expect(mockClient.listMetrics).toHaveBeenCalledWith({ ...defaultListParams, include_drafts: true });
+    expect(printFormatted).toHaveBeenCalled();
+  });
+
   it('should get metric by id', async () => {
     await metricsCommand.parseAsync(['node', 'test', 'get', '1']);
 
@@ -163,6 +171,18 @@ describe('metrics command', () => {
 
     expect(mockClient.createMetric).toHaveBeenCalledWith(
       expect.objectContaining({ name: 'ctr', type: 'goal_count', description: 'Click-through rate', effect: 'positive' })
+    );
+  });
+
+  it('should create a goal_property metric with value-source-property', async () => {
+    await metricsCommand.parseAsync([
+      'node', 'test', 'create',
+      '--name', 'Net Revenue', '--type', 'goal_property', '--goal-id', '1',
+      '--description', 'Net revenue', '--value-source-property', 'amount',
+    ]);
+
+    expect(mockClient.createMetric).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'Net Revenue', type: 'goal_property', goal_id: 1, value_source_property: 'amount' })
     );
   });
 

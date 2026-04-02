@@ -4,6 +4,7 @@ import { createAxiosHttpClient, type AuthConfig } from './axios-adapter.js';
 export interface ClientOptions {
   verbose?: boolean;
   timeout?: number;
+  insecure?: boolean;
 }
 
 export class APIClient extends EngineAPIClient {

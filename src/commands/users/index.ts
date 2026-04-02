@@ -8,6 +8,7 @@ import { renderInlineImage, supportsInlineImages } from '../../lib/utils/termina
 import type { UserId } from '../../lib/api/branded-types.js';
 import { applyShowExclude, summarizeUserRow, summarizeUserDetail } from '../../api-client/entity-summary.js';
 import type { User } from '../../api-client/types.js';
+import { stripApiVersionPath } from '../../lib/utils/url.js';
 import { resetPasswordCommand } from './reset-password.js';
 import { userApiKeysCommand } from './api-keys.js';
 
@@ -16,7 +17,7 @@ export const usersCommand = new Command('users').alias('user').description('User
 async function displayUserAvatar(user: User, globalOptions: GlobalOptions, width: number): Promise<void> {
   if (!supportsInlineImages() || !user.avatar?.base_url) return;
   const endpoint = resolveEndpoint(globalOptions);
-  const baseUrl = endpoint.replace(/\/v\d+\/?$/, '');
+  const baseUrl = stripApiVersionPath(endpoint);
   const apiKey = await resolveAPIKey(globalOptions);
   const thumbSize = Math.min(width * 16, 128);
   const thumbUrl = `${baseUrl}${user.avatar.base_url}/crop/${thumbSize}x${thumbSize}.webp`;
@@ -59,7 +60,7 @@ const listCommand = addPaginationOptions(
     if (wantAvatars) {
       const avatarWidth = typeof options.showAvatars === 'number' ? options.showAvatars : 3;
       const endpoint = resolveEndpoint(globalOptions);
-      const baseUrl = endpoint.replace(/\/v\d+\/?$/, '');
+      const baseUrl = stripApiVersionPath(endpoint);
       const apiKey = await resolveAPIKey(globalOptions);
       const headers = { Authorization: `Api-Key ${apiKey}` };
 

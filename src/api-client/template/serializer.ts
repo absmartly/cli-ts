@@ -1,6 +1,7 @@
 import { mkdirSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import type { Experiment, Variant } from '../types.js';
+import { stripApiVersionPath } from '../../lib/utils/url.js';
 
 export interface SerializerOptions {
   embedScreenshots?: boolean;
@@ -157,6 +158,7 @@ export async function experimentToMarkdown(experiment: Experiment, options: Seri
       const screenshot = variantScreenshots?.find(s => s.variant === idx);
       if (screenshot) {
         const uploadId = screenshot.screenshot_file_upload_id as number | undefined;
+        const label = (screenshot.label as string) || '';
         const fileUpload = screenshot.file_upload as Record<string, unknown> | undefined;
         if (fileUpload) {
           const fileName = fileUpload.file_name as string;
@@ -164,22 +166,22 @@ export async function experimentToMarkdown(experiment: Experiment, options: Seri
           const needsFetch = (options.embedScreenshots || options.screenshotsDir) && options.apiEndpoint;
 
           if (needsFetch) {
-            const baseUrl = options.apiEndpoint!.replace(/\/v\d+\/?$/, '');
+            const baseUrl = stripApiVersionPath(options.apiEndpoint!);
             const result = await fetchScreenshotBuffer(`${baseUrl}${relativePath}`, options.apiKey);
 
             if (result && options.screenshotsDir) {
               mkdirSync(options.screenshotsDir, { recursive: true });
               const localPath = join(options.screenshotsDir, fileName);
               writeFileSync(localPath, result.buffer);
-              parts.push(`screenshot: ${localPath}\n`);
+              parts.push(`![${label}](${localPath})\n`);
             } else if (result && options.embedScreenshots) {
               const dataUri = `data:${result.contentType};base64,${result.buffer.toString('base64')}`;
-              parts.push(`screenshot: ${dataUri}\n`);
+              parts.push(`![${label}](${dataUri})\n`);
             } else {
-              parts.push(`screenshot: ${relativePath}\n`);
+              parts.push(`![${label}](${relativePath})\n`);
             }
           } else {
-            parts.push(`screenshot: ${relativePath}\n`);
+            parts.push(`![${label}](${relativePath})\n`);
           }
           if (uploadId) parts.push(`screenshot_id: ${uploadId}\n`);
         }

@@ -85,6 +85,124 @@ john@example.com
     expect(() => parseExperimentMarkdown(md)).toThrow(/Invalid YAML frontmatter/);
   });
 
+  it('should parse screenshot: key-value syntax', () => {
+    const md = `---
+name: exp1
+---
+
+## Variants
+
+### variant_0
+
+name: control
+screenshot: /tmp/control.png
+
+### variant_1
+
+name: treatment
+screenshot: https://example.com/treatment.png
+`;
+    const result = parseExperimentMarkdown(md);
+    expect(result.variants![0].screenshot).toBe('/tmp/control.png');
+    expect(result.variants![0].screenshot_label).toBeUndefined();
+    expect(result.variants![1].screenshot).toBe('https://example.com/treatment.png');
+    expect(result.variants![1].screenshot_label).toBeUndefined();
+  });
+
+  it('should parse markdown image syntax with label', () => {
+    const md = `---
+name: exp1
+---
+
+## Variants
+
+### variant_0
+
+name: control
+![Control screenshot](./screenshots/control.png)
+
+### variant_1
+
+name: treatment
+![Treatment screenshot](./screenshots/treatment.png)
+`;
+    const result = parseExperimentMarkdown(md);
+    expect(result.variants![0].screenshot).toBe('./screenshots/control.png');
+    expect(result.variants![0].screenshot_label).toBe('Control screenshot');
+    expect(result.variants![1].screenshot).toBe('./screenshots/treatment.png');
+    expect(result.variants![1].screenshot_label).toBe('Treatment screenshot');
+  });
+
+  it('should parse markdown image syntax without label', () => {
+    const md = `---
+name: exp1
+---
+
+## Variants
+
+### variant_0
+
+name: control
+![](./screenshots/control.png)
+`;
+    const result = parseExperimentMarkdown(md);
+    expect(result.variants![0].screenshot).toBe('./screenshots/control.png');
+    expect(result.variants![0].screenshot_label).toBeUndefined();
+  });
+
+  it('should parse markdown image syntax with data URI', () => {
+    const dataUri = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+    const md = `---
+name: exp1
+---
+
+## Variants
+
+### variant_0
+
+name: control
+![My screenshot](${dataUri})
+`;
+    const result = parseExperimentMarkdown(md);
+    expect(result.variants![0].screenshot).toBe(dataUri);
+    expect(result.variants![0].screenshot_label).toBe('My screenshot');
+  });
+
+  it('should parse markdown image syntax with URL', () => {
+    const md = `---
+name: exp1
+---
+
+## Variants
+
+### variant_0
+
+name: control
+![Hero image](https://cdn.example.com/hero.png)
+`;
+    const result = parseExperimentMarkdown(md);
+    expect(result.variants![0].screenshot).toBe('https://cdn.example.com/hero.png');
+    expect(result.variants![0].screenshot_label).toBe('Hero image');
+  });
+
+  it('should prefer last screenshot when both syntaxes present', () => {
+    const md = `---
+name: exp1
+---
+
+## Variants
+
+### variant_0
+
+name: control
+screenshot: /old/path.png
+![New label](./new/path.png)
+`;
+    const result = parseExperimentMarkdown(md);
+    expect(result.variants![0].screenshot).toBe('./new/path.png');
+    expect(result.variants![0].screenshot_label).toBe('New label');
+  });
+
   it('should default to test type and 50/50 percentages', () => {
     const md = `---
 name: exp1

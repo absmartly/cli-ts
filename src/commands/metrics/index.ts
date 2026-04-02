@@ -44,6 +44,7 @@ const listCommand = createListCommand({
       items: options.items as number,
       page: options.page as number,
       archived: options.archived as boolean,
+      include_drafts: options.includeDrafts as boolean,
       search: options.search as string | undefined,
       sort: options.sort as string | undefined,
       sort_asc: options.asc ? true : options.desc ? false : undefined,
@@ -56,6 +57,7 @@ const listCommand = createListCommand({
   summarizeRow: summarizeMetricRow,
   extraOptions: (cmd) => cmd
     .option('--archived', 'include archived metrics')
+    .option('--include-drafts', 'include draft (non-activated) metrics')
     .option('--search <query>', 'search by name, tag, goal, or owner')
     .option('--sort <field>', 'sort by field (e.g. name, created_at, updated_at)')
     .option('--asc', 'sort in ascending order')
@@ -97,6 +99,7 @@ const createCommand = new Command('create')
   .option('--mean-scale <n>', 'mean display scale', parseInt, 100)
   .option('--mean-precision <n>', 'mean display precision', parseInt, 2)
   .option('--outlier-limit-method <method>', 'outlier limit method (unlimited, tukey, percentile)', 'unlimited')
+  .option('--value-source-property <property>', 'value source property (required for goal_property type)')
   .action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(createCommand);
     const client = await getAPIClientFromOptions(globalOptions);
@@ -116,6 +119,7 @@ const createCommand = new Command('create')
     };
 
     if (options.goalId) data.goal_id = options.goalId;
+    if (options.valueSourceProperty) data.value_source_property = options.valueSourceProperty;
     if (options.owner) data.owners = [{ user_id: options.owner }];
 
     const metric = await client.createMetric(data);

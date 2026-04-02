@@ -128,6 +128,7 @@ async function buildVariantScreenshots(
       screenshots.push({
         variant: v.variant ?? template.variants.indexOf(v),
         screenshot_file_upload_id: v.screenshot_id,
+        ...(v.screenshot_label ? { label: v.screenshot_label } : {}),
       });
       continue;
     }
@@ -147,6 +148,7 @@ async function buildVariantScreenshots(
     screenshots.push({
       variant: v.variant ?? template.variants.indexOf(v),
       file_upload: resolved,
+      ...(v.screenshot_label ? { label: v.screenshot_label } : {}),
     });
   }
 
@@ -161,6 +163,10 @@ const KNOWN_TEMPLATE_KEYS = new Set([
   'owner_id', 'owners', 'teams', 'tags', 'audience',
   'variants', 'custom_fields',
   'analysis_type', 'required_alpha', 'required_power', 'baseline_participants',
+  'minimum_detectable_effect', 'baseline_primary_metric_mean', 'baseline_primary_metric_stdev',
+  'group_sequential_futility_type', 'group_sequential_analysis_count',
+  'group_sequential_min_analysis_interval',
+  'group_sequential_first_analysis_interval', 'group_sequential_max_duration_interval',
 ]);
 
 export interface BuildPayloadResult {
@@ -183,6 +189,8 @@ export async function buildExperimentPayload(
   const experimentType = template.type ?? defaultType;
   const variants = buildVariants(template);
 
+  const analysisType = template.analysis_type ?? DEFAULT_ANALYSIS_TYPE;
+
   const payload: Record<string, unknown> = {
     name: template.name,
     display_name: template.display_name ?? template.name,
@@ -190,13 +198,9 @@ export async function buildExperimentPayload(
     state: template.state ?? DEFAULT_STATE,
     percentage_of_traffic: template.percentage_of_traffic ?? DEFAULT_TRAFFIC,
     percentages: template.percentages ?? DEFAULT_PERCENTAGES,
-    analysis_type: template.analysis_type ?? DEFAULT_ANALYSIS_TYPE,
+    analysis_type: analysisType,
     required_alpha: template.required_alpha ?? DEFAULT_REQUIRED_ALPHA,
     required_power: template.required_power ?? DEFAULT_REQUIRED_POWER,
-    group_sequential_futility_type: DEFAULT_FUTILITY_TYPE,
-    group_sequential_min_analysis_interval: DEFAULT_MIN_ANALYSIS_INTERVAL,
-    group_sequential_first_analysis_interval: DEFAULT_FIRST_ANALYSIS_INTERVAL,
-    group_sequential_max_duration_interval: DEFAULT_MAX_DURATION_INTERVAL,
     baseline_participants_per_day: template.baseline_participants ?? DEFAULT_BASELINE_PARTICIPANTS,
     audience: DEFAULT_AUDIENCE,
     audience_strict: false,
@@ -206,6 +210,18 @@ export async function buildExperimentPayload(
     teams: [],
     experiment_tags: [],
   };
+
+  if (template.minimum_detectable_effect) payload.minimum_detectable_effect = template.minimum_detectable_effect;
+  if (template.baseline_primary_metric_mean) payload.baseline_primary_metric_mean = template.baseline_primary_metric_mean;
+  if (template.baseline_primary_metric_stdev) payload.baseline_primary_metric_stdev = template.baseline_primary_metric_stdev;
+
+  if (analysisType === 'group_sequential') {
+    payload.group_sequential_futility_type = template.group_sequential_futility_type ?? DEFAULT_FUTILITY_TYPE;
+    if (template.group_sequential_analysis_count) payload.group_sequential_analysis_count = template.group_sequential_analysis_count;
+    payload.group_sequential_min_analysis_interval = template.group_sequential_min_analysis_interval ?? DEFAULT_MIN_ANALYSIS_INTERVAL;
+    payload.group_sequential_first_analysis_interval = template.group_sequential_first_analysis_interval ?? DEFAULT_FIRST_ANALYSIS_INTERVAL;
+    payload.group_sequential_max_duration_interval = template.group_sequential_max_duration_interval ?? DEFAULT_MAX_DURATION_INTERVAL;
+  }
 
   const builtScreenshots = await buildVariantScreenshots(template, warnings);
   payload.variant_screenshots = builtScreenshots;

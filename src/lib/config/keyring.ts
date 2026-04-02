@@ -82,8 +82,8 @@ export async function getPassword(
   if (keytar) {
     try {
       return await keytar.getPassword(SERVICE_NAME, keyName);
-    } catch {
-      // fall through to file storage
+    } catch (e) {
+      console.error(`Warning: could not read from OS keyring (${e instanceof Error ? e.message : e}), checking file storage`);
     }
   }
   const creds = readCredentialsFile();
@@ -99,8 +99,8 @@ export async function deletePassword(
   if (keytar) {
     try {
       return await keytar.deletePassword(SERVICE_NAME, keyName);
-    } catch {
-      // fall through to file storage
+    } catch (e) {
+      console.error(`Warning: could not delete from OS keyring (${e instanceof Error ? e.message : e}), checking file storage`);
     }
   }
   const creds = readCredentialsFile();

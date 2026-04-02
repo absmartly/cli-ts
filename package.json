@@ -50,7 +50,8 @@
     "lint": "eslint src --ext .ts",
     "format": "prettier --write 'src/**/*.ts'",
     "typecheck": "tsc --noEmit",
-    "test:live": "tsx src/test/live/run-live-tests.ts",
+    "test:live": "tsx src/test/live/run-live-vitest.ts",
+    "test:live-quick": "tsx src/test/live/run-live-tests.ts",
     "test:live-api": "USE_LIVE_API=1 vitest run"
   },
   "keywords": [

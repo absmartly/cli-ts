@@ -1,4 +1,6 @@
 import axios from 'axios';
+import https from 'https';
+import { stripApiVersionPath } from '../utils/url.js';
 
 export interface TokenExchangeParams {
   endpoint: string;
@@ -6,6 +8,7 @@ export interface TokenExchangeParams {
   codeVerifier: string;
   redirectUri: string;
   clientId: string;
+  insecure?: boolean;
 }
 
 export interface TokenResponse {
@@ -15,12 +18,8 @@ export interface TokenResponse {
   scope?: string;
 }
 
-function getOAuthBaseUrl(endpoint: string): string {
-  return endpoint.replace(/\/v\d+\/?$/, '');
-}
-
 export async function exchangeCodeForToken(params: TokenExchangeParams): Promise<TokenResponse> {
-  const baseUrl = getOAuthBaseUrl(params.endpoint);
+  const baseUrl = stripApiVersionPath(params.endpoint);
   const tokenUrl = `${baseUrl}/auth/oauth/token`;
 
   const body = new URLSearchParams({
@@ -34,6 +33,7 @@ export async function exchangeCodeForToken(params: TokenExchangeParams): Promise
   try {
     const response = await axios.post(tokenUrl, body, {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      ...(params.insecure && { httpsAgent: new https.Agent({ rejectUnauthorized: false }) }),
     });
 
     return {
@@ -54,6 +54,13 @@ export async function exchangeCodeForToken(params: TokenExchangeParams): Promise
         throw new Error(data.error_description || data.error || 'Token exchange failed');
       }
     }
-    throw new Error(`Token exchange failed: ${error instanceof Error ? error.message : error}`);
+    const msg = error instanceof Error ? error.message : String(error);
+    let tip = '';
+    if (msg.includes('self-signed certificate')) {
+      tip = '\nTip: Use --insecure to allow self-signed certificates.';
+    } else if (msg.includes('socket hang up') && params.endpoint.startsWith('http://')) {
+      tip = `\nTip: The server may require HTTPS. Try: ${params.endpoint.replace('http://', 'https://')}`;
+    }
+    throw new Error(`Token exchange failed: ${msg}${tip}`);
   }
 }

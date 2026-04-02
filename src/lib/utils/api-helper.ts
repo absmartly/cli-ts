@@ -80,7 +80,10 @@ export async function getAPIClientFromOptions(options: GlobalOptions): Promise<A
   }
 
   const auth = await resolveAuth(options);
-  return createAPIClient(endpoint, auth, { verbose: options.verbose ?? false });
+  return createAPIClient(endpoint, auth, {
+    verbose: options.verbose ?? false,
+    insecure: profile.api.insecure ?? false,
+  });
 }
 
 export interface GlobalOptions {

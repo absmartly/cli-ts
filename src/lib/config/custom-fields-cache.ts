@@ -21,7 +21,7 @@ function readCache(): CacheData {
   try {
     return JSON.parse(readFileSync(CACHE_FILE, 'utf8'));
   } catch (e) {
-    if (process.env.DEBUG) console.error(`Warning: custom fields cache corrupted (${e instanceof Error ? e.message : e})`);
+    console.error(`Warning: custom fields cache corrupted (${e instanceof Error ? e.message : e}). Run: abs experiments refresh-fields`);
     return {};
   }
 }

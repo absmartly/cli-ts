@@ -139,6 +139,67 @@ describe('buildExperimentPayload', () => {
     expect(payload.owners).toEqual([{ user_id: 42 }]);
   });
 
+  it('should include group_sequential fields only when analysis_type is group_sequential', async () => {
+    const template: ExperimentTemplate = { name: 'exp', analysis_type: 'group_sequential' };
+    const { payload } = await buildExperimentPayload(template, baseContext);
+    expect(payload.group_sequential_futility_type).toBe('binding');
+    expect(payload.group_sequential_min_analysis_interval).toBe('1d');
+    expect(payload.group_sequential_first_analysis_interval).toBe('7d');
+    expect(payload.group_sequential_max_duration_interval).toBe('6w');
+  });
+
+  it('should not include group_sequential fields when analysis_type is fixed_horizon', async () => {
+    const template: ExperimentTemplate = { name: 'exp', analysis_type: 'fixed_horizon' };
+    const { payload } = await buildExperimentPayload(template, baseContext);
+    expect(payload.group_sequential_futility_type).toBeUndefined();
+    expect(payload.group_sequential_min_analysis_interval).toBeUndefined();
+    expect(payload.group_sequential_first_analysis_interval).toBeUndefined();
+    expect(payload.group_sequential_max_duration_interval).toBeUndefined();
+  });
+
+  it('should allow overriding group_sequential fields from template', async () => {
+    const template: ExperimentTemplate = {
+      name: 'exp',
+      analysis_type: 'group_sequential',
+      group_sequential_futility_type: 'non_binding',
+      group_sequential_min_analysis_interval: '2d',
+      group_sequential_first_analysis_interval: '14d',
+      group_sequential_max_duration_interval: '12w',
+      group_sequential_analysis_count: '5',
+    };
+    const { payload } = await buildExperimentPayload(template, baseContext);
+    expect(payload.group_sequential_futility_type).toBe('non_binding');
+    expect(payload.group_sequential_min_analysis_interval).toBe('2d');
+    expect(payload.group_sequential_first_analysis_interval).toBe('14d');
+    expect(payload.group_sequential_max_duration_interval).toBe('12w');
+    expect(payload.group_sequential_analysis_count).toBe('5');
+  });
+
+  it('should include minimum_detectable_effect when set', async () => {
+    const template: ExperimentTemplate = { name: 'exp', minimum_detectable_effect: '5.0' };
+    const { payload } = await buildExperimentPayload(template, baseContext);
+    expect(payload.minimum_detectable_effect).toBe('5.0');
+  });
+
+  it('should include baseline metric stats when set', async () => {
+    const template: ExperimentTemplate = {
+      name: 'exp',
+      baseline_primary_metric_mean: '42.5',
+      baseline_primary_metric_stdev: '10.2',
+    };
+    const { payload } = await buildExperimentPayload(template, baseContext);
+    expect(payload.baseline_primary_metric_mean).toBe('42.5');
+    expect(payload.baseline_primary_metric_stdev).toBe('10.2');
+  });
+
+  it('should not include optional stats fields when not set', async () => {
+    const template: ExperimentTemplate = { name: 'exp' };
+    const { payload } = await buildExperimentPayload(template, baseContext);
+    expect(payload.minimum_detectable_effect).toBeUndefined();
+    expect(payload.baseline_primary_metric_mean).toBeUndefined();
+    expect(payload.baseline_primary_metric_stdev).toBeUndefined();
+  });
+
   describe('variant screenshots', () => {
     it('should include inline file_upload for base64 screenshot', async () => {
       const base64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwADhQGAWjR9awAAAABJRU5ErkJggg==';

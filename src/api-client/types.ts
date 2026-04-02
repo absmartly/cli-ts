@@ -65,135 +65,39 @@ function validatePositiveInteger(value: number, typeName: string): void {
   }
 }
 
-export function ExperimentId(id: number): ExperimentId {
-  validatePositiveInteger(id, 'ExperimentId');
-  return id as ExperimentId;
+function createIdFactory<T extends Branded<number, string>>(typeName: string): (id: number) => T {
+  return (id: number): T => {
+    validatePositiveInteger(id, typeName);
+    return id as T;
+  };
 }
 
-export function GoalId(id: number): GoalId {
-  validatePositiveInteger(id, 'GoalId');
-  return id as GoalId;
-}
-
-export function SegmentId(id: number): SegmentId {
-  validatePositiveInteger(id, 'SegmentId');
-  return id as SegmentId;
-}
-
-export function TeamId(id: number): TeamId {
-  validatePositiveInteger(id, 'TeamId');
-  return id as TeamId;
-}
-
-export function UserId(id: number): UserId {
-  validatePositiveInteger(id, 'UserId');
-  return id as UserId;
-}
-
-export function MetricId(id: number): MetricId {
-  validatePositiveInteger(id, 'MetricId');
-  return id as MetricId;
-}
-
-export function ApplicationId(id: number): ApplicationId {
-  validatePositiveInteger(id, 'ApplicationId');
-  return id as ApplicationId;
-}
-
-export function EnvironmentId(id: number): EnvironmentId {
-  validatePositiveInteger(id, 'EnvironmentId');
-  return id as EnvironmentId;
-}
-
-export function UnitTypeId(id: number): UnitTypeId {
-  validatePositiveInteger(id, 'UnitTypeId');
-  return id as UnitTypeId;
-}
-
-export function NoteId(id: number): NoteId {
-  validatePositiveInteger(id, 'NoteId');
-  return id as NoteId;
-}
-
-export function AlertId(id: number): AlertId {
-  validatePositiveInteger(id, 'AlertId');
-  return id as AlertId;
-}
-
-export function TagId(id: number): TagId {
-  validatePositiveInteger(id, 'TagId');
-  return id as TagId;
-}
-
-export function RoleId(id: number): RoleId {
-  validatePositiveInteger(id, 'RoleId');
-  return id as RoleId;
-}
-
-export function ApiKeyId(id: number): ApiKeyId {
-  validatePositiveInteger(id, 'ApiKeyId');
-  return id as ApiKeyId;
-}
-
-export function WebhookId(id: number): WebhookId {
-  validatePositiveInteger(id, 'WebhookId');
-  return id as WebhookId;
-}
-
-export function ScheduledActionId(id: number): ScheduledActionId {
-  validatePositiveInteger(id, 'ScheduledActionId');
-  return id as ScheduledActionId;
-}
-
-export function CustomSectionFieldId(id: number): CustomSectionFieldId {
-  validatePositiveInteger(id, 'CustomSectionFieldId');
-  return id as CustomSectionFieldId;
-}
-
-export function CustomSectionId(id: number): CustomSectionId {
-  validatePositiveInteger(id, 'CustomSectionId');
-  return id as CustomSectionId;
-}
-
-export function AnnotationId(id: number): AnnotationId {
-  validatePositiveInteger(id, 'AnnotationId');
-  return id as AnnotationId;
-}
-
-export function AssetRoleId(id: number): AssetRoleId {
-  validatePositiveInteger(id, 'AssetRoleId');
-  return id as AssetRoleId;
-}
-export function CorsOriginId(id: number): CorsOriginId {
-  validatePositiveInteger(id, 'CorsOriginId');
-  return id as CorsOriginId;
-}
-
-export function DatasourceId(id: number): DatasourceId {
-  validatePositiveInteger(id, 'DatasourceId');
-  return id as DatasourceId;
-}
-
-export function ExportConfigId(id: number): ExportConfigId {
-  validatePositiveInteger(id, 'ExportConfigId');
-  return id as ExportConfigId;
-}
-
-export function UpdateScheduleId(id: number): UpdateScheduleId {
-  validatePositiveInteger(id, 'UpdateScheduleId');
-  return id as UpdateScheduleId;
-}
-
-
-export function NotificationId(id: number): NotificationId {
-  validatePositiveInteger(id, 'NotificationId');
-  return id as NotificationId;
-}
-
-export function RecommendedActionId(id: number): RecommendedActionId {
-  validatePositiveInteger(id, 'RecommendedActionId');
-  return id as RecommendedActionId;
-}
+export const ExperimentId = createIdFactory<ExperimentId>('ExperimentId');
+export const GoalId = createIdFactory<GoalId>('GoalId');
+export const SegmentId = createIdFactory<SegmentId>('SegmentId');
+export const TeamId = createIdFactory<TeamId>('TeamId');
+export const UserId = createIdFactory<UserId>('UserId');
+export const MetricId = createIdFactory<MetricId>('MetricId');
+export const ApplicationId = createIdFactory<ApplicationId>('ApplicationId');
+export const EnvironmentId = createIdFactory<EnvironmentId>('EnvironmentId');
+export const UnitTypeId = createIdFactory<UnitTypeId>('UnitTypeId');
+export const NoteId = createIdFactory<NoteId>('NoteId');
+export const AlertId = createIdFactory<AlertId>('AlertId');
+export const TagId = createIdFactory<TagId>('TagId');
+export const RoleId = createIdFactory<RoleId>('RoleId');
+export const ApiKeyId = createIdFactory<ApiKeyId>('ApiKeyId');
+export const WebhookId = createIdFactory<WebhookId>('WebhookId');
+export const ScheduledActionId = createIdFactory<ScheduledActionId>('ScheduledActionId');
+export const CustomSectionFieldId = createIdFactory<CustomSectionFieldId>('CustomSectionFieldId');
+export const CustomSectionId = createIdFactory<CustomSectionId>('CustomSectionId');
+export const AnnotationId = createIdFactory<AnnotationId>('AnnotationId');
+export const AssetRoleId = createIdFactory<AssetRoleId>('AssetRoleId');
+export const CorsOriginId = createIdFactory<CorsOriginId>('CorsOriginId');
+export const DatasourceId = createIdFactory<DatasourceId>('DatasourceId');
+export const ExportConfigId = createIdFactory<ExportConfigId>('ExportConfigId');
+export const UpdateScheduleId = createIdFactory<UpdateScheduleId>('UpdateScheduleId');
+export const NotificationId = createIdFactory<NotificationId>('NotificationId');
+export const RecommendedActionId = createIdFactory<RecommendedActionId>('RecommendedActionId');
 
 export function Timestamp(value: number): Timestamp {
   if (!Number.isInteger(value) || value < 0) {
@@ -413,6 +317,7 @@ export interface ListMetricsOptions {
   items?: number | undefined;
   page?: number | undefined;
   archived?: boolean | undefined;
+  include_drafts?: boolean | undefined;
   search?: string | undefined;
   sort?: string | undefined;
   sort_asc?: boolean | undefined;

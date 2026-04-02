@@ -98,6 +98,7 @@ export function buildExperimentData(meta: LiveMetadata, nameSuffix = '') {
     required_power: 0.8,
     audience: '{}',
     minimum_detectable_effect: '5',
+    state: 'ready',
     ...(Object.keys(meta.customFieldValues).length > 0
       ? { custom_section_field_values: meta.customFieldValues }
       : {}),

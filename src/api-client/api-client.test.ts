@@ -358,6 +358,18 @@ describe.skipIf(isLiveMode)('APIClient core', () => {
       expect(await client.listMetrics()).toHaveLength(1);
     });
 
+    it('should pass include_drafts param when listing metrics', async () => {
+      let capturedUrl: string | undefined;
+      server.use(
+        http.get(`${BASE_URL}/metrics`, ({ request }) => {
+          capturedUrl = request.url;
+          return HttpResponse.json({ metrics: [{ id: 1, name: 'm1' }] });
+        })
+      );
+      await client.listMetrics({ include_drafts: true });
+      expect(capturedUrl).toContain('include_drafts=true');
+    });
+
     it('should activate metric', async () => {
       server.use(
         http.put(`${BASE_URL}/metrics/1/activate`, () =>

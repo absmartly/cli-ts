@@ -14,6 +14,16 @@ const listCommand = createListCommand({
   description: 'List all applications',
   defaultItems: 100,
   fetch: (client, options) => client.listApplications(options.items as number, options.page as number),
+  summarizeRow: (item) => ({
+    id: item.id,
+    name: item.name,
+    description: item.description,
+    archived: item.archived,
+    created_at: item.created_at,
+    created_by: item.created_by && typeof item.created_by === 'object'
+      ? [((item.created_by as Record<string, unknown>).first_name ?? ''), ((item.created_by as Record<string, unknown>).last_name ?? '')].filter(Boolean).join(' ')
+      : item.created_by,
+  }),
 });
 
 const getCommand = new Command('get')

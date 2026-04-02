@@ -61,13 +61,18 @@ describe('units command', () => {
   });
 
   it('should create unit type', async () => {
-    await unitsCommand.parseAsync(['node', 'test', 'create', '--name', 'session_id']);
-    expect(mockClient.createUnitType).toHaveBeenCalledWith({ name: 'session_id' });
+    await unitsCommand.parseAsync(['node', 'test', 'create', '--name', 'session_id', '--description', 'Session identifier']);
+    expect(mockClient.createUnitType).toHaveBeenCalledWith({ name: 'session_id', description: 'Session identifier' });
   });
 
   it('should update unit type', async () => {
     await unitsCommand.parseAsync(['node', 'test', 'update', '1', '--name', 'updated']);
     expect(mockClient.updateUnitType).toHaveBeenCalledWith(1, { name: 'updated' });
+  });
+
+  it('should update unit type description', async () => {
+    await unitsCommand.parseAsync(['node', 'test', 'update', '1', '--description', 'New description']);
+    expect(mockClient.updateUnitType).toHaveBeenCalledWith(1, { description: 'New description' });
   });
 
   it('should archive unit type', async () => {

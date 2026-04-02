@@ -1,22 +1,16 @@
 import 'dotenv/config';
-import { APIClient } from '../../lib/api/client.js';
 import { ExperimentId, ScheduledActionId } from '../../lib/api/branded-types.js';
+import { getAPIClientFromOptions, resolveEndpoint } from '../../lib/utils/api-helper.js';
+import { fetchLiveMetadata, buildExperimentData } from '../../test/helpers/live-helpers.js';
 
-const apiUrl = process.env.LIVE_API_URL;
-const apiKey = process.env.LIVE_API_KEY;
+const profileArg = process.argv.find(a => a.startsWith('--profile='));
+const profileName = profileArg?.split('=')[1] || process.env.LIVE_PROFILE;
 
-if (!apiUrl || !apiKey) {
-  console.error('Missing required environment variables:');
-  if (!apiUrl) console.error('  LIVE_API_URL');
-  if (!apiKey) console.error('  LIVE_API_KEY');
-  console.error('\nUsage:');
-  console.error(
-    '  LIVE_API_URL=https://your-instance.absmartly.com/v1 LIVE_API_KEY=your-key npm run test:live'
-  );
-  process.exit(1);
-}
-
-const client = new APIClient(apiUrl, apiKey, { verbose: !!process.env.VERBOSE });
+const client = await getAPIClientFromOptions({
+  profile: profileName,
+  verbose: !!process.env.VERBOSE,
+});
+const apiUrl = resolveEndpoint({ profile: profileName });
 
 let passed = 0;
 let failed = 0;
@@ -45,77 +39,20 @@ function assert(condition: boolean, message: string): void {
 async function main() {
   console.log(`\nLive API tests against ${apiUrl}\n`);
 
-  let appId: number | undefined;
-  let unitTypeId: number | undefined;
-  let teamId: number | undefined;
-  let metricId: number | undefined;
   let experimentId: ExperimentId | undefined;
   let scheduledActionId: ScheduledActionId | undefined;
 
   console.log('Setup: Fetching metadata...');
-
-  await runTest('Fetch applications', async () => {
-    const apps = await client.listApplications();
-    assert(apps.length > 0, 'No applications found');
-    appId = apps[0].id;
-    console.log(`    applicationId=${appId} (${apps[0].name})`);
-  });
-
-  await runTest('Fetch unit types', async () => {
-    const types = await client.listUnitTypes();
-    assert(types.length > 0, 'No unit types found');
-    unitTypeId = types[0].id;
-    console.log(`    unitTypeId=${unitTypeId} (${types[0].name})`);
-  });
-
-  await runTest('Fetch teams', async () => {
-    const teams = await client.listTeams();
-    assert(teams.length > 0, 'No teams found');
-    teamId = teams[0].id;
-    console.log(`    teamId=${teamId} (${teams[0].name})`);
-  });
-
-  await runTest('Fetch metrics', async () => {
-    const metrics = await client.listMetrics();
-    assert(metrics.length > 0, 'No metrics found');
-    metricId = metrics[0].id;
-    console.log(`    metricId=${metricId} (${(metrics[0] as any).description || 'metric'})`);
-  });
-
-  if (appId === undefined || unitTypeId === undefined || teamId === undefined || metricId === undefined) {
-    console.error('\nSetup failed — cannot proceed without metadata.');
-    process.exit(1);
+  const meta = await fetchLiveMetadata(client);
+  console.log(`  appId=${meta.appId} unitTypeId=${meta.unitTypeId} teamId=${meta.teamId} metricId=${meta.metricId}`);
+  if (Object.keys(meta.customFieldValues).length > 0) {
+    console.log(`  customFields: ${Object.keys(meta.customFieldValues).length} resolved`);
   }
 
+  const experimentData = buildExperimentData(meta, '_live');
+  const experimentName = experimentData.name;
+
   console.log('\nTests: Experiment lifecycle\n');
-
-  const experimentName = `cli_live_test_${Date.now()}`;
-
-  const experimentData = {
-    name: experimentName,
-    display_name: 'CLI Live Test',
-    type: 'test',
-    teams: [{ team_id: teamId }],
-    unit_type: { unit_type_id: unitTypeId },
-    applications: [{ application_id: appId, application_version: '1' }],
-    primary_metric: { metric_id: metricId },
-    secondary_metrics: [] as never[],
-    owners: [] as never[],
-    experiment_tags: [] as never[],
-    variants: [
-      { name: 'control', variant: 0, config: '{}' },
-      { name: 'treatment', variant: 1, config: '{}' },
-    ],
-    variant_screenshots: [] as never[],
-    percentages: '50/50',
-    nr_variants: 2,
-    percentage_of_traffic: 100,
-    analysis_type: 'fixed_horizon',
-    required_alpha: 0.05,
-    required_power: 0.8,
-    audience: '{}',
-    minimum_detectable_effect: '5',
-  };
 
   try {
     await runTest('Create experiment', async () => {

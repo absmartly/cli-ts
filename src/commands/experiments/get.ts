@@ -5,6 +5,7 @@ import { summarizeExperiment } from '../../api-client/experiment-summary.js';
 import { fetchAndDisplayImage, supportsInlineImages } from '../../lib/utils/terminal-image.js';
 import { formatNoteText } from '../activity/index.js';
 import { parseExperimentIdOrName } from './resolve-id.js';
+import { stripApiVersionPath } from '../../lib/utils/url.js';
 
 export const getCommand = new Command('get')
   .description('Get experiment details')
@@ -87,7 +88,7 @@ export const getCommand = new Command('get')
             const fileUpload = ss.file_upload as Record<string, unknown> | undefined;
             if (fileUpload?.base_url) {
               const endpoint = resolveEndpoint(globalOptions);
-              const baseUrl = endpoint.replace(/\/v\d+\/?$/, '');
+              const baseUrl = stripApiVersionPath(endpoint);
               lines.push(`\x00IMG|${baseUrl}${fileUpload.base_url}/${fileUpload.file_name}|${fileUpload.file_name || 'screenshot'}\x00`);
             }
           }
@@ -106,7 +107,7 @@ export const getCommand = new Command('get')
           });
         }
         const endpoint = resolveEndpoint(globalOptions);
-        const dashboardUrl = endpoint.replace(/\/v\d+\/?$/, '');
+        const dashboardUrl = stripApiVersionPath(endpoint);
 
         let currentSection = '';
         for (const cfv of customFields) {
@@ -210,7 +211,7 @@ export const getCommand = new Command('get')
       const screenshots = (experiment as Record<string, unknown>).variant_screenshots as Array<Record<string, unknown>> | undefined;
       if (screenshots?.length) {
         const endpoint = resolveEndpoint(globalOptions);
-        const baseUrl = endpoint.replace(/\/v\d+\/?$/, '');
+        const baseUrl = stripApiVersionPath(endpoint);
         const apiKey = await resolveAPIKey(globalOptions);
         const headers = { Authorization: `Api-Key ${apiKey}` };
         const variants = (experiment as Record<string, unknown>).variants as Array<Record<string, unknown>> | undefined;

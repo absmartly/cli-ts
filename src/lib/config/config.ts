@@ -10,6 +10,7 @@ export interface APIConfig {
   endpoint: string;
   token?: string;
   'auth-method'?: 'api-key' | 'oauth-jwt';
+  insecure?: boolean;
 }
 
 export interface ExpctldConfig {

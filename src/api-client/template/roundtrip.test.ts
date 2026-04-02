@@ -539,7 +539,29 @@ some value
   });
 
   describe('screenshots', () => {
-    it('should export variant screenshots as file paths', async () => {
+    it('should export variant screenshots as markdown images', async () => {
+      const experiment = makeExperiment({
+        variant_screenshots: [
+          {
+            variant: 0,
+            label: 'Control screenshot',
+            file_upload: {
+              base_url: '/uploads',
+              file_name: 'control.png',
+            },
+          },
+        ],
+      });
+      const markdown = await experimentToMarkdown(experiment);
+
+      expect(markdown).toContain('![Control screenshot](/uploads/control.png)');
+
+      const template = parseExperimentMarkdown(markdown);
+      expect(template.variants![0]!.screenshot).toBe('/uploads/control.png');
+      expect(template.variants![0]!.screenshot_label).toBe('Control screenshot');
+    });
+
+    it('should export variant screenshots with empty label', async () => {
       const experiment = makeExperiment({
         variant_screenshots: [
           {
@@ -553,13 +575,14 @@ some value
       });
       const markdown = await experimentToMarkdown(experiment);
 
-      expect(markdown).toContain('screenshot: /uploads/control.png');
+      expect(markdown).toContain('![](/uploads/control.png)');
 
       const template = parseExperimentMarkdown(markdown);
       expect(template.variants![0]!.screenshot).toBe('/uploads/control.png');
+      expect(template.variants![0]!.screenshot_label).toBeUndefined();
     });
 
-    it('should build payload with screenshot from file path', async () => {
+    it('should build payload with screenshot from file path via screenshot: syntax', async () => {
       const pngBuffer = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
       vi.mocked(existsSync).mockReturnValue(true);
       vi.mocked(readFileSync).mockReturnValue(pngBuffer);
@@ -586,6 +609,43 @@ name: treatment
 
       expect(screenshots).toHaveLength(1);
       expect(screenshots[0]!.variant).toBe(0);
+
+      const fileUpload = screenshots[0]!.file_upload as Record<string, unknown>;
+      expect(fileUpload.file_name).toBe('control.png');
+      expect(fileUpload.content_type).toBe('image/png');
+    });
+
+    it('should build payload with screenshot from markdown image syntax', async () => {
+      const pngBuffer = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
+      vi.mocked(existsSync).mockReturnValue(true);
+      vi.mocked(readFileSync).mockReturnValue(pngBuffer);
+
+      const template = parseExperimentMarkdown(`---
+name: screenshot-md-test
+type: test
+---
+
+## Variants
+
+### variant_0
+
+name: control
+![Control variant](/tmp/control.png)
+
+### variant_1
+
+name: treatment
+`);
+
+      expect(template.variants![0]!.screenshot).toBe('/tmp/control.png');
+      expect(template.variants![0]!.screenshot_label).toBe('Control variant');
+
+      const { payload } = await buildExperimentPayload(template, context);
+      const screenshots = payload.variant_screenshots as Array<Record<string, unknown>>;
+
+      expect(screenshots).toHaveLength(1);
+      expect(screenshots[0]!.variant).toBe(0);
+      expect(screenshots[0]!.label).toBe('Control variant');
 
       const fileUpload = screenshots[0]!.file_upload as Record<string, unknown>;
       expect(fileUpload.file_name).toBe('control.png');

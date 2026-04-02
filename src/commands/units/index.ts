@@ -29,11 +29,12 @@ const getCommand = new Command('get')
 const createCommand = new Command('create')
   .description('Create a new unit type')
   .requiredOption('--name <name>', 'unit type name')
+  .requiredOption('--description <description>', 'unit type description')
   .action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(createCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
-    const unitType = await client.createUnitType({ name: options.name });
+    const unitType = await client.createUnitType({ name: options.name, description: options.description });
     console.log(chalk.green(`✓ Unit type created with ID: ${unitType.id}`));
   }));
 
@@ -41,12 +42,14 @@ const updateCommand = new Command('update')
   .description('Update a unit type')
   .argument('<id>', 'unit type ID', parseUnitTypeId)
   .option('--name <name>', 'new name')
+  .option('--description <description>', 'new description')
   .action(withErrorHandling(async (id: UnitTypeId, options) => {
     const globalOptions = getGlobalOptions(updateCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
     const data: Record<string, unknown> = {};
     if (options.name) data.name = options.name;
+    if (options.description) data.description = options.description;
 
     requireAtLeastOneField(data, 'update field');
     await client.updateUnitType(id, data);

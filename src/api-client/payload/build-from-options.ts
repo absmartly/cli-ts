@@ -34,6 +34,14 @@ export interface CreateFromOptionsInput {
   requiredAlpha?: string;
   requiredPower?: string;
   baselineParticipants?: string;
+  minimumDetectableEffect?: string;
+  baselinePrimaryMetricMean?: string;
+  baselinePrimaryMetricStdev?: string;
+  groupSequentialFutilityType?: string;
+  groupSequentialAnalysisCount?: string;
+  groupSequentialMinAnalysisInterval?: string;
+  groupSequentialFirstAnalysisInterval?: string;
+  groupSequentialMaxDurationInterval?: string;
   customFields?: Record<string, string>;
 }
 
@@ -62,10 +70,6 @@ export async function buildPayloadFromOptions(input: CreateFromOptionsInput, cli
     analysis_type: input.analysisType || DEFAULT_ANALYSIS_TYPE,
     required_alpha: input.requiredAlpha || DEFAULT_REQUIRED_ALPHA,
     required_power: input.requiredPower || DEFAULT_REQUIRED_POWER,
-    group_sequential_futility_type: DEFAULT_FUTILITY_TYPE,
-    group_sequential_min_analysis_interval: DEFAULT_MIN_ANALYSIS_INTERVAL,
-    group_sequential_first_analysis_interval: DEFAULT_FIRST_ANALYSIS_INTERVAL,
-    group_sequential_max_duration_interval: DEFAULT_MAX_DURATION_INTERVAL,
     baseline_participants_per_day: input.baselineParticipants || DEFAULT_BASELINE_PARTICIPANTS,
     nr_variants: variants.length,
     variants,
@@ -74,6 +78,19 @@ export async function buildPayloadFromOptions(input: CreateFromOptionsInput, cli
     teams: [] as Array<Record<string, unknown>>,
     experiment_tags: [] as Array<Record<string, unknown>>,
   };
+
+  const analysisType = data.analysis_type as string;
+  if (input.minimumDetectableEffect) data.minimum_detectable_effect = input.minimumDetectableEffect;
+  if (input.baselinePrimaryMetricMean) data.baseline_primary_metric_mean = input.baselinePrimaryMetricMean;
+  if (input.baselinePrimaryMetricStdev) data.baseline_primary_metric_stdev = input.baselinePrimaryMetricStdev;
+
+  if (analysisType === 'group_sequential') {
+    data.group_sequential_futility_type = input.groupSequentialFutilityType || DEFAULT_FUTILITY_TYPE;
+    if (input.groupSequentialAnalysisCount) data.group_sequential_analysis_count = input.groupSequentialAnalysisCount;
+    data.group_sequential_min_analysis_interval = input.groupSequentialMinAnalysisInterval || DEFAULT_MIN_ANALYSIS_INTERVAL;
+    data.group_sequential_first_analysis_interval = input.groupSequentialFirstAnalysisInterval || DEFAULT_FIRST_ANALYSIS_INTERVAL;
+    data.group_sequential_max_duration_interval = input.groupSequentialMaxDurationInterval || DEFAULT_MAX_DURATION_INTERVAL;
+  }
 
   if (input.unitType) {
     data.unit_type = { unit_type_id: input.unitType };

@@ -18,7 +18,14 @@ export interface HttpClient {
   getBaseUrl?(): string;
 }
 
-export interface APIError extends Error {
+export class APIError extends Error {
   statusCode?: number;
   response?: unknown;
+
+  constructor(message: string, statusCode?: number, response?: unknown) {
+    super(message);
+    this.name = 'APIError';
+    if (statusCode !== undefined) this.statusCode = statusCode;
+    if (response !== undefined) this.response = response;
+  }
 }

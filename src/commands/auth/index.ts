@@ -9,23 +9,46 @@ import { fetchAndDisplayImage, supportsInlineImages } from '../../lib/utils/term
 import { summarizeUser } from '../../api-client/user-summary.js';
 import { startOAuthFlow } from '../../lib/auth/oauth.js';
 import { createAPIClient } from '../../lib/api/client.js';
+import { ensureApiVersionPath } from '../../lib/utils/url.js';
 
 export const authCommand = new Command('auth').description('Authentication commands');
 
+function buildProfile(
+  endpoint: string,
+  authMethod: 'api-key' | 'oauth-jwt',
+  options: { app?: string; env?: string; insecure?: boolean },
+) {
+  const profile: {
+    api: { endpoint: string; 'auth-method': 'api-key' | 'oauth-jwt'; insecure?: boolean };
+    expctld: { endpoint: string };
+    application?: string;
+    environment?: string;
+  } = {
+    api: { endpoint, 'auth-method': authMethod },
+    expctld: { endpoint: '' },
+  };
+  if (options.insecure) profile.api.insecure = true;
+  if (options.app) profile.application = options.app;
+  if (options.env) profile.environment = options.env;
+  return profile;
+}
+
 const loginCommand = new Command('login')
   .description('Authenticate with ABSmartly and store credentials')
+  .argument('[endpoint]', 'API endpoint URL')
   .option('--api-key <key>', 'ABSmartly API key')
-  .option('--endpoint <url>', 'API endpoint URL')
+  .option('--endpoint <url>', 'API endpoint URL (alternative to positional argument)')
   .option('--app <name>', 'default application name')
   .option('--env <name>', 'default environment name')
   .option('--profile <name>', 'profile name to save credentials under')
   .option('--no-browser', 'do not open browser (print URL instead)')
   .option('--session', 'use session-based JWT tokens (skip API key creation)')
   .option('--persistent', 'create persistent API key (skip prompt)')
-  .action(withErrorHandling(async (options, command) => {
+  .option('-k, --insecure', 'allow insecure TLS connections (self-signed certificates)')
+  .action(withErrorHandling(async (endpointArg, options, command) => {
     const parentOpts = command.parent?.parent?.opts() || {};
     const apiKey = options.apiKey || parentOpts.apiKey;
-    const endpoint = options.endpoint || parentOpts.endpoint;
+    const rawEndpoint = endpointArg || options.endpoint || parentOpts.endpoint;
     const profileName = options.profile || parentOpts.profile || 'default';
 
     if (options.session && options.persistent) {
@@ -33,17 +56,12 @@ const loginCommand = new Command('login')
     }
 
     if (apiKey) {
-      if (!endpoint) {
+      if (!rawEndpoint) {
         throw new Error('--endpoint is required when using --api-key');
       }
+      const endpoint = ensureApiVersionPath(rawEndpoint);
       await setAPIKey(apiKey, profileName);
-      const profile = {
-        api: { endpoint, 'auth-method': 'api-key' as const },
-        expctld: { endpoint: '' },
-        application: options.app,
-        environment: options.env,
-      };
-      setProfile(profileName, profile);
+      setProfile(profileName, buildProfile(endpoint, 'api-key', options));
       console.log(`✓ Logged in successfully (profile: ${profileName})`);
       console.log(`  Endpoint: ${endpoint}`);
       if (options.app) console.log(`  Application: ${options.app}`);
@@ -51,12 +69,12 @@ const loginCommand = new Command('login')
       return;
     }
 
-    let resolvedEndpoint = endpoint;
+    let resolvedEndpoint = rawEndpoint;
     if (!resolvedEndpoint) {
       try {
         const existingProfile = getProfile(profileName);
         resolvedEndpoint = existingProfile.api.endpoint;
-      } catch { /* profile doesn't exist yet */ }
+      } catch { }
     }
 
     if (!resolvedEndpoint) {
@@ -66,10 +84,13 @@ const loginCommand = new Command('login')
       );
     }
 
+    resolvedEndpoint = ensureApiVersionPath(resolvedEndpoint);
+
     console.log(`Authenticating with ${resolvedEndpoint}...`);
 
     const tokenResponse = await startOAuthFlow(resolvedEndpoint, {
       noBrowser: options.browser === false,
+      insecure: options.insecure,
     });
 
     console.log('✓ Authentication successful!');
@@ -91,31 +112,27 @@ const loginCommand = new Command('login')
         const tempClient = createAPIClient(resolvedEndpoint, {
           method: 'oauth-jwt',
           token: tokenResponse.accessToken,
-        });
+        }, { insecure: options.insecure });
         const host = hostname().replace(/\.local$/, '');
         const keyName = `cli-${host}`;
+
+        const existingKeys = await tempClient.listUserApiKeys() as { id: number; name: string }[];
+        const existing = existingKeys.find((k) => k.name === keyName);
+        if (existing) {
+          await tempClient.deleteUserApiKey(existing.id);
+        }
+
         const created = await tempClient.createUserApiKey(keyName) as { key: string };
 
         await setAPIKey(created.key, profileName);
-        const profile = {
-          api: { endpoint: resolvedEndpoint, 'auth-method': 'api-key' as const },
-          expctld: { endpoint: '' },
-          application: options.app,
-          environment: options.env,
-        };
-        setProfile(profileName, profile);
+        setProfile(profileName, buildProfile(resolvedEndpoint, 'api-key', options));
         console.log(`✓ Persistent API key created and stored (profile: ${profileName})`);
       } catch (error) {
-        console.warn(`Warning: Could not create API key (${error instanceof Error ? error.message : error})`);
-        console.warn('Falling back to session-based JWT token (expires in 24h).');
+        console.error(`\nFailed to create persistent API key: ${error instanceof Error ? error.message : error}`);
+        console.error('Your session token has been stored instead (expires in 24h).');
+        console.error('To create a persistent API key manually, run: abs auth create-api-key --name <name>');
         await setOAuthToken(tokenResponse.accessToken, profileName);
-        const profile = {
-          api: { endpoint: resolvedEndpoint, 'auth-method': 'oauth-jwt' as const },
-          expctld: { endpoint: '' },
-          application: options.app,
-          environment: options.env,
-        };
-        setProfile(profileName, profile);
+        setProfile(profileName, buildProfile(resolvedEndpoint, 'oauth-jwt', options));
       }
     } else {
       await setOAuthToken(tokenResponse.accessToken, profileName);
@@ -344,7 +361,7 @@ const resetMyPasswordCommand = new Command('reset-my-password')
     await client.updateCurrentUser({
       old_password: oldPassword,
       new_password: newPassword,
-    } as any);
+    });
 
     console.log(chalk.green('✓ Password changed successfully.'));
   }));

@@ -2,6 +2,7 @@ import open from 'open';
 import { generatePKCE } from './pkce.js';
 import { startCallbackServer } from './callback-server.js';
 import { exchangeCodeForToken, type TokenResponse } from './token-exchange.js';
+import { stripApiVersionPath } from '../utils/url.js';
 
 const OAUTH_CLIENT_ID = 'mcp-absmartly-universal';
 const OAUTH_SCOPES = 'mcp:access';
@@ -10,10 +11,7 @@ const AUTH_TIMEOUT_MS = 5 * 60 * 1000;
 export interface OAuthFlowOptions {
   noBrowser?: boolean;
   timeoutMs?: number;
-}
-
-function getOAuthBaseUrl(endpoint: string): string {
-  return endpoint.replace(/\/v\d+\/?$/, '');
+  insecure?: boolean;
 }
 
 function buildAuthorizationUrl(
@@ -21,7 +19,7 @@ function buildAuthorizationUrl(
   codeChallenge: string,
   redirectUri: string
 ): string {
-  const baseUrl = getOAuthBaseUrl(endpoint);
+  const baseUrl = stripApiVersionPath(endpoint);
   const url = new URL(`${baseUrl}/auth/oauth/authorize`);
   url.searchParams.set('response_type', 'code');
   url.searchParams.set('client_id', OAUTH_CLIENT_ID);
@@ -71,5 +69,6 @@ export async function startOAuthFlow(
     codeVerifier,
     redirectUri: server.redirectUri,
     clientId: OAUTH_CLIENT_ID,
+    insecure: options.insecure ?? false,
   });
 }

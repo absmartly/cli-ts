@@ -6,6 +6,7 @@ export interface VariantTemplate {
   config?: string;
   screenshot?: string;
   screenshot_id?: number;
+  screenshot_label?: string;
 }
 
 export interface ExperimentTemplate {
@@ -32,6 +33,14 @@ export interface ExperimentTemplate {
   required_alpha?: string;
   required_power?: string;
   baseline_participants?: string;
+  minimum_detectable_effect?: string;
+  baseline_primary_metric_mean?: string;
+  baseline_primary_metric_stdev?: string;
+  group_sequential_futility_type?: string;
+  group_sequential_analysis_count?: string;
+  group_sequential_min_analysis_interval?: string;
+  group_sequential_first_analysis_interval?: string;
+  group_sequential_max_duration_interval?: string;
   note?: string;
 }
 
@@ -157,6 +166,17 @@ function parseVariants(content: string): VariantTemplate[] {
 
     const lines = variantContent.split('\n');
     for (const line of lines) {
+      const imageMatch = /^!\[([^\]]*)\]\((.+)\)$/.exec(line.trim());
+      if (imageMatch) {
+        const alt = imageMatch[1] ?? '';
+        const path = imageMatch[2] ?? '';
+        if (path) {
+          variant.screenshot = path;
+          if (alt) variant.screenshot_label = alt;
+        }
+        continue;
+      }
+
       const keyValueMatch = /^(\w+):\s*(.*)$/.exec(line);
       if (keyValueMatch) {
         const matchedKey = keyValueMatch[1];
