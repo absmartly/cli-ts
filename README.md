@@ -300,11 +300,12 @@ abs experiments generate-template -o experiment.md
 abs experiments refresh-fields
 
 # Estimate maximum participants for an experiment
+abs experiments estimate-participants --unit-type user_id
 abs experiments estimate-participants --unit-type user_id --application absmartly.com
 abs experiments estimate-participants --unit-type 42 --application 1 --application 2
-abs experiments estimate-participants --unit-type user_id --application absmartly.com --from 90d
+abs experiments estimate-participants --unit-type user_id --from 90d
 abs experiments estimate-participants --unit-type user_id --application absmartly.com --audience '{"filter":{"and":[{"eq":[{"var":{"path":"application"}},{"value":"absmartly.com"}]}]}}'
-abs experiments estimate-participants --unit-type user_id --application absmartly.com -o json
+abs experiments estimate-participants --unit-type user_id -o json
 ```
 
 #### Custom field options

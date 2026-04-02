@@ -416,13 +416,25 @@ export class APIClient {
   async estimateMaxParticipants(params: {
     from: number;
     unit_type_id: number;
-    applications: number[];
+    applications?: number[];
     audience?: string;
   }): Promise<{ columnNames: string[]; columnTypes: string[]; rows: unknown[][] }> {
     const response = await this.request<Record<string, unknown>>('POST', '/experiments/estimate/max_participants', { data: params });
     const data = response.data;
-    if (!data || !Array.isArray(data.columnNames) || !Array.isArray(data.rows)) {
-      throw new Error('Invalid response from estimateMaxParticipants');
+    if (!data || typeof data !== 'object') {
+      throw createAPIError(`estimateMaxParticipants: expected object response, got ${typeof data}`, response);
+    }
+    if (!Array.isArray(data.columnNames)) {
+      throw createAPIError(
+        `estimateMaxParticipants: missing or invalid "columnNames". Response keys: ${Object.keys(data).join(', ')}`,
+        response
+      );
+    }
+    if (!Array.isArray(data.rows)) {
+      throw createAPIError(
+        `estimateMaxParticipants: missing or invalid "rows". Response keys: ${Object.keys(data).join(', ')}`,
+        response
+      );
     }
     return data as { columnNames: string[]; columnTypes: string[]; rows: unknown[][] };
   }
