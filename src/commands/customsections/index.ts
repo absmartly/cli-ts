@@ -1,8 +1,13 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
-import { parseCustomSectionId, requireAtLeastOneField } from '../../lib/utils/validators.js';
+import { parseCustomSectionId } from '../../lib/utils/validators.js';
 import type { CustomSectionId } from '../../lib/api/branded-types.js';
+import { listCustomSections } from '../../core/customsections/list.js';
+import { createCustomSection } from '../../core/customsections/create.js';
+import { updateCustomSection } from '../../core/customsections/update.js';
+import { archiveCustomSection } from '../../core/customsections/archive.js';
+import { reorderCustomSections } from '../../core/customsections/reorder.js';
 
 export const customSectionsCommand = new Command('custom-sections')
   .alias('customsections')
@@ -13,8 +18,8 @@ const listCommand = new Command('list')
   .action(withErrorHandling(async () => {
     const globalOptions = getGlobalOptions(listCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    const sections = await client.listCustomSections();
-    printFormatted(sections, globalOptions);
+    const result = await listCustomSections(client);
+    printFormatted(result.data, globalOptions);
   }));
 
 const createCommand = new Command('create')
@@ -24,9 +29,9 @@ const createCommand = new Command('create')
   .action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(createCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    const section = await client.createCustomSection({ name: options.name, type: options.type });
+    const result = await createCustomSection(client, { name: options.name, type: options.type });
     console.log(chalk.green(`✓ Custom section created`));
-    printFormatted(section, globalOptions);
+    printFormatted(result.data, globalOptions);
   }));
 
 const updateCommand = new Command('update')
@@ -36,12 +41,9 @@ const updateCommand = new Command('update')
   .action(withErrorHandling(async (id: CustomSectionId, options) => {
     const globalOptions = getGlobalOptions(updateCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    const data: Record<string, unknown> = {};
-    if (options.name !== undefined) data.name = options.name;
-    requireAtLeastOneField(data, 'update field');
-    const section = await client.updateCustomSection(id, data);
+    const result = await updateCustomSection(client, { id, name: options.name });
     console.log(chalk.green(`✓ Custom section ${id} updated`));
-    printFormatted(section, globalOptions);
+    printFormatted(result.data, globalOptions);
   }));
 
 const archiveCommand = new Command('archive')
@@ -51,7 +53,7 @@ const archiveCommand = new Command('archive')
   .action(withErrorHandling(async (id: CustomSectionId, options) => {
     const globalOptions = getGlobalOptions(archiveCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    await client.archiveCustomSection(id, !!options.unarchive);
+    await archiveCustomSection(client, { id, unarchive: !!options.unarchive });
     const action = options.unarchive ? 'unarchived' : 'archived';
     console.log(chalk.green(`✓ Custom section ${id} ${action}`));
   }));
@@ -66,7 +68,7 @@ const reorderCommand = new Command('reorder')
       const [idStr, orderStr] = pair.trim().split(':');
       return { id: parseInt(idStr ?? '', 10), order_index: parseInt(orderStr ?? '', 10) };
     });
-    await client.reorderCustomSections(sections);
+    await reorderCustomSections(client, { sections });
     console.log(chalk.green(`✓ Custom sections reordered`));
   }));
 

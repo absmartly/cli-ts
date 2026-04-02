@@ -1,10 +1,13 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
-import { parseGoalId, requireAtLeastOneField } from '../../lib/utils/validators.js';
+import { parseGoalId } from '../../lib/utils/validators.js';
 import type { GoalId } from '../../lib/api/branded-types.js';
 import { applyShowExclude, summarizeGoal, summarizeGoalRow } from '../../api-client/entity-summary.js';
 import { createListCommand } from '../../lib/utils/list-command.js';
+import { getGoal } from '../../core/goals/get.js';
+import { createGoal } from '../../core/goals/create.js';
+import { updateGoal } from '../../core/goals/update.js';
 import { accessCommand } from './access.js';
 import { followCommand, unfollowCommand } from './follow.js';
 
@@ -27,8 +30,8 @@ const getCommand = new Command('get')
     const show = (options.show as string[] | undefined) ?? [];
     const exclude = (options.exclude as string[] | undefined) ?? [];
 
-    const goal = await client.getGoal(id);
-    const data = globalOptions.raw ? goal : applyShowExclude(summarizeGoal(goal as Record<string, unknown>), goal as Record<string, unknown>, show, exclude);
+    const result = await getGoal(client, { id });
+    const data = globalOptions.raw ? result.data : applyShowExclude(summarizeGoal(result.data as Record<string, unknown>), result.data as Record<string, unknown>, show, exclude);
     printFormatted(data, globalOptions);
   }));
 
@@ -40,12 +43,12 @@ const createCommand = new Command('create')
     const globalOptions = getGlobalOptions(createCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
-    const goal = await client.createGoal({
+    const result = await createGoal(client, {
       name: options.name,
       description: options.description,
     });
 
-    console.log(chalk.green(`✓ Goal created with ID: ${goal.id}`));
+    console.log(chalk.green(`✓ Goal created with ID: ${result.data.id}`));
   }));
 
 const updateCommand = new Command('update')
@@ -56,11 +59,10 @@ const updateCommand = new Command('update')
     const globalOptions = getGlobalOptions(updateCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
-    const data: Record<string, string> = {};
-    if (options.description !== undefined) data.description = options.description;
-
-    requireAtLeastOneField(data, 'update field');
-    await client.updateGoal(id, data);
+    await updateGoal(client, {
+      id,
+      description: options.description,
+    });
     console.log(chalk.green(`✓ Goal ${id} updated`));
   }));
 

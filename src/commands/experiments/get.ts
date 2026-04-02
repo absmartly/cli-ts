@@ -6,6 +6,7 @@ import { fetchAndDisplayImage, supportsInlineImages } from '../../lib/utils/term
 import { formatNoteText } from '../activity/index.js';
 import { parseExperimentIdOrName } from './resolve-id.js';
 import { stripApiVersionPath } from '../../lib/utils/url.js';
+import { getExperiment } from '../../core/experiments/get.js';
 
 export const getCommand = new Command('get')
   .description('Get experiment details')
@@ -21,9 +22,9 @@ export const getCommand = new Command('get')
     const client = await getAPIClientFromOptions(globalOptions);
     const id = await client.resolveExperimentId(nameOrId);
 
-    const experiment = await client.getExperiment(id);
-
+    // Template output mode - stays in wrapper (complex formatting)
     if (globalOptions.output === 'template') {
+      const experiment = await client.getExperiment(id);
       const md = await experimentToMarkdown(experiment, {
         embedScreenshots: options.embedScreenshots,
         screenshotsDir: options.screenshotsDir,
@@ -34,7 +35,9 @@ export const getCommand = new Command('get')
       return;
     }
 
+    // Rendered output mode - stays in wrapper (complex formatting)
     if (globalOptions.output === 'rendered') {
+      const experiment = await client.getExperiment(id);
       const exp = experiment as Record<string, unknown>;
       const summary = summarizeExperiment(exp, ['audience']);
       const lines: string[] = [];
@@ -191,30 +194,25 @@ export const getCommand = new Command('get')
       return;
     }
 
-    const extraFields = (options.show as string[] | undefined) ?? [];
-    const excludeFields = (options.exclude as string[] | undefined) ?? [];
+    // Standard output modes - use core function
+    const result = await getExperiment(client, {
+      experimentId: id,
+      activity: options.activity,
+      show: options.show,
+      exclude: options.exclude,
+      raw: globalOptions.raw,
+    });
 
-    let data: unknown;
-    if (globalOptions.raw) {
-      data = options.activity ? { ...experiment, activity: await client.listExperimentActivity(id) } : experiment;
-    } else {
-      let summary = summarizeExperiment(experiment as Record<string, unknown>, extraFields, excludeFields);
-      if (options.activity) {
-        const notes = await client.listExperimentActivity(id);
-        summary = { ...summary, activity: notes };
-      }
-      data = summary;
-    }
-    printFormatted(data, globalOptions);
+    printFormatted(result.detail, globalOptions);
 
     if (options.showImages && supportsInlineImages()) {
-      const screenshots = (experiment as Record<string, unknown>).variant_screenshots as Array<Record<string, unknown>> | undefined;
+      const screenshots = result.data.experiment.variant_screenshots as Array<Record<string, unknown>> | undefined;
       if (screenshots?.length) {
         const endpoint = resolveEndpoint(globalOptions);
         const baseUrl = stripApiVersionPath(endpoint);
         const apiKey = await resolveAPIKey(globalOptions);
         const headers = { Authorization: `Api-Key ${apiKey}` };
-        const variants = (experiment as Record<string, unknown>).variants as Array<Record<string, unknown>> | undefined;
+        const variants = result.data.experiment.variants as Array<Record<string, unknown>> | undefined;
 
         for (const screenshot of screenshots) {
           const fileUpload = screenshot.file_upload as Record<string, unknown> | undefined;

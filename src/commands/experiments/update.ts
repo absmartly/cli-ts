@@ -1,19 +1,15 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, withErrorHandling } from '../../lib/utils/api-helper.js';
-import { parseExperimentFile } from '../../lib/template/parser.js';
 import { experimentToMarkdown } from '../../api-client/template/serializer.js';
 import { parseExperimentMarkdown } from '../../api-client/template/parser.js';
 import { buildPayloadFromTemplate } from '../../api-client/template/build-from-template.js';
-import { buildSecondaryMetrics } from '../../api-client/payload/metrics-builder.js';
-import { parseCSV } from '../../api-client/payload/parse-csv.js';
 import { runInteractiveEditor } from '../../lib/interactive/run.js';
-import { parseScreenshotEntries } from '../../api-client/payload/screenshot-parser.js';
-import type { ExperimentInput } from '../../api-client/index.js';
 import { parseExperimentIdOrName } from './resolve-id.js';
 import { getDefaultType } from './default-type.js';
 import { registerCustomFieldOptions, extractCustomFieldValues } from './custom-field-options.js';
 import { resolveNote } from './resolve-note.js';
+import { buildUpdateChanges, updateExperiment } from '../../core/experiments/update.js';
 
 export const updateCommand = new Command('update')
   .description('Update an existing experiment')
@@ -55,105 +51,39 @@ updateCommand.action(withErrorHandling(async (nameOrId: string, options) => {
     const client = await getAPIClientFromOptions(globalOptions);
     const id = await client.resolveExperimentId(nameOrId);
 
-    const changes: Partial<ExperimentInput> & Record<string, unknown> = {};
+    const { changes, warnings } = await buildUpdateChanges(client, {
+      experimentId: id,
+      name: options.name,
+      displayName: options.displayName,
+      state: options.state,
+      percentageOfTraffic: options.percentageOfTraffic,
+      percentages: options.percentages,
+      analysisType: options.analysisType,
+      requiredAlpha: options.requiredAlpha,
+      requiredPower: options.requiredPower,
+      baselineParticipants: options.baselineParticipants,
+      audience: options.audience,
+      primaryMetric: options.primaryMetric,
+      unitType: options.unitType,
+      applicationId: options.applicationId,
+      owner: options.owner,
+      variants: options.variants,
+      variantConfig: options.variantConfig,
+      secondaryMetrics: options.secondaryMetrics,
+      guardrailMetrics: options.guardrailMetrics,
+      exploratoryMetrics: options.exploratoryMetrics,
+      teams: options.teams,
+      tags: options.tags,
+      screenshot: options.screenshot,
+      screenshotId: options.screenshotId,
+      customFieldValues: extractCustomFieldValues(options, getDefaultType(), globalOptions.profile as string),
+      fromFile: options.fromFile,
+      defaultType: getDefaultType(),
+      profile: globalOptions.profile as string,
+    });
 
-    if (options.name !== undefined) changes.name = options.name;
-    if (options.displayName !== undefined) changes.display_name = options.displayName;
-    if (options.state !== undefined) changes.state = options.state;
-    if (options.percentageOfTraffic !== undefined) changes.percentage_of_traffic = options.percentageOfTraffic;
-    if (options.percentages) changes.percentages = options.percentages.split(',').map((p: string) => parseInt(p.trim(), 10)).join('/');
-    if (options.analysisType) changes.analysis_type = options.analysisType;
-    if (options.requiredAlpha) changes.required_alpha = options.requiredAlpha;
-    if (options.requiredPower) changes.required_power = options.requiredPower;
-    if (options.baselineParticipants) changes.baseline_participants_per_day = options.baselineParticipants;
-    if (options.audience) changes.audience = options.audience;
-
-    if (options.primaryMetric) changes.primary_metric = { metric_id: options.primaryMetric };
-    if (options.unitType) changes.unit_type = { unit_type_id: options.unitType };
-    if (options.applicationId) changes.applications = [{ application_id: options.applicationId, application_version: '0' }];
-
-    if (options.owner?.length) changes.owners = options.owner.map((uid: string) => ({ user_id: parseInt(uid, 10) }));
-
-    if (options.variants) {
-      const names = options.variants.split(',').map((n: string) => n.trim());
-      const configs: string[] = options.variantConfig || [];
-      changes.variants = names.map((name: string, i: number) => ({ name, variant: i, config: configs[i] || '{}' }));
-      changes.nr_variants = names.length;
-    }
-
-    if (options.secondaryMetrics || options.guardrailMetrics || options.exploratoryMetrics) {
-      const allNames = [
-        ...parseCSV(options.secondaryMetrics),
-        ...parseCSV(options.guardrailMetrics),
-        ...parseCSV(options.exploratoryMetrics),
-      ];
-      const resolved = await client.resolveMetrics(allNames);
-      const byName = new Map(allNames.map((name, i) => [name, resolved[i]!]));
-
-      changes.secondary_metrics = buildSecondaryMetrics({
-        secondary: parseCSV(options.secondaryMetrics).map(n => byName.get(n)!),
-        guardrail: parseCSV(options.guardrailMetrics).map(n => byName.get(n)!),
-        exploratory: parseCSV(options.exploratoryMetrics).map(n => byName.get(n)!),
-      });
-    }
-
-    if (options.teams) {
-      const resolved = await client.resolveTeams(parseCSV(options.teams));
-      changes.teams = resolved.map(t => ({ team_id: t.id }));
-    }
-
-    if (options.tags) {
-      const resolved = await client.resolveTags(parseCSV(options.tags));
-      changes.experiment_tags = resolved.map(t => ({ experiment_tag_id: t.id }));
-    }
-
-    if (options.screenshot?.length || options.screenshotId?.length) {
-      const screenshotEntries: Array<Record<string, unknown>> = [];
-
-      if (options.screenshotId?.length) {
-        for (const entry of options.screenshotId as string[]) {
-          const colonIdx = entry.indexOf(':');
-          if (colonIdx === -1) throw new Error(`Invalid --screenshot-id format: "${entry}". Expected: <variant_index>:<upload_id>`);
-          const variantIdx = parseInt(entry.substring(0, colonIdx), 10);
-          const uploadId = parseInt(entry.substring(colonIdx + 1), 10);
-          if (isNaN(variantIdx) || isNaN(uploadId)) throw new Error(`Invalid variant index or upload ID in --screenshot-id: "${entry}"`);
-          screenshotEntries.push({ variant: variantIdx, screenshot_file_upload_id: uploadId });
-        }
-      }
-
-      if (options.screenshot?.length) {
-        const parsed = await parseScreenshotEntries(options.screenshot as string[]);
-        screenshotEntries.push(...parsed);
-      }
-
-      changes.variant_screenshots = screenshotEntries as ExperimentInput['variant_screenshots'];
-    }
-
-    const customFieldValues = extractCustomFieldValues(options, getDefaultType(), globalOptions.profile as string);
-    if (Object.keys(customFieldValues).length > 0) {
-      const allFields = await client.listCustomSectionFields();
-      const expType = getDefaultType();
-      const relevant = allFields.filter(f => !f.archived && f.custom_section?.type === expType && !f.custom_section?.archived);
-      const fieldValues: Record<string, { type: string; value: string }> = {};
-      for (const field of relevant) {
-        const title = (field as { title?: string }).title ?? field.name ?? '';
-        const cliValue = customFieldValues[title];
-        if (cliValue !== undefined) {
-          fieldValues[field.id] = { type: field.type, value: cliValue };
-        }
-      }
-      if (Object.keys(fieldValues).length > 0) {
-        changes.custom_section_field_values = fieldValues as ExperimentInput['custom_section_field_values'];
-      }
-    }
-
-    if (options.fromFile) {
-      const template = parseExperimentFile(options.fromFile);
-      const resolved = await buildPayloadFromTemplate(client, template, getDefaultType());
-      for (const warning of resolved.warnings) console.log(chalk.yellow(`⚠ ${warning}`));
-      for (const [key, value] of Object.entries(resolved.payload)) {
-        changes[key] = value;
-      }
+    for (const warning of warnings) {
+      console.log(chalk.yellow(`⚠ ${warning}`));
     }
 
     if (options.interactive) {
@@ -181,10 +111,6 @@ updateCommand.action(withErrorHandling(async (nameOrId: string, options) => {
       return;
     }
 
-    if (note !== undefined) {
-      await client.updateExperiment(id, changes, { note });
-    } else {
-      await client.updateExperiment(id, changes);
-    }
+    await updateExperiment(client, id, changes, note);
     console.log(chalk.green(`Experiment ${id} updated`));
   }));

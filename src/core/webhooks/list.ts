@@ -1,0 +1,15 @@
+import type { APIClient } from '../../api-client/api-client.js';
+import type { CommandResult } from '../types.js';
+
+export interface ListWebhooksParams {
+  items: number;
+  page: number;
+}
+
+export async function listWebhooks(
+  client: APIClient,
+  params: ListWebhooksParams
+): Promise<CommandResult<unknown[]>> {
+  const data = await client.listWebhooks(params.items, params.page);
+  return { data };
+}

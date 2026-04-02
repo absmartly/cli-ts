@@ -1,9 +1,9 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
-import { extractMetricInfos, extractVariantNames, fetchAllMetricResults, formatResultRows } from '../../api-client/metric-results.js';
 import { parseExperimentIdOrName } from './resolve-id.js';
 import { startPolling } from '../../lib/utils/polling.js';
+import { watchExperimentTick } from '../../core/experiments/watch.js';
 
 export const watchCommand = new Command('watch')
   .description('Watch live metric results for a running experiment')
@@ -24,24 +24,22 @@ export const watchCommand = new Command('watch')
     let isFirstTick = true;
 
     const fetchAndDisplay = async () => {
-      const experiment = await client.getExperiment(id);
-      const exp = experiment as Record<string, unknown>;
-      const metricInfos = extractMetricInfos(exp);
-      const variantNames = extractVariantNames(exp);
+      const result = await watchExperimentTick(client, {
+        experimentId: id,
+        variantIndex: options.variantIndex,
+      });
 
-      if (metricInfos.length === 0) {
+      const { displayName, state, hasMetrics, results, formattedRows, resultsJson } = result.data;
+
+      if (!hasMetrics) {
         console.log(chalk.blue('No metrics assigned to this experiment.'));
         return;
       }
 
-      const results = await fetchAllMetricResults(client, id, metricInfos);
-      const currentJson = JSON.stringify(results);
       const timestamp = new Date().toLocaleTimeString();
 
-      if (isFirstTick || currentJson !== previousJson) {
+      if (isFirstTick || resultsJson !== previousJson) {
         console.clear();
-        const displayName = (exp.display_name || exp.name) as string;
-        const state = exp.state as string;
         console.log(chalk.bold(`Watching experiment ${id} — ${displayName} (${state})`));
         console.log(chalk.gray(`Last updated: ${timestamp}`));
         console.log(chalk.gray(`Polling every ${intervalSeconds}s... Press Ctrl+C to stop\n`));
@@ -50,11 +48,10 @@ export const watchCommand = new Command('watch')
         if (useRaw) {
           printFormatted(results, globalOptions);
         } else {
-          const rows = results.flatMap(r => formatResultRows(r, variantNames, { variantIndex: options.variantIndex }));
-          printFormatted(rows, globalOptions);
+          printFormatted(formattedRows, globalOptions);
         }
 
-        previousJson = currentJson;
+        previousJson = resultsJson;
         isFirstTick = false;
       } else {
         process.stdout.write(chalk.gray('.'));

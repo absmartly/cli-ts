@@ -1,5 +1,6 @@
 import { Command } from 'commander';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
+import { listPermissions, listPermissionCategories, listAccessControlPolicies } from '../../core/permissions/list.js';
 
 export const permissionsCommand = new Command('permissions')
   .aliases(['permission', 'perms', 'perm'])
@@ -10,9 +11,8 @@ const listCommand = new Command('list')
   .action(withErrorHandling(async () => {
     const globalOptions = getGlobalOptions(listCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-
-    const permissions = await client.listPermissions();
-    printFormatted(permissions, globalOptions);
+    const result = await listPermissions(client);
+    printFormatted(result.data, globalOptions);
   }));
 
 const categoriesCommand = new Command('categories')
@@ -21,19 +21,17 @@ const categoriesCommand = new Command('categories')
   .action(withErrorHandling(async () => {
     const globalOptions = getGlobalOptions(categoriesCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-
-    const categories = await client.listPermissionCategories();
-    printFormatted(categories, globalOptions);
+    const result = await listPermissionCategories(client);
+    printFormatted(result.data, globalOptions);
   }));
-
 
 const policiesCommand = new Command('policies')
   .description('List access control policies')
   .action(withErrorHandling(async () => {
     const globalOptions = getGlobalOptions(policiesCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    const policies = await client.listAccessControlPolicies();
-    printFormatted(policies, globalOptions);
+    const result = await listAccessControlPolicies(client);
+    printFormatted(result.data, globalOptions);
   }));
 
 permissionsCommand.addCommand(listCommand);

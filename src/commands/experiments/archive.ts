@@ -5,6 +5,7 @@ import { parseExperimentIdOrName } from './resolve-id.js';
 import { isStdinPiped, isStdoutPiped, readLinesFromStdin } from '../../lib/utils/stdin.js';
 import { resolveNote } from './resolve-note.js';
 import { getDefaultType } from './default-type.js';
+import { archiveExperiment } from '../../core/experiments/archive.js';
 
 export const archiveCommand = new Command('archive')
   .description('Archive or unarchive experiment(s). Reads IDs from stdin when piped.')
@@ -20,16 +21,15 @@ export const archiveCommand = new Command('archive')
     const ids: string[] = nameOrId ? [nameOrId] : isStdinPiped() ? await readLinesFromStdin() : [];
     if (ids.length === 0) throw new Error('Provide an experiment ID or pipe IDs from stdin');
     const outputPiped = isStdoutPiped();
-    const actionType = options.unarchive ? 'unarchive' : 'archive';
     const actionLabel = options.unarchive ? 'unarchived' : 'archived';
 
-    const note = await resolveNote(options, actionType, getDefaultType(), globalOptions.profile);
+    const note = await resolveNote(options, options.unarchive ? 'unarchive' : 'archive', getDefaultType(), globalOptions.profile);
 
     let hasFailures = false;
     for (const idStr of ids) {
       try {
         const id = await client.resolveExperimentId(idStr);
-        await client.archiveExperiment(id, options.unarchive, note);
+        await archiveExperiment(client, { experimentId: id, unarchive: options.unarchive, note });
         if (outputPiped) {
           console.log(id);
           console.error(chalk.green(`✓ Experiment ${id} ${actionLabel}`));

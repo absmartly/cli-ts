@@ -2,13 +2,20 @@ import { Command } from 'commander';
 import Table from 'cli-table3';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, resolveAPIKey, resolveEndpoint, withErrorHandling, type GlobalOptions } from '../../lib/utils/api-helper.js';
-import { parseUserId, requireAtLeastOneField } from '../../lib/utils/validators.js';
+import { parseUserId } from '../../lib/utils/validators.js';
 import { addPaginationOptions, printPaginationFooter } from '../../lib/utils/pagination.js';
 import { renderInlineImage, supportsInlineImages } from '../../lib/utils/terminal-image.js';
 import type { UserId } from '../../lib/api/branded-types.js';
 import { applyShowExclude, summarizeUserRow, summarizeUserDetail } from '../../api-client/entity-summary.js';
 import type { User } from '../../api-client/types.js';
 import { stripApiVersionPath } from '../../lib/utils/url.js';
+import {
+  listUsers as coreListUsers,
+  getUser as coreGetUser,
+  createUser as coreCreateUser,
+  updateUser as coreUpdateUser,
+  archiveUser as coreArchiveUser,
+} from '../../core/users/index.js';
 import { resetPasswordCommand } from './reset-password.js';
 import { userApiKeysCommand } from './api-keys.js';
 
@@ -52,7 +59,12 @@ const listCommand = addPaginationOptions(
     const show = (options.show as string[] | undefined) ?? [];
     const exclude = (options.exclude as string[] | undefined) ?? [];
 
-    const users = await client.listUsers({ includeArchived: options.includeArchived, items: options.items, page: options.page });
+    const result = await coreListUsers(client, {
+      includeArchived: options.includeArchived,
+      items: options.items,
+      page: options.page,
+    });
+    const users = result.data;
 
     const wantAvatars = options.showAvatars !== undefined && supportsInlineImages() && !globalOptions.raw
       && globalOptions.output !== 'json' && globalOptions.output !== 'yaml';
@@ -151,7 +163,8 @@ const getCommand = new Command('get')
     const show = (options.show as string[] | undefined) ?? [];
     const exclude = (options.exclude as string[] | undefined) ?? [];
 
-    const user = await client.getUser(id);
+    const result = await coreGetUser(client, { id });
+    const user = result.data;
     const data = globalOptions.raw ? user : applyShowExclude(summarizeUserDetail(user as Record<string, unknown>), user as Record<string, unknown>, show, exclude);
     printFormatted(data, globalOptions);
 
@@ -170,14 +183,13 @@ const createCommand = new Command('create')
     const globalOptions = getGlobalOptions(createCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
-    const [firstName, ...lastNameParts] = options.name.split(' ');
-    const user = await client.createUser({
+    const result = await coreCreateUser(client, {
       email: options.email,
-      first_name: firstName,
-      last_name: lastNameParts.join(' '),
+      name: options.name,
+      role: options.role,
     });
 
-    console.log(chalk.green(`✓ User created with ID: ${user.id}`));
+    console.log(chalk.green(`✓ User created with ID: ${result.data.id}`));
   }));
 
 const updateCommand = new Command('update')
@@ -189,15 +201,11 @@ const updateCommand = new Command('update')
     const globalOptions = getGlobalOptions(updateCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
-    const data: Record<string, string> = {};
-    if (options.name) {
-      const [firstName, ...lastNameParts] = options.name.split(' ');
-      data.first_name = firstName;
-      data.last_name = lastNameParts.join(' ');
-    }
-
-    requireAtLeastOneField(data, 'update field');
-    await client.updateUser(id, data);
+    await coreUpdateUser(client, {
+      id,
+      name: options.name,
+      role: options.role,
+    });
     console.log(chalk.green(`✓ User ${id} updated`));
   }));
 
@@ -209,8 +217,7 @@ const archiveCommand = new Command('archive')
     const globalOptions = getGlobalOptions(archiveCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
-    await client.archiveUser(id, options.unarchive);
-
+    await coreArchiveUser(client, { id, unarchive: options.unarchive });
     const action = options.unarchive ? 'unarchived' : 'archived';
     console.log(chalk.green(`✓ User ${id} ${action}`));
   }));

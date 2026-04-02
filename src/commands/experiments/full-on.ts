@@ -5,6 +5,7 @@ import { parseExperimentIdOrName } from './resolve-id.js';
 import { isStdinPiped, isStdoutPiped, readLinesFromStdin } from '../../lib/utils/stdin.js';
 import { resolveNote } from './resolve-note.js';
 import { getDefaultType } from './default-type.js';
+import { fullOnExperiment } from '../../core/experiments/full-on.js';
 
 export const fullOnCommand = new Command('full-on')
   .description('Set experiment(s) to full-on mode. Reads IDs from stdin when piped.')
@@ -33,7 +34,7 @@ export const fullOnCommand = new Command('full-on')
     for (const idStr of ids) {
       try {
         const id = await client.resolveExperimentId(idStr);
-        await client.fullOnExperiment(id, options.variant, note);
+        await fullOnExperiment(client, { experimentId: id, variant: options.variant, note });
         if (outputPiped) {
           console.log(id);
           console.error(chalk.green(`✓ Experiment ${id} set to full-on (variant ${options.variant})`));

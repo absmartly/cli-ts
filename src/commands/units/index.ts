@@ -1,9 +1,13 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
-import { parseUnitTypeId, requireAtLeastOneField } from '../../lib/utils/validators.js';
+import { parseUnitTypeId } from '../../lib/utils/validators.js';
 import { createListCommand } from '../../lib/utils/list-command.js';
 import type { UnitTypeId } from '../../lib/api/branded-types.js';
+import { getUnit } from '../../core/units/get.js';
+import { createUnit } from '../../core/units/create.js';
+import { updateUnit } from '../../core/units/update.js';
+import { archiveUnit } from '../../core/units/archive.js';
 
 export const unitsCommand = new Command('units')
   .alias('unit')
@@ -21,9 +25,8 @@ const getCommand = new Command('get')
   .action(withErrorHandling(async (id: UnitTypeId) => {
     const globalOptions = getGlobalOptions(getCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-
-    const unitType = await client.getUnitType(id);
-    printFormatted(unitType, globalOptions);
+    const result = await getUnit(client, { id });
+    printFormatted(result.data, globalOptions);
   }));
 
 const createCommand = new Command('create')
@@ -33,9 +36,8 @@ const createCommand = new Command('create')
   .action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(createCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-
-    const unitType = await client.createUnitType({ name: options.name, description: options.description });
-    console.log(chalk.green(`✓ Unit type created with ID: ${unitType.id}`));
+    const result = await createUnit(client, { name: options.name, description: options.description });
+    console.log(chalk.green(`✓ Unit type created with ID: ${(result.data as Record<string, unknown>).id}`));
   }));
 
 const updateCommand = new Command('update')
@@ -46,13 +48,7 @@ const updateCommand = new Command('update')
   .action(withErrorHandling(async (id: UnitTypeId, options) => {
     const globalOptions = getGlobalOptions(updateCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-
-    const data: Record<string, unknown> = {};
-    if (options.name) data.name = options.name;
-    if (options.description) data.description = options.description;
-
-    requireAtLeastOneField(data, 'update field');
-    await client.updateUnitType(id, data);
+    await updateUnit(client, { id, name: options.name, description: options.description });
     console.log(chalk.green(`✓ Unit type ${id} updated`));
   }));
 
@@ -63,8 +59,7 @@ const archiveCommand = new Command('archive')
   .action(withErrorHandling(async (id: UnitTypeId, options) => {
     const globalOptions = getGlobalOptions(archiveCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-
-    await client.archiveUnitType(id, options.unarchive);
+    await archiveUnit(client, { id, unarchive: options.unarchive });
     const action = options.unarchive ? 'unarchived' : 'archived';
     console.log(chalk.green(`✓ Unit type ${id} ${action}`));
   }));

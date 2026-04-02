@@ -1,9 +1,8 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, withErrorHandling } from '../../lib/utils/api-helper.js';
-import { saveCachedFields } from '../../lib/config/custom-fields-cache.js';
-import { saveCachedActionDialogFields, type ActionDialogField } from '../../lib/config/action-dialog-cache.js';
 import { loadConfig } from '../../lib/config/config.js';
+import { refreshFields } from '../../core/experiments/refresh-fields.js';
 
 export const refreshFieldsCommand = new Command('refresh-fields')
   .description('Refresh cached custom fields and action dialog configuration')
@@ -13,34 +12,22 @@ export const refreshFieldsCommand = new Command('refresh-fields')
     const config = loadConfig();
     const profile = globalOptions.profile ?? config['default-profile'] ?? 'default';
 
-    const [fields, actionFields] = await Promise.all([
-      client.listCustomSectionFields(),
-      client.listExperimentActionDialogFields() as Promise<ActionDialogField[]>,
-    ]);
+    const result = await refreshFields(client, { profile });
 
-    for (const type of ['test', 'feature']) {
-      saveCachedFields(profile, type, fields);
+    console.log(chalk.green(`✓ Cached ${result.data.relevantFields.length} custom fields for profile "${profile}"`));
+
+    for (const field of result.data.relevantFields) {
+      console.log(`  ${field.title} (${field.type}, ${field.sectionType})`);
     }
 
-    saveCachedActionDialogFields(profile, actionFields);
-
-    const relevant = fields.filter(f => !f.archived && !f.custom_section?.archived);
-    console.log(chalk.green(`✓ Cached ${relevant.length} custom fields for profile "${profile}"`));
-
-    for (const field of relevant) {
-      const title = (field as { title?: string }).title ?? field.name ?? '';
-      const section = (field.custom_section as { type?: string })?.type ?? '';
-      console.log(`  ${title} (${field.type}, ${section})`);
-    }
-
-    const requiredActions = actionFields.filter(f => f.required);
+    const requiredActions = result.data.requiredActionFields;
     if (requiredActions.length > 0) {
       console.log('');
-      console.log(chalk.green(`✓ Cached ${actionFields.length} action dialog fields`));
+      console.log(chalk.green(`✓ Cached ${result.data.actionFields.length} action dialog fields`));
       console.log(`  ${requiredActions.length} action(s) require notes: ${requiredActions.map(f => `${f.action_type}/${f.type}`).join(', ')}`);
     } else {
       console.log('');
-      console.log(chalk.green(`✓ Cached ${actionFields.length} action dialog fields`));
+      console.log(chalk.green(`✓ Cached ${result.data.actionFields.length} action dialog fields`));
     }
 
     console.log('');

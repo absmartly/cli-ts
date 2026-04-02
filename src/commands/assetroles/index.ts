@@ -1,8 +1,13 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
-import { parseAssetRoleId, requireAtLeastOneField } from '../../lib/utils/validators.js';
+import { parseAssetRoleId } from '../../lib/utils/validators.js';
 import type { AssetRoleId } from '../../lib/api/branded-types.js';
+import { listAssetRoles } from '../../core/assetroles/list.js';
+import { getAssetRole } from '../../core/assetroles/get.js';
+import { createAssetRole } from '../../core/assetroles/create.js';
+import { updateAssetRole } from '../../core/assetroles/update.js';
+import { deleteAssetRole } from '../../core/assetroles/delete.js';
 
 export const assetRolesCommand = new Command('asset-roles')
   .alias('assetroles')
@@ -13,8 +18,8 @@ const listCommand = new Command('list')
   .action(withErrorHandling(async () => {
     const globalOptions = getGlobalOptions(listCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    const roles = await client.listAssetRoles();
-    printFormatted(roles, globalOptions);
+    const result = await listAssetRoles(client);
+    printFormatted(result.data, globalOptions);
   }));
 
 const getCommand = new Command('get')
@@ -23,8 +28,8 @@ const getCommand = new Command('get')
   .action(withErrorHandling(async (id: AssetRoleId) => {
     const globalOptions = getGlobalOptions(getCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    const role = await client.getAssetRole(id);
-    printFormatted(role, globalOptions);
+    const result = await getAssetRole(client, { id });
+    printFormatted(result.data, globalOptions);
   }));
 
 const createCommand = new Command('create')
@@ -33,8 +38,8 @@ const createCommand = new Command('create')
   .action(withErrorHandling(async (options: { name: string }) => {
     const globalOptions = getGlobalOptions(createCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    const role = await client.createAssetRole({ name: options.name });
-    console.log(chalk.green(`✓ Asset role created with ID: ${role.id}`));
+    const result = await createAssetRole(client, { name: options.name });
+    console.log(chalk.green(`✓ Asset role created with ID: ${(result.data as Record<string, unknown>).id}`));
   }));
 
 const updateCommand = new Command('update')
@@ -44,10 +49,7 @@ const updateCommand = new Command('update')
   .action(withErrorHandling(async (id: AssetRoleId, options: { name?: string }) => {
     const globalOptions = getGlobalOptions(updateCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    const data: Record<string, unknown> = {};
-    if (options.name !== undefined) data.name = options.name;
-    requireAtLeastOneField(data, 'update field');
-    await client.updateAssetRole(id, data);
+    await updateAssetRole(client, { id, name: options.name });
     console.log(chalk.green(`✓ Asset role ${id} updated`));
   }));
 
@@ -57,7 +59,7 @@ const deleteCommand = new Command('delete')
   .action(withErrorHandling(async (id: AssetRoleId) => {
     const globalOptions = getGlobalOptions(deleteCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    await client.deleteAssetRole(id);
+    await deleteAssetRole(client, { id });
     console.log(chalk.green(`✓ Asset role ${id} deleted`));
   }));
 

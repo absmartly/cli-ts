@@ -1,9 +1,13 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
-import { parseTagId, requireAtLeastOneField } from '../../lib/utils/validators.js';
+import { parseTagId } from '../../lib/utils/validators.js';
 import { createListCommand } from '../../lib/utils/list-command.js';
 import type { TagId } from '../../lib/api/branded-types.js';
+import { getGoalTag } from '../../core/goaltags/get.js';
+import { createGoalTag } from '../../core/goaltags/create.js';
+import { updateGoalTag } from '../../core/goaltags/update.js';
+import { deleteGoalTag } from '../../core/goaltags/delete.js';
 
 export const goalTagsCommand = new Command('goal-tags')
   .alias('goaltags')
@@ -22,9 +26,8 @@ const getCommand = new Command('get')
   .action(withErrorHandling(async (id: TagId) => {
     const globalOptions = getGlobalOptions(getCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-
-    const tag = await client.getGoalTag(id);
-    printFormatted(tag, globalOptions);
+    const result = await getGoalTag(client, { id });
+    printFormatted(result.data, globalOptions);
   }));
 
 const createCommand = new Command('create')
@@ -33,11 +36,9 @@ const createCommand = new Command('create')
   .action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(createCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-
-    const tag = await client.createGoalTag({ tag: options.tag });
-
+    const result = await createGoalTag(client, { tag: options.tag });
     console.log(chalk.green('Goal tag created successfully'));
-    printFormatted(tag, globalOptions);
+    printFormatted(result.data, globalOptions);
   }));
 
 const updateCommand = new Command('update')
@@ -47,15 +48,9 @@ const updateCommand = new Command('update')
   .action(withErrorHandling(async (id: TagId, options) => {
     const globalOptions = getGlobalOptions(updateCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-
-    const data: { tag?: string } = {};
-    if (options.tag) data.tag = options.tag;
-
-    requireAtLeastOneField(data, 'update field');
-    const tag = await client.updateGoalTag(id, data as { tag: string });
-
+    const result = await updateGoalTag(client, { id, tag: options.tag });
     console.log(chalk.green('Goal tag updated successfully'));
-    printFormatted(tag, globalOptions);
+    printFormatted(result.data, globalOptions);
   }));
 
 const deleteCommand = new Command('delete')
@@ -64,8 +59,7 @@ const deleteCommand = new Command('delete')
   .action(withErrorHandling(async (id: TagId) => {
     const globalOptions = getGlobalOptions(deleteCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-
-    await client.deleteGoalTag(id);
+    await deleteGoalTag(client, { id });
     console.log(chalk.green('Goal tag deleted successfully'));
   }));
 

@@ -3,6 +3,16 @@ import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseExportConfigId, validateJSON } from '../../lib/utils/validators.js';
 import type { ExportConfigId } from '../../lib/api/branded-types.js';
+import {
+  listExportConfigs as coreListExportConfigs,
+  getExportConfig as coreGetExportConfig,
+  createExportConfig as coreCreateExportConfig,
+  updateExportConfig as coreUpdateExportConfig,
+  archiveExportConfig as coreArchiveExportConfig,
+  pauseExportConfig as corePauseExportConfig,
+  listExportHistories as coreListExportHistories,
+  cancelExportHistory as coreCancelExportHistory,
+} from '../../core/exportconfigs/exportconfigs.js';
 
 export const exportConfigsCommand = new Command('export-configs')
   .aliases(['exportconfigs', 'export-config'])
@@ -13,8 +23,8 @@ const listCommand = new Command('list')
   .action(withErrorHandling(async () => {
     const globalOptions = getGlobalOptions(listCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    const configs = await client.listExportConfigs();
-    printFormatted(configs, globalOptions);
+    const result = await coreListExportConfigs(client);
+    printFormatted(result.data, globalOptions);
   }));
 
 const getCommand = new Command('get')
@@ -23,8 +33,8 @@ const getCommand = new Command('get')
   .action(withErrorHandling(async (id: ExportConfigId) => {
     const globalOptions = getGlobalOptions(getCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    const config = await client.getExportConfig(id);
-    printFormatted(config, globalOptions);
+    const result = await coreGetExportConfig(client, { id });
+    printFormatted(result.data, globalOptions);
   }));
 
 const createCommand = new Command('create')
@@ -34,9 +44,9 @@ const createCommand = new Command('create')
     const globalOptions = getGlobalOptions(createCommand);
     const client = await getAPIClientFromOptions(globalOptions);
     const config = validateJSON(options.config, '--config') as Record<string, unknown>;
-    const result = await client.createExportConfig(config);
+    const result = await coreCreateExportConfig(client, { config });
     console.log(chalk.green(`✓ Export configuration created`));
-    printFormatted(result, globalOptions);
+    printFormatted(result.data, globalOptions);
   }));
 
 const updateCommand = new Command('update')
@@ -47,9 +57,9 @@ const updateCommand = new Command('update')
     const globalOptions = getGlobalOptions(updateCommand);
     const client = await getAPIClientFromOptions(globalOptions);
     const config = validateJSON(options.config, '--config') as Record<string, unknown>;
-    const result = await client.updateExportConfig(id, config);
+    const result = await coreUpdateExportConfig(client, { id, config });
     console.log(chalk.green(`✓ Export configuration ${id} updated`));
-    printFormatted(result, globalOptions);
+    printFormatted(result.data, globalOptions);
   }));
 
 const archiveCommand = new Command('archive')
@@ -59,7 +69,7 @@ const archiveCommand = new Command('archive')
   .action(withErrorHandling(async (id: ExportConfigId, options) => {
     const globalOptions = getGlobalOptions(archiveCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    await client.archiveExportConfig(id, options.unarchive);
+    await coreArchiveExportConfig(client, { id, unarchive: options.unarchive });
     const action = options.unarchive ? 'unarchived' : 'archived';
     console.log(chalk.green(`✓ Export configuration ${id} ${action}`));
   }));
@@ -70,7 +80,7 @@ const pauseCommand = new Command('pause')
   .action(withErrorHandling(async (id: ExportConfigId) => {
     const globalOptions = getGlobalOptions(pauseCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    await client.pauseExportConfig(id);
+    await corePauseExportConfig(client, { id });
     console.log(chalk.green(`✓ Export configuration ${id} paused`));
   }));
 
@@ -80,8 +90,8 @@ const historiesCommand = new Command('histories')
   .action(withErrorHandling(async (id: ExportConfigId) => {
     const globalOptions = getGlobalOptions(historiesCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    const histories = await client.listExportHistories(id);
-    printFormatted(histories, globalOptions);
+    const result = await coreListExportHistories(client, { id });
+    printFormatted(result.data, globalOptions);
   }));
 
 const cancelHistoryCommand = new Command('cancel-history')
@@ -92,7 +102,7 @@ const cancelHistoryCommand = new Command('cancel-history')
   .action(withErrorHandling(async (exportConfigId: ExportConfigId, historyId: number, options) => {
     const globalOptions = getGlobalOptions(cancelHistoryCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    await client.cancelExportHistory(exportConfigId, historyId, options.reason);
+    await coreCancelExportHistory(client, { exportConfigId, historyId, reason: options.reason });
     console.log(chalk.green(`✓ Export history ${historyId} cancelled`));
   }));
 

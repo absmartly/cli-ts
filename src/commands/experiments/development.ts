@@ -5,6 +5,7 @@ import { parseExperimentIdOrName } from './resolve-id.js';
 import { isStdinPiped, isStdoutPiped, readLinesFromStdin } from '../../lib/utils/stdin.js';
 import { resolveNote } from './resolve-note.js';
 import { getDefaultType } from './default-type.js';
+import { developmentExperiment } from '../../core/experiments/development.js';
 
 export const developmentCommand = new Command('development')
   .alias('dev')
@@ -27,7 +28,7 @@ export const developmentCommand = new Command('development')
     for (const idStr of ids) {
       try {
         const id = await client.resolveExperimentId(idStr);
-        await client.developmentExperiment(id, note);
+        await developmentExperiment(client, { experimentId: id, note });
         if (outputPiped) {
           console.log(id);
           console.error(chalk.green(`✓ Experiment ${id} set to development mode`));

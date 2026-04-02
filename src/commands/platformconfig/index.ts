@@ -2,6 +2,9 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { validateJSON } from '../../lib/utils/validators.js';
+import { listPlatformConfigs } from '../../core/platformconfig/list.js';
+import { getPlatformConfig } from '../../core/platformconfig/get.js';
+import { updatePlatformConfig } from '../../core/platformconfig/update.js';
 
 export const platformConfigCommand = new Command('platform-config')
   .aliases(['platformconfig', 'platform-configs'])
@@ -12,8 +15,8 @@ const listCommand = new Command('list')
   .action(withErrorHandling(async () => {
     const globalOptions = getGlobalOptions(listCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    const configs = await client.listPlatformConfigs();
-    printFormatted(configs, globalOptions);
+    const result = await listPlatformConfigs(client);
+    printFormatted(result.data, globalOptions);
   }));
 
 const getCommand = new Command('get')
@@ -22,8 +25,8 @@ const getCommand = new Command('get')
   .action(withErrorHandling(async (id: number) => {
     const globalOptions = getGlobalOptions(getCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    const config = await client.getPlatformConfig(id);
-    printFormatted(config, globalOptions);
+    const result = await getPlatformConfig(client, { id });
+    printFormatted(result.data, globalOptions);
   }));
 
 const updateCommand = new Command('update')
@@ -34,9 +37,9 @@ const updateCommand = new Command('update')
     const globalOptions = getGlobalOptions(updateCommand);
     const client = await getAPIClientFromOptions(globalOptions);
     const value = validateJSON(options.value, '--value') as Record<string, unknown>;
-    const config = await client.updatePlatformConfig(id, value);
+    const result = await updatePlatformConfig(client, { id, value });
     console.log(chalk.green(`✓ Platform config ${id} updated`));
-    printFormatted(config, globalOptions);
+    printFormatted(result.data, globalOptions);
   }));
 
 platformConfigCommand.addCommand(listCommand);

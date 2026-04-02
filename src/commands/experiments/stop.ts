@@ -6,13 +6,7 @@ import { parseExperimentIdOrName } from './resolve-id.js';
 import { isStdinPiped, isStdoutPiped, readLinesFromStdin } from '../../lib/utils/stdin.js';
 import { resolveNote } from './resolve-note.js';
 import { getDefaultType } from './default-type.js';
-
-const VALID_REASONS = [
-  'hypothesis_rejected', 'hypothesis_iteration', 'user_feedback', 'data_issue',
-  'implementation_issue', 'experiment_setup_issue', 'guardrail_metric_impact',
-  'secondary_metric_impact', 'operational_decision', 'performance_issue',
-  'testing', 'tracking_issue', 'code_cleaned_up', 'other',
-] as const;
+import { stopExperiment, VALID_STOP_REASONS } from '../../core/experiments/stop.js';
 
 export const stopCommand = new Command('stop')
   .description('Stop experiment(s). Reads IDs from stdin when piped.')
@@ -31,7 +25,7 @@ export const stopCommand = new Command('stop')
 
     const reason = options.reason || (options.interactive ? await select({
       message: 'Reason for stopping',
-      choices: VALID_REASONS.map(r => ({ value: r, name: r.replace(/_/g, ' ') })),
+      choices: VALID_STOP_REASONS.map(r => ({ value: r, name: r.replace(/_/g, ' ') })),
     }) : 'other');
 
     const note = await resolveNote(options, 'stop', getDefaultType(), globalOptions.profile);
@@ -40,7 +34,7 @@ export const stopCommand = new Command('stop')
     for (const idStr of ids) {
       try {
         const id = await client.resolveExperimentId(idStr);
-        await client.stopExperiment(id, reason, note);
+        await stopExperiment(client, { experimentId: id, reason, note });
         if (outputPiped) {
           console.log(id);
           console.error(chalk.green(`✓ Experiment ${id} stopped`));

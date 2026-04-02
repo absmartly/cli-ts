@@ -3,6 +3,14 @@ import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseExperimentId, parseUserId, parseTeamId, parseAssetRoleId } from '../../lib/utils/validators.js';
 import type { ExperimentId, UserId, TeamId, AssetRoleId } from '../../lib/api/branded-types.js';
+import {
+  listExperimentAccessUsers,
+  grantExperimentAccessUser,
+  revokeExperimentAccessUser,
+  listExperimentAccessTeams,
+  grantExperimentAccessTeam,
+  revokeExperimentAccessTeam,
+} from '../../core/experiments/access.js';
 
 export const accessCommand = new Command('access').description('Manage experiment access control');
 
@@ -12,8 +20,8 @@ const listUsersCommand = new Command('list-users')
   .action(withErrorHandling(async (id: ExperimentId) => {
     const globalOptions = getGlobalOptions(listUsersCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    const users = await client.listExperimentAccessUsers(id);
-    printFormatted(users, globalOptions);
+    const result = await listExperimentAccessUsers(client, { experimentId: id });
+    printFormatted(result.data, globalOptions);
   }));
 
 const grantUserCommand = new Command('grant-user')
@@ -24,7 +32,7 @@ const grantUserCommand = new Command('grant-user')
   .action(withErrorHandling(async (id: ExperimentId, options: { user: UserId; role: AssetRoleId }) => {
     const globalOptions = getGlobalOptions(grantUserCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    await client.grantExperimentAccessUser(id, options.user, options.role);
+    await grantExperimentAccessUser(client, { experimentId: id, userId: options.user, roleId: options.role });
     console.log(chalk.green(`✓ User ${options.user} granted access to experiment ${id}`));
   }));
 
@@ -36,7 +44,7 @@ const revokeUserCommand = new Command('revoke-user')
   .action(withErrorHandling(async (id: ExperimentId, options: { user: UserId; role: AssetRoleId }) => {
     const globalOptions = getGlobalOptions(revokeUserCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    await client.revokeExperimentAccessUser(id, options.user, options.role);
+    await revokeExperimentAccessUser(client, { experimentId: id, userId: options.user, roleId: options.role });
     console.log(chalk.green(`✓ User ${options.user} access revoked from experiment ${id}`));
   }));
 
@@ -46,8 +54,8 @@ const listTeamsCommand = new Command('list-teams')
   .action(withErrorHandling(async (id: ExperimentId) => {
     const globalOptions = getGlobalOptions(listTeamsCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    const teams = await client.listExperimentAccessTeams(id);
-    printFormatted(teams, globalOptions);
+    const result = await listExperimentAccessTeams(client, { experimentId: id });
+    printFormatted(result.data, globalOptions);
   }));
 
 const grantTeamCommand = new Command('grant-team')
@@ -58,7 +66,7 @@ const grantTeamCommand = new Command('grant-team')
   .action(withErrorHandling(async (id: ExperimentId, options: { team: TeamId; role: AssetRoleId }) => {
     const globalOptions = getGlobalOptions(grantTeamCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    await client.grantExperimentAccessTeam(id, options.team, options.role);
+    await grantExperimentAccessTeam(client, { experimentId: id, teamId: options.team, roleId: options.role });
     console.log(chalk.green(`✓ Team ${options.team} granted access to experiment ${id}`));
   }));
 
@@ -70,7 +78,7 @@ const revokeTeamCommand = new Command('revoke-team')
   .action(withErrorHandling(async (id: ExperimentId, options: { team: TeamId; role: AssetRoleId }) => {
     const globalOptions = getGlobalOptions(revokeTeamCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    await client.revokeExperimentAccessTeam(id, options.team, options.role);
+    await revokeExperimentAccessTeam(client, { experimentId: id, teamId: options.team, roleId: options.role });
     console.log(chalk.green(`✓ Team ${options.team} access revoked from experiment ${id}`));
   }));
 

@@ -3,6 +3,14 @@ import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseMetricId } from '../../lib/utils/validators.js';
 import type { MetricId } from '../../lib/api/branded-types.js';
+import {
+  getMetricReview,
+  requestMetricReview,
+  approveMetricReview,
+  listMetricReviewComments,
+  addMetricReviewComment,
+  replyToMetricReviewComment,
+} from '../../core/metrics/review.js';
 
 export const reviewCommand = new Command('review').description('Manage metric reviews');
 
@@ -12,8 +20,8 @@ const statusCommand = new Command('status')
   .action(withErrorHandling(async (id: MetricId) => {
     const globalOptions = getGlobalOptions(statusCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    const review = await client.getMetricReview(id);
-    printFormatted(review, globalOptions);
+    const result = await getMetricReview(client, { id });
+    printFormatted(result.data, globalOptions);
   }));
 
 const requestCommand = new Command('request')
@@ -22,7 +30,7 @@ const requestCommand = new Command('request')
   .action(withErrorHandling(async (id: MetricId) => {
     const globalOptions = getGlobalOptions(requestCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    await client.requestMetricReview(id);
+    await requestMetricReview(client, { id });
     console.log(chalk.green(`✓ Review requested for metric ${id}`));
   }));
 
@@ -32,7 +40,7 @@ const approveCommand = new Command('approve')
   .action(withErrorHandling(async (id: MetricId) => {
     const globalOptions = getGlobalOptions(approveCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    await client.approveMetricReview(id);
+    await approveMetricReview(client, { id });
     console.log(chalk.green(`✓ Metric ${id} review approved`));
   }));
 
@@ -42,8 +50,8 @@ const commentsCommand = new Command('comments')
   .action(withErrorHandling(async (id: MetricId) => {
     const globalOptions = getGlobalOptions(commentsCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    const comments = await client.listMetricReviewComments(id);
-    printFormatted(comments, globalOptions);
+    const result = await listMetricReviewComments(client, { id });
+    printFormatted(result.data, globalOptions);
   }));
 
 const commentCommand = new Command('comment')
@@ -53,7 +61,7 @@ const commentCommand = new Command('comment')
   .action(withErrorHandling(async (id: MetricId, options: { message: string }) => {
     const globalOptions = getGlobalOptions(commentCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    await client.addMetricReviewComment(id, options.message);
+    await addMetricReviewComment(client, { id, message: options.message });
     console.log(chalk.green(`✓ Comment added to metric ${id} review`));
   }));
 
@@ -65,7 +73,7 @@ const replyCommand = new Command('reply')
   .action(withErrorHandling(async (id: MetricId, commentId: number, options: { message: string }) => {
     const globalOptions = getGlobalOptions(replyCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    await client.replyToMetricReviewComment(id, commentId, options.message);
+    await replyToMetricReviewComment(client, { id, commentId, message: options.message });
     console.log(chalk.green(`✓ Reply added to comment ${commentId} on metric ${id} review`));
   }));
 

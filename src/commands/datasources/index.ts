@@ -3,6 +3,19 @@ import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseDatasourceId, validateJSON } from '../../lib/utils/validators.js';
 import type { DatasourceId } from '../../lib/api/branded-types.js';
+import {
+  listDatasources as coreListDatasources,
+  getDatasource as coreGetDatasource,
+  createDatasource as coreCreateDatasource,
+  updateDatasource as coreUpdateDatasource,
+  archiveDatasource as coreArchiveDatasource,
+  testDatasource as coreTestDatasource,
+  introspectDatasource as coreIntrospectDatasource,
+  validateDatasourceQuery as coreValidateDatasourceQuery,
+  previewDatasourceQuery as corePreviewDatasourceQuery,
+  setDefaultDatasource as coreSetDefaultDatasource,
+  getDatasourceSchema as coreGetDatasourceSchema,
+} from '../../core/datasources/datasources.js';
 
 export const datasourcesCommand = new Command('datasources')
   .aliases(['datasource', 'ds'])
@@ -13,8 +26,8 @@ const listCommand = new Command('list')
   .action(withErrorHandling(async () => {
     const globalOptions = getGlobalOptions(listCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    const datasources = await client.listDatasources();
-    printFormatted(datasources, globalOptions);
+    const result = await coreListDatasources(client);
+    printFormatted(result.data, globalOptions);
   }));
 
 const getCommand = new Command('get')
@@ -23,8 +36,8 @@ const getCommand = new Command('get')
   .action(withErrorHandling(async (id: DatasourceId) => {
     const globalOptions = getGlobalOptions(getCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    const datasource = await client.getDatasource(id);
-    printFormatted(datasource, globalOptions);
+    const result = await coreGetDatasource(client, { id });
+    printFormatted(result.data, globalOptions);
   }));
 
 const createCommand = new Command('create')
@@ -34,9 +47,9 @@ const createCommand = new Command('create')
     const globalOptions = getGlobalOptions(createCommand);
     const client = await getAPIClientFromOptions(globalOptions);
     const config = validateJSON(options.config, '--config') as Record<string, unknown>;
-    const datasource = await client.createDatasource(config);
+    const result = await coreCreateDatasource(client, { config });
     console.log(chalk.green(`✓ Datasource created`));
-    printFormatted(datasource, globalOptions);
+    printFormatted(result.data, globalOptions);
   }));
 
 const updateCommand = new Command('update')
@@ -47,9 +60,9 @@ const updateCommand = new Command('update')
     const globalOptions = getGlobalOptions(updateCommand);
     const client = await getAPIClientFromOptions(globalOptions);
     const config = validateJSON(options.config, '--config') as Record<string, unknown>;
-    const datasource = await client.updateDatasource(id, config);
+    const result = await coreUpdateDatasource(client, { id, config });
     console.log(chalk.green(`✓ Datasource ${id} updated`));
-    printFormatted(datasource, globalOptions);
+    printFormatted(result.data, globalOptions);
   }));
 
 const archiveCommand = new Command('archive')
@@ -59,7 +72,7 @@ const archiveCommand = new Command('archive')
   .action(withErrorHandling(async (id: DatasourceId, options) => {
     const globalOptions = getGlobalOptions(archiveCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    await client.archiveDatasource(id, options.unarchive);
+    await coreArchiveDatasource(client, { id, unarchive: options.unarchive });
     const action = options.unarchive ? 'unarchived' : 'archived';
     console.log(chalk.green(`✓ Datasource ${id} ${action}`));
   }));
@@ -71,7 +84,7 @@ const testCommand = new Command('test')
     const globalOptions = getGlobalOptions(testCommand);
     const client = await getAPIClientFromOptions(globalOptions);
     const config = validateJSON(options.config, '--config') as Record<string, unknown>;
-    await client.testDatasource(config);
+    await coreTestDatasource(client, { config });
     console.log(chalk.green(`✓ Datasource connection test passed`));
   }));
 
@@ -82,8 +95,8 @@ const introspectCommand = new Command('introspect')
     const globalOptions = getGlobalOptions(introspectCommand);
     const client = await getAPIClientFromOptions(globalOptions);
     const config = validateJSON(options.config, '--config') as Record<string, unknown>;
-    const result = await client.introspectDatasource(config);
-    printFormatted(result, globalOptions);
+    const result = await coreIntrospectDatasource(client, { config });
+    printFormatted(result.data, globalOptions);
   }));
 
 const validateQueryCommand = new Command('validate-query')
@@ -93,7 +106,7 @@ const validateQueryCommand = new Command('validate-query')
     const globalOptions = getGlobalOptions(validateQueryCommand);
     const client = await getAPIClientFromOptions(globalOptions);
     const config = validateJSON(options.config, '--config') as Record<string, unknown>;
-    await client.validateDatasourceQuery(config);
+    await coreValidateDatasourceQuery(client, { config });
     console.log(chalk.green(`✓ Datasource query is valid`));
   }));
 
@@ -104,8 +117,8 @@ const previewQueryCommand = new Command('preview-query')
     const globalOptions = getGlobalOptions(previewQueryCommand);
     const client = await getAPIClientFromOptions(globalOptions);
     const config = validateJSON(options.config, '--config') as Record<string, unknown>;
-    const result = await client.previewDatasourceQuery(config);
-    printFormatted(result, globalOptions);
+    const result = await corePreviewDatasourceQuery(client, { config });
+    printFormatted(result.data, globalOptions);
   }));
 
 const setDefaultCommand = new Command('set-default')
@@ -114,7 +127,7 @@ const setDefaultCommand = new Command('set-default')
   .action(withErrorHandling(async (id: DatasourceId) => {
     const globalOptions = getGlobalOptions(setDefaultCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    await client.setDefaultDatasource(id);
+    await coreSetDefaultDatasource(client, { id });
     console.log(chalk.green(`✓ Datasource ${id} set as default`));
   }));
 
@@ -124,8 +137,8 @@ const schemaCommand = new Command('schema')
   .action(withErrorHandling(async (id: DatasourceId) => {
     const globalOptions = getGlobalOptions(schemaCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    const result = await client.getDatasourceSchema(id);
-    printFormatted(result, globalOptions);
+    const result = await coreGetDatasourceSchema(client, { id });
+    printFormatted(result.data, globalOptions);
   }));
 
 datasourcesCommand.addCommand(listCommand);

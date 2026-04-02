@@ -2,11 +2,16 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseCustomSectionFieldId, requireAtLeastOneField } from '../../lib/utils/validators.js';
-import { applyShowExclude, summarizeCustomField, summarizeCustomFieldRow } from '../../api-client/entity-summary.js';
 import { addPaginationOptions, printPaginationFooter } from '../../lib/utils/pagination.js';
 import type { CustomSectionFieldId } from '../../lib/api/branded-types.js';
-import type { CustomSectionField } from '../../api-client/types.js';
 import { getDefaultType } from './default-type.js';
+import {
+  listCustomFields,
+  getCustomField,
+  createCustomField,
+  updateCustomField,
+  archiveCustomField,
+} from '../../core/experiments/custom-fields.js';
 
 export const customFieldsCommand = new Command('custom-fields')
   .alias('fields')
@@ -18,20 +23,21 @@ const listCommand = addPaginationOptions(
 ).action(withErrorHandling(async (options) => {
   const globalOptions = getGlobalOptions(listCommand);
   const client = await getAPIClientFromOptions(globalOptions);
-  const type = getDefaultType();
-  const allFields = await client.listCustomSectionFields(options.items ?? 100, options.page ?? 1);
-  const fields = (allFields as unknown as Array<Record<string, unknown>>).filter(f => {
-    const section = f.custom_section as Record<string, unknown> | undefined;
-    return section?.type === type;
+
+  const result = await listCustomFields(client, {
+    type: getDefaultType(),
+    items: options.items ?? 100,
+    page: options.page ?? 1,
+    raw: globalOptions.raw,
   });
 
-  if (globalOptions.raw) {
-    printFormatted(fields, globalOptions);
-  } else {
-    const rows = fields.map(f => summarizeCustomFieldRow(f));
-    printFormatted(rows, globalOptions);
-  }
-  printPaginationFooter(fields.length, options.items ?? 100, options.page ?? 1, globalOptions.output as string);
+  printFormatted(result.rows ?? result.data, globalOptions);
+  printPaginationFooter(
+    (result.rows ?? result.data).length,
+    options.items ?? 100,
+    options.page ?? 1,
+    globalOptions.output as string,
+  );
 }));
 
 const getCommand = new Command('get')
@@ -42,12 +48,14 @@ const getCommand = new Command('get')
   .action(withErrorHandling(async (id: CustomSectionFieldId, options) => {
     const globalOptions = getGlobalOptions(getCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    const show = (options.show as string[] | undefined) ?? [];
-    const exclude = (options.exclude as string[] | undefined) ?? [];
 
-    const field = await client.getCustomSectionField(id);
-    const data = globalOptions.raw ? field : applyShowExclude(summarizeCustomField(field as unknown as Record<string, unknown>), field as unknown as Record<string, unknown>, show, exclude);
-    printFormatted(data, globalOptions);
+    const result = await getCustomField(client, {
+      id,
+      show: options.show,
+      exclude: options.exclude,
+      raw: globalOptions.raw,
+    });
+    printFormatted(result.data, globalOptions);
   }));
 
 const createCommand = new Command('create')
@@ -59,15 +67,14 @@ const createCommand = new Command('create')
     const globalOptions = getGlobalOptions(createCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
-    const data: Partial<CustomSectionField> = {
+    const result = await createCustomField(client, {
       name: options.name,
       type: options.type,
-    };
-    if (options.defaultValue !== undefined) data.default_value = options.defaultValue;
+      defaultValue: options.defaultValue,
+    });
 
-    const field = await client.createCustomSectionField(data);
-    console.log(chalk.green(`✓ Custom section field created with ID: ${field.id}`));
-    printFormatted(field, globalOptions);
+    console.log(chalk.green(`✓ Custom section field created with ID: ${(result.data as Record<string, unknown>).id}`));
+    printFormatted(result.data, globalOptions);
   }));
 
 const updateCommand = new Command('update')
@@ -80,26 +87,32 @@ const updateCommand = new Command('update')
     const globalOptions = getGlobalOptions(updateCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
-    const data: Partial<CustomSectionField> = {};
+    const data: Record<string, unknown> = {};
     if (options.name !== undefined) data.name = options.name;
     if (options.type !== undefined) data.type = options.type;
-    if (options.defaultValue !== undefined) data.default_value = options.defaultValue;
+    if (options.defaultValue !== undefined) data.defaultValue = options.defaultValue;
+    requireAtLeastOneField(data, 'update field');
 
-    requireAtLeastOneField(data as Record<string, unknown>, 'update field');
-    const field = await client.updateCustomSectionField(id, data);
+    const result = await updateCustomField(client, {
+      id,
+      name: options.name,
+      type: options.type,
+      defaultValue: options.defaultValue,
+    });
+
     console.log(chalk.green(`✓ Custom section field ${id} updated`));
-    printFormatted(field, globalOptions);
+    printFormatted(result.data, globalOptions);
   }));
 
-const archiveCommand = new Command('archive')
+const archiveCmd = new Command('archive')
   .description('Archive or unarchive a custom section field')
   .argument('<id>', 'field ID', parseCustomSectionFieldId)
   .option('--unarchive', 'Unarchive the field')
   .action(withErrorHandling(async (id: CustomSectionFieldId, options) => {
-    const globalOptions = getGlobalOptions(archiveCommand);
+    const globalOptions = getGlobalOptions(archiveCmd);
     const client = await getAPIClientFromOptions(globalOptions);
 
-    await client.archiveCustomSectionField(id, !!options.unarchive);
+    await archiveCustomField(client, { id, unarchive: !!options.unarchive });
     console.log(chalk.green(`✓ Custom section field ${id} ${options.unarchive ? 'unarchived' : 'archived'}`));
   }));
 
@@ -107,4 +120,4 @@ customFieldsCommand.addCommand(listCommand);
 customFieldsCommand.addCommand(getCommand);
 customFieldsCommand.addCommand(createCommand);
 customFieldsCommand.addCommand(updateCommand);
-customFieldsCommand.addCommand(archiveCommand);
+customFieldsCommand.addCommand(archiveCmd);

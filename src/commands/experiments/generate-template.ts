@@ -2,8 +2,8 @@ import { Command } from 'commander';
 import { writeFileSync } from 'fs';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, withErrorHandling } from '../../lib/utils/api-helper.js';
-import { generateTemplateFromClient } from '../../lib/template/generator.js';
 import { getDefaultType } from './default-type.js';
+import { generateTemplate } from '../../core/experiments/generate-template.js';
 
 export const generateTemplateCommand = new Command('generate-template')
   .aliases(['gen-template', 'template'])
@@ -15,15 +15,15 @@ export const generateTemplateCommand = new Command('generate-template')
     const globalOptions = getGlobalOptions(generateTemplateCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
-    const content = await generateTemplateFromClient(client, {
+    const result = await generateTemplate(client, {
       name: options.name,
       type: options.type || getDefaultType(),
     });
 
     if (options.output) {
-      writeFileSync(options.output, content, 'utf8');
+      writeFileSync(options.output, result.data.content, 'utf8');
       console.log(chalk.green(`✓ Template written to ${options.output}`));
     } else {
-      console.log(content);
+      console.log(result.data.content);
     }
   }));

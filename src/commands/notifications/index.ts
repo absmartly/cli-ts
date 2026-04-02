@@ -1,6 +1,12 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
+import {
+  listNotifications as coreListNotifications,
+  markNotificationsSeen as coreMarkNotificationsSeen,
+  markNotificationsRead as coreMarkNotificationsRead,
+  checkNotifications as coreCheckNotifications,
+} from '../../core/notifications/notifications.js';
 
 export const notificationsCommand = new Command('notifications')
   .alias('notification')
@@ -13,8 +19,8 @@ const listCommand = new Command('list')
   .action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(listCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    const notifications = await client.getNotifications(options.cursor);
-    printFormatted(notifications, globalOptions);
+    const result = await coreListNotifications(client, { cursor: options.cursor });
+    printFormatted(result.data, globalOptions);
   }));
 
 const markSeenCommand = new Command('mark-seen')
@@ -22,7 +28,7 @@ const markSeenCommand = new Command('mark-seen')
   .action(withErrorHandling(async () => {
     const globalOptions = getGlobalOptions(markSeenCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    await client.markNotificationsSeen();
+    await coreMarkNotificationsSeen(client);
     console.log(chalk.green('✓ All notifications marked as seen'));
   }));
 
@@ -35,7 +41,7 @@ const markReadCommand = new Command('mark-read')
     const ids = options.ids
       ? options.ids.split(',').map((s: string) => parseInt(s.trim(), 10))
       : undefined;
-    await client.markNotificationsRead(ids);
+    await coreMarkNotificationsRead(client, { ids });
     console.log(chalk.green('✓ Notifications marked as read'));
   }));
 
@@ -45,8 +51,8 @@ const checkCommand = new Command('check')
   .action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(checkCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    const hasNew = await client.hasNewNotifications(options.lastId);
-    if (hasNew) {
+    const result = await coreCheckNotifications(client, { lastId: options.lastId });
+    if (result.data.hasNew) {
       console.log(chalk.yellow('You have new notifications'));
     } else {
       console.log(chalk.green('No new notifications'));

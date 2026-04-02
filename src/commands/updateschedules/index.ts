@@ -3,6 +3,11 @@ import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseUpdateScheduleId, validateJSON } from '../../lib/utils/validators.js';
 import type { UpdateScheduleId } from '../../lib/api/branded-types.js';
+import { listUpdateSchedules } from '../../core/updateschedules/list.js';
+import { getUpdateSchedule } from '../../core/updateschedules/get.js';
+import { createUpdateSchedule } from '../../core/updateschedules/create.js';
+import { updateUpdateSchedule } from '../../core/updateschedules/update.js';
+import { deleteUpdateSchedule } from '../../core/updateschedules/delete.js';
 
 export const updateSchedulesCommand = new Command('update-schedules')
   .aliases(['updateschedules'])
@@ -13,8 +18,8 @@ const listCommand = new Command('list')
   .action(withErrorHandling(async () => {
     const globalOptions = getGlobalOptions(listCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    const schedules = await client.listUpdateSchedules();
-    printFormatted(schedules, globalOptions);
+    const result = await listUpdateSchedules(client);
+    printFormatted(result.data, globalOptions);
   }));
 
 const getCommand = new Command('get')
@@ -23,8 +28,8 @@ const getCommand = new Command('get')
   .action(withErrorHandling(async (id: UpdateScheduleId) => {
     const globalOptions = getGlobalOptions(getCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    const schedule = await client.getUpdateSchedule(id);
-    printFormatted(schedule, globalOptions);
+    const result = await getUpdateSchedule(client, { id });
+    printFormatted(result.data, globalOptions);
   }));
 
 const createCommand = new Command('create')
@@ -34,9 +39,9 @@ const createCommand = new Command('create')
     const globalOptions = getGlobalOptions(createCommand);
     const client = await getAPIClientFromOptions(globalOptions);
     const config = validateJSON(options.config, '--config') as Record<string, unknown>;
-    const schedule = await client.createUpdateSchedule(config);
+    const result = await createUpdateSchedule(client, { config });
     console.log(chalk.green(`✓ Update schedule created`));
-    printFormatted(schedule, globalOptions);
+    printFormatted(result.data, globalOptions);
   }));
 
 const updateCommand = new Command('update')
@@ -47,9 +52,9 @@ const updateCommand = new Command('update')
     const globalOptions = getGlobalOptions(updateCommand);
     const client = await getAPIClientFromOptions(globalOptions);
     const config = validateJSON(options.config, '--config') as Record<string, unknown>;
-    const schedule = await client.updateUpdateSchedule(id, config);
+    const result = await updateUpdateSchedule(client, { id, config });
     console.log(chalk.green(`✓ Update schedule ${id} updated`));
-    printFormatted(schedule, globalOptions);
+    printFormatted(result.data, globalOptions);
   }));
 
 const deleteCommand = new Command('delete')
@@ -58,7 +63,7 @@ const deleteCommand = new Command('delete')
   .action(withErrorHandling(async (id: UpdateScheduleId) => {
     const globalOptions = getGlobalOptions(deleteCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    await client.deleteUpdateSchedule(id);
+    await deleteUpdateSchedule(client, { id });
     console.log(chalk.green(`✓ Update schedule ${id} deleted`));
   }));
 

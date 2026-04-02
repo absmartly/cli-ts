@@ -1,30 +1,16 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
-import { parseMetricId, requireAtLeastOneField } from '../../lib/utils/validators.js';
+import { parseMetricId } from '../../lib/utils/validators.js';
 import type { MetricId } from '../../lib/api/branded-types.js';
 import { applyShowExclude, summarizeMetric, summarizeMetricRow } from '../../api-client/entity-summary.js';
 import { createListCommand } from '../../lib/utils/list-command.js';
-import { parseCSV } from '../../api-client/payload/parse-csv.js';
-import type { APIClient } from '../../api-client/api-client.js';
-
-function allNumeric(refs: string[]): boolean {
-  return refs.every(r => !isNaN(parseInt(r, 10)) && String(parseInt(r, 10)) === r.trim());
-}
-
-async function resolveOwnerIds(client: APIClient, raw: string): Promise<string> {
-  const refs = parseCSV(raw);
-  if (allNumeric(refs)) return refs.join(',');
-  const resolved = await client.resolveUsers(refs);
-  return resolved.map(u => u.id).join(',');
-}
-
-async function resolveTeamIds(client: APIClient, raw: string): Promise<string> {
-  const refs = parseCSV(raw);
-  if (allNumeric(refs)) return refs.join(',');
-  const resolved = await client.resolveTeams(refs);
-  return resolved.map(t => t.id).join(',');
-}
+import { listMetrics as coreListMetrics } from '../../core/metrics/list.js';
+import { getMetric } from '../../core/metrics/get.js';
+import { createMetric } from '../../core/metrics/create.js';
+import { updateMetric } from '../../core/metrics/update.js';
+import { archiveMetric } from '../../core/metrics/archive.js';
+import { activateMetric } from '../../core/metrics/activate.js';
 import { accessCommand } from './access.js';
 import { reviewCommand } from './review.js';
 import { followCommand, unfollowCommand } from './follow.js';
@@ -37,22 +23,20 @@ const listCommand = createListCommand({
   description: 'List all metrics',
   defaultItems: 100,
   fetch: async (client, options) => {
-    const ownerIds = options.owners ? await resolveOwnerIds(client, options.owners as string) : undefined;
-    const teamIds = options.teams ? await resolveTeamIds(client, options.teams as string) : undefined;
-
-    return client.listMetrics({
+    const result = await coreListMetrics(client, {
       items: options.items as number,
       page: options.page as number,
       archived: options.archived as boolean,
       include_drafts: options.includeDrafts as boolean,
       search: options.search as string | undefined,
       sort: options.sort as string | undefined,
-      sort_asc: options.asc ? true : options.desc ? false : undefined,
+      sortAsc: options.asc ? true : options.desc ? false : undefined,
       ids: options.ids as string | undefined,
-      owners: ownerIds,
-      teams: teamIds,
-      review_status: options.reviewStatus as string | undefined,
+      owners: options.owners as string | undefined,
+      teams: options.teams as string | undefined,
+      reviewStatus: options.reviewStatus as string | undefined,
     });
+    return result.data;
   },
   summarizeRow: summarizeMetricRow,
   extraOptions: (cmd) => cmd
@@ -79,8 +63,8 @@ const getCommand = new Command('get')
     const show = (options.show as string[] | undefined) ?? [];
     const exclude = (options.exclude as string[] | undefined) ?? [];
 
-    const metric = await client.getMetric(id);
-    const data = globalOptions.raw ? metric : applyShowExclude(summarizeMetric(metric as Record<string, unknown>), metric as Record<string, unknown>, show, exclude);
+    const result = await getMetric(client, { id });
+    const data = globalOptions.raw ? result.data : applyShowExclude(summarizeMetric(result.data as Record<string, unknown>), result.data as Record<string, unknown>, show, exclude);
     printFormatted(data, globalOptions);
   }));
 
@@ -104,26 +88,23 @@ const createCommand = new Command('create')
     const globalOptions = getGlobalOptions(createCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
-    const data: Record<string, unknown> = {
+    const result = await createMetric(client, {
       name: options.name,
       type: options.type,
       description: options.description,
       effect: options.effect,
-      format_str: options.formatStr,
+      goalId: options.goalId,
+      owner: options.owner,
+      formatStr: options.formatStr,
       scale: options.scale,
       precision: options.precision,
-      mean_format_str: options.meanFormatStr,
-      mean_scale: options.meanScale,
-      mean_precision: options.meanPrecision,
-      outlier_limit_method: options.outlierLimitMethod,
-    };
-
-    if (options.goalId) data.goal_id = options.goalId;
-    if (options.valueSourceProperty) data.value_source_property = options.valueSourceProperty;
-    if (options.owner) data.owners = [{ user_id: options.owner }];
-
-    const metric = await client.createMetric(data);
-    console.log(chalk.green(`✓ Metric created with ID: ${metric.id}`));
+      meanFormatStr: options.meanFormatStr,
+      meanScale: options.meanScale,
+      meanPrecision: options.meanPrecision,
+      outlierLimitMethod: options.outlierLimitMethod,
+      valueSourceProperty: options.valueSourceProperty,
+    });
+    console.log(chalk.green(`✓ Metric created with ID: ${result.data.id}`));
   }));
 
 const updateCommand = new Command('update')
@@ -134,11 +115,10 @@ const updateCommand = new Command('update')
     const globalOptions = getGlobalOptions(updateCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
-    const data: Record<string, string> = {};
-    if (options.description !== undefined) data.description = options.description;
-
-    requireAtLeastOneField(data, 'update field');
-    await client.updateMetric(id, data);
+    await updateMetric(client, {
+      id,
+      description: options.description,
+    });
     console.log(chalk.green(`✓ Metric ${id} updated`));
   }));
 
@@ -150,8 +130,7 @@ const archiveCommand = new Command('archive')
     const globalOptions = getGlobalOptions(archiveCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
-    await client.archiveMetric(id, options.unarchive);
-
+    await archiveMetric(client, { id, unarchive: options.unarchive });
     const action = options.unarchive ? 'unarchived' : 'archived';
     console.log(chalk.green(`✓ Metric ${id} ${action}`));
   }));
@@ -164,7 +143,7 @@ const activateCommand = new Command('activate')
     const globalOptions = getGlobalOptions(activateCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
-    await client.activateMetric(id, options.reason);
+    await activateMetric(client, { id, reason: options.reason });
     console.log(chalk.green(`✓ Metric ${id} activated`));
   }));
 

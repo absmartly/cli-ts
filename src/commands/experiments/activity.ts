@@ -7,6 +7,12 @@ import { formatNoteText, type NoteLookups } from '../activity/index.js';
 import { fetchAndDisplayImage, supportsInlineImages } from '../../lib/utils/terminal-image.js';
 import type { NoteId } from '../../lib/api/branded-types.js';
 import type { Note } from '../../api-client/types.js';
+import {
+  listExperimentActivity,
+  createExperimentNote,
+  editExperimentNote,
+  replyToExperimentNote,
+} from '../../core/experiments/activity.js';
 
 function formatTimestamp(dateStr: string): string {
   const d = new Date(dateStr);
@@ -33,7 +39,8 @@ const listActivityCommand = new Command('list')
     const client = await getAPIClientFromOptions(globalOptions);
     const id = await client.resolveExperimentId(nameOrId);
 
-    const notes = await client.listExperimentActivity(id);
+    const result = await listExperimentActivity(client, { experimentId: id });
+    const notes = result.data as Note[];
 
     if (notes.length === 0) {
       console.log(chalk.blue('No activity found'));
@@ -119,8 +126,8 @@ const createActivityCommand = new Command('create')
     const client = await getAPIClientFromOptions(globalOptions);
     const id = await client.resolveExperimentId(nameOrId);
 
-    const note = await client.createExperimentNote(id, options.note);
-    console.log(chalk.green(`✓ Note created (id: ${note.id})`));
+    const result = await createExperimentNote(client, { experimentId: id, note: options.note });
+    console.log(chalk.green(`✓ Note created (id: ${result.data.id})`));
   }));
 
 const editActivityCommand = new Command('edit')
@@ -133,7 +140,7 @@ const editActivityCommand = new Command('edit')
     const client = await getAPIClientFromOptions(globalOptions);
     const id = await client.resolveExperimentId(expNameOrId);
 
-    await client.editExperimentNote(id, noteId, options.note);
+    await editExperimentNote(client, { experimentId: id, noteId, note: options.note });
     console.log(chalk.green(`✓ Note ${noteId} updated`));
   }));
 
@@ -147,8 +154,8 @@ const replyActivityCommand = new Command('reply')
     const client = await getAPIClientFromOptions(globalOptions);
     const id = await client.resolveExperimentId(expNameOrId);
 
-    const note = await client.replyToExperimentNote(id, noteId, options.note);
-    console.log(chalk.green(`✓ Reply created (id: ${note.id})`));
+    const result = await replyToExperimentNote(client, { experimentId: id, noteId, note: options.note });
+    console.log(chalk.green(`✓ Reply created (id: ${result.data.id})`));
   }));
 
 activityCommand.addCommand(listActivityCommand);

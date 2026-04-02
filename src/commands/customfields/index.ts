@@ -1,11 +1,14 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
-import { parseCustomSectionFieldId, requireAtLeastOneField } from '../../lib/utils/validators.js';
+import { parseCustomSectionFieldId } from '../../lib/utils/validators.js';
 import { createListCommand } from '../../lib/utils/list-command.js';
-import { applyShowExclude, summarizeCustomField, summarizeCustomFieldRow } from '../../api-client/entity-summary.js';
+import { summarizeCustomFieldRow } from '../../api-client/entity-summary.js';
 import type { CustomSectionFieldId } from '../../lib/api/branded-types.js';
-import type { CustomSectionField } from '../../api-client/types.js';
+import { getCustomField } from '../../core/customfields/get.js';
+import { createCustomField } from '../../core/customfields/create.js';
+import { updateCustomField } from '../../core/customfields/update.js';
+import { archiveCustomField } from '../../core/customfields/archive.js';
 
 export const customFieldsCommand = new Command('custom-fields')
   .alias('customfields')
@@ -30,10 +33,8 @@ const getCommand = new Command('get')
     const client = await getAPIClientFromOptions(globalOptions);
     const show = (options.show as string[] | undefined) ?? [];
     const exclude = (options.exclude as string[] | undefined) ?? [];
-
-    const field = await client.getCustomSectionField(id);
-    const data = globalOptions.raw ? field : applyShowExclude(summarizeCustomField(field as unknown as Record<string, unknown>), field as unknown as Record<string, unknown>, show, exclude);
-    printFormatted(data, globalOptions);
+    const result = await getCustomField(client, { id, show, exclude, raw: globalOptions.raw });
+    printFormatted(result.data, globalOptions);
   }));
 
 const createCommand = new Command('create')
@@ -44,17 +45,13 @@ const createCommand = new Command('create')
   .action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(createCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-
-    const data: Partial<CustomSectionField> = {
+    const result = await createCustomField(client, {
       name: options.name,
       type: options.type,
-    };
-    if (options.defaultValue !== undefined) data.default_value = options.defaultValue;
-
-    const field = await client.createCustomSectionField(data);
-
-    console.log(chalk.green(`✓ Custom section field created with ID: ${field.id}`));
-    printFormatted(field, globalOptions);
+      defaultValue: options.defaultValue,
+    });
+    console.log(chalk.green(`✓ Custom section field created with ID: ${(result.data as Record<string, unknown>).id}`));
+    printFormatted(result.data, globalOptions);
   }));
 
 const updateCommand = new Command('update')
@@ -66,17 +63,14 @@ const updateCommand = new Command('update')
   .action(withErrorHandling(async (id: CustomSectionFieldId, options) => {
     const globalOptions = getGlobalOptions(updateCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-
-    const data: Partial<CustomSectionField> = {};
-    if (options.name !== undefined) data.name = options.name;
-    if (options.type !== undefined) data.type = options.type;
-    if (options.defaultValue !== undefined) data.default_value = options.defaultValue;
-
-    requireAtLeastOneField(data as Record<string, unknown>, 'update field');
-    const field = await client.updateCustomSectionField(id, data);
-
+    const result = await updateCustomField(client, {
+      id,
+      name: options.name,
+      type: options.type,
+      defaultValue: options.defaultValue,
+    });
     console.log(chalk.green(`✓ Custom section field ${id} updated`));
-    printFormatted(field, globalOptions);
+    printFormatted(result.data, globalOptions);
   }));
 
 const archiveCommand = new Command('archive')
@@ -86,8 +80,7 @@ const archiveCommand = new Command('archive')
   .action(withErrorHandling(async (id: CustomSectionFieldId, options) => {
     const globalOptions = getGlobalOptions(archiveCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-
-    await client.archiveCustomSectionField(id, !!options.unarchive);
+    await archiveCustomField(client, { id, unarchive: !!options.unarchive });
     console.log(chalk.green(`✓ Custom section field ${id} ${options.unarchive ? 'unarchived' : 'archived'}`));
   }));
 

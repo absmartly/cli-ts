@@ -1,11 +1,9 @@
 import { Command } from 'commander';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { printPaginationFooter } from '../../lib/utils/pagination.js';
-import { parseDateFlagOrUndefined } from '../../lib/utils/date-parser.js';
-import type { ListOptions } from '../../lib/api/types.js';
-import { summarizeExperimentRow } from '../../api-client/experiment-summary.js';
 import { getDefaultType } from './default-type.js';
 import { isStdoutPiped } from '../../lib/utils/stdin.js';
+import { listExperiments } from '../../core/experiments/list.js';
 
 export const listCommand = new Command('list')
   .description('List experiments')
@@ -51,74 +49,22 @@ export const listCommand = new Command('list')
     const globalOptions = getGlobalOptions(listCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
-    const alertFlag = (v: unknown): number | undefined => {
-      if (v === undefined) return undefined;
-      if (v === true) return 1;
-      return v === '0' ? 0 : 1;
-    };
-
-    const createdAfter = parseDateFlagOrUndefined(options.createdAfter);
-    const createdBefore = parseDateFlagOrUndefined(options.createdBefore);
-    const startedAfter = parseDateFlagOrUndefined(options.startedAfter);
-    const startedBefore = parseDateFlagOrUndefined(options.startedBefore);
-    const stoppedAfter = parseDateFlagOrUndefined(options.stoppedAfter);
-    const stoppedBefore = parseDateFlagOrUndefined(options.stoppedBefore);
-
-    const listOptions: ListOptions = {
-      page: options.page,
-      items: options.items,
-      previews: true,
-      ...(options.sort && { sort: options.sort }),
-      ...(options.asc && { ascending: true }),
-      ...(options.desc && { ascending: false }),
-      ...(options.app && { application: options.app }),
-      ...(options.applications && { applications: options.applications }),
-      ...(options.state && { state: options.state }),
+    const result = await listExperiments(client, {
+      ...options,
       type: options.type || getDefaultType(),
-      ...(options.search && { search: options.search }),
-      ...(options.unitTypes && { unit_types: options.unitTypes }),
-      ...(options.owners && { owners: options.owners }),
-      ...(options.teams && { teams: options.teams }),
-      ...(options.tags && { tags: options.tags }),
-      ...(options.ids && { ids: options.ids }),
-      ...(options.impact && { impact: options.impact }),
-      ...(options.confidence && { confidence: options.confidence }),
-      ...(options.iterations !== undefined && { iterations: options.iterations }),
-      ...(options.iterationsOf !== undefined && { iterations_of: options.iterationsOf }),
-      ...(createdAfter !== undefined && { created_after: createdAfter }),
-      ...(createdBefore !== undefined && { created_before: createdBefore }),
-      ...(startedAfter !== undefined && { started_after: startedAfter }),
-      ...(startedBefore !== undefined && { started_before: startedBefore }),
-      ...(stoppedAfter !== undefined && { stopped_after: stoppedAfter }),
-      ...(stoppedBefore !== undefined && { stopped_before: stoppedBefore }),
-      ...(options.analysisType && { analysis_type: options.analysisType }),
-      ...(options.runningType && { running_type: options.runningType }),
-      ...(alertFlag(options.alertSrm) !== undefined && { alert_srm: alertFlag(options.alertSrm) }),
-      ...(alertFlag(options.alertCleanupNeeded) !== undefined && { alert_cleanup_needed: alertFlag(options.alertCleanupNeeded) }),
-      ...(alertFlag(options.alertAudienceMismatch) !== undefined && { alert_audience_mismatch: alertFlag(options.alertAudienceMismatch) }),
-      ...(alertFlag(options.alertSampleSizeReached) !== undefined && { alert_sample_size_reached: alertFlag(options.alertSampleSizeReached) }),
-      ...(alertFlag(options.alertExperimentsInteract) !== undefined && { alert_experiments_interact: alertFlag(options.alertExperimentsInteract) }),
-      ...(alertFlag(options.alertGroupSequentialUpdated) !== undefined && { alert_group_sequential_updated: alertFlag(options.alertGroupSequentialUpdated) }),
-      ...(alertFlag(options.alertAssignmentConflict) !== undefined && { alert_assignment_conflict: alertFlag(options.alertAssignmentConflict) }),
-      ...(alertFlag(options.alertMetricThresholdReached) !== undefined && { alert_metric_threshold_reached: alertFlag(options.alertMetricThresholdReached) }),
-      ...(options.significance && { significance: options.significance }),
-    };
-
-    const experiments = await client.listExperiments(listOptions);
+      raw: globalOptions.raw,
+    });
 
     if (isStdoutPiped() && globalOptions.output === 'table') {
-      for (const exp of experiments) console.log(exp.id);
+      for (const exp of result.data) console.log((exp as Record<string, unknown>).id);
       return;
     }
 
     if (globalOptions.raw) {
-      printFormatted(experiments, globalOptions);
+      printFormatted(result.data, globalOptions);
     } else {
-      const extraFields = (options.show as string[] | undefined) ?? [];
-      const excludeFields = (options.exclude as string[] | undefined) ?? [];
-      const rows = (experiments as Array<Record<string, unknown>>).map(e => summarizeExperimentRow(e, extraFields, excludeFields));
-      printFormatted(rows, globalOptions);
+      printFormatted(result.rows, globalOptions);
     }
 
-    printPaginationFooter(experiments.length, options.items, options.page, globalOptions.output as string);
+    printPaginationFooter(result.data.length, options.items, options.page, globalOptions.output as string);
   }));

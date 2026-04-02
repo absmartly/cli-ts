@@ -2,118 +2,9 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import { select, confirm } from '@inquirer/prompts';
 import { getAPIClientFromOptions, getGlobalOptions, withErrorHandling } from '../../lib/utils/api-helper.js';
-import { parseExperimentId } from '../../lib/utils/validators.js';
-import type { APIClient } from '../../api-client/api-client.js';
 import type { ExperimentId } from '../../lib/api/branded-types.js';
-
-const VALID_REASONS = [
-  'hypothesis_rejected', 'hypothesis_iteration', 'user_feedback', 'data_issue',
-  'implementation_issue', 'experiment_setup_issue', 'guardrail_metric_impact',
-  'secondary_metric_impact', 'operational_decision', 'performance_issue',
-  'testing', 'tracking_issue', 'code_cleaned_up', 'other',
-] as const;
-
-const CONCURRENCY_LIMIT = 5;
-
-interface BulkOptions {
-  note?: string;
-  stdin?: boolean;
-  dryRun?: boolean;
-  state?: string;
-  app?: string;
-  yes?: boolean;
-}
-
-interface BulkResult {
-  id: ExperimentId;
-  name: string;
-  success: boolean;
-  error?: string;
-}
-
-import { isStdinPiped, readLinesFromStdin } from '../../lib/utils/stdin.js';
-
-async function readStdinIds(): Promise<ExperimentId[]> {
-  const lines = await readLinesFromStdin();
-  return lines.map(line => parseExperimentId(line));
-}
-
-async function collectIds(
-  client: APIClient,
-  rawIds: string[],
-  options: BulkOptions,
-): Promise<ExperimentId[]> {
-  if (options.stdin || (isStdinPiped() && rawIds.length === 0)) {
-    return readStdinIds();
-  }
-
-  if (rawIds.length > 0) {
-    return rawIds.map(id => parseExperimentId(id));
-  }
-
-  if (!options.state && !options.app) {
-    throw new Error('Provide experiment IDs, --stdin, or use --state / --app filters');
-  }
-
-  const listOptions: Record<string, string> = {};
-  if (options.state) listOptions.state = options.state;
-  if (options.app) listOptions.application = options.app;
-
-  const experiments = await client.listExperiments(listOptions);
-  return experiments.map(e => e.id);
-}
-
-async function fetchNames(
-  client: APIClient,
-  ids: ExperimentId[],
-): Promise<Map<ExperimentId, string>> {
-  const names = new Map<ExperimentId, string>();
-  const queue = [...ids];
-
-  async function worker() {
-    while (queue.length > 0) {
-      const id = queue.shift()!;
-      try {
-        const exp = await client.getExperiment(id);
-        names.set(id, exp.name);
-      } catch (e) {
-        if (process.env.DEBUG) console.error(`Warning: could not resolve name for experiment ${id}: ${e instanceof Error ? e.message : e}`);
-        names.set(id, `(unknown #${id})`);
-      }
-    }
-  }
-
-  const workers = Array.from({ length: Math.min(CONCURRENCY_LIMIT, ids.length) }, () => worker());
-  await Promise.all(workers);
-  return names;
-}
-
-async function runBulk<T>(
-  ids: ExperimentId[],
-  names: Map<ExperimentId, string>,
-  action: (id: ExperimentId) => Promise<T>,
-): Promise<BulkResult[]> {
-  const results: BulkResult[] = [];
-  const queue = [...ids];
-
-  async function worker() {
-    while (queue.length > 0) {
-      const id = queue.shift()!;
-      const name = names.get(id) ?? `#${id}`;
-      try {
-        await action(id);
-        results.push({ id, name, success: true });
-      } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        results.push({ id, name, success: false, error: message });
-      }
-    }
-  }
-
-  const workers = Array.from({ length: Math.min(CONCURRENCY_LIMIT, ids.length) }, () => worker());
-  await Promise.all(workers);
-  return results;
-}
+import { collectBulkIds, fetchBulkNames, bulkStart, bulkStop, bulkArchive, bulkDevelopment, bulkFullOn, type BulkResult } from '../../core/experiments/bulk.js';
+import { VALID_STOP_REASONS } from '../../core/experiments/stop.js';
 
 function printResults(results: BulkResult[], actionLabel: string) {
   const succeeded = results.filter(r => r.success);
@@ -140,6 +31,15 @@ function showSummary(ids: ExperimentId[], names: Map<ExperimentId, string>, acti
   console.log('');
 }
 
+interface BulkOptions {
+  note?: string;
+  stdin?: boolean;
+  dryRun?: boolean;
+  state?: string;
+  app?: string;
+  yes?: boolean;
+}
+
 function addSharedOptions(cmd: Command): Command {
   return cmd
     .option('--note <text>', 'activity log note')
@@ -160,13 +60,13 @@ bulkStartCommand.action(withErrorHandling(async (rawIds: string[], options: Bulk
   const globalOptions = getGlobalOptions(bulkStartCommand);
   const client = await getAPIClientFromOptions(globalOptions);
 
-  const ids = await collectIds(client, rawIds, options);
+  const ids = await collectBulkIds(client, rawIds, options);
   if (ids.length === 0) {
     console.log('No experiments matched.');
     return;
   }
 
-  const names = await fetchNames(client, ids);
+  const names = await fetchBulkNames(client, ids);
   showSummary(ids, names, 'start');
 
   if (options.dryRun) {
@@ -179,8 +79,8 @@ bulkStartCommand.action(withErrorHandling(async (rawIds: string[], options: Bulk
     if (!proceed) return;
   }
 
-  const results = await runBulk(ids, names, id => client.startExperiment(id, options.note));
-  printResults(results, 'started');
+  const result = await bulkStart(client, ids, names, options.note);
+  printResults(result.data.results, 'started');
 }));
 
 const bulkStopCommand = addSharedOptions(
@@ -194,18 +94,18 @@ bulkStopCommand.action(withErrorHandling(async (rawIds: string[], options: BulkO
   const globalOptions = getGlobalOptions(bulkStopCommand);
   const client = await getAPIClientFromOptions(globalOptions);
 
-  const ids = await collectIds(client, rawIds, options);
+  const ids = await collectBulkIds(client, rawIds, options);
   if (ids.length === 0) {
     console.log('No experiments matched.');
     return;
   }
 
-  const names = await fetchNames(client, ids);
+  const names = await fetchBulkNames(client, ids);
   showSummary(ids, names, 'stop');
 
   const reason = options.reason || await select({
     message: 'Reason for stopping',
-    choices: VALID_REASONS.map(r => ({ value: r, name: r.replace(/_/g, ' ') })),
+    choices: VALID_STOP_REASONS.map(r => ({ value: r, name: r.replace(/_/g, ' ') })),
   });
 
   if (options.dryRun) {
@@ -218,8 +118,8 @@ bulkStopCommand.action(withErrorHandling(async (rawIds: string[], options: BulkO
     if (!proceed) return;
   }
 
-  const results = await runBulk(ids, names, id => client.stopExperiment(id, reason, options.note));
-  printResults(results, 'stopped');
+  const result = await bulkStop(client, ids, names, reason, options.note);
+  printResults(result.data.results, 'stopped');
 }));
 
 const bulkArchiveCommand = addSharedOptions(
@@ -232,13 +132,13 @@ bulkArchiveCommand.action(withErrorHandling(async (rawIds: string[], options: Bu
   const globalOptions = getGlobalOptions(bulkArchiveCommand);
   const client = await getAPIClientFromOptions(globalOptions);
 
-  const ids = await collectIds(client, rawIds, options);
+  const ids = await collectBulkIds(client, rawIds, options);
   if (ids.length === 0) {
     console.log('No experiments matched.');
     return;
   }
 
-  const names = await fetchNames(client, ids);
+  const names = await fetchBulkNames(client, ids);
   showSummary(ids, names, 'archive');
 
   if (options.dryRun) {
@@ -251,8 +151,8 @@ bulkArchiveCommand.action(withErrorHandling(async (rawIds: string[], options: Bu
     if (!proceed) return;
   }
 
-  const results = await runBulk(ids, names, id => client.archiveExperiment(id, false, options.note));
-  printResults(results, 'archived');
+  const result = await bulkArchive(client, ids, names, options.note);
+  printResults(result.data.results, 'archived');
 }));
 
 const bulkDevelopmentCommand = addSharedOptions(
@@ -266,13 +166,13 @@ bulkDevelopmentCommand.action(withErrorHandling(async (rawIds: string[], options
   const globalOptions = getGlobalOptions(bulkDevelopmentCommand);
   const client = await getAPIClientFromOptions(globalOptions);
 
-  const ids = await collectIds(client, rawIds, options);
+  const ids = await collectBulkIds(client, rawIds, options);
   if (ids.length === 0) {
     console.log('No experiments matched.');
     return;
   }
 
-  const names = await fetchNames(client, ids);
+  const names = await fetchBulkNames(client, ids);
   showSummary(ids, names, 'development');
 
   if (options.dryRun) {
@@ -285,9 +185,8 @@ bulkDevelopmentCommand.action(withErrorHandling(async (rawIds: string[], options
     if (!proceed) return;
   }
 
-  const note = options.note ?? 'Bulk development via CLI';
-  const results = await runBulk(ids, names, id => client.developmentExperiment(id, note));
-  printResults(results, 'set to development');
+  const result = await bulkDevelopment(client, ids, names, options.note);
+  printResults(result.data.results, 'set to development');
 }));
 
 const bulkFullOnCommand = addSharedOptions(
@@ -307,13 +206,13 @@ bulkFullOnCommand.action(withErrorHandling(async (rawIds: string[], options: Bul
   const globalOptions = getGlobalOptions(bulkFullOnCommand);
   const client = await getAPIClientFromOptions(globalOptions);
 
-  const ids = await collectIds(client, rawIds, options);
+  const ids = await collectBulkIds(client, rawIds, options);
   if (ids.length === 0) {
     console.log('No experiments matched.');
     return;
   }
 
-  const names = await fetchNames(client, ids);
+  const names = await fetchBulkNames(client, ids);
   showSummary(ids, names, 'full-on');
 
   const variant = options.variant ?? await select({
@@ -331,9 +230,8 @@ bulkFullOnCommand.action(withErrorHandling(async (rawIds: string[], options: Bul
     if (!proceed) return;
   }
 
-  const note = options.note ?? 'Bulk full-on via CLI';
-  const results = await runBulk(ids, names, id => client.fullOnExperiment(id, variant, note));
-  printResults(results, `set to full-on (variant ${variant})`);
+  const result = await bulkFullOn(client, ids, names, variant, options.note);
+  printResults(result.data.results, `set to full-on (variant ${variant})`);
 }));
 
 export const bulkCommand = new Command('bulk')

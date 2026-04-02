@@ -3,11 +3,10 @@ import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, resolveAPIKey, resolveEndpoint, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseExperimentFile } from '../../lib/template/parser.js';
 import { buildPayloadFromTemplate } from '../../api-client/template/build-from-template.js';
-import { buildPayloadFromOptions } from '../../api-client/payload/build-from-options.js';
 import { runInteractiveEditor } from '../../lib/interactive/run.js';
-
 import { getDefaultType } from './default-type.js';
 import { registerCustomFieldOptions, extractCustomFieldValues } from './custom-field-options.js';
+import { buildCreatePayloadFromOptions, createExperiment } from '../../core/experiments/create.js';
 
 function shellEscape(s: string): string {
   return "'" + s.replace(/'/g, "'\\''") + "'";
@@ -87,10 +86,10 @@ createCommand.action(withErrorHandling(async (options) => {
         );
       }
       const ownerIds = options.owner?.map((id: string) => parseInt(id, 10));
-      data = await buildPayloadFromOptions({
+      data = await buildCreatePayloadFromOptions(client, {
         name: options.name,
         displayName: options.displayName,
-        type: getDefaultType(),
+        defaultType: getDefaultType(),
         state: options.state,
         variants: options.variants,
         variantConfig: options.variantConfig,
@@ -120,7 +119,7 @@ createCommand.action(withErrorHandling(async (options) => {
         groupSequentialFirstAnalysisInterval: options.gsFirstAnalysisInterval,
         groupSequentialMaxDurationInterval: options.gsMaxDurationInterval,
         customFields: extractCustomFieldValues(options, getDefaultType(), globalOptions.profile as string),
-      }, client);
+      });
     }
 
     if (options.dryRun) {
@@ -152,9 +151,9 @@ createCommand.action(withErrorHandling(async (options) => {
       return;
     }
 
-    const experiment = await client.createExperiment(data);
+    const result = await createExperiment(client, data);
 
-    console.log(chalk.green(`✓ Experiment created with ID: ${experiment.id}`));
-    console.log(`  Name: ${experiment.name}`);
-    console.log(`  Type: ${experiment.type}`);
+    console.log(chalk.green(`✓ Experiment created with ID: ${result.data.id}`));
+    console.log(`  Name: ${result.data.name}`);
+    console.log(`  Type: ${result.data.type}`);
   }));

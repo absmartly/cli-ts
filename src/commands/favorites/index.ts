@@ -3,6 +3,7 @@ import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseExperimentId, parseMetricId } from '../../lib/utils/validators.js';
 import type { ExperimentId, MetricId } from '../../lib/api/branded-types.js';
+import { addFavorite as coreAddFavorite, removeFavorite as coreRemoveFavorite } from '../../core/favorites/favorites.js';
 
 export const favoritesCommand = new Command('favorites')
   .alias('favorite')
@@ -17,17 +18,17 @@ const addCommand = new Command('add')
     const globalOptions = getGlobalOptions(addCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
+    let id: number;
     if (type === 'experiment') {
-      const id = parseExperimentId(idStr) as ExperimentId;
-      await client.favoriteExperiment(id, true);
-      console.log(chalk.green(`✓ Added experiment ${id} to favorites`));
+      id = parseExperimentId(idStr) as ExperimentId;
     } else if (type === 'metric') {
-      const id = parseMetricId(idStr) as MetricId;
-      await client.favoriteMetric(id, true);
-      console.log(chalk.green(`✓ Added metric ${id} to favorites`));
+      id = parseMetricId(idStr) as MetricId;
     } else {
       throw new Error(`Invalid type "${type}". Must be "experiment" or "metric".`);
     }
+
+    await coreAddFavorite(client, { type, id });
+    console.log(chalk.green(`✓ Added ${type} ${id} to favorites`));
   }));
 
 const removeCommand = new Command('remove')
@@ -38,17 +39,17 @@ const removeCommand = new Command('remove')
     const globalOptions = getGlobalOptions(removeCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
+    let id: number;
     if (type === 'experiment') {
-      const id = parseExperimentId(idStr) as ExperimentId;
-      await client.favoriteExperiment(id, false);
-      console.log(chalk.green(`✓ Removed experiment ${id} from favorites`));
+      id = parseExperimentId(idStr) as ExperimentId;
     } else if (type === 'metric') {
-      const id = parseMetricId(idStr) as MetricId;
-      await client.favoriteMetric(id, false);
-      console.log(chalk.green(`✓ Removed metric ${id} from favorites`));
+      id = parseMetricId(idStr) as MetricId;
     } else {
       throw new Error(`Invalid type "${type}". Must be "experiment" or "metric".`);
     }
+
+    await coreRemoveFavorite(client, { type, id });
+    console.log(chalk.green(`✓ Removed ${type} ${id} from favorites`));
   }));
 
 favoritesCommand.addCommand(addCommand);

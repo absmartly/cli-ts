@@ -1,9 +1,13 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
-import { parseEnvironmentId, requireAtLeastOneField } from '../../lib/utils/validators.js';
+import { parseEnvironmentId } from '../../lib/utils/validators.js';
 import { createListCommand } from '../../lib/utils/list-command.js';
 import type { EnvironmentId } from '../../lib/api/branded-types.js';
+import { getEnv } from '../../core/envs/get.js';
+import { createEnv } from '../../core/envs/create.js';
+import { updateEnv } from '../../core/envs/update.js';
+import { archiveEnv } from '../../core/envs/archive.js';
 
 export const envsCommand = new Command('envs')
   .alias('env')
@@ -22,9 +26,8 @@ const getCommand = new Command('get')
   .action(withErrorHandling(async (id: EnvironmentId) => {
     const globalOptions = getGlobalOptions(getCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-
-    const env = await client.getEnvironment(id);
-    printFormatted(env, globalOptions);
+    const result = await getEnv(client, { id });
+    printFormatted(result.data, globalOptions);
   }));
 
 const createCommand = new Command('create')
@@ -33,8 +36,8 @@ const createCommand = new Command('create')
   .action(withErrorHandling(async (options: { name: string }) => {
     const globalOptions = getGlobalOptions(createCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    const env = await client.createEnvironment({ name: options.name });
-    console.log(chalk.green(`✓ Environment created with ID: ${env.id}`));
+    const result = await createEnv(client, { name: options.name });
+    console.log(chalk.green(`✓ Environment created with ID: ${(result.data as Record<string, unknown>).id}`));
   }));
 
 const updateCommand = new Command('update')
@@ -44,10 +47,7 @@ const updateCommand = new Command('update')
   .action(withErrorHandling(async (id: EnvironmentId, options: { name?: string }) => {
     const globalOptions = getGlobalOptions(updateCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    const data: Record<string, unknown> = {};
-    if (options.name !== undefined) data.name = options.name;
-    requireAtLeastOneField(data, 'update field');
-    await client.updateEnvironment(id, data);
+    await updateEnv(client, { id, name: options.name });
     console.log(chalk.green(`✓ Environment ${id} updated`));
   }));
 
@@ -58,7 +58,7 @@ const archiveCommand = new Command('archive')
   .action(withErrorHandling(async (id: EnvironmentId, options: { unarchive?: boolean }) => {
     const globalOptions = getGlobalOptions(archiveCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    await client.archiveEnvironment(id, options.unarchive);
+    await archiveEnv(client, { id, unarchive: options.unarchive });
     const action = options.unarchive ? 'unarchived' : 'archived';
     console.log(chalk.green(`✓ Environment ${id} ${action}`));
   }));

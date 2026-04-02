@@ -2,23 +2,16 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseDateFlagOrUndefined } from '../../lib/utils/date-parser.js';
-
-function parseUnits(units: string[]): Array<{ unit_type_id: number; uid: string }> {
-  const parsed: Array<{ unit_type_id: number; uid: string }> = [];
-  for (const unit of units) {
-    const colonIndex = unit.indexOf(':');
-    if (colonIndex === -1) {
-      throw new Error(`Invalid unit format: "${unit}". Expected format: unit_type_id:uid`);
-    }
-    const unitTypeId = Number(unit.slice(0, colonIndex));
-    const uid = unit.slice(colonIndex + 1);
-    if (isNaN(unitTypeId)) {
-      throw new Error(`Invalid unit_type_id in "${unit}". Must be a number.`);
-    }
-    parsed.push({ unit_type_id: unitTypeId, uid });
-  }
-  return parsed;
-}
+import {
+  columnarToRows,
+  listEvents as coreListEvents,
+  listEventsHistory as coreListEventsHistory,
+  getEventUnitData as coreGetEventUnitData,
+  deleteEventUnitData as coreDeleteEventUnitData,
+  getEventJsonValues as coreGetEventJsonValues,
+  getEventJsonLayouts as coreGetEventJsonLayouts,
+  parseUnits,
+} from '../../core/events/events.js';
 
 function parseNumberArray(value: string, previous: number[]): number[] {
   return [...previous, Number(value)];
@@ -26,19 +19,6 @@ function parseNumberArray(value: string, previous: number[]): number[] {
 
 function parseStringArray(value: string, previous: string[]): string[] {
   return [...previous, value];
-}
-
-function columnarToRows(data: unknown): Record<string, unknown>[] {
-  const d = data as { columnNames?: string[]; rows?: unknown[][] };
-  if (!d || !Array.isArray(d.columnNames) || !Array.isArray(d.rows)) {
-    return Array.isArray(data) ? data as Record<string, unknown>[] : [];
-  }
-  const cols = d.columnNames;
-  return d.rows.map(row => {
-    const obj: Record<string, unknown> = {};
-    for (let i = 0; i < cols.length; i++) obj[cols[i]!] = row[i];
-    return obj;
-  });
 }
 
 export const eventsCommand = new Command('events')
@@ -62,26 +42,23 @@ const listCommand = new Command('list')
     const globalOptions = getGlobalOptions(listCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
-    const filters: Record<string, unknown> = {};
     const fromTs = parseDateFlagOrUndefined(options.from);
     const toTs = parseDateFlagOrUndefined(options.to);
-    if (fromTs !== undefined) filters.from = fromTs;
-    if (toTs !== undefined) filters.to = toTs;
-    if (options.app.length > 0) filters.applications = options.app;
-    if (options.unitType.length > 0) filters.unit_types = options.unitType;
-    if (options.eventType.length > 0) filters.event_types = options.eventType;
-    if (options.eventName.length > 0) filters.event_names = options.eventName;
-    if (options.unitUid.length > 0) filters.unit_uids = options.unitUid;
-    if (options.envType.length > 0) filters.environment_types = options.envType;
-    if (options.effectiveExposures) filters.effective_exposures = true;
 
-    const body: Record<string, unknown> = {};
-    if (Object.keys(filters).length > 0) body.filters = filters;
-    if (options.items !== undefined) body.take = options.items;
-    if (options.skip !== undefined) body.skip = options.skip;
-
-    const result = await client.listEvents(body as Parameters<typeof client.listEvents>[0]);
-    printFormatted(globalOptions.raw ? result : columnarToRows(result), globalOptions);
+    const result = await coreListEvents(client, {
+      from: fromTs,
+      to: toTs,
+      applications: options.app.length > 0 ? options.app : undefined,
+      unitTypes: options.unitType.length > 0 ? options.unitType : undefined,
+      eventTypes: options.eventType.length > 0 ? options.eventType : undefined,
+      eventNames: options.eventName.length > 0 ? options.eventName : undefined,
+      unitUids: options.unitUid.length > 0 ? options.unitUid : undefined,
+      environmentTypes: options.envType.length > 0 ? options.envType : undefined,
+      effectiveExposures: options.effectiveExposures || undefined,
+      take: options.items,
+      skip: options.skip,
+    });
+    printFormatted(globalOptions.raw ? result.data : columnarToRows(result.data), globalOptions);
   }));
 
 const historyCommand = new Command('history')
@@ -100,25 +77,22 @@ const historyCommand = new Command('history')
     const globalOptions = getGlobalOptions(historyCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
-    const filters: Record<string, unknown> = {};
     const fromTs = parseDateFlagOrUndefined(options.from);
     const toTs = parseDateFlagOrUndefined(options.to);
-    if (fromTs !== undefined) filters.from = fromTs;
-    if (toTs !== undefined) filters.to = toTs;
-    if (options.app.length > 0) filters.applications = options.app;
-    if (options.unitType.length > 0) filters.unit_types = options.unitType;
-    if (options.eventType.length > 0) filters.event_types = options.eventType;
-    if (options.eventName.length > 0) filters.event_names = options.eventName;
-    if (options.unitUid.length > 0) filters.unit_uids = options.unitUid;
-    if (options.envType.length > 0) filters.environment_types = options.envType;
 
-    const body: Record<string, unknown> = {};
-    if (Object.keys(filters).length > 0) body.filters = filters;
-    if (options.period !== undefined) body.period = options.period;
-    if (options.tzOffset !== undefined) body.tz_offset = options.tzOffset;
-
-    const result = await client.listEventsHistory(body as Parameters<typeof client.listEventsHistory>[0]);
-    printFormatted(globalOptions.raw ? result : columnarToRows(result), globalOptions);
+    const result = await coreListEventsHistory(client, {
+      from: fromTs,
+      to: toTs,
+      applications: options.app.length > 0 ? options.app : undefined,
+      unitTypes: options.unitType.length > 0 ? options.unitType : undefined,
+      eventTypes: options.eventType.length > 0 ? options.eventType : undefined,
+      eventNames: options.eventName.length > 0 ? options.eventName : undefined,
+      unitUids: options.unitUid.length > 0 ? options.unitUid : undefined,
+      environmentTypes: options.envType.length > 0 ? options.envType : undefined,
+      period: options.period,
+      tzOffset: options.tzOffset,
+    });
+    printFormatted(globalOptions.raw ? result.data : columnarToRows(result.data), globalOptions);
   }));
 
 const unitDataCommand = new Command('unit-data')
@@ -127,9 +101,8 @@ const unitDataCommand = new Command('unit-data')
   .action(withErrorHandling(async (units: string[]) => {
     const globalOptions = getGlobalOptions(unitDataCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    const parsed = parseUnits(units);
-    const result = await client.getEventUnitData({ units: parsed });
-    printFormatted(result, globalOptions);
+    const result = await coreGetEventUnitData(client, { units });
+    printFormatted(result.data, globalOptions);
   }));
 
 const deleteUnitDataCommand = new Command('delete-unit-data')
@@ -139,10 +112,10 @@ const deleteUnitDataCommand = new Command('delete-unit-data')
     const globalOptions = getGlobalOptions(deleteUnitDataCommand);
     const client = await getAPIClientFromOptions(globalOptions);
     const parsed = parseUnits(units);
-    const result = await client.deleteEventUnitData({ units: parsed });
+    const result = await coreDeleteEventUnitData(client, { units });
     console.log(chalk.green(`✓ Unit data deleted for ${parsed.length} unit(s)`));
-    if (result) {
-      printFormatted(result, globalOptions);
+    if (result.data) {
+      printFormatted(result.data, globalOptions);
     }
   }));
 
@@ -158,19 +131,18 @@ const jsonValuesCommand = new Command('json-values')
     const globalOptions = getGlobalOptions(jsonValuesCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
-    const body: Record<string, unknown> = {
-      event_type: options.eventType,
-      path: options.path,
-    };
-    if (options.experimentId !== undefined) body.experiment_id = options.experimentId;
-    if (options.goalId !== undefined) body.goal_id = options.goalId;
     const jvFrom = parseDateFlagOrUndefined(options.from);
     const jvTo = parseDateFlagOrUndefined(options.to);
-    if (jvFrom !== undefined) body.from = jvFrom;
-    if (jvTo !== undefined) body.to = jvTo;
 
-    const result = await client.getEventJsonValues(body as Parameters<typeof client.getEventJsonValues>[0]);
-    printFormatted(result, globalOptions);
+    const result = await coreGetEventJsonValues(client, {
+      eventType: options.eventType,
+      path: options.path,
+      experimentId: options.experimentId,
+      goalId: options.goalId,
+      from: jvFrom,
+      to: jvTo,
+    });
+    printFormatted(result.data, globalOptions);
   }));
 
 const jsonLayoutsCommand = new Command('json-layouts')
@@ -185,19 +157,18 @@ const jsonLayoutsCommand = new Command('json-layouts')
     const globalOptions = getGlobalOptions(jsonLayoutsCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
-    const body: Record<string, unknown> = {
-      source: options.source,
-      phase: options.phase,
-    };
-    if (options.prefix !== undefined) body.prefix = options.prefix;
-    if (options.sourceId !== undefined) body.source_id = options.sourceId;
     const jlFrom = parseDateFlagOrUndefined(options.from);
     const jlTo = parseDateFlagOrUndefined(options.to);
-    if (jlFrom !== undefined) body.from = jlFrom;
-    if (jlTo !== undefined) body.to = jlTo;
 
-    const result = await client.getEventJsonLayouts(body as Parameters<typeof client.getEventJsonLayouts>[0]);
-    printFormatted(result, globalOptions);
+    const result = await coreGetEventJsonLayouts(client, {
+      source: options.source,
+      phase: options.phase,
+      prefix: options.prefix,
+      sourceId: options.sourceId,
+      from: jlFrom,
+      to: jlTo,
+    });
+    printFormatted(result.data, globalOptions);
   }));
 
 eventsCommand.addCommand(listCommand);

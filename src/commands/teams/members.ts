@@ -3,6 +3,7 @@ import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseTeamId, parseUserId, parseRoleId } from '../../lib/utils/validators.js';
 import type { TeamId, UserId, RoleId } from '../../lib/api/branded-types.js';
+import { listTeamMembers, addTeamMembers, editTeamMemberRoles, removeTeamMembers } from '../../core/teams/members.js';
 
 function parseCommaSeparatedIds<T extends number>(
   value: string,
@@ -19,8 +20,8 @@ const listMembersCommand = new Command('list')
   .action(withErrorHandling(async (id: TeamId) => {
     const globalOptions = getGlobalOptions(listMembersCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    const members = await client.listTeamMembers(id);
-    printFormatted(members, globalOptions);
+    const result = await listTeamMembers(client, { id });
+    printFormatted(result.data, globalOptions);
   }));
 
 const addMembersCommand = new Command('add')
@@ -33,7 +34,7 @@ const addMembersCommand = new Command('add')
     const client = await getAPIClientFromOptions(globalOptions);
     const userIds = parseCommaSeparatedIds<UserId>(options.users, parseUserId);
     const roleIds = options.roles ? parseCommaSeparatedIds<RoleId>(options.roles, parseRoleId) : undefined;
-    await client.addTeamMembers(id, userIds, roleIds);
+    await addTeamMembers(client, { id, userIds, roleIds });
     console.log(chalk.green(`✓ Added ${userIds.length} member(s) to team ${id}`));
   }));
 
@@ -47,7 +48,7 @@ const editRolesCommand = new Command('edit-roles')
     const client = await getAPIClientFromOptions(globalOptions);
     const userIds = parseCommaSeparatedIds<UserId>(options.users, parseUserId);
     const roleIds = parseCommaSeparatedIds<RoleId>(options.roles, parseRoleId);
-    await client.editTeamMemberRoles(id, userIds, roleIds);
+    await editTeamMemberRoles(client, { id, userIds, roleIds });
     console.log(chalk.green(`✓ Updated roles for ${userIds.length} member(s) in team ${id}`));
   }));
 
@@ -59,7 +60,7 @@ const removeMembersCommand = new Command('remove')
     const globalOptions = getGlobalOptions(removeMembersCommand);
     const client = await getAPIClientFromOptions(globalOptions);
     const userIds = parseCommaSeparatedIds<UserId>(options.users, parseUserId);
-    await client.removeTeamMembers(id, userIds);
+    await removeTeamMembers(client, { id, userIds });
     console.log(chalk.green(`✓ Removed ${userIds.length} member(s) from team ${id}`));
   }));
 

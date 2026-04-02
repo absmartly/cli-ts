@@ -1,9 +1,13 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
-import { parseApplicationId, requireAtLeastOneField } from '../../lib/utils/validators.js';
+import { parseApplicationId } from '../../lib/utils/validators.js';
 import { createListCommand } from '../../lib/utils/list-command.js';
 import type { ApplicationId } from '../../lib/api/branded-types.js';
+import { getApp } from '../../core/apps/get.js';
+import { createApp } from '../../core/apps/create.js';
+import { updateApp } from '../../core/apps/update.js';
+import { archiveApp } from '../../core/apps/archive.js';
 
 export const appsCommand = new Command('apps')
   .alias('app')
@@ -32,9 +36,8 @@ const getCommand = new Command('get')
   .action(withErrorHandling(async (id: ApplicationId) => {
     const globalOptions = getGlobalOptions(getCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-
-    const app = await client.getApplication(id);
-    printFormatted(app, globalOptions);
+    const result = await getApp(client, { id });
+    printFormatted(result.data, globalOptions);
   }));
 
 const createCommand = new Command('create')
@@ -43,9 +46,8 @@ const createCommand = new Command('create')
   .action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(createCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-
-    const app = await client.createApplication({ name: options.name });
-    console.log(chalk.green(`✓ Application created with ID: ${app.id}`));
+    const result = await createApp(client, { name: options.name });
+    console.log(chalk.green(`✓ Application created with ID: ${(result.data as Record<string, unknown>).id}`));
   }));
 
 const updateCommand = new Command('update')
@@ -55,12 +57,7 @@ const updateCommand = new Command('update')
   .action(withErrorHandling(async (id: ApplicationId, options) => {
     const globalOptions = getGlobalOptions(updateCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-
-    const data: Record<string, unknown> = {};
-    if (options.name) data.name = options.name;
-
-    requireAtLeastOneField(data, 'update field');
-    await client.updateApplication(id, data);
+    await updateApp(client, { id, name: options.name });
     console.log(chalk.green(`✓ Application ${id} updated`));
   }));
 
@@ -71,8 +68,7 @@ const archiveCommand = new Command('archive')
   .action(withErrorHandling(async (id: ApplicationId, options) => {
     const globalOptions = getGlobalOptions(archiveCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-
-    await client.archiveApplication(id, options.unarchive);
+    await archiveApp(client, { id, unarchive: options.unarchive });
     const action = options.unarchive ? 'unarchived' : 'archived';
     console.log(chalk.green(`✓ Application ${id} ${action}`));
   }));

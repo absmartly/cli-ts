@@ -1,10 +1,14 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
-import { parseTeamId, requireAtLeastOneField } from '../../lib/utils/validators.js';
-import { applyShowExclude, summarizeTeam, summarizeTeamRow } from '../../api-client/entity-summary.js';
+import { parseTeamId } from '../../lib/utils/validators.js';
+import { summarizeTeamRow } from '../../api-client/entity-summary.js';
 import { createListCommand } from '../../lib/utils/list-command.js';
 import type { TeamId } from '../../lib/api/branded-types.js';
+import { getTeam } from '../../core/teams/get.js';
+import { createTeam } from '../../core/teams/create.js';
+import { updateTeam } from '../../core/teams/update.js';
+import { archiveTeam } from '../../core/teams/archive.js';
 
 export const teamsCommand = new Command('teams').alias('team').description('Team commands');
 
@@ -25,10 +29,8 @@ const getCommand = new Command('get')
     const client = await getAPIClientFromOptions(globalOptions);
     const show = (options.show as string[] | undefined) ?? [];
     const exclude = (options.exclude as string[] | undefined) ?? [];
-
-    const team = await client.getTeam(id);
-    const data = globalOptions.raw ? team : applyShowExclude(summarizeTeam(team as Record<string, unknown>), team as Record<string, unknown>, show, exclude);
-    printFormatted(data, globalOptions);
+    const result = await getTeam(client, { id, show, exclude, raw: globalOptions.raw });
+    printFormatted(result.data, globalOptions);
   }));
 
 const createCommand = new Command('create')
@@ -38,13 +40,11 @@ const createCommand = new Command('create')
   .action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(createCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-
-    const team = await client.createTeam({
+    const result = await createTeam(client, {
       name: options.name,
       description: options.description,
     });
-
-    console.log(chalk.green(`✓ Team created with ID: ${team.id}`));
+    console.log(chalk.green(`✓ Team created with ID: ${(result.data as Record<string, unknown>).id}`));
   }));
 
 const updateCommand = new Command('update')
@@ -54,12 +54,7 @@ const updateCommand = new Command('update')
   .action(withErrorHandling(async (id: TeamId, options) => {
     const globalOptions = getGlobalOptions(updateCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-
-    const data: Record<string, string> = {};
-    if (options.description !== undefined) data.description = options.description;
-
-    requireAtLeastOneField(data, 'update field');
-    await client.updateTeam(id, data);
+    await updateTeam(client, { id, description: options.description });
     console.log(chalk.green(`✓ Team ${id} updated`));
   }));
 
@@ -70,9 +65,7 @@ const archiveCommand = new Command('archive')
   .action(withErrorHandling(async (id: TeamId, options) => {
     const globalOptions = getGlobalOptions(archiveCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-
-    await client.archiveTeam(id, options.unarchive);
-
+    await archiveTeam(client, { id, unarchive: options.unarchive });
     const action = options.unarchive ? 'unarchived' : 'archived';
     console.log(chalk.green(`✓ Team ${id} ${action}`));
   }));

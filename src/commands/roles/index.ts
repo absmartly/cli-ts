@@ -1,9 +1,13 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
-import { parseRoleId, requireAtLeastOneField } from '../../lib/utils/validators.js';
+import { parseRoleId } from '../../lib/utils/validators.js';
 import { createListCommand } from '../../lib/utils/list-command.js';
 import type { RoleId } from '../../lib/api/branded-types.js';
+import { getRole } from '../../core/roles/get.js';
+import { createRole } from '../../core/roles/create.js';
+import { updateRole } from '../../core/roles/update.js';
+import { deleteRole } from '../../core/roles/delete.js';
 
 export const rolesCommand = new Command('roles').alias('role').description('Role commands');
 
@@ -18,9 +22,8 @@ const getCommand = new Command('get')
   .action(withErrorHandling(async (id: RoleId) => {
     const globalOptions = getGlobalOptions(getCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-
-    const role = await client.getRole(id);
-    printFormatted(role, globalOptions);
+    const result = await getRole(client, { id });
+    printFormatted(result.data, globalOptions);
   }));
 
 const createCommand = new Command('create')
@@ -30,13 +33,11 @@ const createCommand = new Command('create')
   .action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(createCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-
-    const role = await client.createRole({
+    const result = await createRole(client, {
       name: options.name,
       description: options.description,
     });
-
-    console.log(chalk.green(`✓ Role created with ID: ${role.id}`));
+    console.log(chalk.green(`✓ Role created with ID: ${(result.data as Record<string, unknown>).id}`));
   }));
 
 const updateCommand = new Command('update')
@@ -47,13 +48,11 @@ const updateCommand = new Command('update')
   .action(withErrorHandling(async (id: RoleId, options) => {
     const globalOptions = getGlobalOptions(updateCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-
-    const data: Record<string, string> = {};
-    if (options.name !== undefined) data.name = options.name;
-    if (options.description !== undefined) data.description = options.description;
-
-    requireAtLeastOneField(data, 'update field');
-    await client.updateRole(id, data);
+    await updateRole(client, {
+      id,
+      name: options.name,
+      description: options.description,
+    });
     console.log(chalk.green(`✓ Role ${id} updated`));
   }));
 
@@ -63,8 +62,7 @@ const deleteCommand = new Command('delete')
   .action(withErrorHandling(async (id: RoleId) => {
     const globalOptions = getGlobalOptions(deleteCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-
-    await client.deleteRole(id);
+    await deleteRole(client, { id });
     console.log(chalk.green(`✓ Role ${id} deleted`));
   }));
 

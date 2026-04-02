@@ -1,9 +1,14 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
-import { parseWebhookId, requireAtLeastOneField } from '../../lib/utils/validators.js';
+import { parseWebhookId } from '../../lib/utils/validators.js';
 import { createListCommand } from '../../lib/utils/list-command.js';
 import type { WebhookId } from '../../lib/api/branded-types.js';
+import { getWebhook } from '../../core/webhooks/get.js';
+import { createWebhook } from '../../core/webhooks/create.js';
+import { updateWebhook } from '../../core/webhooks/update.js';
+import { deleteWebhook } from '../../core/webhooks/delete.js';
+import { listWebhookEvents } from '../../core/webhooks/events.js';
 
 export const webhooksCommand = new Command('webhooks')
   .alias('webhook')
@@ -20,9 +25,8 @@ const getCommand = new Command('get')
   .action(withErrorHandling(async (id: WebhookId) => {
     const globalOptions = getGlobalOptions(getCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-
-    const webhook = await client.getWebhook(id);
-    printFormatted(webhook, globalOptions);
+    const result = await getWebhook(client, { id });
+    printFormatted(result.data, globalOptions);
   }));
 
 const createCommand = new Command('create')
@@ -37,17 +41,15 @@ const createCommand = new Command('create')
   .action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(createCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-
-    const webhook = await client.createWebhook({
+    const result = await createWebhook(client, {
       name: options.name,
       url: options.url,
       description: options.description,
       enabled: options.enabled,
       ordered: options.ordered,
-      max_retries: options.maxRetries,
+      maxRetries: options.maxRetries,
     });
-
-    console.log(chalk.green(`✓ Webhook created with ID: ${webhook.id}`));
+    console.log(chalk.green(`✓ Webhook created with ID: ${(result.data as Record<string, unknown>).id}`));
   }));
 
 const updateCommand = new Command('update')
@@ -62,17 +64,15 @@ const updateCommand = new Command('update')
   .action(withErrorHandling(async (id: WebhookId, options) => {
     const globalOptions = getGlobalOptions(updateCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-
-    const data: Record<string, string | boolean | number> = {};
-    if (options.name !== undefined) data.name = options.name;
-    if (options.url !== undefined) data.url = options.url;
-    if (options.description !== undefined) data.description = options.description;
-    if (options.enabled !== undefined) data.enabled = options.enabled;
-    if (options.ordered !== undefined) data.ordered = options.ordered;
-    if (options.maxRetries !== undefined) data.max_retries = options.maxRetries;
-
-    requireAtLeastOneField(data, 'update field');
-    await client.updateWebhook(id, data);
+    await updateWebhook(client, {
+      id,
+      name: options.name,
+      url: options.url,
+      description: options.description,
+      enabled: options.enabled,
+      ordered: options.ordered,
+      maxRetries: options.maxRetries,
+    });
     console.log(chalk.green(`✓ Webhook ${id} updated`));
   }));
 
@@ -82,19 +82,17 @@ const deleteCommand = new Command('delete')
   .action(withErrorHandling(async (id: WebhookId) => {
     const globalOptions = getGlobalOptions(deleteCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-
-    await client.deleteWebhook(id);
+    await deleteWebhook(client, { id });
     console.log(chalk.green(`✓ Webhook ${id} deleted`));
   }));
-
 
 const eventsCommand = new Command('events')
   .description('List webhook event types')
   .action(withErrorHandling(async () => {
     const globalOptions = getGlobalOptions(eventsCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    const events = await client.listWebhookEvents();
-    printFormatted(events, globalOptions);
+    const result = await listWebhookEvents(client);
+    printFormatted(result.data, globalOptions);
   }));
 
 webhooksCommand.addCommand(listCommand);

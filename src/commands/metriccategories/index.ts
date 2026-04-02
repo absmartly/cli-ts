@@ -1,9 +1,13 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
-import { parseTagId, requireAtLeastOneField } from '../../lib/utils/validators.js';
+import { parseTagId } from '../../lib/utils/validators.js';
 import { createListCommand } from '../../lib/utils/list-command.js';
 import type { TagId } from '../../lib/api/branded-types.js';
+import { getMetricCategory } from '../../core/metriccategories/get.js';
+import { createMetricCategory } from '../../core/metriccategories/create.js';
+import { updateMetricCategory } from '../../core/metriccategories/update.js';
+import { archiveMetricCategory } from '../../core/metriccategories/archive.js';
 
 export const metricCategoriesCommand = new Command('metric-categories')
   .alias('metriccategories')
@@ -23,9 +27,8 @@ const getCommand = new Command('get')
   .action(withErrorHandling(async (id: TagId) => {
     const globalOptions = getGlobalOptions(getCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-
-    const category = await client.getMetricCategory(id);
-    printFormatted(category, globalOptions);
+    const result = await getMetricCategory(client, { id });
+    printFormatted(result.data, globalOptions);
   }));
 
 const createCommand = new Command('create')
@@ -36,15 +39,13 @@ const createCommand = new Command('create')
   .action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(createCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-
-    const category = await client.createMetricCategory({
+    const result = await createMetricCategory(client, {
       name: options.name,
       description: options.description,
       color: options.color,
     });
-
     console.log(chalk.green('Metric category created successfully'));
-    printFormatted(category, globalOptions);
+    printFormatted(result.data, globalOptions);
   }));
 
 const updateCommand = new Command('update')
@@ -56,17 +57,14 @@ const updateCommand = new Command('update')
   .action(withErrorHandling(async (id: TagId, options) => {
     const globalOptions = getGlobalOptions(updateCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-
-    const data: { name?: string; description?: string; color?: string } = {};
-    if (options.name !== undefined) data.name = options.name;
-    if (options.description !== undefined) data.description = options.description;
-    if (options.color !== undefined) data.color = options.color;
-
-    requireAtLeastOneField(data, 'update field');
-    const category = await client.updateMetricCategory(id, data);
-
+    const result = await updateMetricCategory(client, {
+      id,
+      name: options.name,
+      description: options.description,
+      color: options.color,
+    });
     console.log(chalk.green('Metric category updated successfully'));
-    printFormatted(category, globalOptions);
+    printFormatted(result.data, globalOptions);
   }));
 
 const archiveCommand = new Command('archive')
@@ -76,8 +74,7 @@ const archiveCommand = new Command('archive')
   .action(withErrorHandling(async (id: TagId, options) => {
     const globalOptions = getGlobalOptions(archiveCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-
-    await client.archiveMetricCategory(id, !options.unarchive);
+    await archiveMetricCategory(client, { id, unarchive: options.unarchive });
     console.log(chalk.green(`Metric category ${options.unarchive ? 'unarchived' : 'archived'} successfully`));
   }));
 

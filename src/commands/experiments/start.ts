@@ -5,6 +5,7 @@ import { parseExperimentIdOrName } from './resolve-id.js';
 import { isStdinPiped, isStdoutPiped, readLinesFromStdin } from '../../lib/utils/stdin.js';
 import { resolveNote } from './resolve-note.js';
 import { getDefaultType } from './default-type.js';
+import { startExperiment } from '../../core/experiments/start.js';
 
 export const startCommand = new Command('start')
   .description('Start experiment(s). Reads IDs from stdin when piped.')
@@ -26,13 +27,12 @@ export const startCommand = new Command('start')
     for (const idStr of ids) {
       try {
         const id = await client.resolveExperimentId(idStr);
-        const experiment = await client.getExperiment(id);
-        if (experiment.state === 'created') {
+        const result = await startExperiment(client, { experimentId: id, note });
+        if (result.data.skipped) {
           console.error(chalk.yellow(`⚠ Experiment ${id} is in draft state, skipping`));
           if (outputPiped && options.passThrough) console.log(id);
           continue;
         }
-        await client.startExperiment(id, note);
         if (outputPiped) {
           console.log(id);
           console.error(chalk.green(`✓ Experiment ${id} started`));

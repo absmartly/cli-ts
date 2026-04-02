@@ -3,26 +3,12 @@ import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseExperimentId } from '../../lib/utils/validators.js';
 import type { ExperimentId } from '../../lib/api/branded-types.js';
-
-const VALID_TASKS = [
-  'preview_metrics',
-  'preview_summary',
-  'preview_group_sequential',
-  'preview_report_metrics',
-  'preview_participants_history',
-  'check_cleanup_needed',
-  'check_audience_mismatch',
-  'check_sample_size',
-  'check_sample_ratio_mismatch',
-  'check_interactions',
-  'check_assignment_conflict',
-  'check_metric_threshold',
-];
+import { requestUpdate, VALID_TASKS } from '../../core/experiments/request-update.js';
 
 function parseTasks(value: string): string[] {
   const tasks = value.split(',').map(t => t.trim()).filter(Boolean);
   for (const task of tasks) {
-    if (!VALID_TASKS.includes(task)) {
+    if (!(VALID_TASKS as readonly string[]).includes(task)) {
       throw new Error(`Invalid task: "${task}". Valid tasks: ${VALID_TASKS.join(', ')}`);
     }
   }
@@ -63,13 +49,10 @@ export const requestUpdateCommand = new Command('request-update')
     const globalOptions = getGlobalOptions(requestUpdateCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
-    let params: { replaceGroupSequentialAnalysis?: boolean; tasks?: string[] } | undefined;
-    if (options.tasks || options.replaceGsa) {
-      params = {};
-      if (options.tasks) params.tasks = options.tasks;
-      if (options.replaceGsa) params.replaceGroupSequentialAnalysis = true;
-    }
-
-    await client.requestExperimentUpdate(id, params);
+    await requestUpdate(client, {
+      experimentId: id,
+      tasks: options.tasks,
+      replaceGsa: options.replaceGsa,
+    });
     console.log(chalk.green(`✓ Analysis update requested for experiment ${id}`));
   }));

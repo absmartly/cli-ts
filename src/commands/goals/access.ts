@@ -3,6 +3,14 @@ import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseGoalId, parseUserId, parseTeamId, parseAssetRoleId } from '../../lib/utils/validators.js';
 import type { GoalId, UserId, TeamId, AssetRoleId } from '../../lib/api/branded-types.js';
+import {
+  listGoalAccessUsers,
+  grantGoalAccessUser,
+  revokeGoalAccessUser,
+  listGoalAccessTeams,
+  grantGoalAccessTeam,
+  revokeGoalAccessTeam,
+} from '../../core/goals/access.js';
 
 export const accessCommand = new Command('access').description('Manage goal access control');
 
@@ -12,8 +20,8 @@ const listUsersCommand = new Command('list-users')
   .action(withErrorHandling(async (id: GoalId) => {
     const globalOptions = getGlobalOptions(listUsersCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    const users = await client.listGoalAccessUsers(id);
-    printFormatted(users, globalOptions);
+    const result = await listGoalAccessUsers(client, { id });
+    printFormatted(result.data, globalOptions);
   }));
 
 const grantUserCommand = new Command('grant-user')
@@ -24,7 +32,7 @@ const grantUserCommand = new Command('grant-user')
   .action(withErrorHandling(async (id: GoalId, options: { user: UserId; role: AssetRoleId }) => {
     const globalOptions = getGlobalOptions(grantUserCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    await client.grantGoalAccessUser(id, options.user, options.role);
+    await grantGoalAccessUser(client, { id, userId: options.user, roleId: options.role });
     console.log(chalk.green(`✓ User ${options.user} granted access to goal ${id}`));
   }));
 
@@ -36,7 +44,7 @@ const revokeUserCommand = new Command('revoke-user')
   .action(withErrorHandling(async (id: GoalId, options: { user: UserId; role: AssetRoleId }) => {
     const globalOptions = getGlobalOptions(revokeUserCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    await client.revokeGoalAccessUser(id, options.user, options.role);
+    await revokeGoalAccessUser(client, { id, userId: options.user, roleId: options.role });
     console.log(chalk.green(`✓ User ${options.user} access revoked from goal ${id}`));
   }));
 
@@ -46,8 +54,8 @@ const listTeamsCommand = new Command('list-teams')
   .action(withErrorHandling(async (id: GoalId) => {
     const globalOptions = getGlobalOptions(listTeamsCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    const teams = await client.listGoalAccessTeams(id);
-    printFormatted(teams, globalOptions);
+    const result = await listGoalAccessTeams(client, { id });
+    printFormatted(result.data, globalOptions);
   }));
 
 const grantTeamCommand = new Command('grant-team')
@@ -58,7 +66,7 @@ const grantTeamCommand = new Command('grant-team')
   .action(withErrorHandling(async (id: GoalId, options: { team: TeamId; role: AssetRoleId }) => {
     const globalOptions = getGlobalOptions(grantTeamCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    await client.grantGoalAccessTeam(id, options.team, options.role);
+    await grantGoalAccessTeam(client, { id, teamId: options.team, roleId: options.role });
     console.log(chalk.green(`✓ Team ${options.team} granted access to goal ${id}`));
   }));
 
@@ -70,7 +78,7 @@ const revokeTeamCommand = new Command('revoke-team')
   .action(withErrorHandling(async (id: GoalId, options: { team: TeamId; role: AssetRoleId }) => {
     const globalOptions = getGlobalOptions(revokeTeamCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    await client.revokeGoalAccessTeam(id, options.team, options.role);
+    await revokeGoalAccessTeam(client, { id, teamId: options.team, roleId: options.role });
     console.log(chalk.green(`✓ Team ${options.team} access revoked from goal ${id}`));
   }));
 

@@ -3,6 +3,7 @@ import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseExperimentId, parseRecommendedActionId } from '../../lib/utils/validators.js';
 import type { ExperimentId, RecommendedActionId } from '../../lib/api/branded-types.js';
+import { listRecommendedActions, dismissRecommendedAction } from '../../core/experiments/recommendations.js';
 
 export const recommendationsCommand = new Command('recommendations').description('Experiment recommended action operations');
 
@@ -13,14 +14,14 @@ const listRecommendationsCommand = new Command('list')
     const globalOptions = getGlobalOptions(listRecommendationsCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
-    const actions = await client.listRecommendedActions(experimentId);
+    const result = await listRecommendedActions(client, { experimentId });
 
-    if (actions.length === 0) {
+    if (result.data.length === 0) {
       console.log(chalk.blue('ℹ No recommended actions found'));
       return;
     }
 
-    printFormatted(actions, globalOptions);
+    printFormatted(result.data, globalOptions);
   }));
 
 const dismissRecommendationCommand = new Command('dismiss')
@@ -30,7 +31,7 @@ const dismissRecommendationCommand = new Command('dismiss')
     const globalOptions = getGlobalOptions(dismissRecommendationCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
-    await client.dismissRecommendedAction(actionId);
+    await dismissRecommendedAction(client, { actionId });
     console.log(chalk.green(`✓ Recommended action ${actionId} dismissed`));
   }));
 

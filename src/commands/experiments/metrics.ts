@@ -2,10 +2,18 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseMetricId } from '../../lib/utils/validators.js';
-import { parseDateFlagOrUndefined } from '../../lib/utils/date-parser.js';
 import type { MetricId } from '../../lib/api/branded-types.js';
 import { parseExperimentIdOrName } from './resolve-id.js';
-import { extractMetricInfos, extractVariantNames, fetchAllMetricResults, formatResultRows, metricOwners, parseCachedMetricData, type MetricInfo } from '../../api-client/metric-results.js';
+import {
+  listExperimentMetrics,
+  addExperimentMetrics,
+  confirmMetricImpact,
+  excludeExperimentMetric,
+  includeExperimentMetric,
+  removeMetricImpact,
+  getMetricResults,
+  getMetricDeps,
+} from '../../core/experiments/metrics.js';
 
 export const metricsCommand = new Command('metrics')
   .description('Manage experiment metrics');
@@ -17,30 +25,15 @@ const listCommand = new Command('list')
     const globalOptions = getGlobalOptions(listCommand);
     const client = await getAPIClientFromOptions(globalOptions);
     const id = await client.resolveExperimentId(nameOrId);
-    const experiment = await client.getExperiment(id);
-    const exp = experiment as Record<string, unknown>;
 
-    const rows: Array<Record<string, unknown>> = [];
+    const result = await listExperimentMetrics(client, { experimentId: id });
 
-    const primary = exp.primary_metric as Record<string, unknown> | undefined;
-    if (primary) {
-      rows.push({ id: exp.primary_metric_id, name: primary.name, type: 'primary', owners: metricOwners(primary) });
-    }
-
-    const secondary = exp.secondary_metrics as Array<Record<string, unknown>> | undefined;
-    if (secondary) {
-      for (const m of secondary) {
-        const metric = m.metric as Record<string, unknown> | undefined;
-        rows.push({ id: m.metric_id, name: metric?.name || m.metric_id, type: m.type || 'secondary', owners: metricOwners(metric) });
-      }
-    }
-
-    if (rows.length === 0) {
+    if (result.data.length === 0) {
       console.error(chalk.blue('No metrics assigned to this experiment.'));
       return;
     }
 
-    printFormatted(rows, globalOptions);
+    printFormatted(result.data, globalOptions);
   }));
 
 const addCommand = new Command('add')
@@ -52,7 +45,7 @@ const addCommand = new Command('add')
     const client = await getAPIClientFromOptions(globalOptions);
     const id = await client.resolveExperimentId(nameOrId);
     const metricIds = options.metrics.split(',').map((s: string) => parseMetricId(s.trim()));
-    await client.addExperimentMetrics(id, metricIds);
+    await addExperimentMetrics(client, { experimentId: id, metricIds });
     console.log(chalk.green(`✓ Metrics added to experiment ${id}`));
   }));
 
@@ -64,7 +57,7 @@ const confirmImpactCommand = new Command('confirm-impact')
     const globalOptions = getGlobalOptions(confirmImpactCommand);
     const client = await getAPIClientFromOptions(globalOptions);
     const experimentId = await client.resolveExperimentId(experimentNameOrId);
-    await client.confirmMetricImpact(experimentId, metricId);
+    await confirmMetricImpact(client, { experimentId, metricId });
     console.log(chalk.green(`✓ Metric impact confirmed for experiment ${experimentId}, metric ${metricId}`));
   }));
 
@@ -76,7 +69,7 @@ const excludeCommand = new Command('exclude')
     const globalOptions = getGlobalOptions(excludeCommand);
     const client = await getAPIClientFromOptions(globalOptions);
     const experimentId = await client.resolveExperimentId(experimentNameOrId);
-    await client.excludeExperimentMetric(experimentId, metricId);
+    await excludeExperimentMetric(client, { experimentId, metricId });
     console.log(chalk.green(`✓ Metric ${metricId} excluded from experiment ${experimentId}`));
   }));
 
@@ -88,7 +81,7 @@ const includeCommand = new Command('include')
     const globalOptions = getGlobalOptions(includeCommand);
     const client = await getAPIClientFromOptions(globalOptions);
     const experimentId = await client.resolveExperimentId(experimentNameOrId);
-    await client.includeExperimentMetric(experimentId, metricId);
+    await includeExperimentMetric(client, { experimentId, metricId });
     console.log(chalk.green(`✓ Metric ${metricId} included in experiment ${experimentId}`));
   }));
 
@@ -100,7 +93,7 @@ const removeImpactCommand = new Command('remove-impact')
     const globalOptions = getGlobalOptions(removeImpactCommand);
     const client = await getAPIClientFromOptions(globalOptions);
     const experimentId = await client.resolveExperimentId(experimentNameOrId);
-    await client.removeMetricImpact(experimentId, metricId);
+    await removeMetricImpact(client, { experimentId, metricId });
     console.log(chalk.green(`✓ Metric impact removed for experiment ${experimentId}, metric ${metricId}`));
   }));
 
@@ -120,107 +113,53 @@ const resultsCommand = new Command('results')
     const client = await getAPIClientFromOptions(globalOptions);
     const id = await client.resolveExperimentId(nameOrId);
 
-    const experiment = await client.getExperiment(id);
-    const exp = experiment as Record<string, unknown>;
-    const variantNames = extractVariantNames(exp);
+    const result = await getMetricResults(client, {
+      experimentId: id,
+      metricId: options.metric,
+      segment: options.segment,
+      filter: options.filter,
+      from: options.from,
+      to: options.to,
+      cached: options.cached,
+      ciBar: options.ciBar,
+      variantIndex: options.variantIndex,
+      raw: globalOptions.raw,
+      outputFormat: globalOptions.output as string,
+    });
 
-    const metricInfos: MetricInfo[] = options.metric
-      ? [await (async () => {
-          const metric = await client.getMetric(options.metric);
-          const m = metric as Record<string, unknown>;
-          return { id: options.metric as MetricId, name: m.name as string ?? String(options.metric), type: 'custom', effect: m.effect as string };
-        })()]
-      : extractMetricInfos(exp);
-
-    if (metricInfos.length === 0) {
+    if (result.data.results.length === 0 && result.data.formattedRows.length === 0) {
       console.error(chalk.blue('No metrics assigned to this experiment.'));
       return;
     }
 
-    const formatOpts = { ciBar: options.ciBar, variantIndex: options.variantIndex };
-
-    if (options.cached) {
+    if (options.cached && !globalOptions.raw) {
       console.error(chalk.gray('Fetching cached previewer results...'));
-      const cached = await client.getExperimentMetricsCached(id);
-
-      if (globalOptions.raw) {
-        printFormatted(cached, globalOptions);
-        return;
-      }
-
-      const results = parseCachedMetricData(metricInfos, cached);
+      const meta = result.data.cachedMeta;
       const useStructured = globalOptions.output === 'json' || globalOptions.output === 'yaml';
       if (useStructured) {
-        printFormatted({ results, snapshot_data: cached.snapshot_data, pending_update_request: cached.pending_update_request }, globalOptions);
+        printFormatted({ results: result.data.results, snapshot_data: meta?.snapshotData, pending_update_request: meta?.pendingUpdateRequest }, globalOptions);
       } else {
-        if (cached.snapshot_data) {
-          const snap = cached.snapshot_data;
+        if (meta?.snapshotData) {
+          const snap = meta.snapshotData;
           if (snap.updated_at) console.error(chalk.gray(`Last updated: ${new Date(snap.updated_at as string).toLocaleString()}`));
         }
-        if (cached.pending_update_request) {
+        if (meta?.pendingUpdateRequest) {
           console.error(chalk.yellow('⏳ An update is currently pending'));
         }
-        const rows = results.flatMap(r => formatResultRows(r, variantNames, formatOpts));
-        printFormatted(rows, globalOptions);
+        printFormatted(result.data.formattedRows, globalOptions);
       }
       return;
     }
 
-    const baseFilters: Record<string, unknown> = {};
-    if (options.filter) baseFilters.segments = options.filter;
-    const fromTs = parseDateFlagOrUndefined(options.from);
-    const toTs = parseDateFlagOrUndefined(options.to);
-    if (fromTs !== undefined) baseFilters.from = fromTs;
-    if (toTs !== undefined) baseFilters.to = toTs;
-
-    let segmentIds: number[] = [];
-    if (options.segment) {
-      const segRefs = options.segment as string[];
-      const allSegments = await client.listSegments(200, 1);
-      for (const ref of segRefs) {
-        const asInt = parseInt(ref, 10);
-        if (!isNaN(asInt) && String(asInt) === ref.trim()) {
-          segmentIds.push(asInt);
-        } else {
-          const match = allSegments.find(s => (s as Record<string, unknown>).name?.toString().toLowerCase() === ref.toLowerCase());
-          if (!match) {
-            const available = allSegments.map(s => `  ${s.id} ${(s as Record<string, unknown>).name}`).join('\n');
-            throw new Error(`Segment "${ref}" not found. Available segments:\n${available}`);
-          }
-          segmentIds.push(match.id);
-        }
-      }
+    if (result.data.formattedRows.length > 0) {
+      console.error(chalk.gray(`Fetching results for metric(s)...`));
     }
 
-    const hasFilters = Object.keys(baseFilters).length > 0;
-
-    if (segmentIds.length <= 1) {
-      const body = segmentIds.length === 1
-        ? { segment_id: segmentIds[0], ...(hasFilters && { filters: baseFilters }) } as any
-        : hasFilters ? { filters: baseFilters } as any : undefined;
-
-      console.error(chalk.gray(`Fetching results for ${metricInfos.length} metric(s)...`));
-      const results = await fetchAllMetricResults(client, id, metricInfos, body);
-
-      const useRaw = globalOptions.output === 'json' || globalOptions.output === 'yaml';
-      if (useRaw) {
-        printFormatted(results, globalOptions);
-      } else {
-        const rows = results.flatMap(r => formatResultRows(r, variantNames, formatOpts));
-        printFormatted(rows, globalOptions);
-      }
+    const useRaw = globalOptions.output === 'json' || globalOptions.output === 'yaml';
+    if (useRaw && result.data.results.length > 0) {
+      printFormatted(result.data.results, globalOptions);
     } else {
-      console.error(chalk.gray(`Fetching results for ${metricInfos.length} metric(s) across ${segmentIds.length} segments...`));
-      const allRows: Record<string, unknown>[] = [];
-
-      for (const segId of segmentIds) {
-        const body = { segment_id: segId, ...(hasFilters && { filters: baseFilters }) } as any;
-        const results = await fetchAllMetricResults(client, id, metricInfos, body);
-        const rows = results.flatMap(r => formatResultRows(r, variantNames, formatOpts));
-        allRows.push(...rows);
-      }
-
-      printFormatted(allRows, globalOptions);
+      printFormatted(result.data.formattedRows, globalOptions);
     }
   }));
 
@@ -230,26 +169,21 @@ const depsCommand = new Command('deps')
   .action(withErrorHandling(async (metricId: MetricId) => {
     const globalOptions = getGlobalOptions(depsCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    const allUsages = await client.listMetricUsages();
 
-    const metric = allUsages.find((m: unknown) => {
-      const rec = m as Record<string, unknown>;
-      return rec.id === metricId;
-    }) as Record<string, unknown> | undefined;
+    const result = await getMetricDeps(client, { metricId });
 
-    if (!metric) {
+    if (!result.data) {
       console.error(chalk.yellow(`No usage data found for metric ${metricId}`));
       return;
     }
 
     const useRaw = globalOptions.output === 'json' || globalOptions.output === 'yaml';
     if (useRaw) {
-      printFormatted(metric, globalOptions);
+      printFormatted(result.data.metric, globalOptions);
       return;
     }
 
-    const meta = (metric.metric_shared_metadata ?? {}) as Record<string, unknown>;
-    const usage = (metric.usage ?? {}) as Record<string, Record<string, unknown>>;
+    const { meta, usage } = result.data;
     const allTime = usage.all_time ?? {};
     const lastMonth = usage.last_month ?? {};
     const last6Months = usage.last_6_months ?? {};

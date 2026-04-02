@@ -10,6 +10,16 @@ import { summarizeUser } from '../../api-client/user-summary.js';
 import { startOAuthFlow } from '../../lib/auth/oauth.js';
 import { createAPIClient } from '../../lib/api/client.js';
 import { ensureApiVersionPath } from '../../lib/utils/url.js';
+import {
+  whoami as coreWhoami,
+  createAuthApiKey as coreCreateAuthApiKey,
+  listAuthApiKeys as coreListAuthApiKeys,
+  getAuthApiKey as coreGetAuthApiKey,
+  updateAuthApiKey as coreUpdateAuthApiKey,
+  deleteAuthApiKey as coreDeleteAuthApiKey,
+  editProfile as coreEditProfile,
+  resetMyPassword as coreResetMyPassword,
+} from '../../core/auth/auth.js';
 
 export const authCommand = new Command('auth').description('Authentication commands');
 
@@ -242,9 +252,12 @@ const createApiKeyCommand = new Command('create-api-key')
     const globalOptions = getGlobalOptions(createApiKeyCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
-    const apiKey = await client.createUserApiKey(options.name, options.description);
-    console.log(chalk.green(`✓ API key created: ${apiKey.name}`));
-    console.log(`  Key: ${apiKey.key}`);
+    const result = await coreCreateAuthApiKey(client, {
+      name: options.name,
+      description: options.description,
+    });
+    console.log(chalk.green(`✓ API key created: ${result.data.name}`));
+    console.log(`  Key: ${result.data.key}`);
     console.log(chalk.yellow('  Save this key now — it cannot be retrieved later.'));
   }));
 
@@ -256,7 +269,8 @@ const whoamiCommand = new Command('whoami')
     const client = await getAPIClientFromOptions(globalOptions);
     const endpoint = resolveEndpoint(globalOptions);
 
-    const user = await client.getCurrentUser();
+    const result = await coreWhoami(client);
+    const user = result.data as any;
     const summary = summarizeUser(user, endpoint);
 
     console.log(`ID: ${summary.id}`);
@@ -283,8 +297,8 @@ const listApiKeysCommand = new Command('list-api-keys')
   .action(withErrorHandling(async () => {
     const globalOptions = getGlobalOptions(listApiKeysCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    const keys = await client.listUserApiKeys();
-    printFormatted(keys, globalOptions);
+    const result = await coreListAuthApiKeys(client);
+    printFormatted(result.data, globalOptions);
   }));
 
 const getApiKeyCommand = new Command('get-api-key')
@@ -293,8 +307,8 @@ const getApiKeyCommand = new Command('get-api-key')
   .action(withErrorHandling(async (id: number) => {
     const globalOptions = getGlobalOptions(getApiKeyCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    const key = await client.getUserApiKey(id);
-    printFormatted(key, globalOptions);
+    const result = await coreGetAuthApiKey(client, { id });
+    printFormatted(result.data, globalOptions);
   }));
 
 const updateApiKeyCommand = new Command('update-api-key')
@@ -305,10 +319,11 @@ const updateApiKeyCommand = new Command('update-api-key')
   .action(withErrorHandling(async (id: number, options) => {
     const globalOptions = getGlobalOptions(updateApiKeyCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    const data: { name?: string; description?: string } = {};
-    if (options.name !== undefined) data.name = options.name;
-    if (options.description !== undefined) data.description = options.description;
-    await client.updateUserApiKey(id, data);
+    await coreUpdateAuthApiKey(client, {
+      id,
+      name: options.name,
+      description: options.description,
+    });
     console.log(chalk.green(`✓ API key ${id} updated`));
   }));
 
@@ -318,7 +333,7 @@ const deleteApiKeyCommand = new Command('delete-api-key')
   .action(withErrorHandling(async (id: number) => {
     const globalOptions = getGlobalOptions(deleteApiKeyCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    await client.deleteUserApiKey(id);
+    await coreDeleteAuthApiKey(client, { id });
     console.log(chalk.green(`✓ API key ${id} deleted`));
   }));
 
@@ -331,13 +346,14 @@ const editProfileCommand = new Command('edit-profile')
   .action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(editProfileCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    const data: Record<string, string> = {};
-    if (options.firstName !== undefined) data.first_name = options.firstName;
-    if (options.lastName !== undefined) data.last_name = options.lastName;
-    if (options.department !== undefined) data.department = options.department;
-    if (options.jobTitle !== undefined) data.job_title = options.jobTitle;
-    const user = await client.updateCurrentUser(data);
+    const result = await coreEditProfile(client, {
+      firstName: options.firstName,
+      lastName: options.lastName,
+      department: options.department,
+      jobTitle: options.jobTitle,
+    });
     console.log(chalk.green(`✓ Profile updated`));
+    const user = result.data;
     const name = [user.first_name, user.last_name].filter(Boolean).join(' ');
     if (name) console.log(`  Name: ${name}`);
     if (user.department) console.log(`  Department: ${user.department}`);
@@ -358,9 +374,9 @@ const resetMyPasswordCommand = new Command('reset-my-password')
       throw new Error('Passwords do not match.');
     }
 
-    await client.updateCurrentUser({
-      old_password: oldPassword,
-      new_password: newPassword,
+    await coreResetMyPassword(client, {
+      oldPassword,
+      newPassword,
     });
 
     console.log(chalk.green('✓ Password changed successfully.'));

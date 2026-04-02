@@ -1,13 +1,15 @@
 import { Command } from 'commander';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
+import {
+  getVelocityInsights as coreGetVelocityInsights,
+  getDecisionInsights as coreGetDecisionInsights,
+  getVelocityInsightsDetail as coreGetVelocityInsightsDetail,
+  getDecisionInsightsHistory as coreGetDecisionInsightsHistory,
+} from '../../core/insights/insights.js';
 
 export const insightsCommand = new Command('insights')
   .alias('insight')
   .description('Insights commands');
-
-function toEpochSeconds(dateStr: string): number {
-  return Math.floor(new Date(dateStr).getTime() / 1000);
-}
 
 const velocityCommand = new Command('velocity')
   .description('Get velocity insights')
@@ -20,15 +22,15 @@ const velocityCommand = new Command('velocity')
   .action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(velocityCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    const result = await client.getVelocityInsights({
-      from: toEpochSeconds(options.from),
-      to: toEpochSeconds(options.to),
+    const result = await coreGetVelocityInsights(client, {
+      from: options.from,
+      to: options.to,
       aggregation: options.aggregation,
-      unit_type_ids: options.unitTypes?.split(',').map((s: string) => parseInt(s.trim(), 10)),
-      team_ids: options.teams?.split(',').map((s: string) => parseInt(s.trim(), 10)),
-      owner_ids: options.owners?.split(',').map((s: string) => parseInt(s.trim(), 10)),
+      unitTypeIds: options.unitTypes?.split(',').map((s: string) => parseInt(s.trim(), 10)),
+      teamIds: options.teams?.split(',').map((s: string) => parseInt(s.trim(), 10)),
+      ownerIds: options.owners?.split(',').map((s: string) => parseInt(s.trim(), 10)),
     });
-    printFormatted(result, globalOptions);
+    printFormatted(result.data, globalOptions);
   }));
 
 const decisionsCommand = new Command('decisions')
@@ -42,15 +44,15 @@ const decisionsCommand = new Command('decisions')
   .action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(decisionsCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    const result = await client.getDecisionInsights({
-      from: toEpochSeconds(options.from),
-      to: toEpochSeconds(options.to),
+    const result = await coreGetDecisionInsights(client, {
+      from: options.from,
+      to: options.to,
       aggregation: options.aggregation,
-      unit_type_ids: options.unitTypes?.split(',').map((s: string) => parseInt(s.trim(), 10)),
-      team_ids: options.teams?.split(',').map((s: string) => parseInt(s.trim(), 10)),
-      owner_ids: options.owners?.split(',').map((s: string) => parseInt(s.trim(), 10)),
+      unitTypeIds: options.unitTypes?.split(',').map((s: string) => parseInt(s.trim(), 10)),
+      teamIds: options.teams?.split(',').map((s: string) => parseInt(s.trim(), 10)),
+      ownerIds: options.owners?.split(',').map((s: string) => parseInt(s.trim(), 10)),
     });
-    printFormatted(result, globalOptions);
+    printFormatted(result.data, globalOptions);
   }));
 
 const velocityDetailCommand = new Command('velocity-detail')
@@ -63,14 +65,14 @@ const velocityDetailCommand = new Command('velocity-detail')
   .action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(velocityDetailCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    const result = await client.getVelocityInsightsDetail({
-      from: toEpochSeconds(options.from),
-      to: toEpochSeconds(options.to),
+    const result = await coreGetVelocityInsightsDetail(client, {
+      from: options.from,
+      to: options.to,
       aggregation: options.aggregation,
       teams: options.teams,
       applications: options.applications,
     });
-    printFormatted(result, globalOptions);
+    printFormatted(result.data, globalOptions);
   }));
 
 const decisionsHistoryCommand = new Command('decisions-history')
@@ -83,14 +85,14 @@ const decisionsHistoryCommand = new Command('decisions-history')
   .action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(decisionsHistoryCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-    const result = await client.getDecisionInsightsHistory({
-      from: toEpochSeconds(options.from),
-      to: toEpochSeconds(options.to),
+    const result = await coreGetDecisionInsightsHistory(client, {
+      from: options.from,
+      to: options.to,
       aggregation: options.aggregation,
       teams: options.teams,
       applications: options.applications,
     });
-    printFormatted(result, globalOptions);
+    printFormatted(result.data, globalOptions);
   }));
 
 insightsCommand.addCommand(velocityCommand);

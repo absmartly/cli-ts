@@ -3,6 +3,7 @@ import chalk from 'chalk';
 import Table from 'cli-table3';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { validateJSON } from '../../lib/utils/validators.js';
+import { getPowerMatrix as coreGetPowerMatrix } from '../../core/statistics/statistics.js';
 
 export const statisticsCommand = new Command('statistics')
   .aliases(['stats', 'stat'])
@@ -211,12 +212,13 @@ Examples:
       }
     }
 
-    const result = await client.getPowerAnalysisMatrix(config as Parameters<typeof client.getPowerAnalysisMatrix>[0]);
+    const result = await coreGetPowerMatrix(client, { config: config as Record<string, unknown> });
 
     if (globalOptions.raw || globalOptions.output === 'json' || globalOptions.output === 'yaml') {
-      printFormatted(result, globalOptions);
+      printFormatted(result.data, globalOptions);
     } else {
-      console.log(formatPowerMatrixTable(result.matrix, config, globalOptions.noColor ?? false));
+      const matrix = result.data as { matrix: number[][] };
+      console.log(formatPowerMatrixTable(matrix.matrix, config, globalOptions.noColor ?? false));
     }
   }));
 

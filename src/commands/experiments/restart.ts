@@ -1,31 +1,22 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, withErrorHandling } from '../../lib/utils/api-helper.js';
-import { parseExperimentFile } from '../../lib/template/parser.js';
-import { buildPayloadFromTemplate } from '../../api-client/template/build-from-template.js';
 import { experimentToMarkdown } from '../../api-client/template/serializer.js';
 import { parseExperimentMarkdown } from '../../api-client/template/parser.js';
+import { buildPayloadFromTemplate } from '../../api-client/template/build-from-template.js';
 import { runInteractiveEditor } from '../../lib/interactive/run.js';
 import type { ExperimentInput } from '../../api-client/index.js';
 import { parseExperimentIdOrName } from './resolve-id.js';
 import { getDefaultType } from './default-type.js';
 import { registerCustomFieldOptions, extractCustomFieldValues } from './custom-field-options.js';
-
-const VALID_REASONS = [
-  'hypothesis_rejected', 'hypothesis_iteration', 'user_feedback', 'data_issue',
-  'implementation_issue', 'experiment_setup_issue', 'guardrail_metric_impact',
-  'secondary_metric_impact', 'operational_decision', 'performance_issue',
-  'testing', 'tracking_issue', 'code_cleaned_up', 'other',
-] as const;
-
-const VALID_RESTART_TYPES = ['feature', 'experiment'] as const;
+import { validateRestartParams, buildRestartChanges, restartExperiment, VALID_RESTART_REASONS, VALID_RESTART_TYPES } from '../../core/experiments/restart.js';
 
 export const restartCommand = new Command('restart')
   .description('Restart a stopped experiment')
   .argument('<id>', 'experiment ID or name', parseExperimentIdOrName)
   .option('--from-file <path>', 'apply template changes before restarting')
   .option('--note <text>', 'note about the restart', 'Restarted via CLI')
-  .option('--reason <reason>', `reason for restart (${VALID_REASONS.join(', ')})`)
+  .option('--reason <reason>', `reason for restart (${VALID_RESTART_REASONS.join(', ')})`)
   .option('--reshuffle', 'reshuffle variant assignments')
   .option('--state <state>', 'target state: running or development', 'running')
   .option('--as-type <type>', `convert type on restart (${VALID_RESTART_TYPES.join(', ')})`);
@@ -41,26 +32,20 @@ restartCommand.action(withErrorHandling(async (nameOrId: string, options) => {
     const client = await getAPIClientFromOptions(globalOptions);
     const id = await client.resolveExperimentId(nameOrId);
 
-    if (options.reason && !VALID_REASONS.includes(options.reason)) {
-      throw new Error(
-        `Invalid reason: "${options.reason}"\n` +
-        `Valid reasons: ${VALID_REASONS.join(', ')}`
-      );
-    }
+    const params = {
+      experimentId: id,
+      note: options.note,
+      reason: options.reason,
+      reshuffle: options.reshuffle,
+      state: options.state,
+      asType: options.asType,
+      fromFile: options.fromFile,
+      defaultType: getDefaultType(),
+      customFieldValues: extractCustomFieldValues(options, getDefaultType(), globalOptions.profile as string),
+      profile: globalOptions.profile as string,
+    };
 
-    if (options.state && !['running', 'development'].includes(options.state)) {
-      throw new Error(
-        `Invalid state: "${options.state}"\n` +
-        `Valid states: running, development`
-      );
-    }
-
-    if (options.asType && !VALID_RESTART_TYPES.includes(options.asType)) {
-      throw new Error(
-        `Invalid type: "${options.asType}"\n` +
-        `Valid types: ${VALID_RESTART_TYPES.join(', ')}`
-      );
-    }
+    validateRestartParams(params);
 
     let changes: Partial<ExperimentInput> | undefined;
 
@@ -75,43 +60,13 @@ restartCommand.action(withErrorHandling(async (nameOrId: string, options) => {
         console.log(chalk.yellow(`Warning: ${warning}`));
       }
       changes = result.payload as Partial<ExperimentInput>;
-    } else if (options.fromFile) {
-      const newTemplate = parseExperimentFile(options.fromFile);
-
-      const result = await buildPayloadFromTemplate(client, newTemplate, options.asType || getDefaultType());
-
-      for (const warning of result.warnings) {
+    } else {
+      const built = await buildRestartChanges(client, params);
+      for (const warning of built.warnings) {
         console.log(chalk.yellow(`⚠ ${warning}`));
       }
-
-      changes = result.payload as Partial<ExperimentInput>;
+      changes = built.changes;
     }
-
-    const customFieldValues = extractCustomFieldValues(options, getDefaultType(), globalOptions.profile as string);
-    if (Object.keys(customFieldValues).length > 0) {
-      if (!changes) changes = {} as Partial<ExperimentInput>;
-      const allFields = await client.listCustomSectionFields();
-      const expType = getDefaultType();
-      const relevant = allFields.filter(f => !f.archived && f.custom_section?.type === expType && !f.custom_section?.archived);
-      const fieldValues: Record<string, { type: string; value: string }> = {};
-      for (const field of relevant) {
-        const title = (field as { title?: string }).title ?? field.name ?? '';
-        const cliValue = customFieldValues[title];
-        if (cliValue !== undefined) {
-          fieldValues[field.id] = { type: field.type, value: cliValue };
-        }
-      }
-      if (Object.keys(fieldValues).length > 0) {
-        (changes as Record<string, unknown>).custom_section_field_values = fieldValues;
-      }
-    }
-
-    const restartOptions: Parameters<typeof client.restartExperiment>[1] = { note: options.note };
-    if (options.reason) restartOptions.reason = options.reason;
-    if (options.reshuffle) restartOptions.reshuffle = true;
-    if (options.state) restartOptions.state = options.state;
-    if (options.asType) restartOptions.restart_as_type = options.asType;
-    if (changes) restartOptions.changes = changes;
 
     if (options.dryRun) {
       console.log(chalk.blue('Restart payload (dry-run):'));
@@ -127,7 +82,7 @@ restartCommand.action(withErrorHandling(async (nameOrId: string, options) => {
       return;
     }
 
-    const newExperiment = await client.restartExperiment(id, restartOptions);
+    const result = await restartExperiment(client, params, changes);
     const typeNote = options.asType ? ` as ${options.asType}` : '';
-    console.log(chalk.green(`Experiment ${id} restarted${typeNote} → new iteration ID: ${newExperiment.id}`));
+    console.log(chalk.green(`Experiment ${id} restarted${typeNote} → new iteration ID: ${result.data.newId}`));
   }));

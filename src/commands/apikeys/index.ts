@@ -1,9 +1,13 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
-import { parseApiKeyId, requireAtLeastOneField } from '../../lib/utils/validators.js';
+import { parseApiKeyId } from '../../lib/utils/validators.js';
 import { createListCommand } from '../../lib/utils/list-command.js';
 import type { ApiKeyId } from '../../lib/api/branded-types.js';
+import { getApiKey } from '../../core/apikeys/get.js';
+import { createApiKey } from '../../core/apikeys/create.js';
+import { updateApiKey } from '../../core/apikeys/update.js';
+import { deleteApiKey } from '../../core/apikeys/delete.js';
 
 export const apiKeysCommand = new Command('api-keys')
   .aliases(['apikeys', 'apikey', 'api-key'])
@@ -20,9 +24,8 @@ const getCommand = new Command('get')
   .action(withErrorHandling(async (id: ApiKeyId) => {
     const globalOptions = getGlobalOptions(getCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-
-    const apiKey = await client.getApiKey(id);
-    printFormatted(apiKey, globalOptions);
+    const result = await getApiKey(client, { id });
+    printFormatted(result.data, globalOptions);
   }));
 
 const createCommand = new Command('create')
@@ -33,17 +36,14 @@ const createCommand = new Command('create')
   .action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(createCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-
-    const apiKey = await client.createApiKey({
+    const result = await createApiKey(client, {
       name: options.name,
       description: options.description,
       permissions: options.permissions,
     });
-
-    const key = (apiKey as Record<string, unknown>).key as string | undefined;
-    console.log(chalk.green(`✓ API key created with ID: ${apiKey.id}`));
-    if (key) {
-      console.log(`  Key: ${key}`);
+    console.log(chalk.green(`✓ API key created with ID: ${result.data.id}`));
+    if (result.data.key) {
+      console.log(`  Key: ${result.data.key}`);
       console.log(chalk.yellow('  Save this key now — it cannot be retrieved later.'));
     }
   }));
@@ -56,13 +56,11 @@ const updateCommand = new Command('update')
   .action(withErrorHandling(async (id: ApiKeyId, options) => {
     const globalOptions = getGlobalOptions(updateCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-
-    const data: Record<string, string> = {};
-    if (options.name !== undefined) data.name = options.name;
-    if (options.description !== undefined) data.description = options.description;
-
-    requireAtLeastOneField(data, 'update field');
-    await client.updateApiKey(id, data);
+    await updateApiKey(client, {
+      id,
+      name: options.name,
+      description: options.description,
+    });
     console.log(chalk.green(`✓ API key ${id} updated`));
   }));
 
@@ -72,8 +70,7 @@ const deleteCommand = new Command('delete')
   .action(withErrorHandling(async (id: ApiKeyId) => {
     const globalOptions = getGlobalOptions(deleteCommand);
     const client = await getAPIClientFromOptions(globalOptions);
-
-    await client.deleteApiKey(id);
+    await deleteApiKey(client, { id });
     console.log(chalk.green(`✓ API key ${id} deleted`));
   }));
 

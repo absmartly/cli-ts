@@ -3,6 +3,7 @@ import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseExperimentId, parseAlertId } from '../../lib/utils/validators.js';
 import type { ExperimentId, AlertId } from '../../lib/api/branded-types.js';
+import { listExperimentAlerts, dismissAlert } from '../../core/experiments/alerts.js';
 
 export const alertsCommand = new Command('alerts').description('Experiment alert operations');
 
@@ -13,14 +14,14 @@ const listAlertsCommand = new Command('list')
     const globalOptions = getGlobalOptions(listAlertsCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
-    const alerts = await client.listExperimentAlerts(experimentId);
+    const result = await listExperimentAlerts(client, { experimentId });
 
-    if (alerts.length === 0) {
+    if (result.data.length === 0) {
       console.log(chalk.blue('ℹ No alerts found'));
       return;
     }
 
-    printFormatted(alerts, globalOptions);
+    printFormatted(result.data, globalOptions);
   }));
 
 const dismissAlertCommand = new Command('dismiss')
@@ -30,7 +31,7 @@ const dismissAlertCommand = new Command('dismiss')
     const globalOptions = getGlobalOptions(dismissAlertCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
-    await client.dismissAlert(alertId);
+    await dismissAlert(client, { alertId });
     console.log(chalk.green(`✓ Alert ${alertId} dismissed`));
   }));
 
