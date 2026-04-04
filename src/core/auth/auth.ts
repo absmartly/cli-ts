@@ -98,12 +98,9 @@ export async function resetMyPassword(
   client: APIClient,
   params: ResetMyPasswordParams,
 ): Promise<CommandResult<void>> {
-  if (params.newPassword !== params.newPassword) {
-    throw new Error('Passwords do not match.');
-  }
   await client.updateCurrentUser({
     old_password: params.oldPassword,
     new_password: params.newPassword,
-  } as any);
+  });
   return { data: undefined };
 }

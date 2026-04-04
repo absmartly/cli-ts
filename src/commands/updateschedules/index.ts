@@ -3,11 +3,7 @@ import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseUpdateScheduleId, validateJSON } from '../../lib/utils/validators.js';
 import type { UpdateScheduleId } from '../../lib/api/branded-types.js';
-import { listUpdateSchedules } from '../../core/updateschedules/list.js';
-import { getUpdateSchedule } from '../../core/updateschedules/get.js';
-import { createUpdateSchedule } from '../../core/updateschedules/create.js';
-import { updateUpdateSchedule } from '../../core/updateschedules/update.js';
-import { deleteUpdateSchedule } from '../../core/updateschedules/delete.js';
+import { listUpdateSchedules, getUpdateSchedule, createUpdateSchedule, updateUpdateSchedule, deleteUpdateSchedule } from '../../core/updateschedules/updateschedules.js';
 
 export const updateSchedulesCommand = new Command('update-schedules')
   .aliases(['updateschedules'])

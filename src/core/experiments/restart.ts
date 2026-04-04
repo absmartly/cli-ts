@@ -4,6 +4,7 @@ import type { CommandResult } from '../types.js';
 import type { ExperimentInput } from '../../api-client/index.js';
 import { parseExperimentFile } from '../../lib/template/parser.js';
 import { buildPayloadFromTemplate } from '../../api-client/template/build-from-template.js';
+import { resolveCustomFieldValues } from './resolve-custom-fields.js';
 
 export const VALID_RESTART_REASONS = [
   'hypothesis_rejected', 'hypothesis_iteration', 'user_feedback', 'data_issue',
@@ -24,7 +25,6 @@ export interface RestartExperimentParams {
   fromFile?: string;
   defaultType: string;
   customFieldValues?: Record<string, string>;
-  profile?: string;
 }
 
 export interface RestartExperimentResult {
@@ -69,17 +69,10 @@ export async function buildRestartChanges(
 
   if (params.customFieldValues && Object.keys(params.customFieldValues).length > 0) {
     if (!changes) changes = {} as Partial<ExperimentInput>;
-    const allFields = await client.listCustomSectionFields();
-    const expType = params.defaultType;
-    const relevant = allFields.filter(f => !f.archived && f.custom_section?.type === expType && !f.custom_section?.archived);
-    const fieldValues: Record<string, { type: string; value: string }> = {};
-    for (const field of relevant) {
-      const title = (field as { title?: string }).title ?? field.name ?? '';
-      const cliValue = params.customFieldValues[title];
-      if (cliValue !== undefined) {
-        fieldValues[field.id] = { type: field.type, value: cliValue };
-      }
-    }
+    const fieldValues = await resolveCustomFieldValues(client, {
+      customFieldValues: params.customFieldValues,
+      defaultType: params.defaultType,
+    });
     if (Object.keys(fieldValues).length > 0) {
       (changes as Record<string, unknown>).custom_section_field_values = fieldValues;
     }

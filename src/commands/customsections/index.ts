@@ -3,11 +3,7 @@ import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseCustomSectionId } from '../../lib/utils/validators.js';
 import type { CustomSectionId } from '../../lib/api/branded-types.js';
-import { listCustomSections } from '../../core/customsections/list.js';
-import { createCustomSection } from '../../core/customsections/create.js';
-import { updateCustomSection } from '../../core/customsections/update.js';
-import { archiveCustomSection } from '../../core/customsections/archive.js';
-import { reorderCustomSections } from '../../core/customsections/reorder.js';
+import { listCustomSections, createCustomSection, updateCustomSection, archiveCustomSection, reorderCustomSections } from '../../core/customsections/customsections.js';
 
 export const customSectionsCommand = new Command('custom-sections')
   .alias('customsections')

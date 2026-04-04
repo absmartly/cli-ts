@@ -1,6 +1,6 @@
 import type { APIClient } from '../../api-client/api-client.js';
 import type { CommandResult } from '../types.js';
-import type { Note, Experiment } from '../../api-client/types.js';
+import type { Note, Experiment, ListOptions } from '../../api-client/types.js';
 
 export interface ActivityNote {
   note: Note;
@@ -69,14 +69,14 @@ export async function fetchAllActivity(
   params: FetchActivityParams,
 ): Promise<ActivityNote[]> {
   const fetchCount = params.items ?? 20;
-  const listOptions: Record<string, unknown> = {
+  const listOptions: ListOptions = {
     sort: params.sort ?? 'updated_at',
     items: fetchCount,
   };
   if (params.state) listOptions.state = params.state;
   if (params.search) listOptions.search = params.search;
 
-  const experiments = await client.listExperiments(listOptions as any);
+  const experiments = await client.listExperiments(listOptions);
 
   const allNotes: ActivityNote[] = [];
 

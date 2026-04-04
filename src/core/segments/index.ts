@@ -1,10 +1,8 @@
-export { listSegments } from './list.js';
-export type { ListSegmentsParams } from './list.js';
-export { getSegment } from './get.js';
-export type { GetSegmentParams } from './get.js';
-export { createSegment } from './create.js';
-export type { CreateSegmentParams } from './create.js';
-export { updateSegment } from './update.js';
-export type { UpdateSegmentParams } from './update.js';
-export { deleteSegment } from './delete.js';
-export type { DeleteSegmentParams } from './delete.js';
+export { listSegments, getSegment, createSegment, updateSegment, deleteSegment } from './segments.js';
+export type {
+  ListSegmentsParams,
+  GetSegmentParams,
+  CreateSegmentParams,
+  UpdateSegmentParams,
+  DeleteSegmentParams,
+} from './segments.js';

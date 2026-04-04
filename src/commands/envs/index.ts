@@ -4,10 +4,7 @@ import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHan
 import { parseEnvironmentId } from '../../lib/utils/validators.js';
 import { createListCommand } from '../../lib/utils/list-command.js';
 import type { EnvironmentId } from '../../lib/api/branded-types.js';
-import { getEnv } from '../../core/envs/get.js';
-import { createEnv } from '../../core/envs/create.js';
-import { updateEnv } from '../../core/envs/update.js';
-import { archiveEnv } from '../../core/envs/archive.js';
+import { getEnv, createEnv, updateEnv, archiveEnv } from '../../core/envs/index.js';
 
 export const envsCommand = new Command('envs')
   .alias('env')

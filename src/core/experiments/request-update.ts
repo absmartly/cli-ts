@@ -25,7 +25,7 @@ export interface RequestUpdateParams {
 
 export function validateTasks(tasks: string[]): void {
   for (const task of tasks) {
-    if (!VALID_TASKS.includes(task as any)) {
+    if (!(VALID_TASKS as readonly string[]).includes(task)) {
       throw new Error(`Invalid task: "${task}". Valid tasks: ${VALID_TASKS.join(', ')}`);
     }
   }

@@ -4,10 +4,7 @@ import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHan
 import { parseTagId } from '../../lib/utils/validators.js';
 import { createListCommand } from '../../lib/utils/list-command.js';
 import type { TagId } from '../../lib/api/branded-types.js';
-import { getMetricTag } from '../../core/metrictags/get.js';
-import { createMetricTag } from '../../core/metrictags/create.js';
-import { updateMetricTag } from '../../core/metrictags/update.js';
-import { deleteMetricTag } from '../../core/metrictags/delete.js';
+import { getMetricTag, createMetricTag, updateMetricTag, deleteMetricTag } from '../../core/metrictags/index.js';
 
 export const metricTagsCommand = new Command('metric-tags')
   .alias('metrictags')

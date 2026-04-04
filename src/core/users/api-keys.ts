@@ -6,6 +6,9 @@ export async function resolveUserId(client: APIClient, userRef: string): Promise
   const asInt = parseInt(userRef, 10);
   if (!isNaN(asInt) && String(asInt) === userRef.trim()) return UserId(asInt);
   const resolved = await client.resolveUsers([userRef]);
+  if (!resolved || resolved.length === 0) {
+    throw new Error(`User "${userRef}" not found. Provide a valid user ID or email.`);
+  }
   return UserId(resolved[0]!.id);
 }
 
@@ -56,9 +59,9 @@ export async function createUserApiKey(
   params: CreateUserApiKeyParams,
 ): Promise<CommandResult<{ name: string; key: string }>> {
   const userId = await resolveUserId(client, params.userRef);
-  const payload: Record<string, string> = { name: params.name };
+  const payload: { name: string; description?: string } = { name: params.name };
   if (params.description !== undefined) payload.description = params.description;
-  const data = await client.createUserApiKeyByUserId(userId, payload as any);
+  const data = await client.createUserApiKeyByUserId(userId, payload);
   return { data: data as { name: string; key: string } };
 }
 

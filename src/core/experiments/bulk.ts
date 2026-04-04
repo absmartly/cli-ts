@@ -2,14 +2,13 @@ import type { APIClient } from '../../api-client/api-client.js';
 import type { CommandResult } from '../types.js';
 import type { ExperimentId } from '../../lib/api/branded-types.js';
 import { parseExperimentId } from '../../lib/utils/validators.js';
-import { isStdinPiped, readLinesFromStdin } from '../../lib/utils/stdin.js';
 
 const CONCURRENCY_LIMIT = 5;
 
 export interface BulkOperationParams {
   rawIds: string[];
   note?: string;
-  stdin?: boolean;
+  stdinIds?: ExperimentId[];
   state?: string;
   app?: string;
 }
@@ -28,18 +27,13 @@ export interface BulkOperationResult {
   total: number;
 }
 
-async function readStdinIds(): Promise<ExperimentId[]> {
-  const lines = await readLinesFromStdin();
-  return lines.map(line => parseExperimentId(line));
-}
-
 export async function collectBulkIds(
   client: APIClient,
   rawIds: string[],
-  options: { stdin?: boolean; state?: string; app?: string },
+  options: { stdinIds?: ExperimentId[] | undefined; state?: string | undefined; app?: string | undefined },
 ): Promise<ExperimentId[]> {
-  if (options.stdin || (isStdinPiped() && rawIds.length === 0)) {
-    return readStdinIds();
+  if (options.stdinIds && options.stdinIds.length > 0) {
+    return options.stdinIds;
   }
 
   if (rawIds.length > 0) {
@@ -71,8 +65,14 @@ export async function fetchBulkNames(
       try {
         const exp = await client.getExperiment(id);
         names.set(id, exp.name);
-      } catch {
-        names.set(id, `(unknown #${id})`);
+      } catch (err: unknown) {
+        const status = (err as { statusCode?: number }).statusCode
+          ?? (err as { status?: number }).status;
+        if (status === 404) {
+          names.set(id, `(unknown #${id})`);
+        } else {
+          throw err;
+        }
       }
     }
   }

@@ -3,8 +3,15 @@ import chalk from 'chalk';
 import { select, confirm } from '@inquirer/prompts';
 import { getAPIClientFromOptions, getGlobalOptions, withErrorHandling } from '../../lib/utils/api-helper.js';
 import type { ExperimentId } from '../../lib/api/branded-types.js';
+import { parseExperimentId } from '../../lib/utils/validators.js';
+import { isStdinPiped, readLinesFromStdin } from '../../lib/utils/stdin.js';
 import { collectBulkIds, fetchBulkNames, bulkStart, bulkStop, bulkArchive, bulkDevelopment, bulkFullOn, type BulkResult } from '../../core/experiments/bulk.js';
 import { VALID_STOP_REASONS } from '../../core/experiments/stop.js';
+
+async function readStdinIds(): Promise<ExperimentId[]> {
+  const lines = await readLinesFromStdin();
+  return lines.map(line => parseExperimentId(line));
+}
 
 function printResults(results: BulkResult[], actionLabel: string) {
   const succeeded = results.filter(r => r.success);
@@ -60,7 +67,8 @@ bulkStartCommand.action(withErrorHandling(async (rawIds: string[], options: Bulk
   const globalOptions = getGlobalOptions(bulkStartCommand);
   const client = await getAPIClientFromOptions(globalOptions);
 
-  const ids = await collectBulkIds(client, rawIds, options);
+  const stdinIds = (options.stdin || (isStdinPiped() && rawIds.length === 0)) ? await readStdinIds() : undefined;
+  const ids = await collectBulkIds(client, rawIds, { ...options, stdinIds });
   if (ids.length === 0) {
     console.log('No experiments matched.');
     return;
@@ -94,7 +102,8 @@ bulkStopCommand.action(withErrorHandling(async (rawIds: string[], options: BulkO
   const globalOptions = getGlobalOptions(bulkStopCommand);
   const client = await getAPIClientFromOptions(globalOptions);
 
-  const ids = await collectBulkIds(client, rawIds, options);
+  const stdinIds = (options.stdin || (isStdinPiped() && rawIds.length === 0)) ? await readStdinIds() : undefined;
+  const ids = await collectBulkIds(client, rawIds, { ...options, stdinIds });
   if (ids.length === 0) {
     console.log('No experiments matched.');
     return;
@@ -132,7 +141,8 @@ bulkArchiveCommand.action(withErrorHandling(async (rawIds: string[], options: Bu
   const globalOptions = getGlobalOptions(bulkArchiveCommand);
   const client = await getAPIClientFromOptions(globalOptions);
 
-  const ids = await collectBulkIds(client, rawIds, options);
+  const stdinIds = (options.stdin || (isStdinPiped() && rawIds.length === 0)) ? await readStdinIds() : undefined;
+  const ids = await collectBulkIds(client, rawIds, { ...options, stdinIds });
   if (ids.length === 0) {
     console.log('No experiments matched.');
     return;
@@ -166,7 +176,8 @@ bulkDevelopmentCommand.action(withErrorHandling(async (rawIds: string[], options
   const globalOptions = getGlobalOptions(bulkDevelopmentCommand);
   const client = await getAPIClientFromOptions(globalOptions);
 
-  const ids = await collectBulkIds(client, rawIds, options);
+  const stdinIds = (options.stdin || (isStdinPiped() && rawIds.length === 0)) ? await readStdinIds() : undefined;
+  const ids = await collectBulkIds(client, rawIds, { ...options, stdinIds });
   if (ids.length === 0) {
     console.log('No experiments matched.');
     return;
@@ -206,7 +217,8 @@ bulkFullOnCommand.action(withErrorHandling(async (rawIds: string[], options: Bul
   const globalOptions = getGlobalOptions(bulkFullOnCommand);
   const client = await getAPIClientFromOptions(globalOptions);
 
-  const ids = await collectBulkIds(client, rawIds, options);
+  const stdinIds = (options.stdin || (isStdinPiped() && rawIds.length === 0)) ? await readStdinIds() : undefined;
+  const ids = await collectBulkIds(client, rawIds, { ...options, stdinIds });
   if (ids.length === 0) {
     console.log('No experiments matched.');
     return;

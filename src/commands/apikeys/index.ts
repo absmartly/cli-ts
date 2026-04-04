@@ -4,10 +4,7 @@ import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHan
 import { parseApiKeyId } from '../../lib/utils/validators.js';
 import { createListCommand } from '../../lib/utils/list-command.js';
 import type { ApiKeyId } from '../../lib/api/branded-types.js';
-import { getApiKey } from '../../core/apikeys/get.js';
-import { createApiKey } from '../../core/apikeys/create.js';
-import { updateApiKey } from '../../core/apikeys/update.js';
-import { deleteApiKey } from '../../core/apikeys/delete.js';
+import { getApiKey, createApiKey, updateApiKey, deleteApiKey } from '../../core/apikeys/index.js';
 
 export const apiKeysCommand = new Command('api-keys')
   .aliases(['apikeys', 'apikey', 'api-key'])

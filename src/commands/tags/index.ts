@@ -4,10 +4,7 @@ import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHan
 import { parseTagId } from '../../lib/utils/validators.js';
 import { createListCommand } from '../../lib/utils/list-command.js';
 import type { TagId } from '../../lib/api/branded-types.js';
-import { getTag } from '../../core/tags/get.js';
-import { createTag } from '../../core/tags/create.js';
-import { updateTag } from '../../core/tags/update.js';
-import { deleteTag } from '../../core/tags/delete.js';
+import { getTag, createTag, updateTag, deleteTag } from '../../core/tags/index.js';
 
 export const tagsCommand = new Command('tags')
   .alias('tag')

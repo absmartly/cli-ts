@@ -4,10 +4,7 @@ import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHan
 import { parseUnitTypeId } from '../../lib/utils/validators.js';
 import { createListCommand } from '../../lib/utils/list-command.js';
 import type { UnitTypeId } from '../../lib/api/branded-types.js';
-import { getUnit } from '../../core/units/get.js';
-import { createUnit } from '../../core/units/create.js';
-import { updateUnit } from '../../core/units/update.js';
-import { archiveUnit } from '../../core/units/archive.js';
+import { getUnit, createUnit, updateUnit, archiveUnit } from '../../core/units/index.js';
 
 export const unitsCommand = new Command('units')
   .alias('unit')

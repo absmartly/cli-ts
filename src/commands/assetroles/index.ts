@@ -3,11 +3,7 @@ import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseAssetRoleId } from '../../lib/utils/validators.js';
 import type { AssetRoleId } from '../../lib/api/branded-types.js';
-import { listAssetRoles } from '../../core/assetroles/list.js';
-import { getAssetRole } from '../../core/assetroles/get.js';
-import { createAssetRole } from '../../core/assetroles/create.js';
-import { updateAssetRole } from '../../core/assetroles/update.js';
-import { deleteAssetRole } from '../../core/assetroles/delete.js';
+import { listAssetRoles, getAssetRole, createAssetRole, updateAssetRole, deleteAssetRole } from '../../core/assetroles/assetroles.js';
 
 export const assetRolesCommand = new Command('asset-roles')
   .alias('assetroles')

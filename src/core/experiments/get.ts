@@ -32,18 +32,14 @@ export async function getExperiment(
     activityNotes = await client.listExperimentActivity(params.experimentId);
   }
 
-  let data: unknown;
-  if (params.raw) {
-    data = params.activity ? { ...experiment, activity: activityNotes } : experiment;
-  } else {
-    let summary = summarizeExperiment(exp, extraFields, excludeFields);
-    if (params.activity) {
-      summary = { ...summary, activity: activityNotes };
-    }
-    data = summary;
-  }
-
   const summary = summarizeExperiment(exp, extraFields, excludeFields);
+
+  let detail: unknown;
+  if (params.raw) {
+    detail = params.activity ? { ...experiment, activity: activityNotes } : experiment;
+  } else {
+    detail = params.activity ? { ...summary, activity: activityNotes } : summary;
+  }
 
   return {
     data: {
@@ -51,6 +47,6 @@ export async function getExperiment(
       summary,
       ...(activityNotes !== undefined && { activity: activityNotes }),
     },
-    detail: data as Record<string, unknown>,
+    detail: detail as Record<string, unknown>,
   };
 }

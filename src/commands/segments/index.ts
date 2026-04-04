@@ -5,10 +5,7 @@ import { parseSegmentId } from '../../lib/utils/validators.js';
 import { summarizeSegmentRow } from '../../api-client/entity-summary.js';
 import { createListCommand } from '../../lib/utils/list-command.js';
 import type { SegmentId } from '../../lib/api/branded-types.js';
-import { getSegment } from '../../core/segments/get.js';
-import { createSegment } from '../../core/segments/create.js';
-import { updateSegment } from '../../core/segments/update.js';
-import { deleteSegment } from '../../core/segments/delete.js';
+import { getSegment, createSegment, updateSegment, deleteSegment } from '../../core/segments/index.js';
 
 export const segmentsCommand = new Command('segments')
   .alias('segment')

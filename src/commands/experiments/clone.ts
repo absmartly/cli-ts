@@ -1,5 +1,6 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
+import { readFileSync } from 'fs';
 import { getAPIClientFromOptions, getGlobalOptions, resolveEndpoint, resolveAPIKey, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { runInteractiveEditor } from '../../lib/interactive/run.js';
 import { parseExperimentId } from '../../lib/utils/validators.js';
@@ -37,7 +38,9 @@ export const cloneCommand = new Command('clone')
       name: options.name,
       displayName: options.displayName,
       state: options.state,
-      fromFile: options.fromFile,
+      overrideContent: options.fromFile
+        ? readFileSync(options.fromFile === '-' ? '/dev/stdin' : options.fromFile, 'utf8')
+        : undefined,
       defaultType: getDefaultType(),
       apiEndpoint,
       apiKey,

@@ -4,10 +4,7 @@ import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHan
 import { parseTagId } from '../../lib/utils/validators.js';
 import { createListCommand } from '../../lib/utils/list-command.js';
 import type { TagId } from '../../lib/api/branded-types.js';
-import { getGoalTag } from '../../core/goaltags/get.js';
-import { createGoalTag } from '../../core/goaltags/create.js';
-import { updateGoalTag } from '../../core/goaltags/update.js';
-import { deleteGoalTag } from '../../core/goaltags/delete.js';
+import { getGoalTag, createGoalTag, updateGoalTag, deleteGoalTag } from '../../core/goaltags/index.js';
 
 export const goalTagsCommand = new Command('goal-tags')
   .alias('goaltags')

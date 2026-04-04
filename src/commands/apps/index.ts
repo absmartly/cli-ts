@@ -4,10 +4,7 @@ import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHan
 import { parseApplicationId } from '../../lib/utils/validators.js';
 import { createListCommand } from '../../lib/utils/list-command.js';
 import type { ApplicationId } from '../../lib/api/branded-types.js';
-import { getApp } from '../../core/apps/get.js';
-import { createApp } from '../../core/apps/create.js';
-import { updateApp } from '../../core/apps/update.js';
-import { archiveApp } from '../../core/apps/archive.js';
+import { getApp, createApp, updateApp, archiveApp } from '../../core/apps/index.js';
 
 export const appsCommand = new Command('apps')
   .alias('app')

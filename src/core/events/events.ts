@@ -21,7 +21,11 @@ export function parseUnits(units: string[]): Array<{ unit_type_id: number; uid: 
 export function columnarToRows(data: unknown): Record<string, unknown>[] {
   const d = data as { columnNames?: string[]; rows?: unknown[][] };
   if (!d || !Array.isArray(d.columnNames) || !Array.isArray(d.rows)) {
-    return Array.isArray(data) ? data as Record<string, unknown>[] : [];
+    if (Array.isArray(data)) return data as Record<string, unknown>[];
+    if (data !== null && data !== undefined && typeof data === 'object') {
+      return [data as Record<string, unknown>];
+    }
+    return [];
   }
   const cols = d.columnNames;
   return d.rows.map(row => {

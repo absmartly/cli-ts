@@ -1,10 +1,14 @@
-export { listTags } from './list.js';
-export type { ListTagsParams } from './list.js';
-export { getTag } from './get.js';
-export type { GetTagParams } from './get.js';
-export { createTag } from './create.js';
-export type { CreateTagParams } from './create.js';
-export { updateTag } from './update.js';
-export type { UpdateTagParams } from './update.js';
-export { deleteTag } from './delete.js';
-export type { DeleteTagParams } from './delete.js';
+export {
+  listTags,
+  getTag,
+  createTag,
+  updateTag,
+  deleteTag,
+} from './tags.js';
+export type {
+  ListTagsParams,
+  GetTagParams,
+  CreateTagParams,
+  UpdateTagParams,
+  DeleteTagParams,
+} from './tags.js';

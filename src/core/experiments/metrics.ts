@@ -51,57 +51,44 @@ export async function addExperimentMetrics(
   return { data: { experimentId: params.experimentId } };
 }
 
-// --- Confirm impact ---
-export interface ConfirmMetricImpactParams {
+// --- Single-metric actions (confirm impact, exclude, include, remove impact) ---
+export interface ExperimentMetricActionParams {
   experimentId: ExperimentId;
   metricId: MetricId;
 }
 
+export type ConfirmMetricImpactParams = ExperimentMetricActionParams;
+export type ExcludeExperimentMetricParams = ExperimentMetricActionParams;
+export type IncludeExperimentMetricParams = ExperimentMetricActionParams;
+export type RemoveMetricImpactParams = ExperimentMetricActionParams;
+
 export async function confirmMetricImpact(
   client: APIClient,
-  params: ConfirmMetricImpactParams,
+  params: ExperimentMetricActionParams,
 ): Promise<CommandResult<{ experimentId: ExperimentId; metricId: MetricId }>> {
   await client.confirmMetricImpact(params.experimentId, params.metricId);
   return { data: { experimentId: params.experimentId, metricId: params.metricId } };
 }
 
-// --- Exclude metric ---
-export interface ExcludeExperimentMetricParams {
-  experimentId: ExperimentId;
-  metricId: MetricId;
-}
-
 export async function excludeExperimentMetric(
   client: APIClient,
-  params: ExcludeExperimentMetricParams,
+  params: ExperimentMetricActionParams,
 ): Promise<CommandResult<{ experimentId: ExperimentId; metricId: MetricId }>> {
   await client.excludeExperimentMetric(params.experimentId, params.metricId);
   return { data: { experimentId: params.experimentId, metricId: params.metricId } };
 }
 
-// --- Include metric ---
-export interface IncludeExperimentMetricParams {
-  experimentId: ExperimentId;
-  metricId: MetricId;
-}
-
 export async function includeExperimentMetric(
   client: APIClient,
-  params: IncludeExperimentMetricParams,
+  params: ExperimentMetricActionParams,
 ): Promise<CommandResult<{ experimentId: ExperimentId; metricId: MetricId }>> {
   await client.includeExperimentMetric(params.experimentId, params.metricId);
   return { data: { experimentId: params.experimentId, metricId: params.metricId } };
 }
 
-// --- Remove impact ---
-export interface RemoveMetricImpactParams {
-  experimentId: ExperimentId;
-  metricId: MetricId;
-}
-
 export async function removeMetricImpact(
   client: APIClient,
-  params: RemoveMetricImpactParams,
+  params: ExperimentMetricActionParams,
 ): Promise<CommandResult<{ experimentId: ExperimentId; metricId: MetricId }>> {
   await client.removeMetricImpact(params.experimentId, params.metricId);
   return { data: { experimentId: params.experimentId, metricId: params.metricId } };
@@ -186,7 +173,9 @@ export async function getMetricResults(
     };
   }
 
-  const baseFilters: Record<string, unknown> = {};
+  type MetricQueryBody = { segment_id?: number; segment_source?: string; filters?: { segments?: string; from?: number; to?: number } };
+
+  const baseFilters: { segments?: string; from?: number; to?: number } = {};
   if (params.filter) baseFilters.segments = params.filter;
   const fromTs = parseDateFlagOrUndefined(params.from);
   const toTs = parseDateFlagOrUndefined(params.to);
@@ -215,9 +204,13 @@ export async function getMetricResults(
   const hasFilters = Object.keys(baseFilters).length > 0;
 
   if (segmentIds.length <= 1) {
-    const body = segmentIds.length === 1
-      ? { segment_id: segmentIds[0], ...(hasFilters && { filters: baseFilters }) } as any
-      : hasFilters ? { filters: baseFilters } as any : undefined;
+    let body: MetricQueryBody | undefined;
+    if (segmentIds.length === 1) {
+      body = { segment_id: segmentIds[0]! };
+      if (hasFilters) body.filters = baseFilters;
+    } else if (hasFilters) {
+      body = { filters: baseFilters };
+    }
 
     const results = await fetchAllMetricResults(client, params.experimentId, metricInfos, body);
     const formattedRows = results.flatMap(r => formatResultRows(r, variantNames, formatOpts));
@@ -226,7 +219,8 @@ export async function getMetricResults(
     const allRows: Record<string, unknown>[] = [];
 
     for (const segId of segmentIds) {
-      const body = { segment_id: segId, ...(hasFilters && { filters: baseFilters }) } as any;
+      const body: MetricQueryBody = { segment_id: segId };
+      if (hasFilters) body.filters = baseFilters;
       const results = await fetchAllMetricResults(client, params.experimentId, metricInfos, body);
       const rows = results.flatMap(r => formatResultRows(r, variantNames, formatOpts));
       allRows.push(...rows);
@@ -259,7 +253,10 @@ export async function getMetricDeps(
   }) as Record<string, unknown> | undefined;
 
   if (!metric) {
-    return { data: null };
+    return {
+      data: null,
+      warnings: [`Metric ${params.metricId} not found in usage data. Verify the metric ID exists.`],
+    };
   }
 
   const meta = (metric.metric_shared_metadata ?? {}) as Record<string, unknown>;

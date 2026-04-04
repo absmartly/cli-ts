@@ -4,10 +4,7 @@ import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHan
 import { parseTagId } from '../../lib/utils/validators.js';
 import { createListCommand } from '../../lib/utils/list-command.js';
 import type { TagId } from '../../lib/api/branded-types.js';
-import { getMetricCategory } from '../../core/metriccategories/get.js';
-import { createMetricCategory } from '../../core/metriccategories/create.js';
-import { updateMetricCategory } from '../../core/metriccategories/update.js';
-import { archiveMetricCategory } from '../../core/metriccategories/archive.js';
+import { getMetricCategory, createMetricCategory, updateMetricCategory, archiveMetricCategory } from '../../core/metriccategories/index.js';
 
 export const metricCategoriesCommand = new Command('metric-categories')
   .alias('metriccategories')

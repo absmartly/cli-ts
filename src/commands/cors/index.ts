@@ -3,11 +3,7 @@ import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { parseCorsOriginId } from '../../lib/utils/validators.js';
 import type { CorsOriginId } from '../../lib/api/branded-types.js';
-import { listCorsOrigins } from '../../core/cors/list.js';
-import { getCorsOrigin } from '../../core/cors/get.js';
-import { createCorsOrigin } from '../../core/cors/create.js';
-import { updateCorsOrigin } from '../../core/cors/update.js';
-import { deleteCorsOrigin } from '../../core/cors/delete.js';
+import { listCorsOrigins, getCorsOrigin, createCorsOrigin, updateCorsOrigin, deleteCorsOrigin } from '../../core/cors/cors.js';
 
 export const corsCommand = new Command('cors')
   .description('CORS origins management');

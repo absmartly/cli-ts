@@ -1,10 +1,15 @@
-export { listApiKeys } from './list.js';
-export type { ListApiKeysParams } from './list.js';
-export { getApiKey } from './get.js';
-export type { GetApiKeyParams } from './get.js';
-export { createApiKey } from './create.js';
-export type { CreateApiKeyParams, CreateApiKeyResult } from './create.js';
-export { updateApiKey } from './update.js';
-export type { UpdateApiKeyParams } from './update.js';
-export { deleteApiKey } from './delete.js';
-export type { DeleteApiKeyParams } from './delete.js';
+export {
+  listApiKeys,
+  getApiKey,
+  createApiKey,
+  updateApiKey,
+  deleteApiKey,
+} from './apikeys.js';
+export type {
+  ListApiKeysParams,
+  GetApiKeyParams,
+  CreateApiKeyParams,
+  CreateApiKeyResult,
+  UpdateApiKeyParams,
+  DeleteApiKeyParams,
+} from './apikeys.js';

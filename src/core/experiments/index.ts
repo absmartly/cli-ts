@@ -4,11 +4,11 @@ export type { ListExperimentsParams } from './list.js';
 export { getExperiment } from './get.js';
 export type { GetExperimentParams, GetExperimentData } from './get.js';
 
-export { buildCreatePayloadFromOptions, createExperiment } from './create.js';
-export type { CreateExperimentFromOptionsParams, CreateExperimentResult } from './create.js';
+export { buildCreatePayloadFromOptions, createExperiment, createExperimentFromTemplate } from './create.js';
+export type { CreateExperimentFromOptionsParams, CreateExperimentResult, CreateExperimentFromTemplateParams } from './create.js';
 
 export { buildUpdateChanges, updateExperiment } from './update.js';
-export type { UpdateExperimentParams } from './update.js';
+export type { UpdateExperimentParams, UpdateExperimentActionParams } from './update.js';
 
 export { startExperiment } from './start.js';
 export type { StartExperimentParams, StartExperimentResult } from './start.js';
@@ -50,7 +50,7 @@ export { createScheduledAction, deleteScheduledAction, validateScheduleParams, V
 export type { CreateScheduledActionParams, CreateScheduledActionResult, DeleteScheduledActionParams } from './schedule.js';
 
 export { listExperimentMetrics, addExperimentMetrics, confirmMetricImpact, excludeExperimentMetric, includeExperimentMetric, removeMetricImpact, getMetricResults, getMetricDeps } from './metrics.js';
-export type { ListExperimentMetricsParams, AddExperimentMetricsParams, ConfirmMetricImpactParams, ExcludeExperimentMetricParams, IncludeExperimentMetricParams, RemoveMetricImpactParams, MetricResultsParams, MetricResultsData, MetricDepsParams, MetricDepsData } from './metrics.js';
+export type { ListExperimentMetricsParams, AddExperimentMetricsParams, ExperimentMetricActionParams, ConfirmMetricImpactParams, ExcludeExperimentMetricParams, IncludeExperimentMetricParams, RemoveMetricImpactParams, MetricResultsParams, MetricResultsData, MetricDepsParams, MetricDepsData } from './metrics.js';
 
 export { listAnnotations, createAnnotation, updateAnnotation, archiveAnnotation } from './annotations.js';
 export type { ListAnnotationsParams, CreateAnnotationParams, UpdateAnnotationParams, ArchiveAnnotationParams } from './annotations.js';
@@ -87,3 +87,6 @@ export type { ListCustomFieldsParams, GetCustomFieldParams, CreateCustomFieldPar
 
 export { listExperimentActivity, createExperimentNote, editExperimentNote, replyToExperimentNote } from './activity.js';
 export type { ListExperimentActivityParams, CreateExperimentNoteParams, EditExperimentNoteParams, ReplyToExperimentNoteParams } from './activity.js';
+
+export { resolveCustomFieldValues } from './resolve-custom-fields.js';
+export type { ResolveCustomFieldValuesParams } from './resolve-custom-fields.js';

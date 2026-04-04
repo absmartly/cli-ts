@@ -13,7 +13,7 @@ export type StopReason = typeof VALID_STOP_REASONS[number];
 
 export interface StopExperimentParams {
   experimentId: ExperimentId;
-  reason: string;
+  reason: StopReason;
   note?: string | undefined;
 }
 
@@ -21,6 +21,12 @@ export async function stopExperiment(
   client: APIClient,
   params: StopExperimentParams,
 ): Promise<CommandResult<{ id: ExperimentId }>> {
+  if (!(VALID_STOP_REASONS as readonly string[]).includes(params.reason)) {
+    throw new Error(
+      `Invalid reason: "${params.reason}"\n` +
+      `Valid reasons: ${VALID_STOP_REASONS.join(', ')}`
+    );
+  }
   await client.stopExperiment(params.experimentId, params.reason, params.note);
   return {
     data: { id: params.experimentId },

@@ -2,9 +2,7 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { validateJSON } from '../../lib/utils/validators.js';
-import { listPlatformConfigs } from '../../core/platformconfig/list.js';
-import { getPlatformConfig } from '../../core/platformconfig/get.js';
-import { updatePlatformConfig } from '../../core/platformconfig/update.js';
+import { listPlatformConfigs, getPlatformConfig, updatePlatformConfig } from '../../core/platformconfig/platformconfig.js';
 
 export const platformConfigCommand = new Command('platform-config')
   .aliases(['platformconfig', 'platform-configs'])

@@ -4,10 +4,7 @@ import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHan
 import { parseRoleId } from '../../lib/utils/validators.js';
 import { createListCommand } from '../../lib/utils/list-command.js';
 import type { RoleId } from '../../lib/api/branded-types.js';
-import { getRole } from '../../core/roles/get.js';
-import { createRole } from '../../core/roles/create.js';
-import { updateRole } from '../../core/roles/update.js';
-import { deleteRole } from '../../core/roles/delete.js';
+import { getRole, createRole, updateRole, deleteRole } from '../../core/roles/index.js';
 
 export const rolesCommand = new Command('roles').alias('role').description('Role commands');
 

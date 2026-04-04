@@ -2,6 +2,22 @@
 
 Command-line interface for managing experiments, feature flags, and A/B tests on the [ABSmartly](https://absmartly.com) platform.
 
+## Project status
+
+> **This project is experimental.** The core architecture is settled, but the API surface may change between releases.
+
+| Area | Status |
+|---|---|
+| Experiment commands (list, get, create, update, start, stop, restart, clone, bulk) | Stable — well tested |
+| Metric results, CI bars, segment breakdowns | Stable |
+| Template round-trip (export → edit → create/update) | Stable |
+| Core layer (`@absmartly/cli/core/*`) for programmatic use | Stable — 444 unit tests |
+| Admin commands (tags, roles, teams, users, webhooks, etc.) | Mostly stable — less battle-tested |
+| OAuth authentication | Working — tested against live API |
+| Interactive editor (`--interactive` / `-i` flag) | **Experimental** — known issues, not production-ready |
+| Shell completions | Working — may have gaps |
+| Unix pipe composition | Stable |
+
 ```bash
 npm install -g @absmartly/cli
 ```
@@ -35,13 +51,42 @@ abs experiments get 123
 
 The CLI stores credentials in your OS keychain (via keytar) and configuration in `~/.config/absmartly/config.yaml`. On headless systems without a keychain service, credentials fall back to `~/.config/absmartly/credentials.json` (chmod 600).
 
+Two authentication methods are supported:
+
+### API key authentication
+
 ```bash
 # Login with API key
 abs auth login --api-key YOUR_KEY --endpoint https://your-instance.absmartly.com/v1
 
 # Login with a named profile
 abs auth login --api-key YOUR_KEY --endpoint https://staging.absmartly.com/v1 --profile staging
+```
 
+### OAuth authentication
+
+When no `--api-key` is provided, the CLI launches an OAuth browser flow. After authorization, it can either create a persistent API key (default) or use session-based JWT tokens.
+
+```bash
+# OAuth login (opens browser, creates persistent API key)
+abs auth login --endpoint https://your-instance.absmartly.com/v1
+
+# OAuth with session-based JWT tokens (no persistent key, expires in 24h)
+abs auth login --endpoint https://your-instance.absmartly.com/v1 --session
+
+# Skip prompt and always create persistent API key
+abs auth login --endpoint https://your-instance.absmartly.com/v1 --persistent
+
+# Headless environments (print URL instead of opening browser)
+abs auth login --endpoint https://your-instance.absmartly.com/v1 --no-browser
+
+# Allow self-signed TLS certificates
+abs auth login --endpoint https://dev.local/v1 -k
+```
+
+### Auth commands
+
+```bash
 # Check authentication status
 abs auth status
 abs auth status --show-key    # reveal full API key
@@ -54,12 +99,16 @@ abs auth whoami --avatar 30    # avatar at 30 columns wide
 
 # Manage personal API keys
 abs auth list-api-keys
+abs auth create-api-key --name "CI Key" --description "For CI/CD pipelines"
 abs auth get-api-key 1
 abs auth update-api-key 1 --name "Renamed Key"
 abs auth delete-api-key 1
 
 # Edit your profile
 abs auth edit-profile --first-name "Jonas" --last-name "Alves" --department "Engineering"
+
+# Change your own password
+abs auth reset-my-password
 
 # Logout
 abs auth logout
@@ -259,6 +308,7 @@ abs experiments request-update 123 --tasks preview_group_sequential --replace-gs
 
 # Schedule future actions
 abs experiments schedule create 123 --action start --at 2026-04-01T10:00:00Z
+abs experiments schedule create 123 --action stop --at 2026-04-15T18:00:00+02:00 --reason testing
 abs experiments schedule delete 123 456
 
 # Compare experiments
@@ -456,6 +506,57 @@ abs experiments metrics results 123 --from 7d --to now
 abs activity-feed list --since 1h
 abs events list --from 2w --to yesterday
 ```
+
+#### Valid reasons for stop and restart
+
+The `--reason` option for `stop` and `restart` accepts these values:
+
+| Reason | Description |
+|---|---|
+| `hypothesis_rejected` | Hypothesis was disproven |
+| `hypothesis_iteration` | Iterating on the hypothesis |
+| `user_feedback` | Based on user feedback |
+| `data_issue` | Data quality problems |
+| `implementation_issue` | Bug or implementation problem |
+| `experiment_setup_issue` | Experiment configuration error |
+| `guardrail_metric_impact` | Guardrail metric triggered |
+| `secondary_metric_impact` | Secondary metric concern |
+| `operational_decision` | Business/operational decision |
+| `performance_issue` | Performance degradation |
+| `testing` | Test or QA purposes |
+| `tracking_issue` | Tracking/instrumentation problem |
+| `code_cleaned_up` | Code has been cleaned up |
+| `other` | Other reason |
+
+#### Valid schedule actions
+
+The `abs experiments schedule create --action` option accepts: `start`, `restart`, `development`, `stop`, `archive`, `full_on`.
+
+The `--at` timestamp must include a timezone — either `Z` (UTC) or an offset like `+02:00`. The time must be in the future.
+
+```bash
+abs experiments schedule create 123 --action start --at 2026-04-01T10:00:00Z
+abs experiments schedule create 123 --action stop --at 2026-04-15T18:00:00+02:00
+```
+
+#### Valid request-update tasks
+
+The `abs experiments request-update --tasks` option accepts a comma-separated list of:
+
+| Task | Description |
+|---|---|
+| `preview_metrics` | Refresh metric results |
+| `preview_summary` | Refresh experiment summary |
+| `preview_group_sequential` | Refresh group sequential analysis |
+| `preview_report_metrics` | Refresh report metrics |
+| `preview_participants_history` | Refresh participant history |
+| `check_cleanup_needed` | Check if code cleanup is needed |
+| `check_audience_mismatch` | Check for audience mismatch |
+| `check_sample_size` | Check sample size reached |
+| `check_sample_ratio_mismatch` | Check for SRM |
+| `check_interactions` | Check for interactions |
+| `check_assignment_conflict` | Check for assignment conflicts |
+| `check_metric_threshold` | Check metric thresholds |
 
 ### Activity feed
 
@@ -1159,6 +1260,100 @@ Template features:
 - **Screenshots**: local file paths, URLs, or base64 data URIs
 - **Type**: inferred from command (`abs experiments` → test, `abs features` → feature)
 
+## Programmatic usage
+
+The package exports a framework-free core layer that can be used programmatically without Commander.js or any CLI dependencies. The core functions are tree-shakeable — import only what you need.
+
+### Exports
+
+| Import path | Description |
+|---|---|
+| `@absmartly/cli/core/experiments` | Experiment lifecycle, metrics, bulk operations |
+| `@absmartly/cli/core/goals` | Goal CRUD and access control |
+| `@absmartly/cli/core/metrics` | Metric CRUD, reviews, access control |
+| `@absmartly/cli/core/teams` | Team CRUD and member management |
+| `@absmartly/cli/core/users` | User CRUD and API key management |
+| `@absmartly/cli/core/events` | Event tracking data |
+| `@absmartly/cli/core/insights` | Velocity and decision analytics |
+| `@absmartly/cli/core/auth` | Auth operations (whoami, API keys, profile) |
+| `@absmartly/cli/core/<module>` | Any other core module (tags, roles, segments, etc.) |
+| `@absmartly/cli/api-client` | Lower-level API client with typed methods |
+| `@absmartly/cli/formatting` | Output formatting utilities |
+
+### Example
+
+```typescript
+import { createAPIClient } from '@absmartly/cli/api-client';
+import { listExperiments, startExperiment, stopExperiment } from '@absmartly/cli/core/experiments';
+
+const client = createAPIClient({
+  endpoint: 'https://your-instance.absmartly.com/v1',
+  apiKey: 'YOUR_API_KEY',
+});
+
+// List running experiments
+const { data, pagination } = await listExperiments(client, {
+  state: 'running',
+  items: 50,
+  page: 1,
+});
+
+// Start an experiment
+const result = await startExperiment(client, {
+  experimentId: ExperimentId(123),
+  note: 'Starting from script',
+});
+
+if (result.data.skipped) {
+  console.log('Skipped:', result.data.skipReason);
+}
+
+// Stop with validated reason
+await stopExperiment(client, {
+  experimentId: ExperimentId(123),
+  reason: 'hypothesis_rejected',
+  note: 'Results conclusive',
+});
+```
+
+#### Create from template
+
+```typescript
+import { createExperimentFromTemplate } from '@absmartly/cli/core/experiments';
+import { readFileSync } from 'fs';
+
+const templateContent = readFileSync('experiment.md', 'utf8');
+
+const { data, warnings } = await createExperimentFromTemplate(client, {
+  templateContent,
+  name: 'my-new-experiment',        // optional override
+  displayName: 'My New Experiment',  // optional override
+  defaultType: 'test',              // 'test' or 'feature'
+});
+
+console.log(`Created experiment ${data.id}: ${data.name}`);
+for (const w of warnings) console.warn(w);
+```
+
+### Core API conventions
+
+All core functions follow a consistent pattern:
+
+```typescript
+function operation(client: APIClient, params: OperationParams): Promise<CommandResult<T>>
+```
+
+- **First argument** is always the `APIClient` instance
+- **Second argument** is a typed params object
+- **Return value** is always `CommandResult<T>` with:
+  - `data: T` — the primary result
+  - `warnings?: string[]` — optional warnings
+  - `pagination?: { page, items, hasMore }` — for list operations
+  - `rows?: Record<string, unknown>[]` — optional tabular view
+  - `detail?: Record<string, unknown>` — optional detail view
+
+Validation errors throw with descriptive messages listing valid values (e.g., stop reasons, schedule actions).
+
 ## Development
 
 ### Setup
@@ -1194,6 +1389,12 @@ Tests use [MSW](https://mswjs.io/) (Mock Service Worker) for API mocking. Run ag
 ```bash
 USE_LIVE_API=1 npm run test:run
 ```
+
+The test suite includes:
+- **Command-layer tests** (`src/commands/`) — test CLI behavior through Commander.js
+- **Core-layer tests** (`src/core/`) — test business logic with mocked API clients
+- **API client tests** (`src/api-client/`) — test request building and response parsing
+- **Library tests** (`src/lib/`) — test utilities, config, auth, and formatting
 
 ### Linting and formatting
 

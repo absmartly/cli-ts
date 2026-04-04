@@ -11,11 +11,11 @@ export async function listUsers(
   client: APIClient,
   params: ListUsersParams,
 ): Promise<CommandResult<unknown[]>> {
-  const opts: Record<string, unknown> = {};
+  const opts: { includeArchived?: boolean; items?: number; page?: number } = {};
   if (params.includeArchived !== undefined) opts.includeArchived = params.includeArchived;
   if (params.items !== undefined) opts.items = params.items;
   if (params.page !== undefined) opts.page = params.page;
-  const data = await client.listUsers(opts as any);
+  const data = await client.listUsers(opts);
   return {
     data,
     pagination: {

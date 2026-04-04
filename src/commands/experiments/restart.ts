@@ -42,7 +42,6 @@ restartCommand.action(withErrorHandling(async (nameOrId: string, options) => {
       fromFile: options.fromFile,
       defaultType: getDefaultType(),
       customFieldValues: extractCustomFieldValues(options, getDefaultType(), globalOptions.profile as string),
-      profile: globalOptions.profile as string,
     };
 
     validateRestartParams(params);

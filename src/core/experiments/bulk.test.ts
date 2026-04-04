@@ -1,0 +1,164 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { collectBulkIds, fetchBulkNames, runBulkOperation, bulkStart, bulkStop, bulkArchive } from './bulk.js';
+import type { ExperimentId } from '../../lib/api/branded-types.js';
+
+vi.mock('../../lib/utils/validators.js', () => ({
+  parseExperimentId: (v: string) => Number(v) as ExperimentId,
+}));
+
+const id = (n: number) => n as ExperimentId;
+
+describe('bulk', () => {
+  let mockClient: Record<string, ReturnType<typeof vi.fn>>;
+
+  beforeEach(() => {
+    mockClient = {
+      listExperiments: vi.fn(),
+      getExperiment: vi.fn(),
+      startExperiment: vi.fn(),
+      stopExperiment: vi.fn(),
+      archiveExperiment: vi.fn(),
+    };
+  });
+
+  describe('collectBulkIds', () => {
+    it('returns stdinIds when provided', async () => {
+      const stdinIds = [id(1), id(2)];
+      const result = await collectBulkIds(mockClient as any, ['99'], { stdinIds });
+      expect(result).toEqual(stdinIds);
+      expect(mockClient.listExperiments).not.toHaveBeenCalled();
+    });
+
+    it('parses rawIds when no stdinIds', async () => {
+      const result = await collectBulkIds(mockClient as any, ['10', '20'], {});
+      expect(result).toEqual([10, 20]);
+    });
+
+    it('throws when no ids, no stdin, no filters', async () => {
+      await expect(collectBulkIds(mockClient as any, [], {})).rejects.toThrow(
+        'Provide experiment IDs, --stdin, or use --state / --app filters',
+      );
+    });
+
+    it('fetches experiments by state filter', async () => {
+      mockClient.listExperiments.mockResolvedValue([{ id: id(5) }, { id: id(6) }]);
+      const result = await collectBulkIds(mockClient as any, [], { state: 'running' });
+      expect(mockClient.listExperiments).toHaveBeenCalledWith({ state: 'running' });
+      expect(result).toEqual([id(5), id(6)]);
+    });
+
+    it('fetches experiments by app filter', async () => {
+      mockClient.listExperiments.mockResolvedValue([{ id: id(7) }]);
+      const result = await collectBulkIds(mockClient as any, [], { app: 'web' });
+      expect(mockClient.listExperiments).toHaveBeenCalledWith({ application: 'web' });
+      expect(result).toEqual([id(7)]);
+    });
+  });
+
+  describe('fetchBulkNames', () => {
+    it('returns names for each experiment', async () => {
+      mockClient.getExperiment
+        .mockResolvedValueOnce({ name: 'Exp A' })
+        .mockResolvedValueOnce({ name: 'Exp B' });
+      const names = await fetchBulkNames(mockClient as any, [id(1), id(2)]);
+      expect(names.get(id(1))).toBe('Exp A');
+      expect(names.get(id(2))).toBe('Exp B');
+    });
+
+    it('swallows 404 and returns unknown placeholder', async () => {
+      mockClient.getExperiment.mockRejectedValue({ statusCode: 404 });
+      const names = await fetchBulkNames(mockClient as any, [id(99)]);
+      expect(names.get(id(99))).toBe('(unknown #99)');
+    });
+
+    it('swallows 404 with status field (not statusCode)', async () => {
+      mockClient.getExperiment.mockRejectedValue({ status: 404 });
+      const names = await fetchBulkNames(mockClient as any, [id(42)]);
+      expect(names.get(id(42))).toBe('(unknown #42)');
+    });
+
+    it('re-throws 401 errors', async () => {
+      mockClient.getExperiment.mockRejectedValue({ statusCode: 401 });
+      await expect(fetchBulkNames(mockClient as any, [id(1)])).rejects.toEqual({ statusCode: 401 });
+    });
+
+    it('re-throws 500 errors', async () => {
+      mockClient.getExperiment.mockRejectedValue({ statusCode: 500 });
+      await expect(fetchBulkNames(mockClient as any, [id(1)])).rejects.toEqual({ statusCode: 500 });
+    });
+
+    it('re-throws generic errors without status', async () => {
+      mockClient.getExperiment.mockRejectedValue(new Error('network'));
+      await expect(fetchBulkNames(mockClient as any, [id(1)])).rejects.toThrow('network');
+    });
+  });
+
+  describe('runBulkOperation', () => {
+    it('counts successes and failures', async () => {
+      const names = new Map<ExperimentId, string>([
+        [id(1), 'A'],
+        [id(2), 'B'],
+        [id(3), 'C'],
+      ]);
+      const action = vi.fn()
+        .mockResolvedValueOnce('ok')
+        .mockRejectedValueOnce(new Error('fail'))
+        .mockResolvedValueOnce('ok');
+
+      const result = await runBulkOperation([id(1), id(2), id(3)], names, action);
+      expect(result.data.succeeded).toBe(2);
+      expect(result.data.failed).toBe(1);
+      expect(result.data.total).toBe(3);
+    });
+
+    it('captures error message in result', async () => {
+      const names = new Map<ExperimentId, string>([[id(1), 'A']]);
+      const action = vi.fn().mockRejectedValue(new Error('boom'));
+      const result = await runBulkOperation([id(1)], names, action);
+      expect(result.data.results[0]!.success).toBe(false);
+      expect(result.data.results[0]!.error).toBe('boom');
+    });
+
+    it('handles non-Error thrown values', async () => {
+      const names = new Map<ExperimentId, string>([[id(1), 'A']]);
+      const action = vi.fn().mockRejectedValue('string-error');
+      const result = await runBulkOperation([id(1)], names, action);
+      expect(result.data.results[0]!.error).toBe('string-error');
+    });
+
+    it('uses fallback name when not in map', async () => {
+      const names = new Map<ExperimentId, string>();
+      const action = vi.fn().mockResolvedValue('ok');
+      const result = await runBulkOperation([id(7)], names, action);
+      expect(result.data.results[0]!.name).toBe('#7');
+    });
+  });
+
+  describe('bulkStart', () => {
+    it('calls startExperiment for each id', async () => {
+      mockClient.startExperiment.mockResolvedValue(undefined);
+      const names = new Map<ExperimentId, string>([[id(1), 'A']]);
+      const result = await bulkStart(mockClient as any, [id(1)], names, 'note');
+      expect(mockClient.startExperiment).toHaveBeenCalledWith(id(1), 'note');
+      expect(result.data.succeeded).toBe(1);
+    });
+  });
+
+  describe('bulkStop', () => {
+    it('calls stopExperiment with reason', async () => {
+      mockClient.stopExperiment.mockResolvedValue(undefined);
+      const names = new Map<ExperimentId, string>([[id(1), 'A']]);
+      await bulkStop(mockClient as any, [id(1)], names, 'testing', 'note');
+      expect(mockClient.stopExperiment).toHaveBeenCalledWith(id(1), 'testing', 'note');
+    });
+  });
+
+  describe('bulkArchive', () => {
+    it('calls archiveExperiment for each id', async () => {
+      mockClient.archiveExperiment.mockResolvedValue(undefined);
+      const names = new Map<ExperimentId, string>([[id(1), 'A']]);
+      await bulkArchive(mockClient as any, [id(1)], names, 'note');
+      expect(mockClient.archiveExperiment).toHaveBeenCalledWith(id(1), false, 'note');
+    });
+  });
+});

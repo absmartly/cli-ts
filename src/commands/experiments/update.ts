@@ -79,7 +79,6 @@ updateCommand.action(withErrorHandling(async (nameOrId: string, options) => {
       customFieldValues: extractCustomFieldValues(options, getDefaultType(), globalOptions.profile as string),
       fromFile: options.fromFile,
       defaultType: getDefaultType(),
-      profile: globalOptions.profile as string,
     });
 
     for (const warning of warnings) {
@@ -111,6 +110,6 @@ updateCommand.action(withErrorHandling(async (nameOrId: string, options) => {
       return;
     }
 
-    await updateExperiment(client, id, changes, note);
+    await updateExperiment(client, { experimentId: id, changes, note });
     console.log(chalk.green(`Experiment ${id} updated`));
   }));

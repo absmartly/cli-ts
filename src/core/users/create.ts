@@ -18,6 +18,6 @@ export async function createUser(
     email: params.email,
     first_name: firstName,
     last_name: lastName,
-  } as any);
+  });
   return { data: data as { id: number } };
 }

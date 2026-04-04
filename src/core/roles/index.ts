@@ -1,10 +1,14 @@
-export { listRoles } from './list.js';
-export type { ListRolesParams } from './list.js';
-export { getRole } from './get.js';
-export type { GetRoleParams } from './get.js';
-export { createRole } from './create.js';
-export type { CreateRoleParams } from './create.js';
-export { updateRole } from './update.js';
-export type { UpdateRoleParams } from './update.js';
-export { deleteRole } from './delete.js';
-export type { DeleteRoleParams } from './delete.js';
+export {
+  listRoles,
+  getRole,
+  createRole,
+  updateRole,
+  deleteRole,
+} from './roles.js';
+export type {
+  ListRolesParams,
+  GetRoleParams,
+  CreateRoleParams,
+  UpdateRoleParams,
+  DeleteRoleParams,
+} from './roles.js';

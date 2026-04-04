@@ -7,6 +7,7 @@ import { buildPayloadFromTemplate } from '../../api-client/template/build-from-t
 import { buildSecondaryMetrics } from '../../api-client/payload/metrics-builder.js';
 import { parseCSV } from '../../api-client/payload/parse-csv.js';
 import { parseScreenshotEntries } from '../../api-client/payload/screenshot-parser.js';
+import { resolveCustomFieldValues } from './resolve-custom-fields.js';
 
 export interface UpdateExperimentParams {
   experimentId: ExperimentId;
@@ -37,7 +38,6 @@ export interface UpdateExperimentParams {
   fromFile?: string;
   defaultType: string;
   note?: string;
-  profile?: string;
 }
 
 export async function buildUpdateChanges(
@@ -120,17 +120,10 @@ export async function buildUpdateChanges(
   }
 
   if (params.customFieldValues && Object.keys(params.customFieldValues).length > 0) {
-    const allFields = await client.listCustomSectionFields();
-    const expType = params.defaultType;
-    const relevant = allFields.filter(f => !f.archived && f.custom_section?.type === expType && !f.custom_section?.archived);
-    const fieldValues: Record<string, { type: string; value: string }> = {};
-    for (const field of relevant) {
-      const title = (field as { title?: string }).title ?? field.name ?? '';
-      const cliValue = params.customFieldValues[title];
-      if (cliValue !== undefined) {
-        fieldValues[field.id] = { type: field.type, value: cliValue };
-      }
-    }
+    const fieldValues = await resolveCustomFieldValues(client, {
+      customFieldValues: params.customFieldValues,
+      defaultType: params.defaultType,
+    });
     if (Object.keys(fieldValues).length > 0) {
       changes.custom_section_field_values = fieldValues as ExperimentInput['custom_section_field_values'];
     }
@@ -148,18 +141,19 @@ export async function buildUpdateChanges(
   return { changes, warnings };
 }
 
+export interface UpdateExperimentActionParams {
+  experimentId: ExperimentId;
+  changes: Partial<ExperimentInput> & Record<string, unknown>;
+  note?: string | undefined;
+}
+
 export async function updateExperiment(
   client: APIClient,
-  experimentId: ExperimentId,
-  changes: Partial<ExperimentInput> & Record<string, unknown>,
-  note?: string,
+  params: UpdateExperimentActionParams,
 ): Promise<CommandResult<{ id: ExperimentId }>> {
-  if (note !== undefined) {
-    await client.updateExperiment(experimentId, changes, { note });
-  } else {
-    await client.updateExperiment(experimentId, changes);
-  }
+  const options = params.note !== undefined ? { note: params.note } : undefined;
+  await client.updateExperiment(params.experimentId, params.changes, options);
   return {
-    data: { id: experimentId },
+    data: { id: params.experimentId },
   };
 }

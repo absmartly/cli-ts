@@ -2,7 +2,6 @@ import type { APIClient } from '../../api-client/api-client.js';
 import type { CommandResult } from '../types.js';
 import type { Experiment } from '../../lib/api/types.js';
 import type { ExperimentId } from '../../lib/api/branded-types.js';
-import { readFileSync } from 'fs';
 import { experimentToMarkdown } from '../../api-client/template/serializer.js';
 import { parseExperimentMarkdown } from '../../api-client/template/parser.js';
 import { buildPayloadFromTemplate } from '../../api-client/template/build-from-template.js';
@@ -13,7 +12,7 @@ export interface CloneExperimentParams {
   name?: string;
   displayName?: string;
   state?: string;
-  fromFile?: string;
+  overrideContent?: string | undefined;
   defaultType: string;
   apiEndpoint: string;
   apiKey?: string | undefined;
@@ -42,10 +41,8 @@ export async function buildClonePayload(
 
   let template = parseExperimentMarkdown(md);
 
-  if (params.fromFile) {
-    const overrideTemplate = parseExperimentMarkdown(
-      readFileSync(params.fromFile === '-' ? '/dev/stdin' : params.fromFile, 'utf8')
-    );
+  if (params.overrideContent) {
+    const overrideTemplate = parseExperimentMarkdown(params.overrideContent);
     template = mergeTemplateOverrides(template, overrideTemplate);
   }
 

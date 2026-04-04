@@ -76,7 +76,8 @@ describe('update command', () => {
 
     expect(mockClient.updateExperiment).toHaveBeenCalledWith(
       42,
-      expect.objectContaining({ display_name: 'New Name' })
+      expect.objectContaining({ display_name: 'New Name' }),
+      undefined,
     );
     const output = consoleSpy.mock.calls.flat().join(' ');
     expect(output).toContain('Experiment 42 updated');
@@ -87,7 +88,8 @@ describe('update command', () => {
 
     expect(mockClient.updateExperiment).toHaveBeenCalledWith(
       42,
-      expect.objectContaining({ name: 'new-name' })
+      expect.objectContaining({ name: 'new-name' }),
+      undefined,
     );
   });
 
@@ -96,7 +98,8 @@ describe('update command', () => {
 
     expect(mockClient.updateExperiment).toHaveBeenCalledWith(
       42,
-      expect.objectContaining({ percentage_of_traffic: 50 })
+      expect.objectContaining({ percentage_of_traffic: 50 }),
+      undefined,
     );
   });
 
@@ -105,7 +108,8 @@ describe('update command', () => {
 
     expect(mockClient.updateExperiment).toHaveBeenCalledWith(
       42,
-      expect.objectContaining({ state: 'running' })
+      expect.objectContaining({ state: 'running' }),
+      undefined,
     );
   });
 
@@ -114,7 +118,8 @@ describe('update command', () => {
 
     expect(mockClient.updateExperiment).toHaveBeenCalledWith(
       42,
-      expect.objectContaining({ primary_metric: { metric_id: 145 } })
+      expect.objectContaining({ primary_metric: { metric_id: 145 } }),
+      undefined,
     );
   });
 
@@ -123,7 +128,8 @@ describe('update command', () => {
 
     expect(mockClient.updateExperiment).toHaveBeenCalledWith(
       42,
-      expect.objectContaining({ unit_type: { unit_type_id: 3 } })
+      expect.objectContaining({ unit_type: { unit_type_id: 3 } }),
+      undefined,
     );
   });
 
@@ -132,7 +138,8 @@ describe('update command', () => {
 
     expect(mockClient.updateExperiment).toHaveBeenCalledWith(
       42,
-      expect.objectContaining({ applications: [{ application_id: 5, application_version: '0' }] })
+      expect.objectContaining({ applications: [{ application_id: 5, application_version: '0' }] }),
+      undefined,
     );
   });
 
@@ -148,7 +155,8 @@ describe('update command', () => {
           { name: 'treatment', variant: 1, config: '{}' },
           { name: 'treatment2', variant: 2, config: '{}' },
         ],
-      })
+      }),
+      undefined,
     );
   });
 
@@ -157,7 +165,8 @@ describe('update command', () => {
 
     expect(mockClient.updateExperiment).toHaveBeenCalledWith(
       42,
-      expect.objectContaining({ percentages: '30/70' })
+      expect.objectContaining({ percentages: '30/70' }),
+      undefined,
     );
   });
 
@@ -166,7 +175,8 @@ describe('update command', () => {
 
     expect(mockClient.updateExperiment).toHaveBeenCalledWith(
       42,
-      expect.objectContaining({ owners: [{ user_id: 10 }, { user_id: 20 }] })
+      expect.objectContaining({ owners: [{ user_id: 10 }, { user_id: 20 }] }),
+      undefined,
     );
   });
 
@@ -175,7 +185,8 @@ describe('update command', () => {
 
     expect(mockClient.updateExperiment).toHaveBeenCalledWith(
       42,
-      expect.objectContaining({ teams: [{ team_id: 1 }, { team_id: 2 }] })
+      expect.objectContaining({ teams: [{ team_id: 1 }, { team_id: 2 }] }),
+      undefined,
     );
   });
 
@@ -184,7 +195,8 @@ describe('update command', () => {
 
     expect(mockClient.updateExperiment).toHaveBeenCalledWith(
       42,
-      expect.objectContaining({ experiment_tags: [{ experiment_tag_id: 10 }, { experiment_tag_id: 11 }] })
+      expect.objectContaining({ experiment_tags: [{ experiment_tag_id: 10 }, { experiment_tag_id: 11 }] }),
+      undefined,
     );
   });
 
@@ -194,7 +206,8 @@ describe('update command', () => {
 
     expect(mockClient.updateExperiment).toHaveBeenCalledWith(
       42,
-      expect.objectContaining({ audience })
+      expect.objectContaining({ audience }),
+      undefined,
     );
   });
 
@@ -203,7 +216,8 @@ describe('update command', () => {
 
     expect(mockClient.updateExperiment).toHaveBeenCalledWith(
       42,
-      expect.objectContaining({ analysis_type: 'fixed_horizon' })
+      expect.objectContaining({ analysis_type: 'fixed_horizon' }),
+      undefined,
     );
   });
 
@@ -212,7 +226,8 @@ describe('update command', () => {
 
     expect(mockClient.updateExperiment).toHaveBeenCalledWith(
       42,
-      expect.objectContaining({ required_alpha: '0.05', required_power: '0.9' })
+      expect.objectContaining({ required_alpha: '0.05', required_power: '0.9' }),
+      undefined,
     );
   });
 
@@ -221,7 +236,8 @@ describe('update command', () => {
 
     expect(mockClient.updateExperiment).toHaveBeenCalledWith(
       42,
-      expect.objectContaining({ baseline_participants_per_day: '100' })
+      expect.objectContaining({ baseline_participants_per_day: '100' }),
+      undefined,
     );
   });
 
@@ -241,7 +257,8 @@ describe('update command', () => {
           { metric_id: 10, type: 'secondary', order_index: 0 },
           { metric_id: 20, type: 'secondary', order_index: 1 },
         ],
-      })
+      }),
+      undefined,
     );
   });
 
@@ -260,7 +277,8 @@ describe('update command', () => {
         display_name: 'Template Name',
         percentage_of_traffic: 75,
         state: 'running',
-      })
+      }),
+      undefined,
     );
   });
 

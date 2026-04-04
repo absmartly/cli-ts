@@ -2,11 +2,7 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { validateJSON } from '../../lib/utils/validators.js';
-import { listStorageConfigs } from '../../core/storageconfigs/list.js';
-import { getStorageConfig } from '../../core/storageconfigs/get.js';
-import { createStorageConfig } from '../../core/storageconfigs/create.js';
-import { updateStorageConfig } from '../../core/storageconfigs/update.js';
-import { testStorageConfig } from '../../core/storageconfigs/test.js';
+import { listStorageConfigs, getStorageConfig, createStorageConfig, updateStorageConfig, testStorageConfig } from '../../core/storageconfigs/storageconfigs.js';
 
 export const storageConfigsCommand = new Command('storage-configs')
   .aliases(['storageconfigs', 'storage-config'])

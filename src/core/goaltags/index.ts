@@ -1,10 +1,14 @@
-export { listGoalTags } from './list.js';
-export type { ListGoalTagsParams } from './list.js';
-export { getGoalTag } from './get.js';
-export type { GetGoalTagParams } from './get.js';
-export { createGoalTag } from './create.js';
-export type { CreateGoalTagParams } from './create.js';
-export { updateGoalTag } from './update.js';
-export type { UpdateGoalTagParams } from './update.js';
-export { deleteGoalTag } from './delete.js';
-export type { DeleteGoalTagParams } from './delete.js';
+export {
+  listGoalTags,
+  getGoalTag,
+  createGoalTag,
+  updateGoalTag,
+  deleteGoalTag,
+} from './goaltags.js';
+export type {
+  ListGoalTagsParams,
+  GetGoalTagParams,
+  CreateGoalTagParams,
+  UpdateGoalTagParams,
+  DeleteGoalTagParams,
+} from './goaltags.js';
