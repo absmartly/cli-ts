@@ -3,6 +3,7 @@ import type { ListOptions } from '../../lib/api/types.js';
 import type { CommandResult } from '../types.js';
 import { summarizeExperimentRow } from '../../api-client/experiment-summary.js';
 import { parseDateFlagOrUndefined } from '../../lib/utils/date-parser.js';
+import { resolveTagIds, resolveTeamIds, resolveOwnerIds, resolveApplicationIds, resolveUnitTypeIds } from '../resolve.js';
 
 export interface ListExperimentsParams {
   state?: string;
@@ -63,6 +64,12 @@ export async function listExperiments(
   const stoppedAfter = parseDateFlagOrUndefined(params.stoppedAfter);
   const stoppedBefore = parseDateFlagOrUndefined(params.stoppedBefore);
 
+  const tags = params.tags ? await resolveTagIds(client, params.tags) : undefined;
+  const teams = params.teams ? await resolveTeamIds(client, params.teams) : undefined;
+  const owners = params.owners ? await resolveOwnerIds(client, params.owners) : undefined;
+  const applications = params.applications ? await resolveApplicationIds(client, params.applications) : undefined;
+  const unitTypes = params.unitTypes ? await resolveUnitTypeIds(client, params.unitTypes) : undefined;
+
   const listOptions = {
     page: params.page,
     items: params.items,
@@ -71,14 +78,14 @@ export async function listExperiments(
     ...(params.asc && { ascending: true }),
     ...(params.desc && { ascending: false }),
     ...(params.app && { application: params.app }),
-    ...(params.applications && { applications: params.applications }),
+    ...(applications && { applications }),
     ...(params.state && { state: params.state }),
     ...(params.type && { type: params.type }),
     ...(params.search && { search: params.search }),
-    ...(params.unitTypes && { unit_types: params.unitTypes }),
-    ...(params.owners && { owners: params.owners }),
-    ...(params.teams && { teams: params.teams }),
-    ...(params.tags && { tags: params.tags }),
+    ...(unitTypes && { unit_types: unitTypes }),
+    ...(owners && { owners }),
+    ...(teams && { teams }),
+    ...(tags && { tags }),
     ...(params.ids && { ids: params.ids }),
     ...(params.impact && { impact: params.impact }),
     ...(params.confidence && { confidence: params.confidence }),

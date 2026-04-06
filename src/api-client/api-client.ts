@@ -1576,6 +1576,16 @@ export class APIClient {
     return namesOrIds.map(ref => resolveByName(teams, ref, 'Team'));
   }
 
+  async resolveApplications(namesOrIds: string[]): Promise<Array<{ id: number; name: string }>> {
+    const apps = await this.listApplications();
+    return namesOrIds.map(ref => resolveByName(apps, ref, 'Application'));
+  }
+
+  async resolveUnitTypes(namesOrIds: string[]): Promise<Array<{ id: number; name: string }>> {
+    const unitTypes = await this.listUnitTypes();
+    return namesOrIds.map(ref => resolveByName(unitTypes, ref, 'Unit type'));
+  }
+
   async resolveTags(namesOrIds: string[]): Promise<Array<{ id: number; tag: string }>> {
     const tags = await this.listExperimentTags();
     return namesOrIds.map(ref => {

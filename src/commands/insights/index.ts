@@ -16,9 +16,9 @@ const velocityCommand = new Command('velocity')
   .requiredOption('--from <date>', 'start date (ISO 8601, e.g. 2026-01-01)')
   .requiredOption('--to <date>', 'end date (ISO 8601, e.g. 2026-03-01)')
   .requiredOption('--aggregation <agg>', 'aggregation period (month, week, day)')
-  .option('--unit-types <ids>', 'comma-separated unit type IDs')
-  .option('--teams <ids>', 'comma-separated team IDs')
-  .option('--owners <ids>', 'comma-separated owner IDs')
+  .option('--unit-types <values>', 'comma-separated unit type names or IDs')
+  .option('--teams <values>', 'comma-separated team names or IDs')
+  .option('--owners <values>', 'comma-separated owner names, emails, or IDs')
   .action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(velocityCommand);
     const client = await getAPIClientFromOptions(globalOptions);
@@ -26,9 +26,9 @@ const velocityCommand = new Command('velocity')
       from: options.from,
       to: options.to,
       aggregation: options.aggregation,
-      unitTypeIds: options.unitTypes?.split(',').map((s: string) => parseInt(s.trim(), 10)),
-      teamIds: options.teams?.split(',').map((s: string) => parseInt(s.trim(), 10)),
-      ownerIds: options.owners?.split(',').map((s: string) => parseInt(s.trim(), 10)),
+      unitTypes: options.unitTypes,
+      teams: options.teams,
+      owners: options.owners,
     });
     printFormatted(result.data, globalOptions);
   }));
@@ -38,9 +38,9 @@ const decisionsCommand = new Command('decisions')
   .requiredOption('--from <date>', 'start date (ISO 8601, e.g. 2026-01-01)')
   .requiredOption('--to <date>', 'end date (ISO 8601, e.g. 2026-03-01)')
   .requiredOption('--aggregation <agg>', 'aggregation period (month, week, day)')
-  .option('--unit-types <ids>', 'comma-separated unit type IDs')
-  .option('--teams <ids>', 'comma-separated team IDs')
-  .option('--owners <ids>', 'comma-separated owner IDs')
+  .option('--unit-types <values>', 'comma-separated unit type names or IDs')
+  .option('--teams <values>', 'comma-separated team names or IDs')
+  .option('--owners <values>', 'comma-separated owner names, emails, or IDs')
   .action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(decisionsCommand);
     const client = await getAPIClientFromOptions(globalOptions);
@@ -48,9 +48,9 @@ const decisionsCommand = new Command('decisions')
       from: options.from,
       to: options.to,
       aggregation: options.aggregation,
-      unitTypeIds: options.unitTypes?.split(',').map((s: string) => parseInt(s.trim(), 10)),
-      teamIds: options.teams?.split(',').map((s: string) => parseInt(s.trim(), 10)),
-      ownerIds: options.owners?.split(',').map((s: string) => parseInt(s.trim(), 10)),
+      unitTypes: options.unitTypes,
+      teams: options.teams,
+      owners: options.owners,
     });
     printFormatted(result.data, globalOptions);
   }));
@@ -60,8 +60,8 @@ const velocityDetailCommand = new Command('velocity-detail')
   .requiredOption('--from <date>', 'start date (ISO 8601)')
   .requiredOption('--to <date>', 'end date (ISO 8601)')
   .requiredOption('--aggregation <agg>', 'aggregation period (month, week, day)')
-  .option('--teams <ids>', 'comma-separated team IDs')
-  .option('--applications <ids>', 'comma-separated application IDs')
+  .option('--teams <values>', 'comma-separated team names or IDs')
+  .option('--applications <values>', 'comma-separated application names or IDs')
   .action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(velocityDetailCommand);
     const client = await getAPIClientFromOptions(globalOptions);
@@ -80,8 +80,8 @@ const decisionsHistoryCommand = new Command('decisions-history')
   .requiredOption('--from <date>', 'start date (ISO 8601)')
   .requiredOption('--to <date>', 'end date (ISO 8601)')
   .requiredOption('--aggregation <agg>', 'aggregation period (month, week, day)')
-  .option('--teams <ids>', 'comma-separated team IDs')
-  .option('--applications <ids>', 'comma-separated application IDs')
+  .option('--teams <values>', 'comma-separated team names or IDs')
+  .option('--applications <values>', 'comma-separated application names or IDs')
   .action(withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(decisionsHistoryCommand);
     const client = await getAPIClientFromOptions(globalOptions);
