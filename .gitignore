@@ -47,3 +47,4 @@ docs/plans/
 # Claude
 .claude/tasks/
 docs/
+PLAN-*.md
