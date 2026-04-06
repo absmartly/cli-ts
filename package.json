@@ -1,7 +1,7 @@
 {
   "name": "@absmartly/cli",
   "version": "0.1.0",
-  "description": "ABSmartly CLI - A/B Testing and Feature Flags command-line tool",
+  "description": "ABSmartly CLI - A/B Testing and Feature Flags command-line tool for AI agents and humans",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

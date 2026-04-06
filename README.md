@@ -1,6 +1,6 @@
 # ABSmartly CLI
 
-Command-line interface for managing experiments, feature flags, and A/B tests on the [ABSmartly](https://absmartly.com) platform.
+Command-line interface for AI agents and humans to manage experiments, feature flags, and A/B tests on the [ABSmartly](https://absmartly.com) platform.
 
 ## Project status
 
