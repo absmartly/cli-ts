@@ -64,7 +64,7 @@
   "scripts": {
     "build": "tsc",
     "build:watch": "tsc --watch",
-    "dev": "tsx src/index.ts",
+    "dev": "bun src/index.ts",
     "test": "vitest",
     "test:run": "vitest run",
     "test:ui": "vitest --ui",
@@ -72,8 +72,8 @@
     "lint": "eslint src --ext .ts",
     "format": "prettier --write 'src/**/*.ts'",
     "typecheck": "tsc --noEmit",
-    "test:live": "tsx src/test/live/run-live-vitest.ts",
-    "test:live-quick": "tsx src/test/live/run-live-tests.ts",
+    "test:live": "bun src/test/live/run-live-vitest.ts",
+    "test:live-quick": "bun src/test/live/run-live-tests.ts",
     "test:live-api": "USE_LIVE_API=1 vitest run"
   },
   "keywords": [
@@ -111,14 +111,13 @@
     "@typescript-eslint/eslint-plugin": "^8.21.0",
     "@typescript-eslint/parser": "^8.21.0",
     "@vitest/ui": "^4.0.18",
-    "absmartly-api-mocks": "file:../absmartly-api-mocks",
+    "absmartly-api-mocks": "link:absmartly-api-mocks",
     "dotenv": "^16.4.7",
     "eslint": "^9.19.0",
     "jsdom": "^28.0.0",
     "msw": "^2.12.8",
     "playwright": "^1.58.2",
     "prettier": "^3.4.2",
-    "tsx": "^4.19.2",
     "typescript": "^5.9.3",
     "vitest": "^4.0.18"
   }

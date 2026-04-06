@@ -19,10 +19,10 @@ Command-line interface for managing experiments, feature flags, and A/B tests on
 | Unix pipe composition | Stable |
 
 ```bash
-npm install -g @absmartly/cli
+bun install -g @absmartly/cli
 ```
 
-Requires Node.js >= 18.
+Requires [Bun](https://bun.sh/) >= 1.0 (or Node.js >= 18 at runtime).
 
 ## Quick start
 
@@ -158,7 +158,7 @@ All experiment commands accept **names or IDs** — e.g. `abs experiments get ch
 abs experiments list
 abs experiments list --state running --items 50 --sort created_at --desc
 abs experiments list --app my-app --search "checkout" --page 2
-abs experiments list --created-after 2025-01-01 --tags 1,2,3
+abs experiments list --created-after 2025-01-01 --tags v1,mobile
 
 # Customize columns
 abs experiments list --show experiment_report archived   # add extra columns
@@ -442,13 +442,13 @@ abs experiments stop 123 -i                               # interactive prompt w
 | `--state <state>` | `created`, `ready`, `running`, `development`, `full_on`, `stopped`, `archived`, `scheduled` |
 | `--type <type>` | `test`, `feature` |
 | `--app <name>` | Filter by application name |
-| `--applications <ids>` | Filter by application IDs (comma-separated) |
+| `--applications <values>` | Filter by application names or IDs (comma-separated) |
 | `--search <query>` | Search by name or display name |
 | `--ids <ids>` | Filter by experiment IDs (comma-separated) |
-| `--unit-types <ids>` | Comma-separated unit type IDs |
-| `--owners <ids>` | Comma-separated owner user IDs |
-| `--teams <ids>` | Comma-separated team IDs |
-| `--tags <ids>` | Comma-separated tag IDs |
+| `--unit-types <values>` | Comma-separated unit type names or IDs |
+| `--owners <values>` | Comma-separated owner names, emails, or IDs |
+| `--teams <values>` | Comma-separated team names or IDs |
+| `--tags <values>` | Comma-separated tag names or IDs |
 | `--impact <min,max>` | Filter by impact range (e.g. `-5,50`) |
 | `--confidence <min,max>` | Filter by confidence range (e.g. `90,100`) |
 | `--significance <value>` | `positive`, `negative`, `neutral`, `inconclusive` |
@@ -928,7 +928,7 @@ Aliases: `insights`, `insight`
 ```bash
 abs insights velocity --from 2026-01-01 --to 2026-03-01 --aggregation month
 abs insights decisions --from 2026-01-01 --to 2026-03-01 --aggregation week
-abs insights velocity --from 2026-01-01 --to 2026-03-01 --aggregation day --teams 1,2
+abs insights velocity --from 2026-01-01 --to 2026-03-01 --aggregation day --teams Product,Engineering
 abs insights velocity-detail --from 2026-01-01 --to 2026-03-01 --aggregation month
 abs insights decisions-history --from 2026-01-01 --to 2026-03-01 --aggregation week
 ```
@@ -1359,35 +1359,35 @@ Validation errors throw with descriptive messages listing valid values (e.g., st
 ### Setup
 
 ```bash
-npm ci
+bun install
 ```
 
 ### Build
 
 ```bash
-npm run build          # compile TypeScript
-npm run build:watch    # watch mode
+bun run build          # compile TypeScript
+bun run build:watch    # watch mode
 ```
 
 ### Run in development
 
 ```bash
-npm run dev -- experiments list
+bun run dev -- experiments list
 ```
 
 ### Testing
 
 ```bash
-npm test               # watch mode
-npm run test:run       # run once
-npm run test:ui        # Vitest UI
-npm run test:coverage  # coverage report
+bun test               # watch mode
+bun run test:run       # run once
+bun run test:ui        # Vitest UI
+bun run test:coverage  # coverage report
 ```
 
 Tests use [MSW](https://mswjs.io/) (Mock Service Worker) for API mocking. Run against a live API with:
 
 ```bash
-USE_LIVE_API=1 npm run test:run
+USE_LIVE_API=1 bun run test:run
 ```
 
 The test suite includes:
@@ -1399,9 +1399,9 @@ The test suite includes:
 ### Linting and formatting
 
 ```bash
-npm run lint           # ESLint
-npm run format         # Prettier
-npm run typecheck      # tsc --noEmit
+bun run lint           # ESLint
+bun run format         # Prettier
+bun run typecheck      # tsc --noEmit
 ```
 
 ## License
