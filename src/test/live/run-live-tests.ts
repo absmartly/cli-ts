@@ -81,10 +81,11 @@ async function main() {
         'start',
         scheduledAt,
         'live test: schedule'
-      )) as { ok?: boolean; scheduled_action?: { id: number } };
-      assert(result.ok === true, `Expected ok=true, got ${JSON.stringify(result)}`);
-      assert(result.scheduled_action?.id !== undefined, 'Missing scheduled action id');
-      scheduledActionId = ScheduledActionId(result.scheduled_action.id);
+      )) as { id?: number; ok?: boolean; scheduled_action?: { id: number } };
+      // API may return the action directly or wrapped in { ok, scheduled_action }
+      const actionId = result.id ?? result.scheduled_action?.id;
+      assert(actionId !== undefined, `Missing scheduled action id in ${JSON.stringify(result)}`);
+      scheduledActionId = ScheduledActionId(actionId);
       console.log(`    scheduledActionId=${scheduledActionId}`);
     });
 

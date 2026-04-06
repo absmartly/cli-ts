@@ -57,7 +57,7 @@ if (authMethod === 'oauth-jwt') {
 
 console.log(`Running vitest against ${endpoint} (profile: ${profileName}, auth: ${authMethod})\n`);
 
-const child = spawn('npx', ['vitest', 'run'], {
+const child = spawn('bun', ['vitest', 'run'], {
   stdio: 'inherit',
   env,
 });

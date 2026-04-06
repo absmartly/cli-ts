@@ -72,9 +72,8 @@
     "lint": "eslint src --ext .ts",
     "format": "prettier --write 'src/**/*.ts'",
     "typecheck": "tsc --noEmit",
-    "test:live": "bun src/test/live/run-live-vitest.ts",
-    "test:live-quick": "bun src/test/live/run-live-tests.ts",
-    "test:live-api": "USE_LIVE_API=1 vitest run"
+    "test:live": "bun src/test/live/run-live-vitest.ts --profile test-1",
+    "test:live-quick": "bun src/test/live/run-live-tests.ts --profile test-1"
   },
   "keywords": [
     "absmartly",
