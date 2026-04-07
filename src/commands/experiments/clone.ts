@@ -1,7 +1,7 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { readFileSync } from 'fs';
-import { getAPIClientFromOptions, getGlobalOptions, resolveEndpoint, resolveAPIKey, withErrorHandling } from '../../lib/utils/api-helper.js';
+import { getAPIClientFromOptions, getGlobalOptions, printFormatted, resolveEndpoint, resolveAPIKey, withErrorHandling } from '../../lib/utils/api-helper.js';
 import { runInteractiveEditor } from '../../lib/interactive/run.js';
 import { parseExperimentId } from '../../lib/utils/validators.js';
 import { getDefaultType } from './default-type.js';
@@ -69,7 +69,6 @@ export const cloneCommand = new Command('clone')
     }
 
     const result = await cloneExperiment(client, payload as Record<string, unknown>, id);
-    console.log(chalk.green(`Experiment ${id} cloned → new ID: ${result.data.id}`));
-    console.log(`  Name: ${result.data.name}`);
-    console.log(`  Type: ${result.data.type}`);
+    console.error(chalk.green(`Experiment ${id} cloned → new ID: ${result.data.id}`));
+    printFormatted(result.data, globalOptions);
   }));

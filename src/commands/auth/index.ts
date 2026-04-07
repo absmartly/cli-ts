@@ -27,7 +27,18 @@ function buildProfile(
   endpoint: string,
   authMethod: 'api-key' | 'oauth-jwt',
   options: { app?: string; env?: string; insecure?: boolean },
+  profileName: string,
 ) {
+  let existingExpctldEndpoint = '';
+  try {
+    const existing = getProfile(profileName);
+    if (existing?.expctld?.endpoint) {
+      existingExpctldEndpoint = existing.expctld.endpoint;
+    }
+  } catch {
+    // No existing profile — use empty default
+  }
+
   const profile: {
     api: { endpoint: string; 'auth-method': 'api-key' | 'oauth-jwt'; insecure?: boolean };
     expctld: { endpoint: string };
@@ -35,7 +46,7 @@ function buildProfile(
     environment?: string;
   } = {
     api: { endpoint, 'auth-method': authMethod },
-    expctld: { endpoint: '' },
+    expctld: { endpoint: existingExpctldEndpoint },
   };
   if (options.insecure) profile.api.insecure = true;
   if (options.app) profile.application = options.app;
@@ -71,7 +82,7 @@ const loginCommand = new Command('login')
       }
       const endpoint = ensureApiVersionPath(rawEndpoint);
       await setAPIKey(apiKey, profileName);
-      setProfile(profileName, buildProfile(endpoint, 'api-key', options));
+      setProfile(profileName, buildProfile(endpoint, 'api-key', options, profileName));
       console.log(`✓ Logged in successfully (profile: ${profileName})`);
       console.log(`  Endpoint: ${endpoint}`);
       if (options.app) console.log(`  Application: ${options.app}`);
@@ -135,24 +146,18 @@ const loginCommand = new Command('login')
         const created = await tempClient.createUserApiKey(keyName) as { key: string };
 
         await setAPIKey(created.key, profileName);
-        setProfile(profileName, buildProfile(resolvedEndpoint, 'api-key', options));
+        setProfile(profileName, buildProfile(resolvedEndpoint, 'api-key', options, profileName));
         console.log(`✓ Persistent API key created and stored (profile: ${profileName})`);
       } catch (error) {
         console.error(`\nFailed to create persistent API key: ${error instanceof Error ? error.message : error}`);
         console.error('Your session token has been stored instead (expires in 24h).');
         console.error('To create a persistent API key manually, run: abs auth create-api-key --name <name>');
         await setOAuthToken(tokenResponse.accessToken, profileName);
-        setProfile(profileName, buildProfile(resolvedEndpoint, 'oauth-jwt', options));
+        setProfile(profileName, buildProfile(resolvedEndpoint, 'oauth-jwt', options, profileName));
       }
     } else {
       await setOAuthToken(tokenResponse.accessToken, profileName);
-      const profile = {
-        api: { endpoint: resolvedEndpoint, 'auth-method': 'oauth-jwt' as const },
-        expctld: { endpoint: '' },
-        application: options.app,
-        environment: options.env,
-      };
-      setProfile(profileName, profile);
+      setProfile(profileName, buildProfile(resolvedEndpoint, 'oauth-jwt', options, profileName));
       console.log(`✓ Session token stored (profile: ${profileName})`);
       console.log('  Note: Token expires in 24h. Re-run `abs auth login` to refresh.');
     }
@@ -232,14 +237,11 @@ const logoutCommand = new Command('logout')
     const config = loadConfig();
     const parentOpts = command.parent?.parent?.opts() || {};
     const profileName = parentOpts.profile || config['default-profile'];
-    const profile = getProfile(profileName);
-    const authMethod = profile.api['auth-method'] ?? 'api-key';
 
-    if (authMethod === 'oauth-jwt') {
-      await deleteOAuthToken(profileName);
-    } else {
-      await deleteAPIKey(profileName);
-    }
+    await Promise.allSettled([
+      deleteOAuthToken(profileName),
+      deleteAPIKey(profileName),
+    ]);
 
     console.log(`✓ Logged out (profile: ${profileName})`);
   }));

@@ -25,6 +25,11 @@ const listCommand = new Command('list')
       process.exit(1);
     }
 
+    if (!profile.api?.endpoint) {
+      console.error(`Profile "${profileName}" has no API endpoint configured`);
+      process.exit(1);
+    }
+
     console.log(`Profile: ${profileName}`);
     console.log(`Endpoint: ${profile.api.endpoint}`);
     if (profile.application) console.log(`Application: ${profile.application}`);
@@ -78,7 +83,7 @@ profilesCommand
         const profile = config.profiles[name]!;
         console.log(`${name}${marker}`);
         console.log(`  endpoint: ${profile.api?.endpoint || ''}`);
-        if (profile.api?.token) console.log(`  api-key:  ****...${profile.api.token.slice(-4)}`);
+        if (profile.api?.token) console.log(`  api-key:  ${profile.api.token.length > 4 ? `****...${profile.api.token.slice(-4)}` : '****'}`);
         if (profile.expctld?.endpoint) console.log(`  expctld:  ${profile.expctld.endpoint}`);
         if (profile.application) console.log(`  app:      ${profile.application}`);
         if (profile.environment) console.log(`  env:      ${profile.environment}`);

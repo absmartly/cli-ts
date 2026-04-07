@@ -170,6 +170,9 @@ export function formatOwnerName(owner: Record<string, unknown>): string {
 
 export function formatOwnerLabel(owner: Record<string, unknown>): string {
   const user = owner.user as Record<string, unknown> | undefined;
-  if (user?.first_name && user?.email) return `${user.first_name} ${user.last_name ?? ''} <${user.email}>`.trim();
+  if (user?.first_name && user?.email) {
+    const name = [user.first_name, user.last_name].filter(Boolean).join(' ');
+    return `${name} <${user.email}>`;
+  }
   return `user ${owner.user_id}`;
 }

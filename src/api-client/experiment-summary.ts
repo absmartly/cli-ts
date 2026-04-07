@@ -52,15 +52,15 @@ export function summarizeExperiment(exp: Record<string, unknown>, extraFields: s
       const unitCount = Number(result.unit_count);
       if (unitCount > 0) parts.push(`n=${unitCount.toLocaleString()}`);
 
-      const impact = result.impact as number | null;
-      if (impact !== null) parts.push(`impact=${(impact * 100).toFixed(2)}%`);
+      const impact = result.impact as number | null | undefined;
+      if (typeof impact === 'number' && Number.isFinite(impact)) parts.push(`impact=${(impact * 100).toFixed(2)}%`);
 
-      const pvalue = result.pvalue as number | null;
-      if (pvalue !== null) parts.push(`p=${pvalue < 0.001 ? '<0.001' : pvalue.toFixed(4)}`);
+      const pvalue = result.pvalue as number | null | undefined;
+      if (typeof pvalue === 'number' && Number.isFinite(pvalue)) parts.push(`p=${pvalue < 0.001 ? '<0.001' : pvalue.toFixed(4)}`);
 
-      const impactLower = result.impact_lower as number | null;
-      const impactUpper = result.impact_upper as number | null;
-      if (impactLower !== null && impactUpper !== null) {
+      const impactLower = result.impact_lower as number | null | undefined;
+      const impactUpper = result.impact_upper as number | null | undefined;
+      if (typeof impactLower === 'number' && Number.isFinite(impactLower) && typeof impactUpper === 'number' && Number.isFinite(impactUpper)) {
         parts.push(`CI=[${(impactLower * 100).toFixed(2)}%, ${(impactUpper * 100).toFixed(2)}%]`);
       }
 
@@ -71,8 +71,8 @@ export function summarizeExperiment(exp: Record<string, unknown>, extraFields: s
   }
 
   summary.owners = owners?.map(o => formatOwnerName(o)).join(', ') ?? '';
-  summary.teams = teams?.map(t => t.name).join(', ') ?? '';
-  summary.tags = tags?.map(t => (t.tag as Record<string, unknown>)?.name ?? '').join(', ') ?? '';
+  summary.teams = teams?.map(t => (t.team as Record<string, unknown>)?.name ?? t.name ?? '').filter(Boolean).join(', ') ?? '';
+  summary.tags = tags?.map(t => (t.tag as Record<string, unknown>)?.name ?? (t.experiment_tag as Record<string, unknown>)?.tag ?? t.tag ?? '').filter(Boolean).join(', ') ?? '';
   summary.created_at = formatDate(exp.created_at);
   summary.updated_at = formatDate(exp.updated_at);
   summary.start_at = formatDate(exp.start_at);

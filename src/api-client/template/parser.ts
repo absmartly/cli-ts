@@ -82,6 +82,7 @@ export function parseExperimentMarkdown(content: string): ExperimentTemplate {
   }
 
   for (const [key, value] of Object.entries(data)) {
+    if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
     (template as Record<string, unknown>)[key] = value;
   }
 
@@ -187,7 +188,10 @@ function parseVariants(content: string): VariantTemplate[] {
           if (key === 'name') variant.name = value;
           else if (key === 'config') variant.config = value;
           else if (key === 'screenshot') variant.screenshot = value;
-          else if (key === 'screenshot_id') variant.screenshot_id = parseInt(value, 10);
+          else if (key === 'screenshot_id') {
+            const parsed = parseInt(value, 10);
+            if (!isNaN(parsed)) variant.screenshot_id = parsed;
+          }
         }
       }
     }

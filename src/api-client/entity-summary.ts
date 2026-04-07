@@ -1,3 +1,5 @@
+import { formatDate } from './format-helpers.js';
+
 export function applyShowExclude(
   summary: Record<string, unknown>,
   raw: Record<string, unknown>,
@@ -21,8 +23,6 @@ function formatOwner(obj: Record<string, unknown> | undefined): string {
   const last = obj.last_name as string ?? '';
   return [first, last].filter(Boolean).join(' ') || (obj.email as string) || '';
 }
-
-import { formatDate } from './format-helpers.js';
 
 export function summarizeMetric(m: Record<string, unknown>): Record<string, unknown> {
   const goal = m.goal as Record<string, unknown> | undefined;

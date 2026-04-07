@@ -28,14 +28,22 @@ async function fetchScreenshotBuffer(url: string, apiKey?: string): Promise<{ bu
   }
 }
 
+function escapeYamlScalar(value: unknown): string {
+  const str = String(value);
+  if (/[:"'\n\r\\#\[\]{}&*!|>%`]/.test(str) || str.trim() !== str || str === '') {
+    return '"' + str.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '\\r') + '"';
+  }
+  return str;
+}
+
 export async function experimentToMarkdown(experiment: Experiment, options: SerializerOptions = {}): Promise<string> {
   const exp = experiment as Record<string, unknown>;
   const parts: string[] = [];
 
   parts.push('---\n');
-  parts.push(`name: ${experiment.name}\n`);
+  parts.push(`name: ${escapeYamlScalar(experiment.name)}\n`);
   if (experiment.display_name) {
-    parts.push(`display_name: "${experiment.display_name}"\n`);
+    parts.push(`display_name: ${escapeYamlScalar(experiment.display_name)}\n`);
   }
   parts.push(`type: ${exp.type || 'test'}\n`);
   if (exp.state) parts.push(`state: ${exp.state}\n`);
@@ -56,7 +64,7 @@ export async function experimentToMarkdown(experiment: Experiment, options: Seri
 
   const primaryMetric = experiment.primary_metric as Record<string, unknown> | undefined;
   if (primaryMetric) {
-    parts.push(`primary_metric: ${primaryMetric.name || primaryMetric.metric_id || primaryMetric.id}\n`);
+    parts.push(`primary_metric: ${escapeYamlScalar(primaryMetric.name || primaryMetric.metric_id || primaryMetric.id)}\n`);
   }
 
   const allMetrics = experiment.secondary_metrics as Array<Record<string, unknown>> | undefined;
@@ -80,7 +88,7 @@ export async function experimentToMarkdown(experiment: Experiment, options: Seri
       parts.push(`${key}:\n`);
       for (const m of metrics) {
         const metric = m.metric as Record<string, unknown> | undefined;
-        parts.push(`  - ${metric?.name || m.name || m.metric_id}\n`);
+      parts.push(`  - ${escapeYamlScalar(metric?.name || m.name || m.metric_id)}\n`);
       }
     }
   }
@@ -91,9 +99,9 @@ export async function experimentToMarkdown(experiment: Experiment, options: Seri
     for (const o of owners) {
       const user = o.user as Record<string, unknown> | undefined;
       if (user?.first_name && user?.email) {
-        parts.push(`  - ${user.first_name} ${user.last_name ?? ''} <${user.email}>\n`);
+        parts.push(`  - ${escapeYamlScalar(`${user.first_name} ${user.last_name ?? ''} <${user.email}>`.trim())}\n`);
       } else {
-        parts.push(`  - ${user?.email ?? o.user_id}\n`);
+        parts.push(`  - ${escapeYamlScalar(user?.email ?? o.user_id)}\n`);
       }
     }
   }
@@ -106,7 +114,7 @@ export async function experimentToMarkdown(experiment: Experiment, options: Seri
     }).filter(Boolean);
     if (teamNames.length > 0) {
       parts.push(`teams:\n`);
-      for (const name of teamNames) parts.push(`  - ${name}\n`);
+      for (const name of teamNames) parts.push(`  - ${escapeYamlScalar(name)}\n`);
     }
   }
 
@@ -118,7 +126,7 @@ export async function experimentToMarkdown(experiment: Experiment, options: Seri
     }).filter(Boolean);
     if (tagNames.length > 0) {
       parts.push(`tags:\n`);
-      for (const name of tagNames) parts.push(`  - ${name}\n`);
+      for (const name of tagNames) parts.push(`  - ${escapeYamlScalar(name)}\n`);
     }
   }
 
@@ -194,13 +202,21 @@ export async function experimentToMarkdown(experiment: Experiment, options: Seri
   if (allOwners) {
     for (const o of allOwners) {
       const user = o.user as Record<string, unknown> | undefined;
-      if (user?.id && user?.email) userLookup.set(user.id as number, user.email as string);
+      const userId = (o.user_id ?? user?.user_id ?? user?.id) as number | undefined;
+      const email = user?.email as string | undefined;
+      if (userId && email) userLookup.set(userId, email);
     }
   }
   const createdBy = exp.created_by as Record<string, unknown> | undefined;
-  if (createdBy?.id && createdBy?.email) userLookup.set(createdBy.id as number, createdBy.email as string);
+  if (createdBy?.email) {
+    const cbId = (createdBy.user_id ?? createdBy.id) as number | undefined;
+    if (cbId) userLookup.set(cbId, createdBy.email as string);
+  }
   const updatedBy = exp.updated_by as Record<string, unknown> | undefined;
-  if (updatedBy?.id && updatedBy?.email) userLookup.set(updatedBy.id as number, updatedBy.email as string);
+  if (updatedBy?.email) {
+    const ubId = (updatedBy.user_id ?? updatedBy.id) as number | undefined;
+    if (ubId) userLookup.set(ubId, updatedBy.email as string);
+  }
 
   const customFieldValues = exp.custom_section_field_values as Array<Record<string, unknown>> | undefined;
   if (customFieldValues && customFieldValues.length > 0) {
@@ -223,9 +239,10 @@ export async function experimentToMarkdown(experiment: Experiment, options: Seri
         const section = field.custom_section as Record<string, unknown> | undefined;
         const sectionTitle = (section?.title as string) || 'Custom Fields';
         const title = field.title as string;
-        let value = (entry.value as string) || '';
+        let value = entry.value == null ? '' : String(entry.value);
+        const fieldType = (entry.type ?? field.type) as string | undefined;
 
-        if (entry.type === 'user' && value) {
+        if (fieldType === 'user' && value) {
           try {
             const parsed = JSON.parse(value);
             const userIds = (parsed.selected as Array<{ userId: number }>)?.map(s => s.userId) ?? [];

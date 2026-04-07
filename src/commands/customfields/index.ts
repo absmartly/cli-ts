@@ -63,6 +63,11 @@ const updateCommand = new Command('update')
   .action(withErrorHandling(async (id: CustomSectionFieldId, options) => {
     const globalOptions = getGlobalOptions(updateCommand);
     const client = await getAPIClientFromOptions(globalOptions);
+
+    if (!options.name && !options.type && options.defaultValue === undefined) {
+      throw new Error('At least one of --name, --type, or --default-value must be provided for update');
+    }
+
     const result = await updateCustomField(client, {
       id,
       name: options.name,

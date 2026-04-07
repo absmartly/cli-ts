@@ -48,7 +48,7 @@ const createCommand = new Command('create')
     const client = await getAPIClientFromOptions(globalOptions);
     const config = validateJSON(options.config, '--config') as Record<string, unknown>;
     const result = await coreCreateDatasource(client, { config });
-    console.log(chalk.green(`✓ Datasource created`));
+    console.error(chalk.green(`✓ Datasource created`));
     printFormatted(result.data, globalOptions);
   }));
 
@@ -61,7 +61,7 @@ const updateCommand = new Command('update')
     const client = await getAPIClientFromOptions(globalOptions);
     const config = validateJSON(options.config, '--config') as Record<string, unknown>;
     const result = await coreUpdateDatasource(client, { id, config });
-    console.log(chalk.green(`✓ Datasource ${id} updated`));
+    console.error(chalk.green(`✓ Datasource ${id} updated`));
     printFormatted(result.data, globalOptions);
   }));
 

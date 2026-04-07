@@ -112,6 +112,13 @@ bulkStopCommand.action(withErrorHandling(async (rawIds: string[], options: BulkO
   const names = await fetchBulkNames(client, ids);
   showSummary(ids, names, 'stop');
 
+  if (options.reason && !(VALID_STOP_REASONS as readonly string[]).includes(options.reason)) {
+    throw new Error(
+      `Invalid stop reason: "${options.reason}"\n` +
+      `Valid reasons: ${VALID_STOP_REASONS.join(', ')}`
+    );
+  }
+
   const reason = options.reason || await select({
     message: 'Reason for stopping',
     choices: VALID_STOP_REASONS.map(r => ({ value: r, name: r.replace(/_/g, ' ') })),

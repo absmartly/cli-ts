@@ -56,12 +56,14 @@ describe('doctor command', () => {
     vi.mocked(getAPIKey).mockResolvedValue('test-key');
     vi.mocked(createAPIClient).mockReturnValue({
       listApplications: vi.fn().mockResolvedValue([]),
+      listExperiments: vi.fn().mockResolvedValue([]),
     } as any);
 
     await doctorCommand.parseAsync(['node', 'test']);
 
     const output = consoleSpy.mock.calls.flat().join('\n');
-    expect(output).toContain('All checks passed');
+    expect(output).toContain('API connection successful');
+    expect(output).not.toContain('✗');
   });
 
   it('should report missing API key', async () => {

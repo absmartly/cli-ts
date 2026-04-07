@@ -14,7 +14,10 @@ describe('activity command', () => {
   let processExitSpy: ReturnType<typeof vi.spyOn>;
 
   const mockClient = {
-    resolveExperimentId: vi.fn().mockImplementation((v: string) => Promise.resolve(Number(v))),
+    resolveExperimentId: vi.fn().mockImplementation((v: string) => {
+      const n = Number(v);
+      return Promise.resolve(isNaN(n) ? 123 : n);
+    }),
     listExperimentActivity: vi.fn(),
     createExperimentNote: vi.fn().mockResolvedValue({ id: 1 }),
     editExperimentNote: vi.fn().mockResolvedValue({ id: 1 }),

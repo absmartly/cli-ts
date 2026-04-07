@@ -15,6 +15,7 @@ export const doctorCommand = new Command('doctor')
     console.log(chalk.bold('\n🔍 ABSmartly CLI Diagnostics\n'));
 
     let allGood = true;
+    let hasWarnings = false;
 
     try {
       const config = loadConfig();
@@ -58,12 +59,14 @@ export const doctorCommand = new Command('doctor')
         console.log(chalk.green('✓') + ` Default application: ${profile.application}`);
       } else {
         console.log(chalk.yellow('⚠') + ' No default application set');
+        hasWarnings = true;
       }
 
       if (profile.environment) {
         console.log(chalk.green('✓') + ` Default environment: ${profile.environment}`);
       } else {
         console.log(chalk.yellow('⚠') + ' No default environment set');
+        hasWarnings = true;
       }
       try {
         const cachePath = join(homedir(), '.config', 'absmartly', 'custom-fields-cache.json');
@@ -76,6 +79,7 @@ export const doctorCommand = new Command('doctor')
       } catch {
         console.log(chalk.yellow('⚠') + ' Custom fields cache not found');
         console.log(chalk.yellow('  Run: abs experiments refresh-fields'));
+        hasWarnings = true;
       }
 
       try {
@@ -87,10 +91,12 @@ export const doctorCommand = new Command('doctor')
         } else {
           const modeStr = mode.toString(8);
           console.log(chalk.yellow('⚠') + ` Credentials file permissions are ${modeStr} (expected 600)`);
+          hasWarnings = true;
         }
       } catch (e) {
         if (e instanceof Error && (e as NodeJS.ErrnoException).code !== 'ENOENT') {
           console.log(chalk.yellow('⚠') + ` Could not check credentials file permissions: ${e.message}`);
+          hasWarnings = true;
         }
       }
 
@@ -109,11 +115,13 @@ export const doctorCommand = new Command('doctor')
           }
           if (staleCount > 0) {
             console.log(chalk.yellow('⚠') + ` ${staleCount} experiments stuck in 'created' state`);
+            hasWarnings = true;
           } else {
             console.log(chalk.green('✓') + ' No stale experiments in created state');
           }
         } catch (e) {
           console.log(chalk.yellow('⚠') + ` Could not check for stale experiments: ${e instanceof Error ? e.message : e}`);
+          hasWarnings = true;
         }
       }
 
@@ -122,8 +130,10 @@ export const doctorCommand = new Command('doctor')
       allGood = false;
     }
 
-    if (allGood) {
+    if (allGood && !hasWarnings) {
       console.log(chalk.green('\n✓ All checks passed!'));
+    } else if (allGood && hasWarnings) {
+      console.log(chalk.yellow('\n⚠ Checks passed with warnings. See messages above.'));
     } else {
       console.log(chalk.yellow('\n⚠ Some issues found. See messages above.'));
       process.exit(1);

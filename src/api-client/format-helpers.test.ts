@@ -275,7 +275,7 @@ describe('formatOwnerLabel', () => {
     expect(formatOwnerLabel({
       user_id: 1,
       user: { first_name: 'Jane', email: 'jane@example.com' },
-    })).toBe('Jane  <jane@example.com>');
+    })).toBe('Jane <jane@example.com>');
   });
 
   it('should fallback to user_id when user is missing', () => {

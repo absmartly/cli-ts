@@ -12,6 +12,16 @@ function shellEscape(s: string): string {
   return "'" + s.replace(/'/g, "'\\''") + "'";
 }
 
+function parseInteger(flag: string): (value: string) => number {
+  return (value: string) => {
+    const parsed = parseInt(value, 10);
+    if (Number.isNaN(parsed)) {
+      throw new Error(`Invalid integer for ${flag}: "${value}"`);
+    }
+    return parsed;
+  };
+}
+
 export const createCommand = new Command('create')
   .description('Create a new experiment')
   .option('--from-file <path>', 'create from markdown template file')
@@ -20,11 +30,11 @@ export const createCommand = new Command('create')
   .option('--state <state>', 'initial state (created, ready, running)', 'ready')
   .option('--variants <names>', 'comma-separated variant names')
   .option('--variant-config <json...>', 'variant config JSON (one per variant, in order)')
-  .option('--application-id <id>', 'application ID', parseInt)
-  .option('--unit-type <id>', 'unit type ID', parseInt)
-  .option('--primary-metric <id>', 'primary metric ID', parseInt)
+  .option('--application-id <id>', 'application ID', parseInteger('--application-id'))
+  .option('--unit-type <id>', 'unit type ID', parseInteger('--unit-type'))
+  .option('--primary-metric <id>', 'primary metric ID', parseInteger('--primary-metric'))
   .option('--percentages <values>', 'comma-separated traffic split per variant (e.g. 50,50)')
-  .option('--percentage-of-traffic <pct>', 'percentage of total traffic (0-100)', parseInt, 100)
+  .option('--percentage-of-traffic <pct>', 'percentage of total traffic (0-100)', parseInteger('--percentage-of-traffic'), 100)
   .option('--env <name>', 'environment name')
   .option('--owner <user_id>', 'owner user ID (can specify multiple)', (val: string, prev: string[]) => [...prev, val], [] as string[])
   .option('--screenshot <variant:source...>', 'variant screenshot (variant_index:path_or_url, can specify multiple)')

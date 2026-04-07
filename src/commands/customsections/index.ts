@@ -62,7 +62,12 @@ const reorderCommand = new Command('reorder')
     const client = await getAPIClientFromOptions(globalOptions);
     const sections = options.sections.split(',').map((pair: string) => {
       const [idStr, orderStr] = pair.trim().split(':');
-      return { id: parseInt(idStr ?? '', 10), order_index: parseInt(orderStr ?? '', 10) };
+      const id = parseInt(idStr ?? '', 10);
+      const order_index = parseInt(orderStr ?? '', 10);
+      if (Number.isNaN(id) || Number.isNaN(order_index)) {
+        throw new Error(`Invalid section pair: "${pair}". Expected format: id:order_index (e.g., 1:0)`);
+      }
+      return { id, order_index };
     });
     await reorderCustomSections(client, { sections });
     console.log(chalk.green(`✓ Custom sections reordered`));

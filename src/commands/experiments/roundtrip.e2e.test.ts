@@ -124,7 +124,7 @@ description: Testing the full roundtrip flow
 
     exportedMarkdown = await experimentToMarkdown(experiment as any);
 
-    expect(exportedMarkdown).toContain('display_name: "Roundtrip E2E Test"');
+    expect(exportedMarkdown).toContain('display_name: Roundtrip E2E Test');
     expect(exportedMarkdown).toContain('percentage_of_traffic: 80');
     expect(exportedMarkdown).toContain('percentages: 40/60');
     expect(exportedMarkdown).toContain('### variant_0');
@@ -138,7 +138,7 @@ description: Testing the full roundtrip flow
 
   it('should update experiment from modified markdown template', async () => {
     const modifiedMd = exportedMarkdown
-      .replace('display_name: "Roundtrip E2E Test"', 'display_name: "Updated Roundtrip Test"')
+      .replace('display_name: Roundtrip E2E Test', 'display_name: Updated Roundtrip Test')
       .replace('percentage_of_traffic: 80', 'percentage_of_traffic: 60');
 
     const modifiedTemplate = parseExperimentMarkdown(modifiedMd);

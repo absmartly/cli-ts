@@ -32,7 +32,7 @@ describe('experimentToMarkdown', () => {
 
     expect(md).toContain('---\n');
     expect(md).toContain('name: test-experiment');
-    expect(md).toContain('display_name: "Test Experiment"');
+    expect(md).toContain('display_name: Test Experiment');
     expect(md).toContain('type: test');
     expect(md).toContain('state: running');
     expect(md).toContain('percentage_of_traffic: 100');

@@ -36,6 +36,14 @@ const terminalMarked = new Marked(markedTerminal({
 
 export { resolveMentions };
 
+function parsePositiveIntFlag(value: string, flag: string): number {
+  const parsed = parseInt(value, 10);
+  if (Number.isNaN(parsed) || parsed <= 0) {
+    throw new Error(`Invalid value for ${flag}: "${value}". Expected a positive integer.`);
+  }
+  return parsed;
+}
+
 export function formatNoteText(text: string, lookups: NoteLookups = {}): string {
   const resolved = resolveMentions(text, lookups);
   const rendered = terminalMarked.parse(resolved) as string;
@@ -85,8 +93,8 @@ const listCommand = new Command('list')
     const client = await getAPIClientFromOptions(globalOptions);
 
     const since = parseDateFlagOrUndefined(options.since);
-    const experiments = parseInt(options.items ?? options.experiments, 10);
-    const limit = parseInt(options.limit, 10);
+    const experiments = parsePositiveIntFlag(options.items ?? options.experiments, '--experiments');
+    const limit = parsePositiveIntFlag(options.limit, '--limit');
 
     const result = await coreListActivity(client, {
       experiments,
@@ -118,8 +126,8 @@ const watchCommand = new Command('watch')
     const globalOptions = getGlobalOptions(watchCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
-    const intervalSeconds = parseInt(options.interval, 10);
-    const experiments = parseInt(options.items ?? options.experiments, 10);
+    const intervalSeconds = parsePositiveIntFlag(options.interval, '--interval');
+    const experiments = parsePositiveIntFlag(options.items ?? options.experiments, '--experiments');
 
     let lastSeenTimestamp: number | undefined;
     const lookups = options.notes ? await buildLookups(client) : {} as NoteLookups;

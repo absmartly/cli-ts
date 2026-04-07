@@ -72,10 +72,22 @@ function buildCustomSectionFieldValues(
     (f) => !f.archived && f.custom_section?.type === experimentType && !f.custom_section?.archived,
   );
 
+  // Build a case-insensitive map from template custom field keys to their values
+  const templateFieldMap = new Map<string, string>();
   if (templateCustomFields) {
-    const relevantTitles = new Set(relevantFields.map(f => (f.title ?? f.name ?? '').toLowerCase()));
+    for (const [key, val] of Object.entries(templateCustomFields)) {
+      templateFieldMap.set(key.toLowerCase(), val);
+    }
+  }
+
+  if (templateCustomFields) {
+    const relevantKeys = new Set<string>();
+    for (const f of relevantFields) {
+      if (f.title) relevantKeys.add(String(f.title).toLowerCase());
+      if (f.name) relevantKeys.add(String(f.name).toLowerCase());
+    }
     for (const name of Object.keys(templateCustomFields)) {
-      if (!relevantTitles.has(name.toLowerCase())) {
+      if (!relevantKeys.has(name.toLowerCase())) {
         warnings.push(`Custom field "${name}" in template has no matching custom section field`);
       }
     }
@@ -92,8 +104,9 @@ function buildCustomSectionFieldValues(
       value = JSON.stringify({ selected: [{ userId: ownerId }] });
     }
     if (templateCustomFields) {
-      const fieldLabel = field.title ?? field.name ?? '';
-      const templateValue = templateCustomFields[fieldLabel];
+      const titleKey = (field.title ?? '').toLowerCase();
+      const nameKey = (field.name ?? '').toLowerCase();
+      const templateValue = templateFieldMap.get(titleKey) ?? templateFieldMap.get(nameKey);
       if (templateValue !== undefined) {
         if (field.type === 'user' && templateValue && !templateValue.startsWith('{')) {
           const userIds = templateValue.split(',').map(ref => {
@@ -134,7 +147,6 @@ async function buildVariantScreenshots(
     }
 
     if (!v.screenshot) continue;
-    if (v.screenshot.startsWith('/files/')) continue;
 
     let resolved;
     try {

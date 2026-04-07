@@ -84,6 +84,8 @@ abs auth login --endpoint https://your-instance.absmartly.com/v1 --no-browser
 abs auth login --endpoint https://dev.local/v1 -k
 ```
 
+> **Security note**: The `-k` flag disables TLS certificate verification. Only use in trusted development environments.
+
 ### Auth commands
 
 ```bash
@@ -307,8 +309,8 @@ abs experiments request-update 123 --replace-gsa
 abs experiments request-update 123 --tasks preview_group_sequential --replace-gsa
 
 # Schedule future actions
-abs experiments schedule create 123 --action start --at 2026-04-01T10:00:00Z
-abs experiments schedule create 123 --action stop --at 2026-04-15T18:00:00+02:00 --reason testing
+abs experiments schedule create 123 --action start --at 2027-01-15T10:00:00Z
+abs experiments schedule create 123 --action stop --at 2027-01-30T18:00:00+02:00 --reason testing
 abs experiments schedule delete 123 456
 
 # Compare experiments
@@ -535,8 +537,8 @@ The `abs experiments schedule create --action` option accepts: `start`, `restart
 The `--at` timestamp must include a timezone — either `Z` (UTC) or an offset like `+02:00`. The time must be in the future.
 
 ```bash
-abs experiments schedule create 123 --action start --at 2026-04-01T10:00:00Z
-abs experiments schedule create 123 --action stop --at 2026-04-15T18:00:00+02:00
+abs experiments schedule create 123 --action start --at 2027-01-15T10:00:00Z
+abs experiments schedule create 123 --action stop --at 2027-01-30T18:00:00+02:00
 ```
 
 #### Valid request-update tasks
@@ -1148,6 +1150,8 @@ profiles:
 
 API key resolution order: `--api-key` flag > `ABSMARTLY_API_KEY` env > OS keychain > `~/.config/absmartly/credentials.json`
 
+> **Security note**: Environment variables may be visible in process listings and logs. For production, prefer OS keychain storage (default) or the credentials file on headless systems.
+
 ## Experiment templates
 
 The CLI uses Markdown templates with YAML frontmatter for experiment round-trips.
@@ -1284,7 +1288,7 @@ The package exports a framework-free core layer that can be used programmaticall
 
 ```typescript
 import { createAPIClient } from '@absmartly/cli/api-client';
-import { listExperiments, startExperiment, stopExperiment } from '@absmartly/cli/core/experiments';
+import { listExperiments, startExperiment, stopExperiment, ExperimentId } from '@absmartly/cli/core/experiments';
 
 const client = createAPIClient({
   endpoint: 'https://your-instance.absmartly.com/v1',
@@ -1315,6 +1319,8 @@ await stopExperiment(client, {
   note: 'Results conclusive',
 });
 ```
+
+> **Note**: `ExperimentId()` is a branded type constructor for type safety. In JavaScript, you can pass plain numeric IDs instead.
 
 #### Create from template
 

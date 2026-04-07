@@ -157,7 +157,7 @@ describe('get command', () => {
     const output = consoleSpy.mock.calls.flat().join('');
     expect(output).toContain('---');
     expect(output).toContain('name: test-exp');
-    expect(output).toContain('display_name: "Test Exp"');
+    expect(output).toContain('display_name: Test Exp');
     expect(output).toContain('### variant_0');
     expect(output).toContain('### variant_1');
   });

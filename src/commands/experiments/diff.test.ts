@@ -40,7 +40,10 @@ describe('diff command', () => {
   let processExitSpy: ReturnType<typeof vi.spyOn>;
 
   const mockClient = {
-    resolveExperimentId: vi.fn().mockImplementation((v: string) => Promise.resolve(Number(v))),
+    resolveExperimentId: vi.fn().mockImplementation((v: string) => {
+      const n = Number(v);
+      return Promise.resolve(isNaN(n) ? 123 : n);
+    }),
     getExperiment: vi.fn(),
     listExperiments: vi.fn(),
   };
@@ -84,8 +87,9 @@ describe('diff command', () => {
   });
 
   it('should show no differences for identical experiments', async () => {
-    const exp = makeExperiment();
-    mockClient.getExperiment.mockResolvedValue(exp);
+    mockClient.getExperiment
+      .mockResolvedValueOnce(structuredClone(makeExperiment()))
+      .mockResolvedValueOnce(structuredClone(makeExperiment()));
 
     await diffCommand.parseAsync(['node', 'test', '1', '2']);
 
