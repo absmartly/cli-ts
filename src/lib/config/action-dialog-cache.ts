@@ -28,7 +28,14 @@ function readCache(): CacheData {
   try {
     return JSON.parse(readFileSync(CACHE_FILE, 'utf8'));
   } catch (e) {
-    console.error(`Warning: action dialog cache corrupted (${e instanceof Error ? e.message : e}). Run: abs experiments refresh-fields`);
+    console.error('');
+    console.error(`[absmartly] WARNING: Cache file is corrupted and could not be parsed.`);
+    console.error(`  File: ${CACHE_FILE}`);
+    console.error(`  Error: ${e instanceof Error ? e.message : e}`);
+    console.error(`  To fix: delete the file and refresh the cache:`);
+    console.error(`    rm "${CACHE_FILE}"`);
+    console.error(`    abs experiments refresh-fields`);
+    console.error('');
     return {};
   }
 }

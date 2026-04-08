@@ -4,6 +4,7 @@ import { getAPIClientFromOptions, getGlobalOptions, withErrorHandling } from '..
 import { experimentToMarkdown } from '../../api-client/template/serializer.js';
 import { parseExperimentMarkdown } from '../../api-client/template/parser.js';
 import { buildPayloadFromTemplate } from '../../api-client/template/build-from-template.js';
+import { readTemplateFile } from '../../lib/template/parser.js';
 import { runInteractiveEditor } from '../../lib/interactive/run.js';
 import type { ExperimentInput } from '../../api-client/index.js';
 import { parseExperimentIdOrName } from './resolve-id.js';
@@ -39,7 +40,7 @@ restartCommand.action(withErrorHandling(async (nameOrId: string, options) => {
       reshuffle: options.reshuffle,
       state: options.state,
       asType: options.asType,
-      fromFile: options.fromFile,
+      templateContent: options.fromFile ? readTemplateFile(options.fromFile) : undefined,
       defaultType: getDefaultType(),
       customFieldValues: extractCustomFieldValues(options, getDefaultType(), globalOptions.profile as string),
     };

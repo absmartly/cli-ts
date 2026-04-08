@@ -2,8 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { updateExperiment, buildUpdateChanges } from './update.js';
 import type { ExperimentId } from '../../lib/api/branded-types.js';
 
-vi.mock('../../lib/template/parser.js', () => ({
-  parseExperimentFile: vi.fn().mockReturnValue({ name: 'from-file' }),
+vi.mock('../../api-client/template/parser.js', () => ({
+  parseExperimentMarkdown: vi.fn().mockReturnValue({ name: 'from-file' }),
 }));
 
 vi.mock('../../api-client/template/build-from-template.js', () => ({

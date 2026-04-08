@@ -2,7 +2,7 @@ import type { APIClient } from '../../api-client/api-client.js';
 import type { ExperimentId } from '../../lib/api/branded-types.js';
 import type { CommandResult } from '../types.js';
 import type { ExperimentInput } from '../../api-client/index.js';
-import { parseExperimentFile } from '../../lib/template/parser.js';
+import { parseExperimentMarkdown } from '../../api-client/template/parser.js';
 import { buildPayloadFromTemplate } from '../../api-client/template/build-from-template.js';
 import { buildSecondaryMetrics } from '../../api-client/payload/metrics-builder.js';
 import { parseCSV } from '../../api-client/payload/parse-csv.js';
@@ -35,7 +35,7 @@ export interface UpdateExperimentParams {
   screenshot?: string[];
   screenshotId?: string[];
   customFieldValues?: Record<string, string>;
-  fromFile?: string;
+  templateContent?: string | undefined;
   defaultType: string;
   note?: string;
 }
@@ -129,8 +129,8 @@ export async function buildUpdateChanges(
     }
   }
 
-  if (params.fromFile) {
-    const template = parseExperimentFile(params.fromFile);
+  if (params.templateContent) {
+    const template = parseExperimentMarkdown(params.templateContent);
     const resolved = await buildPayloadFromTemplate(client, template, params.defaultType);
     warnings.push(...resolved.warnings);
     for (const [key, value] of Object.entries(resolved.payload)) {

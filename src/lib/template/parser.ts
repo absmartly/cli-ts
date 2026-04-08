@@ -4,10 +4,9 @@ import { parseExperimentMarkdown } from '../../api-client/template/parser.js';
 export type { VariantTemplate, ExperimentTemplate } from '../../api-client/template/parser.js';
 export { parseExperimentMarkdown } from '../../api-client/template/parser.js';
 
-export function parseExperimentFile(filePath: string) {
-  let content: string;
+export function readTemplateFile(filePath: string): string {
   try {
-    content = readFileSync(filePath === '-' ? '/dev/stdin' : filePath, 'utf8');
+    return readFileSync(filePath === '-' ? '/dev/stdin' : filePath, 'utf8');
   } catch (error) {
     if (error instanceof Error) {
       if (error.message.includes('ENOENT')) {
@@ -27,6 +26,9 @@ export function parseExperimentFile(filePath: string) {
       `Failed to read template file ${filePath}: ${error instanceof Error ? error.message : error}`
     );
   }
+}
 
+export function parseExperimentFile(filePath: string) {
+  const content = readTemplateFile(filePath);
   return parseExperimentMarkdown(content);
 }

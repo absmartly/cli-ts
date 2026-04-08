@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { updateCommand } from './update.js';
 import { getAPIClientFromOptions, getGlobalOptions } from '../../lib/utils/api-helper.js';
-import { parseExperimentFile } from '../../lib/template/parser.js';
+import { readTemplateFile } from '../../lib/template/parser.js';
+import { parseExperimentMarkdown } from '../../api-client/template/parser.js';
 import { resetCommand } from '../../test/helpers/command-reset.js';
 
 vi.mock('../../lib/utils/api-helper.js', async (importOriginal) => {
@@ -9,6 +10,7 @@ vi.mock('../../lib/utils/api-helper.js', async (importOriginal) => {
   return { ...actual, getAPIClientFromOptions: vi.fn(), getGlobalOptions: vi.fn() };
 });
 vi.mock('../../lib/template/parser.js');
+vi.mock('../../api-client/template/parser.js');
 
 describe('update command', () => {
   let consoleSpy: ReturnType<typeof vi.spyOn>;
@@ -263,7 +265,8 @@ describe('update command', () => {
   });
 
   it('should update from template file', async () => {
-    vi.mocked(parseExperimentFile).mockReturnValue({
+    vi.mocked(readTemplateFile).mockReturnValue('---\nname: test\n---\n');
+    vi.mocked(parseExperimentMarkdown).mockReturnValue({
       display_name: 'Template Name',
       percentage_of_traffic: 75,
       state: 'running',

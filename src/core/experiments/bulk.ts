@@ -2,6 +2,15 @@ import type { APIClient } from '../../api-client/api-client.js';
 import type { CommandResult } from '../types.js';
 import type { ExperimentId } from '../../lib/api/branded-types.js';
 import { parseExperimentId } from '../../lib/utils/validators.js';
+import { APIError } from '../../api-client/http-client.js';
+
+const FATAL_STATUS_CODES = new Set([401, 403, 429]);
+
+const FATAL_STATUS_MESSAGES: Record<number, string> = {
+  401: 'Authentication failed (401 Unauthorized) — check your API key',
+  403: 'Permission denied (403 Forbidden) — insufficient permissions for this operation',
+  429: 'Rate limit exceeded (429 Too Many Requests) — try again later',
+};
 
 const CONCURRENCY_LIMIT = 5;
 
@@ -89,15 +98,28 @@ export async function runBulkOperation(
 ): Promise<CommandResult<BulkOperationResult>> {
   const results: BulkResult[] = [];
   const queue = [...ids];
+  let abortMessage: string | null = null;
 
   async function worker() {
     while (queue.length > 0) {
+      if (abortMessage !== null) return;
+
       const id = queue.shift()!;
       const name = names.get(id) ?? `#${id}`;
       try {
         await action(id);
         results.push({ id, name, success: true });
       } catch (err) {
+        const statusCode = err instanceof APIError ? err.statusCode : undefined;
+
+        if (statusCode !== undefined && FATAL_STATUS_CODES.has(statusCode)) {
+          const fatalMessage = `${FATAL_STATUS_MESSAGES[statusCode]} — batch aborted`;
+          abortMessage = fatalMessage;
+          results.push({ id, name, success: false, error: fatalMessage });
+          queue.length = 0; // drain remaining items so other workers stop
+          return;
+        }
+
         const message = err instanceof Error ? err.message : String(err);
         results.push({ id, name, success: false, error: message });
       }
@@ -109,14 +131,21 @@ export async function runBulkOperation(
 
   const succeeded = results.filter(r => r.success).length;
   const failed = results.filter(r => !r.success).length;
+  const skipped = ids.length - results.length;
+
+  const warnings: string[] = [];
+  if (abortMessage !== null) {
+    warnings.push(`${abortMessage} (${skipped} operation(s) skipped)`);
+  }
 
   return {
     data: {
       results,
       succeeded,
       failed,
-      total: results.length,
+      total: ids.length,
     },
+    ...(warnings.length > 0 ? { warnings } : {}),
   };
 }
 

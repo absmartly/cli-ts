@@ -56,7 +56,7 @@ describe('OAuth JWT auto-refresh interceptor', () => {
     expect(callCount).toBe(2);
   });
 
-  it('propagates the original 401 error when onExpired throws', async () => {
+  it('propagates a contextual error when onExpired throws', async () => {
     const onExpired = vi.fn().mockRejectedValue(new Error('refresh failed'));
 
     mswServer.use(
@@ -73,9 +73,13 @@ describe('OAuth JWT auto-refresh interceptor', () => {
 
     await expect(
       client.request({ method: 'GET', url: '/experiments' })
-    ).rejects.toThrow('Unauthorized');
+    ).rejects.toThrow(/token refresh unsuccessful.*refresh failed/);
 
-    expect(onExpired).toHaveBeenCalledOnce();
+    await expect(
+      client.request({ method: 'GET', url: '/experiments' })
+    ).rejects.toThrow('abs auth login');
+
+    expect(onExpired).toHaveBeenCalled();
     expect(stderrSpy).toHaveBeenCalledWith(
       expect.stringContaining('Token refresh failed: refresh failed')
     );

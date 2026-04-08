@@ -17,7 +17,7 @@ export function isStdoutPiped(): boolean {
 }
 
 export async function readLinesFromStdin(): Promise<string[]> {
-  if (process.stdin.isTTY) {
+  if (!isStdinPiped()) {
     console.error('Waiting for input on stdin... (pipe data or press Ctrl+D to end)');
   }
   const chunks: Buffer[] = [];

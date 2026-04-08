@@ -2,7 +2,7 @@ import type { APIClient } from '../../api-client/api-client.js';
 import type { ExperimentId } from '../../lib/api/branded-types.js';
 import type { CommandResult } from '../types.js';
 import type { ExperimentInput } from '../../api-client/index.js';
-import { parseExperimentFile } from '../../lib/template/parser.js';
+import { parseExperimentMarkdown } from '../../api-client/template/parser.js';
 import { buildPayloadFromTemplate } from '../../api-client/template/build-from-template.js';
 import { resolveCustomFieldValues } from './resolve-custom-fields.js';
 
@@ -22,7 +22,7 @@ export interface RestartExperimentParams {
   reshuffle?: boolean;
   state?: string;
   asType?: string;
-  fromFile?: string;
+  templateContent?: string | undefined;
   defaultType: string;
   customFieldValues?: Record<string, string>;
 }
@@ -60,8 +60,8 @@ export async function buildRestartChanges(
   let changes: Partial<ExperimentInput> | undefined;
   const warnings: string[] = [];
 
-  if (params.fromFile) {
-    const newTemplate = parseExperimentFile(params.fromFile);
+  if (params.templateContent) {
+    const newTemplate = parseExperimentMarkdown(params.templateContent);
     const result = await buildPayloadFromTemplate(client, newTemplate, params.asType || params.defaultType);
     warnings.push(...result.warnings);
     changes = result.payload as Partial<ExperimentInput>;

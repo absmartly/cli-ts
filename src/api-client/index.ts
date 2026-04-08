@@ -2,8 +2,8 @@ export type {
   HttpClient,
   HttpRequestConfig,
   HttpResponse,
-  APIError,
 } from './http-client.js';
+export { APIError } from './http-client.js';
 
 export { APIClient, createAPIClient } from './api-client.js';
 

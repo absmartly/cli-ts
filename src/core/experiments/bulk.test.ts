@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { collectBulkIds, fetchBulkNames, runBulkOperation, bulkStart, bulkStop, bulkArchive } from './bulk.js';
+import { APIError } from '../../api-client/http-client.js';
 import type { ExperimentId } from '../../lib/api/branded-types.js';
 
 vi.mock('../../lib/utils/validators.js', () => ({
@@ -131,6 +132,91 @@ describe('bulk', () => {
       const action = vi.fn().mockResolvedValue('ok');
       const result = await runBulkOperation([id(7)], names, action);
       expect(result.data.results[0]!.name).toBe('#7');
+    });
+
+    it('aborts batch on 401 APIError and reports warning', async () => {
+      const names = new Map<ExperimentId, string>([
+        [id(1), 'A'],
+        [id(2), 'B'],
+        [id(3), 'C'],
+      ]);
+      const action = vi.fn()
+        .mockRejectedValue(new APIError('Unauthorized', 401));
+
+      const result = await runBulkOperation([id(1), id(2), id(3)], names, action);
+      // Only the first item should have been attempted (all 5 workers race for queue items,
+      // but once a 401 is detected the queue is drained and others exit)
+      expect(result.data.results.length).toBeLessThanOrEqual(3);
+      expect(result.data.results.length).toBeGreaterThanOrEqual(1);
+      // The first failure should contain the abort message
+      const failedResult = result.data.results.find(r => !r.success);
+      expect(failedResult!.error).toContain('Authentication failed (401 Unauthorized)');
+      expect(failedResult!.error).toContain('batch aborted');
+      // total should reflect all ids, not just processed ones
+      expect(result.data.total).toBe(3);
+      // warnings should indicate skipped operations
+      expect(result.warnings).toBeDefined();
+      expect(result.warnings![0]).toContain('batch aborted');
+      expect(result.warnings![0]).toContain('skipped');
+    });
+
+    it('aborts batch on 403 APIError', async () => {
+      const names = new Map<ExperimentId, string>([[id(1), 'A'], [id(2), 'B']]);
+      const action = vi.fn()
+        .mockRejectedValue(new APIError('Forbidden', 403));
+
+      const result = await runBulkOperation([id(1), id(2)], names, action);
+      const failedResult = result.data.results.find(r => !r.success);
+      expect(failedResult!.error).toContain('Permission denied (403 Forbidden)');
+      expect(failedResult!.error).toContain('batch aborted');
+      expect(result.warnings).toBeDefined();
+    });
+
+    it('aborts batch on 429 APIError', async () => {
+      const names = new Map<ExperimentId, string>([[id(1), 'A'], [id(2), 'B']]);
+      const action = vi.fn()
+        .mockResolvedValueOnce('ok')
+        .mockRejectedValue(new APIError('Too Many Requests', 429));
+
+      const result = await runBulkOperation([id(1), id(2)], names, action);
+      expect(result.data.succeeded).toBe(1);
+      const failedResult = result.data.results.find(r => !r.success);
+      expect(failedResult!.error).toContain('Rate limit exceeded (429 Too Many Requests)');
+      expect(failedResult!.error).toContain('batch aborted');
+    });
+
+    it('does not abort on non-fatal API errors (e.g. 500)', async () => {
+      const names = new Map<ExperimentId, string>([
+        [id(1), 'A'],
+        [id(2), 'B'],
+        [id(3), 'C'],
+      ]);
+      const action = vi.fn()
+        .mockResolvedValueOnce('ok')
+        .mockRejectedValueOnce(new APIError('Internal Server Error', 500))
+        .mockResolvedValueOnce('ok');
+
+      const result = await runBulkOperation([id(1), id(2), id(3)], names, action);
+      expect(result.data.succeeded).toBe(2);
+      expect(result.data.failed).toBe(1);
+      expect(result.data.total).toBe(3);
+      expect(result.warnings).toBeUndefined();
+    });
+
+    it('does not abort on regular (non-API) errors', async () => {
+      const names = new Map<ExperimentId, string>([
+        [id(1), 'A'],
+        [id(2), 'B'],
+      ]);
+      const action = vi.fn()
+        .mockRejectedValueOnce(new Error('network timeout'))
+        .mockResolvedValueOnce('ok');
+
+      const result = await runBulkOperation([id(1), id(2)], names, action);
+      expect(result.data.succeeded).toBe(1);
+      expect(result.data.failed).toBe(1);
+      expect(result.data.total).toBe(2);
+      expect(result.warnings).toBeUndefined();
     });
   });
 

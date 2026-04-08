@@ -105,8 +105,15 @@ export class AxiosHttpClient implements HttpClient {
             return this.client.request(error.config);
           }
         } catch (refreshError) {
-          const msg = refreshError instanceof Error ? refreshError.message : String(refreshError);
-          console.error(`Warning: Token refresh failed: ${msg}`);
+          const refreshMsg = refreshError instanceof Error ? refreshError.message : String(refreshError);
+          console.error(`Warning: Token refresh failed: ${refreshMsg}`);
+          const wrappedError = new APIError(
+            `Authentication failed: token refresh unsuccessful (${refreshMsg}).\n` +
+            `Run: abs auth login`,
+            401,
+            error.response?.data,
+          );
+          return Promise.reject(wrappedError);
         } finally {
           isRefreshing = false;
         }

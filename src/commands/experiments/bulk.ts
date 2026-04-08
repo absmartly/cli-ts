@@ -89,6 +89,9 @@ bulkStartCommand.action(withErrorHandling(async (rawIds: string[], options: Bulk
 
   const result = await bulkStart(client, ids, names, options.note);
   printResults(result.data.results, 'started');
+  if (result.warnings?.length) {
+    for (const w of result.warnings) console.log(chalk.yellow(`\n⚠ ${w}`));
+  }
 }));
 
 const bulkStopCommand = addSharedOptions(
@@ -136,6 +139,9 @@ bulkStopCommand.action(withErrorHandling(async (rawIds: string[], options: BulkO
 
   const result = await bulkStop(client, ids, names, reason, options.note);
   printResults(result.data.results, 'stopped');
+  if (result.warnings?.length) {
+    for (const w of result.warnings) console.log(chalk.yellow(`\n⚠ ${w}`));
+  }
 }));
 
 const bulkArchiveCommand = addSharedOptions(
@@ -170,6 +176,9 @@ bulkArchiveCommand.action(withErrorHandling(async (rawIds: string[], options: Bu
 
   const result = await bulkArchive(client, ids, names, options.note);
   printResults(result.data.results, 'archived');
+  if (result.warnings?.length) {
+    for (const w of result.warnings) console.log(chalk.yellow(`\n⚠ ${w}`));
+  }
 }));
 
 const bulkDevelopmentCommand = addSharedOptions(
@@ -205,6 +214,9 @@ bulkDevelopmentCommand.action(withErrorHandling(async (rawIds: string[], options
 
   const result = await bulkDevelopment(client, ids, names, options.note);
   printResults(result.data.results, 'set to development');
+  if (result.warnings?.length) {
+    for (const w of result.warnings) console.log(chalk.yellow(`\n⚠ ${w}`));
+  }
 }));
 
 const bulkFullOnCommand = addSharedOptions(
@@ -251,6 +263,9 @@ bulkFullOnCommand.action(withErrorHandling(async (rawIds: string[], options: Bul
 
   const result = await bulkFullOn(client, ids, names, variant, options.note);
   printResults(result.data.results, `set to full-on (variant ${variant})`);
+  if (result.warnings?.length) {
+    for (const w of result.warnings) console.log(chalk.yellow(`\n⚠ ${w}`));
+  }
 }));
 
 export const bulkCommand = new Command('bulk')

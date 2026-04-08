@@ -2,8 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { validateRestartParams, restartExperiment, VALID_RESTART_REASONS, VALID_RESTART_TYPES } from './restart.js';
 import type { ExperimentId } from '../../lib/api/branded-types.js';
 
-vi.mock('../../lib/template/parser.js', () => ({
-  parseExperimentFile: vi.fn().mockReturnValue({ name: 'from-file' }),
+vi.mock('../../api-client/template/parser.js', () => ({
+  parseExperimentMarkdown: vi.fn().mockReturnValue({ name: 'from-file' }),
 }));
 
 vi.mock('../../api-client/template/build-from-template.js', () => ({
