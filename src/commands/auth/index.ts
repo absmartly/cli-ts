@@ -35,8 +35,12 @@ function buildProfile(
     if (existing?.expctld?.endpoint) {
       existingExpctldEndpoint = existing.expctld.endpoint;
     }
-  } catch {
-    // No existing profile — use empty default
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    if (!msg.includes('not found')) {
+      console.error(`Warning: unexpected error reading profile "${profileName}": ${msg}`);
+    }
+    // Profile not found — use empty default
   }
 
   const profile: {
@@ -95,7 +99,12 @@ const loginCommand = new Command('login')
       try {
         const existingProfile = getProfile(profileName);
         resolvedEndpoint = existingProfile.api.endpoint;
-      } catch { }
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        if (!msg.includes('not found')) {
+          console.error(`Warning: unexpected error reading profile "${profileName}": ${msg}`);
+        }
+      }
     }
 
     if (!resolvedEndpoint) {
@@ -238,12 +247,27 @@ const logoutCommand = new Command('logout')
     const parentOpts = command.parent?.parent?.opts() || {};
     const profileName = parentOpts.profile || config['default-profile'];
 
-    await Promise.allSettled([
+    const [oauthResult, apiKeyResult] = await Promise.allSettled([
       deleteOAuthToken(profileName),
       deleteAPIKey(profileName),
     ]);
 
-    console.log(`✓ Logged out (profile: ${profileName})`);
+    const warnings: string[] = [];
+    if (oauthResult.status === 'rejected') {
+      warnings.push(`Warning: failed to delete OAuth token: ${oauthResult.reason instanceof Error ? oauthResult.reason.message : oauthResult.reason}`);
+    }
+    if (apiKeyResult.status === 'rejected') {
+      warnings.push(`Warning: failed to delete API key: ${apiKeyResult.reason instanceof Error ? apiKeyResult.reason.message : apiKeyResult.reason}`);
+    }
+    for (const w of warnings) {
+      console.error(w);
+    }
+
+    if (warnings.length === 2) {
+      console.error(`Logout may be incomplete for profile: ${profileName}`);
+    } else {
+      console.log(`✓ Logged out (profile: ${profileName})`);
+    }
   }));
 
 const createApiKeyCommand = new Command('create-api-key')

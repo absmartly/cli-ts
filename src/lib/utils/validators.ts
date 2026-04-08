@@ -47,6 +47,10 @@ function parseStringToPositiveInt(value: string, typeName: string): number {
     );
   }
 
+  if (id <= 0) {
+    throw new Error(`Invalid ${typeName}: value must be a positive integer, got ${id}`);
+  }
+
   return id;
 }
 

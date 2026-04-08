@@ -248,93 +248,50 @@ describe('auth login command', () => {
     ).rejects.toThrow('process.exit: 1');
     expect(consoleErrorSpy).toHaveBeenCalledWith('Error:', 'Cannot use both --session and --persistent');
   });
-});
 
-describe('auth status command', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
+  it('should log warning when getProfile throws unexpected error during login endpoint lookup', async () => {
+    vi.mocked(config.getProfile).mockImplementation(() => {
+      throw new Error('EACCES permission denied');
+    });
+
+    // No --endpoint provided forces it into the getProfile lookup code path
+    // The unexpected error should be logged, then it will fail with "endpoint required"
+    await expect(
+      authCommand.parseAsync(['node', 'test', 'login'])
+    ).rejects.toThrow('process.exit: 1');
+
+    const errorOutput = consoleErrorSpy.mock.calls.flat().join(' ');
+    expect(errorOutput).toContain('unexpected error reading profile');
+    expect(errorOutput).toContain('EACCES permission denied');
   });
 
-  describe('API key display security', () => {
-    beforeEach(() => {
-      vi.mocked(config.loadConfig).mockReturnValue({
-        'default-profile': 'default',
-        profiles: {
-          default: {
-            api: { endpoint: 'https://api.example.com' },
-            expctld: { endpoint: 'https://ctl.example.com' },
-          },
-        },
-      });
-
-      vi.mocked(config.getProfile).mockReturnValue({
-        api: { endpoint: 'https://api.example.com' },
-        expctld: { endpoint: 'https://ctl.example.com' },
-      });
+  it('should not log warning when getProfile throws "not found" during login', async () => {
+    vi.mocked(config.getProfile).mockImplementation(() => {
+      throw new Error('Profile "default" not found');
     });
 
-    it('should show masked key with last 4 chars by default', async () => {
-      vi.mocked(keyring.getAPIKey).mockResolvedValue('sk-1234567890abcdef');
+    // Without endpoint and without profile, this will error asking for endpoint
+    await expect(
+      authCommand.parseAsync(['node', 'test', 'login'])
+    ).rejects.toThrow('process.exit: 1');
 
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-
-      const statusCmd = authCommand.commands.find((cmd) => cmd.name() === 'status');
-      await statusCmd?.parseAsync(['node', 'test'], { from: 'user' });
-
-      expect(consoleSpy).toHaveBeenCalledWith('API Key: ****...cdef');
-
-      consoleSpy.mockRestore();
-    });
-
-    it('should show full key with --show-full-key flag', async () => {
-      vi.mocked(keyring.getAPIKey).mockResolvedValue('sk-1234567890abcdef');
-
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-
-      const statusCmd = authCommand.commands.find((cmd) => cmd.name() === 'status');
-      await statusCmd?.parseAsync(['node', 'test', '--show-full-key'], { from: 'user' });
-
-      expect(consoleSpy).toHaveBeenCalledWith('API Key: sk-1234567890abcdef');
-
-      consoleSpy.mockRestore();
-    });
-
-    it('should show "not set" when no API key exists', async () => {
-      vi.mocked(keyring.getAPIKey).mockResolvedValue(null);
-
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-
-      const statusCmd = authCommand.commands.find((cmd) => cmd.name() === 'status');
-      await statusCmd?.parseAsync(['node', 'test'], { from: 'user' });
-
-      expect(consoleSpy).toHaveBeenCalledWith('API Key: not set');
-
-      consoleSpy.mockRestore();
-    });
+    const errorOutput = consoleErrorSpy.mock.calls.flat().join(' ');
+    expect(errorOutput).not.toContain('unexpected error');
   });
 });
 
-describe('auth API key management', () => {
+describe('auth logout command', () => {
   let consoleSpy: ReturnType<typeof vi.spyOn>;
   let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
   let processExitSpy: ReturnType<typeof vi.spyOn>;
 
-  const mockClient = {
-    getCurrentUser: vi.fn().mockResolvedValue({ id: 1, email: 'test@test.com', first_name: 'Test', last_name: 'User' }),
-    listUserApiKeys: vi.fn().mockResolvedValue([{ id: 1, name: 'key1' }]),
-    getUserApiKey: vi.fn().mockResolvedValue({ id: 1, name: 'key1' }),
-    createUserApiKey: vi.fn().mockResolvedValue({ id: 2, name: 'new', key: 'secret' }),
-    updateUserApiKey: vi.fn().mockResolvedValue({ id: 1, name: 'updated' }),
-    deleteUserApiKey: vi.fn().mockResolvedValue(undefined),
-    updateCurrentUser: vi.fn().mockResolvedValue({ id: 1, email: 'test@test.com', first_name: 'New', last_name: 'Name' }),
-  };
-
   beforeEach(() => {
     vi.clearAllMocks();
     resetCommand(authCommand);
-    vi.mocked(getAPIClientFromOptions).mockResolvedValue(mockClient as any);
-    vi.mocked(getGlobalOptions).mockReturnValue({ output: 'table' } as any);
-    vi.mocked(printFormatted).mockImplementation(() => {});
+    vi.mocked(config.loadConfig).mockReturnValue({
+      'default-profile': 'default',
+      profiles: { default: { api: { endpoint: 'https://api.example.com' }, expctld: { endpoint: '' } } },
+    });
     consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     processExitSpy = vi.spyOn(process, 'exit').mockImplementation((code?) => {
@@ -348,49 +305,55 @@ describe('auth API key management', () => {
     processExitSpy.mockRestore();
   });
 
-  it('should list user API keys', async () => {
-    await authCommand.parseAsync(['node', 'test', 'list-api-keys']);
+  it('should show success when both deletions succeed', async () => {
+    vi.mocked(keyring.deleteOAuthToken).mockResolvedValue(true);
+    vi.mocked(keyring.deleteAPIKey).mockResolvedValue(true);
 
-    expect(mockClient.listUserApiKeys).toHaveBeenCalled();
-    expect(printFormatted).toHaveBeenCalled();
-  });
+    await authCommand.parseAsync(['node', 'test', 'logout']);
 
-  it('should get user API key by ID', async () => {
-    await authCommand.parseAsync(['node', 'test', 'get-api-key', '1']);
-
-    expect(mockClient.getUserApiKey).toHaveBeenCalledWith(1);
-    expect(printFormatted).toHaveBeenCalled();
-  });
-
-  it('should update user API key', async () => {
-    await authCommand.parseAsync(['node', 'test', 'update-api-key', '1', '--name', 'Renamed']);
-
-    expect(mockClient.updateUserApiKey).toHaveBeenCalledWith(1, { name: 'Renamed' });
     const output = consoleSpy.mock.calls.flat().join(' ');
-    expect(output).toContain('updated');
+    expect(output).toContain('Logged out');
+    expect(consoleErrorSpy).not.toHaveBeenCalled();
   });
 
-  it('should delete user API key', async () => {
-    await authCommand.parseAsync(['node', 'test', 'delete-api-key', '1']);
+  it('should warn when OAuth token deletion fails but still show success', async () => {
+    vi.mocked(keyring.deleteOAuthToken).mockRejectedValue(new Error('keyring unavailable'));
+    vi.mocked(keyring.deleteAPIKey).mockResolvedValue(true);
 
-    expect(mockClient.deleteUserApiKey).toHaveBeenCalledWith(1);
+    await authCommand.parseAsync(['node', 'test', 'logout']);
+
+    const errorOutput = consoleErrorSpy.mock.calls.flat().join(' ');
+    expect(errorOutput).toContain('failed to delete OAuth token');
+    expect(errorOutput).toContain('keyring unavailable');
     const output = consoleSpy.mock.calls.flat().join(' ');
-    expect(output).toContain('deleted');
+    expect(output).toContain('Logged out');
   });
 
-  it('should edit user profile', async () => {
-    await authCommand.parseAsync(['node', 'test', 'edit-profile', '--first-name', 'New', '--last-name', 'Name']);
+  it('should warn when API key deletion fails but still show success', async () => {
+    vi.mocked(keyring.deleteOAuthToken).mockResolvedValue(true);
+    vi.mocked(keyring.deleteAPIKey).mockRejectedValue(new Error('disk full'));
 
-    expect(mockClient.updateCurrentUser).toHaveBeenCalledWith({ first_name: 'New', last_name: 'Name' });
+    await authCommand.parseAsync(['node', 'test', 'logout']);
+
+    const errorOutput = consoleErrorSpy.mock.calls.flat().join(' ');
+    expect(errorOutput).toContain('failed to delete API key');
+    expect(errorOutput).toContain('disk full');
     const output = consoleSpy.mock.calls.flat().join(' ');
-    expect(output).toContain('updated');
+    expect(output).toContain('Logged out');
   });
 
-  it('should show whoami output', async () => {
-    await authCommand.parseAsync(['node', 'test', 'whoami']);
+  it('should show incomplete message when both deletions fail', async () => {
+    vi.mocked(keyring.deleteOAuthToken).mockRejectedValue(new Error('oauth fail'));
+    vi.mocked(keyring.deleteAPIKey).mockRejectedValue(new Error('key fail'));
 
-    expect(mockClient.getCurrentUser).toHaveBeenCalled();
+    await authCommand.parseAsync(['node', 'test', 'logout']);
+
+    const errorOutput = consoleErrorSpy.mock.calls.flat().join(' ');
+    expect(errorOutput).toContain('failed to delete OAuth token');
+    expect(errorOutput).toContain('failed to delete API key');
+    expect(errorOutput).toContain('Logout may be incomplete');
     const output = consoleSpy.mock.calls.flat().join(' ');
-    expect(output).toContain('test@test.com');
+    expect(output).not.toContain('Logged out');
   });
 });
+

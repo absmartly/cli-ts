@@ -22,6 +22,7 @@ export function startPolling(options: PollOptions): { stop: () => void } {
   const stop = () => {
     running = false;
     clearInterval(timer);
+    process.removeListener('SIGINT', onSigint);
   };
 
   const onSigint = () => {

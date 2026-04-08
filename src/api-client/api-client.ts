@@ -524,6 +524,13 @@ export class APIClient {
     const exact = results.filter(e => e.name === nameOrId);
     if (exact.length >= 1) {
       exact.sort((a, b) => b.id - a.id);
+      if (exact.length > 1) {
+        const matches = exact.map(e => `  ${e.id} (${e.state ?? 'unknown'})`).join('\n');
+        console.error(
+          `Warning: ${exact.length} experiments match name "${nameOrId}":\n${matches}\n` +
+          `Using most recent: id ${exact[0]!.id}. Use a numeric ID to avoid ambiguity.`
+        );
+      }
       return exact[0]!.id;
     }
     if (results.length === 1) return results[0]!.id;

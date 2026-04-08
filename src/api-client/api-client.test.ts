@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach, vi, beforeEach } from 'vitest';
 import { http, HttpResponse } from 'msw';
 import { server } from '../test/mocks/server.js';
 import { createAPIClient } from '../lib/api/client.js';
@@ -1014,6 +1014,42 @@ describe.skipIf(isLiveMode)('APIClient core', () => {
       );
       const result = await client.resolveExperimentId('my-experiment');
       expect(result).toBe(10);
+    });
+
+    it('should emit a warning to stderr when multiple exact name matches exist', async () => {
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      server.use(
+        http.get(`${BASE_URL}/experiments`, () =>
+          HttpResponse.json({
+            experiments: [
+              { id: 3, name: 'my-experiment', state: 'stopped' },
+              { id: 10, name: 'my-experiment', state: 'running' },
+              { id: 7, name: 'my-experiment', state: 'development' },
+            ],
+          })
+        )
+      );
+      const result = await client.resolveExperimentId('my-experiment');
+      expect(result).toBe(10);
+      const errorOutput = consoleErrorSpy.mock.calls.flat().join(' ');
+      expect(errorOutput).toContain('3 experiments match name "my-experiment"');
+      expect(errorOutput).toContain('Using most recent: id 10');
+      consoleErrorSpy.mockRestore();
+    });
+
+    it('should not emit a warning when only one exact name match exists', async () => {
+      const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      server.use(
+        http.get(`${BASE_URL}/experiments`, () =>
+          HttpResponse.json({
+            experiments: [{ id: 5, name: 'my-experiment', state: 'running' }],
+          })
+        )
+      );
+      const result = await client.resolveExperimentId('my-experiment');
+      expect(result).toBe(5);
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
+      consoleErrorSpy.mockRestore();
     });
 
     it('should return the single non-exact match when only one result exists', async () => {

@@ -46,6 +46,17 @@ describe('resolve helpers', () => {
       expect(mockClient.resolveTags).toHaveBeenCalled();
       expect(result).toBe('1,3');
     });
+
+    it('should return empty string for empty string input', async () => {
+      const result = await resolveTagIds(mockClient as any, '');
+      expect(result).toBe('');
+      expect(mockClient.resolveTags).not.toHaveBeenCalled();
+    });
+
+    it('should propagate API errors', async () => {
+      mockClient.resolveTags.mockRejectedValue(new Error('API failure'));
+      await expect(resolveTagIds(mockClient as any, 'v1')).rejects.toThrow('API failure');
+    });
   });
 
   describe('resolveTeamIds', () => {

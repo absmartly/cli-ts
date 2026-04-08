@@ -87,7 +87,11 @@ export async function fetchBulkNames(
   }
 
   const workers = Array.from({ length: Math.min(CONCURRENCY_LIMIT, ids.length) }, () => worker());
-  await Promise.all(workers);
+  const results = await Promise.allSettled(workers);
+  const firstRejection = results.find((r): r is PromiseRejectedResult => r.status === 'rejected');
+  if (firstRejection) {
+    throw firstRejection.reason;
+  }
   return names;
 }
 

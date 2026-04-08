@@ -80,4 +80,15 @@ describe('startPolling', () => {
     await vi.advanceTimersByTimeAsync(1000);
     expect(onTick).not.toHaveBeenCalled();
   });
+
+  it('should remove the SIGINT listener when stop() is called', () => {
+    const onTick = vi.fn().mockResolvedValue(undefined);
+    const listenersBefore = process.listenerCount('SIGINT');
+
+    const { stop } = startPolling({ intervalMs: 1000, onTick });
+    expect(process.listenerCount('SIGINT')).toBe(listenersBefore + 1);
+
+    stop();
+    expect(process.listenerCount('SIGINT')).toBe(listenersBefore);
+  });
 });

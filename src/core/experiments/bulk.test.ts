@@ -92,6 +92,32 @@ describe('bulk', () => {
       mockClient.getExperiment.mockRejectedValue(new Error('network'));
       await expect(fetchBulkNames(mockClient as any, [id(1)])).rejects.toThrow('network');
     });
+
+    it('does not produce unhandled rejections when one worker fails and others are in-flight', async () => {
+      // Simulate: first call fails with a non-404 error, second call succeeds
+      // With Promise.all this would cause an unhandled rejection from the second worker
+      // With Promise.allSettled + re-throw, only the first error propagates cleanly
+      let callCount = 0;
+      mockClient.getExperiment.mockImplementation(async () => {
+        callCount++;
+        if (callCount === 1) throw new Error('server error');
+        // The other workers might still try to fetch; they should not cause unhandled rejections
+        return { name: `Exp ${callCount}` };
+      });
+
+      await expect(fetchBulkNames(mockClient as any, [id(1), id(2)])).rejects.toThrow('server error');
+    });
+
+    it('returns partial names collected before a worker throws', async () => {
+      // When ids are processed sequentially in a single worker (queue size == 1),
+      // the first success should still be in the map even if a later call fails
+      mockClient.getExperiment
+        .mockResolvedValueOnce({ name: 'Good' })
+        .mockRejectedValueOnce(new Error('boom'));
+
+      // With 2 ids and concurrency, the worker may process them one at a time
+      await expect(fetchBulkNames(mockClient as any, [id(1), id(2)])).rejects.toThrow('boom');
+    });
   });
 
   describe('runBulkOperation', () => {

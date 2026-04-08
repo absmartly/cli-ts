@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { requireAtLeastOneField, validateJSON } from './validators.js';
+import { requireAtLeastOneField, validateJSON, parseExperimentId } from './validators.js';
 
 describe('requireAtLeastOneField', () => {
   describe('valid inputs', () => {
@@ -203,6 +203,54 @@ describe('validateJSON', () => {
       } catch (error) {
         expect((error as Error).message).toContain('Invalid JSON in JSON');
       }
+    });
+  });
+});
+
+describe('parseStringToPositiveInt (via parseExperimentId)', () => {
+  describe('valid inputs', () => {
+    it('should accept a positive integer string', () => {
+      const result = parseExperimentId('1');
+      expect(result).toBe(1);
+    });
+
+    it('should accept a larger positive integer string', () => {
+      const result = parseExperimentId('42');
+      expect(result).toBe(42);
+    });
+  });
+
+  describe('rejects non-positive values', () => {
+    it('should reject zero', () => {
+      expect(() => parseExperimentId('0')).toThrow(
+        'value must be a positive integer, got 0'
+      );
+    });
+
+    it('should reject negative values', () => {
+      expect(() => parseExperimentId('-1')).toThrow(
+        'value must be a positive integer, got -1'
+      );
+    });
+
+    it('should reject large negative values', () => {
+      expect(() => parseExperimentId('-999')).toThrow(
+        'value must be a positive integer, got -999'
+      );
+    });
+  });
+
+  describe('rejects other invalid inputs', () => {
+    it('should reject empty string', () => {
+      expect(() => parseExperimentId('')).toThrow('value cannot be empty');
+    });
+
+    it('should reject non-numeric string', () => {
+      expect(() => parseExperimentId('abc')).toThrow('is not a valid number');
+    });
+
+    it('should reject float string', () => {
+      expect(() => parseExperimentId('1.5')).toThrow('must be an integer');
     });
   });
 });
