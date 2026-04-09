@@ -15,21 +15,15 @@ jobs:
     needs: ci
     permissions:
       contents: read
-      id-token: write
     steps:
       - uses: actions/checkout@v4
 
       - uses: oven-sh/setup-bun@v2
 
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-          registry-url: 'https://registry.npmjs.org'
-
       - run: bun install --frozen-lockfile
 
       - run: bun tsc
 
-      - run: npm publish --provenance --access public
+      - run: bun publish --access public
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_TOKEN: ${{ secrets.NPM_TOKEN }}
