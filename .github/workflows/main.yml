@@ -29,3 +29,4 @@ jobs:
           USE_LIVE_API: '1'
           LIVE_API_URL: ${{ secrets.LIVE_API_URL }}
           LIVE_API_KEY: ${{ secrets.LIVE_API_KEY }}
+          LIVE_OAUTH_TOKEN: ${{ secrets.LIVE_OAUTH_TOKEN }}
