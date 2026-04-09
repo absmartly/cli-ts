@@ -1,0 +1,31 @@
+name: Main
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  ci:
+    name: CI Checks
+    uses: ./.github/workflows/_ci-checks.yml
+
+  live-test:
+    name: Live API Tests
+    runs-on: ubuntu-latest
+    needs: ci
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - run: npm ci
+
+      - name: Run live API tests
+        run: npx vitest run
+        env:
+          USE_LIVE_API: '1'
+          LIVE_API_URL: ${{ secrets.LIVE_API_URL }}
+          LIVE_API_KEY: ${{ secrets.LIVE_API_KEY }}
