@@ -40,7 +40,11 @@ export function createStatefulExperimentHandlers(baseUrl: string) {
           { status: 404 }
         );
       }
-      const updated = { ...existing, ...body, updated_at: new Date().toISOString() };
+      const data =
+        typeof body.data === 'object' && body.data !== null
+          ? (body.data as Record<string, unknown>)
+          : body;
+      const updated = { ...existing, ...data, id, updated_at: new Date().toISOString() };
       store.set(id, updated);
       return HttpResponse.json({ ok: true, experiment: updated, errors: [] });
     }),

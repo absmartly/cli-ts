@@ -9,7 +9,19 @@ if (isLiveMode) {
 } else {
   const { server } = await import('./mocks/server.js');
   beforeAll(() => {
-    server.listen({ onUnhandledRequest: 'error' });
+    server.listen({
+      onUnhandledRequest(request, print) {
+        const url = new URL(request.url);
+        if (
+          url.hostname === 'localhost' ||
+          url.hostname === '127.0.0.1' ||
+          !url.hostname.includes('absmartly.com')
+        ) {
+          return;
+        }
+        print.error();
+      },
+    });
   });
   afterEach(() => {
     server.resetHandlers();
