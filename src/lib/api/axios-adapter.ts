@@ -167,6 +167,10 @@ export class AxiosHttpClient implements HttpClient {
     return this.client.defaults.baseURL || '';
   }
 
+  getAuthHeader(): string {
+    return (this.client.defaults.headers.common['Authorization'] as string) ?? '';
+  }
+
   private handleError(error: AxiosError): APIError {
     const endpoint = error.config?.url || 'unknown endpoint';
     const method = error.config?.method?.toUpperCase() || 'unknown method';

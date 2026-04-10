@@ -75,6 +75,10 @@ export class APIClient {
     return this.httpClient.getBaseUrl?.() ?? '';
   }
 
+  getAuthHeader(): string {
+    return this.httpClient.getAuthHeader?.() ?? '';
+  }
+
   private getRootUrl(): string {
     const baseUrl = this.httpClient.getBaseUrl?.() ?? '';
     return stripApiVersionPath(baseUrl);

@@ -1,5 +1,6 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
+import path from 'path';
 import { confirm } from '@inquirer/prompts';
 import {
   getAPIClientFromOptions,
@@ -16,6 +17,7 @@ import {
   findRecentDownload,
 } from '../../core/experiments/export-wait.js';
 import { startPolling } from '../../lib/utils/polling.js';
+import { downloadFile } from '../../lib/utils/download.js';
 
 function isExportInProgressError(error: unknown): boolean {
   if (!(error instanceof APIError) || error.statusCode !== 400) return false;
@@ -38,10 +40,61 @@ function formatAge(isoDate: string): string {
   return `${hours}h ${mins % 60}m ago`;
 }
 
+function formatDate(isoDate: string): string {
+  return new Date(isoDate).toLocaleString();
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+}
+
+async function performDownload(
+  downloadUrl: string,
+  fileKey: string,
+  authHeader: string
+): Promise<void> {
+  const outputPath = path.resolve(fileKey);
+
+  let spinnerFrame = 0;
+  const spinnerFrames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+
+  const result = await downloadFile({
+    url: downloadUrl,
+    outputPath,
+    headers: { Authorization: authHeader },
+    onProgress: (downloaded, total) => {
+      const frame = spinnerFrames[spinnerFrame++ % spinnerFrames.length];
+      if (total) {
+        const pct = Math.round((downloaded / total) * 100);
+        const bar = renderProgressBar(pct);
+        process.stdout.write(
+          `\r\x1b[K${chalk.cyan(frame)} Downloading ${fileKey}  ${bar} ${pct}% (${formatBytes(downloaded)} / ${formatBytes(total)})`
+        );
+      } else {
+        process.stdout.write(
+          `\r\x1b[K${chalk.cyan(frame)} Downloading ${fileKey}  ${formatBytes(downloaded)}`
+        );
+      }
+    },
+  });
+
+  process.stdout.write('\r\x1b[K');
+
+  if (result.resumed) {
+    console.log(chalk.green(`✓ Download resumed and completed: ./${fileKey} (${formatBytes(result.bytes)})`));
+  } else {
+    console.log(chalk.green(`✓ Downloaded: ./${fileKey} (${formatBytes(result.bytes)})`));
+  }
+}
+
 export const exportCommand = new Command('export')
   .description('Export experiment data')
   .argument('<id>', 'experiment ID or name', parseExperimentIdOrName)
   .option('--wait', 'wait for export to complete and show download URL')
+  .option('--download', 'download the export file to the current directory (implies --wait)')
   .option('--new', 'skip checking for recent exports and start a new one')
   .option('--interval <seconds>', 'poll interval in seconds', '2')
   .action(
@@ -50,22 +103,40 @@ export const exportCommand = new Command('export')
       const client = await getAPIClientFromOptions(globalOptions);
       const id = await client.resolveExperimentId(nameOrId);
 
+      // --download implies --wait
+      if (options.download) options.wait = true;
+
       // Check for a recent completed export with a download link
       if (!options.new) {
         const recent = await findRecentDownload(client, id);
         if (recent) {
           console.log(
-            chalk.green(`✓ A recent export is already available (${formatAge(recent.downloadCreatedAt)})`)
+            chalk.green(`✓ A recent export is already available`)
           );
+          console.log(chalk.gray(`  Generated: ${formatDate(recent.downloadCreatedAt)} (${formatAge(recent.downloadCreatedAt)})`));
           console.log(chalk.bold(`\n  Download URL: ${recent.downloadUrl}\n`));
 
-          const startNew = await confirm({
-            message: 'Start a new export anyway?',
-            default: false,
-          });
+          if (options.download) {
+            const startNew = await confirm({
+              message: 'Download this export? (No = start a new export)',
+              default: true,
+            });
 
-          if (!startNew) return;
-          console.log('');
+            if (startNew) {
+              const fileKey = recent.downloadUrl.split('/').pop()!;
+              await performDownload(recent.downloadUrl, fileKey, client.getAuthHeader());
+              return;
+            }
+            console.log('');
+          } else {
+            const startNew = await confirm({
+              message: 'Start a new export anyway?',
+              default: false,
+            });
+
+            if (!startNew) return;
+            console.log('');
+          }
         }
       }
 
@@ -102,16 +173,23 @@ export const exportCommand = new Command('export')
       console.log(chalk.gray(`Polling every ${intervalSeconds}s... Press Ctrl+C to stop\n`));
 
       let poller: { stop: () => void } | null = null;
-      let spinnerFrame = 0;
-      const spinnerFrames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+      let pollSpinnerFrame = 0;
+      const pollSpinnerFrames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
       let spinnerTimer: ReturnType<typeof setInterval> | null = null;
       let completedAt: number | null = null;
+      let resolvePolling: ((url: string) => void) | null = null;
+      let rejectPolling: ((err: Error) => void) | null = null;
+
+      const pollingDone = new Promise<string>((resolve, reject) => {
+        resolvePolling = resolve;
+        rejectPolling = reject;
+      });
 
       const startSpinner = (label: string) => {
         stopSpinner();
         spinnerTimer = setInterval(() => {
           process.stdout.write(
-            `\r\x1b[K${chalk.cyan(spinnerFrames[spinnerFrame++ % spinnerFrames.length])} ${chalk.gray(label)}`
+            `\r\x1b[K${chalk.cyan(pollSpinnerFrames[pollSpinnerFrame++ % pollSpinnerFrames.length])} ${chalk.gray(label)}`
           );
         }, 80);
       };
@@ -135,6 +213,7 @@ export const exportCommand = new Command('export')
           }
           console.log(chalk.bold(`\n  Download URL: ${status.downloadUrl}\n`));
           poller?.stop();
+          resolvePolling!(status.downloadUrl);
           return;
         }
 
@@ -150,7 +229,12 @@ export const exportCommand = new Command('export')
           process.stdout.write('\r\x1b[K');
           console.error(chalk.red(`✗ Export ${status.status.toLowerCase()}`));
           poller?.stop();
-          process.exit(1);
+          if (options.download) {
+            rejectPolling!(new Error(`Export ${status.status.toLowerCase()}`));
+          } else {
+            process.exit(1);
+          }
+          return;
         }
 
         if (status.progress > 0 || status.exportedRows > 0) {
@@ -182,6 +266,12 @@ export const exportCommand = new Command('export')
         intervalMs: intervalSeconds * 1000,
         onTick: fetchAndDisplay,
       });
+
+      if (options.download) {
+        const downloadUrl = await pollingDone;
+        const fileKey = downloadUrl.split('/').pop()!;
+        await performDownload(downloadUrl, fileKey, client.getAuthHeader());
+      }
     })
   );
 
