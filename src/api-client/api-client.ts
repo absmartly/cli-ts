@@ -471,9 +471,7 @@ export class APIClient {
     return data as { columnNames: string[]; columnTypes: string[]; rows: unknown[][] };
   }
 
-  async getExperimentMetricsCached(
-    experimentId: ExperimentId
-  ): Promise<{
+  async getExperimentMetricsCached(experimentId: ExperimentId): Promise<{
     columnNames: string[];
     rows: unknown[][];
     snapshot_data?: Record<string, unknown>;
