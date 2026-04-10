@@ -26,7 +26,14 @@ describe('fetchExportStatus', () => {
       downloadable: true,
     });
     mockClient.listExportHistories.mockResolvedValue([
-      { id: 1, status: 'COMPLETED', progress: 100, exported_rows: 5000, total_rows: 5000, remaining_seconds: 0 },
+      {
+        id: 1,
+        status: 'COMPLETED',
+        progress: 100,
+        exported_rows: 5000,
+        total_rows: 5000,
+        remaining_seconds: 0,
+      },
     ]);
 
     const result = await fetchExportStatus(mockClient as any, configId);
@@ -44,7 +51,14 @@ describe('fetchExportStatus', () => {
       experiment_id: 42,
     });
     mockClient.listExportHistories.mockResolvedValue([
-      { id: 1, status: 'COMPLETED', progress: 100, exported_rows: 0, total_rows: 0, remaining_seconds: 0 },
+      {
+        id: 1,
+        status: 'COMPLETED',
+        progress: 100,
+        exported_rows: 0,
+        total_rows: 0,
+        remaining_seconds: 0,
+      },
     ]);
 
     const result = await fetchExportStatus(mockClient as any, configId);
@@ -57,7 +71,14 @@ describe('fetchExportStatus', () => {
   it('should return isTerminal true for FAILED', async () => {
     mockClient.getExportConfig.mockResolvedValue({ id: 99, experiment_id: 42 });
     mockClient.listExportHistories.mockResolvedValue([
-      { id: 1, status: 'FAILED', progress: 0, exported_rows: 0, total_rows: 0, remaining_seconds: 0 },
+      {
+        id: 1,
+        status: 'FAILED',
+        progress: 0,
+        exported_rows: 0,
+        total_rows: 0,
+        remaining_seconds: 0,
+      },
     ]);
 
     const result = await fetchExportStatus(mockClient as any, configId);
@@ -70,7 +91,14 @@ describe('fetchExportStatus', () => {
   it('should return isTerminal true for CANCELLED', async () => {
     mockClient.getExportConfig.mockResolvedValue({ id: 99, experiment_id: 42 });
     mockClient.listExportHistories.mockResolvedValue([
-      { id: 1, status: 'CANCELLED', progress: 0, exported_rows: 0, total_rows: 0, remaining_seconds: 0 },
+      {
+        id: 1,
+        status: 'CANCELLED',
+        progress: 0,
+        exported_rows: 0,
+        total_rows: 0,
+        remaining_seconds: 0,
+      },
     ]);
 
     const result = await fetchExportStatus(mockClient as any, configId);
@@ -82,7 +110,14 @@ describe('fetchExportStatus', () => {
   it('should return isTerminal false for IN_PROGRESS', async () => {
     mockClient.getExportConfig.mockResolvedValue({ id: 99, experiment_id: 42 });
     mockClient.listExportHistories.mockResolvedValue([
-      { id: 1, status: 'IN_PROGRESS', progress: 45, exported_rows: 2250, total_rows: 5000, remaining_seconds: 30 },
+      {
+        id: 1,
+        status: 'IN_PROGRESS',
+        progress: 45,
+        exported_rows: 2250,
+        total_rows: 5000,
+        remaining_seconds: 30,
+      },
     ]);
 
     const result = await fetchExportStatus(mockClient as any, configId);
@@ -99,7 +134,14 @@ describe('fetchExportStatus', () => {
   it('should return isTerminal false for WAITING', async () => {
     mockClient.getExportConfig.mockResolvedValue({ id: 99, experiment_id: 42 });
     mockClient.listExportHistories.mockResolvedValue([
-      { id: 1, status: 'WAITING', progress: 0, exported_rows: 0, total_rows: 0, remaining_seconds: 0 },
+      {
+        id: 1,
+        status: 'WAITING',
+        progress: 0,
+        exported_rows: 0,
+        total_rows: 0,
+        remaining_seconds: 0,
+      },
     ]);
 
     const result = await fetchExportStatus(mockClient as any, configId);
@@ -111,7 +153,14 @@ describe('fetchExportStatus', () => {
   it('should return isTerminal false for RETRYING', async () => {
     mockClient.getExportConfig.mockResolvedValue({ id: 99, experiment_id: 42 });
     mockClient.listExportHistories.mockResolvedValue([
-      { id: 1, status: 'RETRYING', progress: 0, exported_rows: 0, total_rows: 0, remaining_seconds: 0 },
+      {
+        id: 1,
+        status: 'RETRYING',
+        progress: 0,
+        exported_rows: 0,
+        total_rows: 0,
+        remaining_seconds: 0,
+      },
     ]);
 
     const result = await fetchExportStatus(mockClient as any, configId);
@@ -136,8 +185,22 @@ describe('fetchExportStatus', () => {
   it('should use the last history entry as the latest', async () => {
     mockClient.getExportConfig.mockResolvedValue({ id: 99, experiment_id: 42 });
     mockClient.listExportHistories.mockResolvedValue([
-      { id: 1, status: 'FAILED', progress: 0, exported_rows: 0, total_rows: 0, remaining_seconds: 0 },
-      { id: 2, status: 'IN_PROGRESS', progress: 50, exported_rows: 2500, total_rows: 5000, remaining_seconds: 15 },
+      {
+        id: 1,
+        status: 'FAILED',
+        progress: 0,
+        exported_rows: 0,
+        total_rows: 0,
+        remaining_seconds: 0,
+      },
+      {
+        id: 2,
+        status: 'IN_PROGRESS',
+        progress: 50,
+        exported_rows: 2500,
+        total_rows: 5000,
+        remaining_seconds: 15,
+      },
     ]);
 
     const result = await fetchExportStatus(mockClient as any, configId);
@@ -194,9 +257,7 @@ describe('findActiveExportConfig', () => {
   });
 
   it('should return null when no config matches the experiment', async () => {
-    mockClient.listExportConfigs.mockResolvedValue([
-      { id: 10, experiment_id: 99 },
-    ]);
+    mockClient.listExportConfigs.mockResolvedValue([{ id: 10, experiment_id: 99 }]);
 
     const result = await findActiveExportConfig(mockClient as any, experimentId);
 
@@ -271,7 +332,12 @@ describe('findRecentDownload', () => {
 
   it('should return null when no downloads match', async () => {
     mockClient.listExportConfigs.mockResolvedValue([
-      { id: 10, experiment_id: 99, download_file_key: 'other.zip', download_created_at: '2026-01-01T00:00:00Z' },
+      {
+        id: 10,
+        experiment_id: 99,
+        download_file_key: 'other.zip',
+        download_created_at: '2026-01-01T00:00:00Z',
+      },
     ]);
 
     const result = await findRecentDownload(mockClient as any, experimentId);

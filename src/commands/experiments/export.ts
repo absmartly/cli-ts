@@ -26,9 +26,7 @@ function isExportInProgressError(error: unknown): boolean {
   const errors = Array.isArray(response?.errors) ? (response.errors as string[]) : [];
   const errorText = errors.join(' ');
 
-  return (
-    errorText.includes('already in progress') || errorText.includes('recently created')
-  );
+  return errorText.includes('already in progress') || errorText.includes('recently created');
 }
 
 function formatAge(isoDate: string): string {
@@ -86,7 +84,9 @@ async function performDownload(
   process.stdout.write('\r\x1b[K');
 
   if (result.resumed) {
-    console.log(chalk.green(`✓ Download resumed and completed: ./${fileKey} (${formatBytes(result.bytes)})`));
+    console.log(
+      chalk.green(`✓ Download resumed and completed: ./${fileKey} (${formatBytes(result.bytes)})`)
+    );
   } else {
     console.log(chalk.green(`✓ Downloaded: ./${fileKey} (${formatBytes(result.bytes)})`));
   }
@@ -113,7 +113,9 @@ export const exportCommand = new Command('export')
       if (options.resume) {
         const recent = await findRecentDownload(client, id, { includeExpired: true });
         if (!recent) {
-          throw new Error('No recent export found to resume. Run with --download to start a new export.');
+          throw new Error(
+            'No recent export found to resume. Run with --download to start a new export.'
+          );
         }
         const fileKey = recent.downloadUrl.split('/').pop()!;
         console.log(chalk.gray(`Resuming download of ${fileKey}...`));
@@ -122,7 +124,9 @@ export const exportCommand = new Command('export')
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err);
           if (msg.includes('404')) {
-            console.error(chalk.red(`✗ File has expired and is no longer available on the server.`));
+            console.error(
+              chalk.red(`✗ File has expired and is no longer available on the server.`)
+            );
             console.log(chalk.gray(`  Run without --resume to start a new export:\n`));
             console.log(chalk.gray(`    abs experiments export ${nameOrId} --download\n`));
             process.exit(1);
@@ -136,10 +140,12 @@ export const exportCommand = new Command('export')
       if (!options.new) {
         const recent = await findRecentDownload(client, id);
         if (recent) {
+          console.log(chalk.green(`✓ A recent export is already available`));
           console.log(
-            chalk.green(`✓ A recent export is already available`)
+            chalk.gray(
+              `  Generated: ${formatDate(recent.downloadCreatedAt)} (${formatAge(recent.downloadCreatedAt)})`
+            )
           );
-          console.log(chalk.gray(`  Generated: ${formatDate(recent.downloadCreatedAt)} (${formatAge(recent.downloadCreatedAt)})`));
           console.log(chalk.bold(`\n  Download URL: ${recent.downloadUrl}\n`));
 
           if (options.download) {
@@ -178,7 +184,9 @@ export const exportCommand = new Command('export')
           if (existing) {
             exportConfigId = ExportConfigId(existing.id);
             console.log(
-              chalk.yellow(`⚠ Export already in progress — attaching to export config ${exportConfigId}`)
+              chalk.yellow(
+                `⚠ Export already in progress — attaching to export config ${exportConfigId}`
+              )
             );
           } else {
             throw error;
@@ -246,7 +254,9 @@ export const exportCommand = new Command('export')
         if (status.status === 'COMPLETED') {
           if (!completedAt) completedAt = Date.now();
           const elapsed = Math.round((Date.now() - completedAt) / 1000);
-          startSpinner(`Export completed — waiting for download link... (${formatEta(elapsed)} elapsed)`);
+          startSpinner(
+            `Export completed — waiting for download link... (${formatEta(elapsed)} elapsed)`
+          );
           return;
         }
 
@@ -279,9 +289,7 @@ export const exportCommand = new Command('export')
           );
         } else {
           const label =
-            status.status === 'WAITING'
-              ? 'Waiting for export to start...'
-              : 'Preparing export...';
+            status.status === 'WAITING' ? 'Waiting for export to start...' : 'Preparing export...';
           startSpinner(label);
         }
       };

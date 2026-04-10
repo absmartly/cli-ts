@@ -1836,12 +1836,20 @@ export class APIClient {
     const response = await this.request('GET', '/export_configs', {
       params: params as Record<string, string>,
     });
-    return this.validateListResponse<ExportConfigShape>(response, 'export_configs', 'listExportConfigs');
+    return this.validateListResponse<ExportConfigShape>(
+      response,
+      'export_configs',
+      'listExportConfigs'
+    );
   }
 
   async getExportConfig(id: ExportConfigId): Promise<ExportConfigShape> {
     const response = await this.request('GET', `/export_configs/${id}`);
-    return this.validateEntityResponse<ExportConfigShape>(response, 'export_config', 'getExportConfig');
+    return this.validateEntityResponse<ExportConfigShape>(
+      response,
+      'export_config',
+      'getExportConfig'
+    );
   }
 
   async createExportConfig(data: Record<string, unknown>): Promise<unknown> {
@@ -1865,7 +1873,11 @@ export class APIClient {
 
   async listExportHistories(id: ExportConfigId): Promise<ExportHistoryShape[]> {
     const response = await this.request('GET', `/export_configs/${id}/export_histories`);
-    return this.validateListResponse<ExportHistoryShape>(response, 'export_histories', 'listExportHistories');
+    return this.validateListResponse<ExportHistoryShape>(
+      response,
+      'export_histories',
+      'listExportHistories'
+    );
   }
 
   async listUpdateSchedules(): Promise<unknown[]> {

@@ -26,10 +26,7 @@ function getExistingSize(path: string): number {
   }
 }
 
-function httpGet(
-  url: string,
-  headers: Record<string, string>
-): Promise<http.IncomingMessage> {
+function httpGet(url: string, headers: Record<string, string>): Promise<http.IncomingMessage> {
   return new Promise((resolve, reject) => {
     const client = url.startsWith('https:') ? https : http;
     const req = client.get(url, { headers }, resolve);
@@ -126,9 +123,8 @@ async function finishDownload(
   const contentLength = response.headers['content-length']
     ? parseInt(response.headers['content-length'], 10)
     : null;
-  const total = contentLength !== null
-    ? (resumed ? existingSize + contentLength : contentLength)
-    : null;
+  const total =
+    contentLength !== null ? (resumed ? existingSize + contentLength : contentLength) : null;
 
   const writeFlags = resumed ? 'a' : 'w';
   let downloaded = resumed ? existingSize : 0;

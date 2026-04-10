@@ -70,10 +70,7 @@ export async function findActiveExportConfig(
   const matches = configs.filter((c) => c.experiment_id === (experimentId as number));
   if (matches.length === 0) return null;
   // Prefer active over completed, and most recent within each group
-  return (
-    matches.find((c) => !c.download_file_key) ??
-    matches[matches.length - 1]!
-  );
+  return matches.find((c) => !c.download_file_key) ?? matches[matches.length - 1]!;
 }
 
 export async function fetchExportStatus(

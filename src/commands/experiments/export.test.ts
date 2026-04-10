@@ -28,10 +28,16 @@ vi.mock('@inquirer/prompts', () => ({
 }));
 
 vi.mock('../../lib/utils/download.js', () => ({
-  downloadFile: vi.fn().mockResolvedValue({ outputPath: 'export.zip', bytes: 1024, resumed: false }),
+  downloadFile: vi
+    .fn()
+    .mockResolvedValue({ outputPath: 'export.zip', bytes: 1024, resumed: false }),
 }));
 
-import { fetchExportStatus, findActiveExportConfig, findRecentDownload } from '../../core/experiments/export-wait.js';
+import {
+  fetchExportStatus,
+  findActiveExportConfig,
+  findRecentDownload,
+} from '../../core/experiments/export-wait.js';
 import { startPolling } from '../../lib/utils/polling.js';
 import { confirm } from '@inquirer/prompts';
 import { downloadFile } from '../../lib/utils/download.js';
@@ -122,9 +128,7 @@ describe('experiments export', () => {
       const output = consoleSpy.mock.calls.flat().join(' ');
       expect(output).toContain('Export completed!');
       expect(output).toContain('Exported rows: 5000');
-      expect(output).toContain(
-        'https://api.example.com/v1/experiments/exports/99/export.zip'
-      );
+      expect(output).toContain('https://api.example.com/v1/experiments/exports/99/export.zip');
     });
 
     it('should keep polling when COMPLETED but no download link yet', async () => {
@@ -201,9 +205,9 @@ describe('experiments export', () => {
         downloadUrl: null,
       });
 
-      await expect(
-        exportCommand.parseAsync(['node', 'test', '42', '--wait'])
-      ).rejects.toThrow('process.exit: 1');
+      await expect(exportCommand.parseAsync(['node', 'test', '42', '--wait'])).rejects.toThrow(
+        'process.exit: 1'
+      );
 
       const errorOutput = consoleErrorSpy.mock.calls.flat().join(' ');
       expect(errorOutput).toContain('Export failed');
@@ -294,9 +298,9 @@ describe('experiments export', () => {
       );
       vi.mocked(findActiveExportConfig).mockResolvedValue(null);
 
-      await expect(
-        exportCommand.parseAsync(['node', 'test', '42', '--wait'])
-      ).rejects.toThrow('process.exit: 1');
+      await expect(exportCommand.parseAsync(['node', 'test', '42', '--wait'])).rejects.toThrow(
+        'process.exit: 1'
+      );
     });
 
     it('should not catch the error without --wait', async () => {
@@ -307,9 +311,9 @@ describe('experiments export', () => {
         })
       );
 
-      await expect(
-        exportCommand.parseAsync(['node', 'test', '42'])
-      ).rejects.toThrow('process.exit: 1');
+      await expect(exportCommand.parseAsync(['node', 'test', '42'])).rejects.toThrow(
+        'process.exit: 1'
+      );
     });
   });
 
