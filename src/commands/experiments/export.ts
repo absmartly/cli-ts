@@ -117,7 +117,18 @@ export const exportCommand = new Command('export')
         }
         const fileKey = recent.downloadUrl.split('/').pop()!;
         console.log(chalk.gray(`Resuming download of ${fileKey}...`));
-        await performDownload(recent.downloadUrl, fileKey, client.getAuthHeader(), true);
+        try {
+          await performDownload(recent.downloadUrl, fileKey, client.getAuthHeader(), true);
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          if (msg.includes('404')) {
+            console.error(chalk.red(`✗ File has expired and is no longer available on the server.`));
+            console.log(chalk.gray(`  Run without --resume to start a new export:\n`));
+            console.log(chalk.gray(`    abs experiments export ${nameOrId} --download\n`));
+            process.exit(1);
+          }
+          throw err;
+        }
         return;
       }
 
