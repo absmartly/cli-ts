@@ -1,4 +1,5 @@
 import type { APIClient } from '../../api-client/api-client.js';
+import type { ExperimentId } from '../../api-client/types.js';
 import type {
   ExportConfigId,
   ExportConfigShape,
@@ -19,6 +20,17 @@ export interface ExportStatus {
 }
 
 const TERMINAL_STATUSES: ExportHistoryStatus[] = ['COMPLETED', 'FAILED', 'CANCELLED'];
+
+const ACTIVE_STATUSES = 'WAITING,IN_PROGRESS,RETRYING';
+
+export async function findActiveExportConfig(
+  client: APIClient,
+  experimentId: ExperimentId
+): Promise<ExportConfigShape | null> {
+  const configs = await client.listExportConfigs({ statuses: ACTIVE_STATUSES });
+  const match = configs.find((c) => c.experiment_id === (experimentId as number));
+  return match ?? null;
+}
 
 export async function fetchExportStatus(
   client: APIClient,

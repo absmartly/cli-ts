@@ -1828,9 +1828,11 @@ export class APIClient {
     this.validateOkResponse(response, 'validateDatasourceQuery');
   }
 
-  async listExportConfigs(): Promise<unknown[]> {
-    const response = await this.request('GET', '/export_configs');
-    return this.validateListResponse<unknown>(response, 'export_configs', 'listExportConfigs');
+  async listExportConfigs(params?: { statuses?: string }): Promise<ExportConfigShape[]> {
+    const response = await this.request('GET', '/export_configs', {
+      params: params as Record<string, string>,
+    });
+    return this.validateListResponse<ExportConfigShape>(response, 'export_configs', 'listExportConfigs');
   }
 
   async getExportConfig(id: ExportConfigId): Promise<ExportConfigShape> {

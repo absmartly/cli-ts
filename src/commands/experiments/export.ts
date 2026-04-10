@@ -7,9 +7,20 @@ import {
 } from '../../lib/utils/api-helper.js';
 import { parseExperimentIdOrName } from './resolve-id.js';
 import { ExportConfigId } from '../../api-client/types.js';
+import { APIError } from '../../api-client/http-client.js';
 import { exportExperiment } from '../../core/experiments/export.js';
-import { fetchExportStatus } from '../../core/experiments/export-wait.js';
+import { fetchExportStatus, findActiveExportConfig } from '../../core/experiments/export-wait.js';
 import { startPolling } from '../../lib/utils/polling.js';
+
+function isExportInProgressError(error: unknown): boolean {
+  return (
+    error instanceof APIError &&
+    error.statusCode === 400 &&
+    typeof error.message === 'string' &&
+    (error.message.includes('already in progress') ||
+      error.message.includes('recently created'))
+  );
+}
 
 export const exportCommand = new Command('export')
   .description('Export experiment data')
@@ -21,9 +32,28 @@ export const exportCommand = new Command('export')
       const globalOptions = getGlobalOptions(exportCommand);
       const client = await getAPIClientFromOptions(globalOptions);
       const id = await client.resolveExperimentId(nameOrId);
-      const result = await exportExperiment(client, { experimentId: id });
 
-      console.log(chalk.green(`✓ Experiment ${id} data export initiated`));
+      let exportConfigId: ReturnType<typeof ExportConfigId>;
+
+      try {
+        const result = await exportExperiment(client, { experimentId: id });
+        exportConfigId = ExportConfigId(result.data.exportConfigId);
+        console.log(chalk.green(`✓ Experiment ${id} data export initiated`));
+      } catch (error) {
+        if (options.wait && isExportInProgressError(error)) {
+          const existing = await findActiveExportConfig(client, id);
+          if (existing) {
+            exportConfigId = ExportConfigId(existing.id);
+            console.log(
+              chalk.yellow(`⚠ Export already in progress — attaching to export config ${exportConfigId}`)
+            );
+          } else {
+            throw error;
+          }
+        } else {
+          throw error;
+        }
+      }
 
       if (!options.wait) return;
 
@@ -32,7 +62,6 @@ export const exportCommand = new Command('export')
         throw new Error('Interval must be a positive integer');
       }
 
-      const exportConfigId = ExportConfigId(result.data.exportConfigId);
       console.log(chalk.gray(`Export config ID: ${exportConfigId}`));
       console.log(chalk.gray(`Polling every ${intervalSeconds}s... Press Ctrl+C to stop\n`));
 

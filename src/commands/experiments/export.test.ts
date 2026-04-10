@@ -15,14 +15,16 @@ vi.mock('../../lib/utils/api-helper.js', async (importOriginal) => {
 
 vi.mock('../../core/experiments/export-wait.js', () => ({
   fetchExportStatus: vi.fn(),
+  findActiveExportConfig: vi.fn(),
 }));
 
 vi.mock('../../lib/utils/polling.js', () => ({
   startPolling: vi.fn().mockReturnValue({ stop: vi.fn() }),
 }));
 
-import { fetchExportStatus } from '../../core/experiments/export-wait.js';
+import { fetchExportStatus, findActiveExportConfig } from '../../core/experiments/export-wait.js';
 import { startPolling } from '../../lib/utils/polling.js';
+import { APIError } from '../../api-client/http-client.js';
 
 describe('experiments export', () => {
   let consoleSpy: ReturnType<typeof vi.spyOn>;
@@ -33,6 +35,7 @@ describe('experiments export', () => {
   const mockClient = {
     exportExperimentData: vi.fn(),
     resolveExperimentId: vi.fn(),
+    listExportConfigs: vi.fn(),
   };
 
   beforeEach(() => {
@@ -202,6 +205,71 @@ describe('experiments export', () => {
 
       const errorOutput = consoleErrorSpy.mock.calls.flat().join(' ');
       expect(errorOutput).toContain('Interval must be a positive integer');
+    });
+
+    it('should attach to existing export when already in progress', async () => {
+      mockClient.exportExperimentData.mockRejectedValue(
+        new APIError(
+          'exportExperimentData failed: Export already in progress for this experiment',
+          400
+        )
+      );
+      vi.mocked(findActiveExportConfig).mockResolvedValue({
+        id: 55,
+        experiment_id: 42,
+      });
+      vi.mocked(fetchExportStatus).mockResolvedValue({
+        exportConfig: { id: 55, experiment_id: 42, download_file_key: 'export.zip' },
+        latestHistory: {
+          id: 1,
+          status: 'COMPLETED',
+          progress: 100,
+          exported_rows: 1000,
+          total_rows: 1000,
+          remaining_seconds: 0,
+        },
+        status: 'COMPLETED',
+        progress: 100,
+        exportedRows: 1000,
+        totalRows: 1000,
+        remainingSeconds: 0,
+        isTerminal: true,
+        downloadUrl: 'https://api.example.com/v1/experiments/exports/55/export.zip',
+      });
+
+      await exportCommand.parseAsync(['node', 'test', '42', '--wait']);
+
+      const output = consoleSpy.mock.calls.flat().join(' ');
+      expect(output).toContain('Export already in progress');
+      expect(output).toContain('export config 55');
+      expect(output).toContain('Export completed!');
+    });
+
+    it('should rethrow if already in progress but no active config found', async () => {
+      mockClient.exportExperimentData.mockRejectedValue(
+        new APIError(
+          'exportExperimentData failed: Export already in progress for this experiment',
+          400
+        )
+      );
+      vi.mocked(findActiveExportConfig).mockResolvedValue(null);
+
+      await expect(
+        exportCommand.parseAsync(['node', 'test', '42', '--wait'])
+      ).rejects.toThrow('process.exit: 1');
+    });
+
+    it('should not catch the error without --wait', async () => {
+      mockClient.exportExperimentData.mockRejectedValue(
+        new APIError(
+          'exportExperimentData failed: Export already in progress for this experiment',
+          400
+        )
+      );
+
+      await expect(
+        exportCommand.parseAsync(['node', 'test', '42'])
+      ).rejects.toThrow('process.exit: 1');
     });
   });
 });

@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { fetchExportStatus } from './export-wait.js';
-import type { ExportConfigId } from '../../lib/api/branded-types.js';
+import { fetchExportStatus, findActiveExportConfig } from './export-wait.js';
+import type { ExportConfigId, ExperimentId } from '../../lib/api/branded-types.js';
 
 const configId = 99 as unknown as ExportConfigId;
+const experimentId = 42 as unknown as ExperimentId;
 
 describe('fetchExportStatus', () => {
   let mockClient: Record<string, ReturnType<typeof vi.fn>>;
@@ -11,6 +12,7 @@ describe('fetchExportStatus', () => {
     mockClient = {
       getExportConfig: vi.fn(),
       listExportHistories: vi.fn(),
+      listExportConfigs: vi.fn(),
       getApiBaseUrl: vi.fn().mockReturnValue('https://api.example.com/v1'),
     };
   });
@@ -143,5 +145,47 @@ describe('fetchExportStatus', () => {
     expect(result.status).toBe('IN_PROGRESS');
     expect(result.latestHistory?.id).toBe(2);
     expect(result.progress).toBe(50);
+  });
+});
+
+describe('findActiveExportConfig', () => {
+  let mockClient: Record<string, ReturnType<typeof vi.fn>>;
+
+  beforeEach(() => {
+    mockClient = {
+      listExportConfigs: vi.fn(),
+    };
+  });
+
+  it('should return the matching config for the experiment', async () => {
+    mockClient.listExportConfigs.mockResolvedValue([
+      { id: 10, experiment_id: 99 },
+      { id: 20, experiment_id: 42 },
+    ]);
+
+    const result = await findActiveExportConfig(mockClient as any, experimentId);
+
+    expect(mockClient.listExportConfigs).toHaveBeenCalledWith({
+      statuses: 'WAITING,IN_PROGRESS,RETRYING',
+    });
+    expect(result).toEqual({ id: 20, experiment_id: 42 });
+  });
+
+  it('should return null when no config matches the experiment', async () => {
+    mockClient.listExportConfigs.mockResolvedValue([
+      { id: 10, experiment_id: 99 },
+    ]);
+
+    const result = await findActiveExportConfig(mockClient as any, experimentId);
+
+    expect(result).toBeNull();
+  });
+
+  it('should return null when no active configs exist', async () => {
+    mockClient.listExportConfigs.mockResolvedValue([]);
+
+    const result = await findActiveExportConfig(mockClient as any, experimentId);
+
+    expect(result).toBeNull();
   });
 });
