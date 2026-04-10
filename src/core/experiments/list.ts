@@ -3,7 +3,13 @@ import type { ListOptions } from '../../lib/api/types.js';
 import type { CommandResult } from '../types.js';
 import { summarizeExperimentRow } from '../../api-client/experiment-summary.js';
 import { parseDateFlagOrUndefined } from '../../lib/utils/date-parser.js';
-import { resolveTagIds, resolveTeamIds, resolveOwnerIds, resolveApplicationIds, resolveUnitTypeIds } from '../resolve.js';
+import {
+  resolveTagIds,
+  resolveTeamIds,
+  resolveOwnerIds,
+  resolveApplicationIds,
+  resolveUnitTypeIds,
+} from '../resolve.js';
 
 export interface ListExperimentsParams {
   state?: string;
@@ -49,7 +55,7 @@ export interface ListExperimentsParams {
 
 export async function listExperiments(
   client: APIClient,
-  params: ListExperimentsParams,
+  params: ListExperimentsParams
 ): Promise<CommandResult<unknown[]>> {
   const alertFlag = (v: unknown): number | undefined => {
     if (v === undefined) return undefined;
@@ -67,8 +73,12 @@ export async function listExperiments(
   const tags = params.tags ? await resolveTagIds(client, params.tags) : undefined;
   const teams = params.teams ? await resolveTeamIds(client, params.teams) : undefined;
   const owners = params.owners ? await resolveOwnerIds(client, params.owners) : undefined;
-  const applications = params.applications ? await resolveApplicationIds(client, params.applications) : undefined;
-  const unitTypes = params.unitTypes ? await resolveUnitTypeIds(client, params.unitTypes) : undefined;
+  const applications = params.applications
+    ? await resolveApplicationIds(client, params.applications)
+    : undefined;
+  const unitTypes = params.unitTypes
+    ? await resolveUnitTypeIds(client, params.unitTypes)
+    : undefined;
 
   const listOptions = {
     page: params.page,
@@ -100,13 +110,27 @@ export async function listExperiments(
     ...(params.analysisType && { analysis_type: params.analysisType }),
     ...(params.runningType && { running_type: params.runningType }),
     ...(alertFlag(params.alertSrm) !== undefined && { alert_srm: alertFlag(params.alertSrm)! }),
-    ...(alertFlag(params.alertCleanupNeeded) !== undefined && { alert_cleanup_needed: alertFlag(params.alertCleanupNeeded)! }),
-    ...(alertFlag(params.alertAudienceMismatch) !== undefined && { alert_audience_mismatch: alertFlag(params.alertAudienceMismatch)! }),
-    ...(alertFlag(params.alertSampleSizeReached) !== undefined && { alert_sample_size_reached: alertFlag(params.alertSampleSizeReached)! }),
-    ...(alertFlag(params.alertExperimentsInteract) !== undefined && { alert_experiments_interact: alertFlag(params.alertExperimentsInteract)! }),
-    ...(alertFlag(params.alertGroupSequentialUpdated) !== undefined && { alert_group_sequential_updated: alertFlag(params.alertGroupSequentialUpdated)! }),
-    ...(alertFlag(params.alertAssignmentConflict) !== undefined && { alert_assignment_conflict: alertFlag(params.alertAssignmentConflict)! }),
-    ...(alertFlag(params.alertMetricThresholdReached) !== undefined && { alert_metric_threshold_reached: alertFlag(params.alertMetricThresholdReached)! }),
+    ...(alertFlag(params.alertCleanupNeeded) !== undefined && {
+      alert_cleanup_needed: alertFlag(params.alertCleanupNeeded)!,
+    }),
+    ...(alertFlag(params.alertAudienceMismatch) !== undefined && {
+      alert_audience_mismatch: alertFlag(params.alertAudienceMismatch)!,
+    }),
+    ...(alertFlag(params.alertSampleSizeReached) !== undefined && {
+      alert_sample_size_reached: alertFlag(params.alertSampleSizeReached)!,
+    }),
+    ...(alertFlag(params.alertExperimentsInteract) !== undefined && {
+      alert_experiments_interact: alertFlag(params.alertExperimentsInteract)!,
+    }),
+    ...(alertFlag(params.alertGroupSequentialUpdated) !== undefined && {
+      alert_group_sequential_updated: alertFlag(params.alertGroupSequentialUpdated)!,
+    }),
+    ...(alertFlag(params.alertAssignmentConflict) !== undefined && {
+      alert_assignment_conflict: alertFlag(params.alertAssignmentConflict)!,
+    }),
+    ...(alertFlag(params.alertMetricThresholdReached) !== undefined && {
+      alert_metric_threshold_reached: alertFlag(params.alertMetricThresholdReached)!,
+    }),
     ...(params.significance && { significance: params.significance }),
   } as ListOptions;
 
@@ -116,8 +140,10 @@ export async function listExperiments(
   const excludeFields = params.exclude ?? [];
 
   const rows = params.raw
-    ? experiments as unknown[]
-    : (experiments as Array<Record<string, unknown>>).map(e => summarizeExperimentRow(e, extraFields, excludeFields));
+    ? (experiments as unknown[])
+    : (experiments as Array<Record<string, unknown>>).map((e) =>
+        summarizeExperimentRow(e, extraFields, excludeFields)
+      );
 
   return {
     data: experiments as unknown[],

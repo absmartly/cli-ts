@@ -19,7 +19,9 @@ const ERROR_HTML = `<!DOCTYPE html>
 <p>No authorization code received. Please try again.</p>
 </body></html>`;
 
-export async function startCallbackServer(preferredPorts: number[] = [8787, 8080]): Promise<CallbackServer> {
+export async function startCallbackServer(
+  preferredPorts: number[] = [8787, 8080]
+): Promise<CallbackServer> {
   const portsToTry = [...preferredPorts, 0];
   const errors: string[] = [];
 
@@ -31,7 +33,9 @@ export async function startCallbackServer(preferredPorts: number[] = [8787, 8080
     }
   }
 
-  throw new Error(`Could not bind callback server on any port:\n${errors.map(e => `  - ${e}`).join('\n')}`);
+  throw new Error(
+    `Could not bind callback server on any port:\n${errors.map((e) => `  - ${e}`).join('\n')}`
+  );
 }
 
 function tryBindServer(port: number): Promise<CallbackServer> {
@@ -85,7 +89,9 @@ function tryBindServer(port: number): Promise<CallbackServer> {
 
           const outerPromise = innerPromise.then(
             (code) => code,
-            (err: Error) => { throw err; }
+            (err: Error) => {
+              throw err;
+            }
           );
           outerPromise.catch(() => {});
 
@@ -93,7 +99,11 @@ function tryBindServer(port: number): Promise<CallbackServer> {
             if (!settled) {
               settled = true;
               server.close();
-              outerReject!(new Error(`Authentication timed out after ${Math.round(timeoutMs / 1000)}s — please try again`));
+              outerReject!(
+                new Error(
+                  `Authentication timed out after ${Math.round(timeoutMs / 1000)}s — please try again`
+                )
+              );
             }
           }, timeoutMs);
 

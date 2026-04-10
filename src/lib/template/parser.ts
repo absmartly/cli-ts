@@ -11,14 +11,12 @@ export function readTemplateFile(filePath: string): string {
     if (error instanceof Error) {
       if (error.message.includes('ENOENT')) {
         throw new Error(
-          `Template file not found: ${filePath}\n` +
-          `Please check the file path and try again.`
+          `Template file not found: ${filePath}\n` + `Please check the file path and try again.`
         );
       }
       if (error.message.includes('EACCES')) {
         throw new Error(
-          `Permission denied reading template file: ${filePath}\n` +
-          `Run: chmod +r ${filePath}`
+          `Permission denied reading template file: ${filePath}\n` + `Run: chmod +r ${filePath}`
         );
       }
     }

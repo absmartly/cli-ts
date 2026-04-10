@@ -19,7 +19,13 @@ vi.mock('../output/formatter', () => ({
   formatOutput: vi.fn((data) => JSON.stringify(data)),
 }));
 
-import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling, resolveAuth } from './api-helper.js';
+import {
+  getAPIClientFromOptions,
+  getGlobalOptions,
+  printFormatted,
+  withErrorHandling,
+  resolveAuth,
+} from './api-helper.js';
 import { loadConfig, getProfile } from '../config/config.js';
 import { getAPIKey, getOAuthToken } from '../config/keyring.js';
 import { createAPIClient } from '../api/client.js';
@@ -37,9 +43,11 @@ describe('API Helper', () => {
   });
 
   afterEach(() => {
-    if (savedEnv.ABSMARTLY_API_KEY !== undefined) process.env.ABSMARTLY_API_KEY = savedEnv.ABSMARTLY_API_KEY;
+    if (savedEnv.ABSMARTLY_API_KEY !== undefined)
+      process.env.ABSMARTLY_API_KEY = savedEnv.ABSMARTLY_API_KEY;
     else delete process.env.ABSMARTLY_API_KEY;
-    if (savedEnv.ABSMARTLY_API_ENDPOINT !== undefined) process.env.ABSMARTLY_API_ENDPOINT = savedEnv.ABSMARTLY_API_ENDPOINT;
+    if (savedEnv.ABSMARTLY_API_ENDPOINT !== undefined)
+      process.env.ABSMARTLY_API_ENDPOINT = savedEnv.ABSMARTLY_API_ENDPOINT;
     else delete process.env.ABSMARTLY_API_ENDPOINT;
   });
 
@@ -57,9 +65,7 @@ describe('API Helper', () => {
       await expect(getAPIClientFromOptions({})).rejects.toThrow(
         /No API key found for profile "default"/
       );
-      await expect(getAPIClientFromOptions({})).rejects.toThrow(
-        /abs auth login/
-      );
+      await expect(getAPIClientFromOptions({})).rejects.toThrow(/abs auth login/);
     });
 
     it('should throw error when no endpoint is configured', async () => {
@@ -74,9 +80,7 @@ describe('API Helper', () => {
       await expect(getAPIClientFromOptions({})).rejects.toThrow(
         /No API endpoint configured for profile "default"/
       );
-      await expect(getAPIClientFromOptions({})).rejects.toThrow(
-        /abs auth login/
-      );
+      await expect(getAPIClientFromOptions({})).rejects.toThrow(/abs auth login/);
     });
 
     it('should use profile-specific configuration', async () => {
@@ -206,9 +210,7 @@ describe('API Helper', () => {
     it('should validate output format', () => {
       mockCommand.setOptionValue('output', 'invalid');
 
-      expect(() => getGlobalOptions(mockCommand)).toThrow(
-        /Invalid output format: 'invalid'/
-      );
+      expect(() => getGlobalOptions(mockCommand)).toThrow(/Invalid output format: 'invalid'/);
       expect(() => getGlobalOptions(mockCommand)).toThrow(
         /Must be one of: table, json, yaml, plain, markdown, rendered, template, vertical/
       );
@@ -293,7 +295,8 @@ describe('API Helper', () => {
     });
   });
 
-  describe('withErrorHandling', () => {    let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+  describe('withErrorHandling', () => {
+    let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
     let processExitSpy: ReturnType<typeof vi.spyOn>;
 
     beforeEach(() => {

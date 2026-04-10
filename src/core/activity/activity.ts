@@ -66,7 +66,7 @@ export interface FetchActivityParams {
 
 export async function fetchAllActivity(
   client: APIClient,
-  params: FetchActivityParams,
+  params: FetchActivityParams
 ): Promise<ActivityNote[]> {
   const fetchCount = params.items ?? 20;
   const listOptions: ListOptions = {
@@ -132,7 +132,7 @@ export interface ListActivityParams {
 
 export async function listActivity(
   client: APIClient,
-  params: ListActivityParams,
+  params: ListActivityParams
 ): Promise<CommandResult<ActivityEntry[]>> {
   const fetchOptions: FetchActivityParams = {
     items: params.experiments ?? 50,
@@ -149,12 +149,13 @@ export async function listActivity(
 
   const limit = params.limit ?? 20;
   const notes = allNotes.slice(0, limit);
-  const entries = notes.map(n => formatActivityEntry(n, lookups));
+  const entries = notes.map((n) => formatActivityEntry(n, lookups));
 
   return {
     data: entries,
-    warnings: allNotes.length > limit
-      ? [`Showing ${limit} of ${allNotes.length} entries. Use --limit to show more.`]
-      : undefined,
+    warnings:
+      allNotes.length > limit
+        ? [`Showing ${limit} of ${allNotes.length} entries. Use --limit to show more.`]
+        : undefined,
   };
 }

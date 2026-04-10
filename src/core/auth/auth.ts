@@ -1,9 +1,7 @@
 import type { APIClient } from '../../api-client/api-client.js';
 import type { CommandResult } from '../types.js';
 
-export async function whoami(
-  client: APIClient,
-): Promise<CommandResult<unknown>> {
+export async function whoami(client: APIClient): Promise<CommandResult<unknown>> {
   const data = await client.getCurrentUser();
   return { data };
 }
@@ -15,15 +13,13 @@ export interface CreateAuthApiKeyParams {
 
 export async function createAuthApiKey(
   client: APIClient,
-  params: CreateAuthApiKeyParams,
+  params: CreateAuthApiKeyParams
 ): Promise<CommandResult<{ name: string; key: string }>> {
   const data = await client.createUserApiKey(params.name, params.description);
   return { data: data as { name: string; key: string } };
 }
 
-export async function listAuthApiKeys(
-  client: APIClient,
-): Promise<CommandResult<unknown[]>> {
+export async function listAuthApiKeys(client: APIClient): Promise<CommandResult<unknown[]>> {
   const data = await client.listUserApiKeys();
   return { data };
 }
@@ -34,7 +30,7 @@ export interface GetAuthApiKeyParams {
 
 export async function getAuthApiKey(
   client: APIClient,
-  params: GetAuthApiKeyParams,
+  params: GetAuthApiKeyParams
 ): Promise<CommandResult<unknown>> {
   const data = await client.getUserApiKey(params.id);
   return { data };
@@ -48,7 +44,7 @@ export interface UpdateAuthApiKeyParams {
 
 export async function updateAuthApiKey(
   client: APIClient,
-  params: UpdateAuthApiKeyParams,
+  params: UpdateAuthApiKeyParams
 ): Promise<CommandResult<void>> {
   const data: { name?: string; description?: string } = {};
   if (params.name !== undefined) data.name = params.name;
@@ -63,7 +59,7 @@ export interface DeleteAuthApiKeyParams {
 
 export async function deleteAuthApiKey(
   client: APIClient,
-  params: DeleteAuthApiKeyParams,
+  params: DeleteAuthApiKeyParams
 ): Promise<CommandResult<void>> {
   await client.deleteUserApiKey(params.id);
   return { data: undefined };
@@ -78,15 +74,29 @@ export interface EditProfileParams {
 
 export async function editProfile(
   client: APIClient,
-  params: EditProfileParams,
-): Promise<CommandResult<{ first_name?: string | undefined; last_name?: string | undefined; department?: string | undefined; job_title?: string | undefined }>> {
+  params: EditProfileParams
+): Promise<
+  CommandResult<{
+    first_name?: string | undefined;
+    last_name?: string | undefined;
+    department?: string | undefined;
+    job_title?: string | undefined;
+  }>
+> {
   const data: Record<string, string> = {};
   if (params.firstName !== undefined) data.first_name = params.firstName;
   if (params.lastName !== undefined) data.last_name = params.lastName;
   if (params.department !== undefined) data.department = params.department;
   if (params.jobTitle !== undefined) data.job_title = params.jobTitle;
   const user = await client.updateCurrentUser(data);
-  return { data: user as { first_name?: string | undefined; last_name?: string | undefined; department?: string | undefined; job_title?: string | undefined } };
+  return {
+    data: user as {
+      first_name?: string | undefined;
+      last_name?: string | undefined;
+      department?: string | undefined;
+      job_title?: string | undefined;
+    },
+  };
 }
 
 export interface ResetMyPasswordParams {
@@ -96,7 +106,7 @@ export interface ResetMyPasswordParams {
 
 export async function resetMyPassword(
   client: APIClient,
-  params: ResetMyPasswordParams,
+  params: ResetMyPasswordParams
 ): Promise<CommandResult<void>> {
   await client.updateCurrentUser({
     old_password: params.oldPassword,

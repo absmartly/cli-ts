@@ -5,7 +5,12 @@ import { resetCommand } from '../../test/helpers/command-reset.js';
 
 vi.mock('./api-helper.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('./api-helper.js')>();
-  return { ...actual, getAPIClientFromOptions: vi.fn(), getGlobalOptions: vi.fn(), printFormatted: vi.fn() };
+  return {
+    ...actual,
+    getAPIClientFromOptions: vi.fn(),
+    getGlobalOptions: vi.fn(),
+    printFormatted: vi.fn(),
+  };
 });
 
 vi.mock('./pagination.js', async (importOriginal) => {
@@ -44,7 +49,7 @@ describe('createListCommand', () => {
       fetch: mockFetch,
     });
 
-    const optionNames = cmd.options.map(o => o.long);
+    const optionNames = cmd.options.map((o) => o.long);
     expect(optionNames).toContain('--items');
     expect(optionNames).toContain('--page');
     expect(optionNames).toContain('--show');

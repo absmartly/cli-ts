@@ -1,12 +1,24 @@
 import { Command } from 'commander';
 import Table from 'cli-table3';
 import chalk from 'chalk';
-import { getAPIClientFromOptions, getGlobalOptions, printFormatted, resolveAPIKey, resolveEndpoint, withErrorHandling, type GlobalOptions } from '../../lib/utils/api-helper.js';
+import {
+  getAPIClientFromOptions,
+  getGlobalOptions,
+  printFormatted,
+  resolveAPIKey,
+  resolveEndpoint,
+  withErrorHandling,
+  type GlobalOptions,
+} from '../../lib/utils/api-helper.js';
 import { parseUserId } from '../../lib/utils/validators.js';
 import { addPaginationOptions, printPaginationFooter } from '../../lib/utils/pagination.js';
 import { renderInlineImage, supportsInlineImages } from '../../lib/utils/terminal-image.js';
 import type { UserId } from '../../lib/api/branded-types.js';
-import { applyShowExclude, summarizeUserRow, summarizeUserDetail } from '../../api-client/entity-summary.js';
+import {
+  applyShowExclude,
+  summarizeUserRow,
+  summarizeUserDetail,
+} from '../../api-client/entity-summary.js';
 import type { User } from '../../api-client/types.js';
 import { stripApiVersionPath } from '../../lib/utils/url.js';
 import {
@@ -21,7 +33,11 @@ import { userApiKeysCommand } from './api-keys.js';
 
 export const usersCommand = new Command('users').alias('user').description('User commands');
 
-async function displayUserAvatar(user: User, globalOptions: GlobalOptions, width: number): Promise<void> {
+async function displayUserAvatar(
+  user: User,
+  globalOptions: GlobalOptions,
+  width: number
+): Promise<void> {
   if (!supportsInlineImages() || !user.avatar?.base_url) return;
   const endpoint = resolveEndpoint(globalOptions);
   const baseUrl = stripApiVersionPath(endpoint);
@@ -29,7 +45,10 @@ async function displayUserAvatar(user: User, globalOptions: GlobalOptions, width
   const thumbSize = Math.min(width * 16, 128);
   const thumbUrl = `${baseUrl}${user.avatar.base_url}/crop/${thumbSize}x${thumbSize}.webp`;
   try {
-    const response = await fetch(thumbUrl, { headers: { Authorization: `Api-Key ${apiKey}` }, redirect: 'follow' });
+    const response = await fetch(thumbUrl, {
+      headers: { Authorization: `Api-Key ${apiKey}` },
+      redirect: 'follow',
+    });
     if (!response.ok) {
       if (response.status === 401 || response.status === 403) {
         console.error('Warning: avatar fetch unauthorized -- check API key');
@@ -52,8 +71,13 @@ const listCommand = addPaginationOptions(
     .option('--include-archived', 'include archived users')
     .option('--show <fields...>', 'include additional fields from API response')
     .option('--exclude <fields...>', 'hide fields from summary')
-    .option('--show-avatars [cols]', 'display avatars inline, optional width in columns (default: 3)', parseInt),
-).action(withErrorHandling(async (options) => {
+    .option(
+      '--show-avatars [cols]',
+      'display avatars inline, optional width in columns (default: 3)',
+      parseInt
+    )
+).action(
+  withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(listCommand);
     const client = await getAPIClientFromOptions(globalOptions);
     const show = (options.show as string[] | undefined) ?? [];
@@ -66,8 +90,12 @@ const listCommand = addPaginationOptions(
     });
     const users = result.data;
 
-    const wantAvatars = options.showAvatars !== undefined && supportsInlineImages() && !globalOptions.raw
-      && globalOptions.output !== 'json' && globalOptions.output !== 'yaml';
+    const wantAvatars =
+      options.showAvatars !== undefined &&
+      supportsInlineImages() &&
+      !globalOptions.raw &&
+      globalOptions.output !== 'json' &&
+      globalOptions.output !== 'yaml';
 
     if (wantAvatars) {
       const avatarWidth = typeof options.showAvatars === 'number' ? options.showAvatars : 3;
@@ -77,41 +105,45 @@ const listCommand = addPaginationOptions(
       const headers = { Authorization: `Api-Key ${apiKey}` };
 
       const avatarMap = new Map<number, string>();
-      await Promise.all((users as User[]).map(async (user) => {
-        if (!user.avatar?.base_url) return;
-        try {
-          const thumbSize = Math.min(avatarWidth * 16, 256);
-          const thumbUrl = `${baseUrl}${user.avatar.base_url}/crop/${thumbSize}x${thumbSize}.webp`;
-          const response = await fetch(thumbUrl, { headers, redirect: 'follow' });
-          if (!response.ok) {
-            if (response.status === 401 || response.status === 403) {
-              console.error('Warning: avatar fetch unauthorized -- check API key');
+      await Promise.all(
+        (users as User[]).map(async (user) => {
+          if (!user.avatar?.base_url) return;
+          try {
+            const thumbSize = Math.min(avatarWidth * 16, 256);
+            const thumbUrl = `${baseUrl}${user.avatar.base_url}/crop/${thumbSize}x${thumbSize}.webp`;
+            const response = await fetch(thumbUrl, { headers, redirect: 'follow' });
+            if (!response.ok) {
+              if (response.status === 401 || response.status === 403) {
+                console.error('Warning: avatar fetch unauthorized -- check API key');
+              }
+              return;
             }
-            return;
+            const buffer = Buffer.from(await response.arrayBuffer());
+            const img = renderInlineImage(buffer, 'avatar.webp', avatarWidth);
+            if (img) avatarMap.set(user.id, img);
+          } catch (e) {
+            if (e instanceof Error && process.env.DEBUG) {
+              console.error(`Warning: avatar fetch failed: ${e.message}`);
+            }
           }
-          const buffer = Buffer.from(await response.arrayBuffer());
-          const img = renderInlineImage(buffer, 'avatar.webp', avatarWidth);
-          if (img) avatarMap.set(user.id, img);
-        } catch (e) {
-          if (e instanceof Error && process.env.DEBUG) {
-            console.error(`Warning: avatar fetch failed: ${e.message}`);
-          }
-        }
-      }));
+        })
+      );
 
-      const rows = (users as Array<Record<string, unknown>>).map(u => applyShowExclude(summarizeUserRow(u), u, show, exclude));
+      const rows = (users as Array<Record<string, unknown>>).map((u) =>
+        applyShowExclude(summarizeUserRow(u), u, show, exclude)
+      );
       const keys = rows.length > 0 ? Object.keys(rows[0]!) : [];
 
       const imageHeight = Math.max(1, Math.floor(avatarWidth / 2));
 
       const table = new Table({
-        head: [' ', ...keys.map(k => chalk.bold.cyan(k))],
+        head: [' ', ...keys.map((k) => chalk.bold.cyan(k))],
         colWidths: [avatarWidth + 2],
         style: { head: [], border: ['gray'] },
       });
 
       for (const row of rows) {
-        table.push([' ', ...keys.map(k => String(row[k] ?? ''))]);
+        table.push([' ', ...keys.map((k) => String(row[k] ?? ''))]);
       }
 
       const tableLines = table.toString().split('\n');
@@ -144,83 +176,112 @@ const listCommand = addPaginationOptions(
         }
       }
     } else {
-      const data = globalOptions.raw ? users : (users as Array<Record<string, unknown>>).map(u => applyShowExclude(summarizeUserRow(u), u, show, exclude));
+      const data = globalOptions.raw
+        ? users
+        : (users as Array<Record<string, unknown>>).map((u) =>
+            applyShowExclude(summarizeUserRow(u), u, show, exclude)
+          );
       printFormatted(data, globalOptions);
     }
 
-    printPaginationFooter(users.length, options.items, options.page, globalOptions.output as string);
-  }));
+    printPaginationFooter(
+      users.length,
+      options.items,
+      options.page,
+      globalOptions.output as string
+    );
+  })
+);
 
 const getCommand = new Command('get')
   .description('Get user details')
   .argument('<id>', 'user ID', parseUserId)
   .option('--show <fields...>', 'include additional fields from API response')
   .option('--exclude <fields...>', 'hide fields from summary')
-  .option('--show-avatars [cols]', 'display avatar inline, optional width in columns (default: 15)', parseInt)
-  .action(withErrorHandling(async (id: UserId, options) => {
-    const globalOptions = getGlobalOptions(getCommand);
-    const client = await getAPIClientFromOptions(globalOptions);
-    const show = (options.show as string[] | undefined) ?? [];
-    const exclude = (options.exclude as string[] | undefined) ?? [];
+  .option(
+    '--show-avatars [cols]',
+    'display avatar inline, optional width in columns (default: 15)',
+    parseInt
+  )
+  .action(
+    withErrorHandling(async (id: UserId, options) => {
+      const globalOptions = getGlobalOptions(getCommand);
+      const client = await getAPIClientFromOptions(globalOptions);
+      const show = (options.show as string[] | undefined) ?? [];
+      const exclude = (options.exclude as string[] | undefined) ?? [];
 
-    const result = await coreGetUser(client, { id });
-    const user = result.data;
-    const data = globalOptions.raw ? user : applyShowExclude(summarizeUserDetail(user as Record<string, unknown>), user as Record<string, unknown>, show, exclude);
-    printFormatted(data, globalOptions);
+      const result = await coreGetUser(client, { id });
+      const user = result.data;
+      const data = globalOptions.raw
+        ? user
+        : applyShowExclude(
+            summarizeUserDetail(user as Record<string, unknown>),
+            user as Record<string, unknown>,
+            show,
+            exclude
+          );
+      printFormatted(data, globalOptions);
 
-    if (options.showAvatars !== undefined) {
-      const width = typeof options.showAvatars === 'number' ? options.showAvatars : 15;
-      await displayUserAvatar(user as User, globalOptions, width);
-    }
-  }));
+      if (options.showAvatars !== undefined) {
+        const width = typeof options.showAvatars === 'number' ? options.showAvatars : 15;
+        await displayUserAvatar(user as User, globalOptions, width);
+      }
+    })
+  );
 
 const createCommand = new Command('create')
   .description('Create a new user')
   .requiredOption('--email <email>', 'user email')
   .requiredOption('--name <name>', 'user full name')
   .option('--role <role>', 'user role')
-  .action(withErrorHandling(async (options) => {
-    const globalOptions = getGlobalOptions(createCommand);
-    const client = await getAPIClientFromOptions(globalOptions);
+  .action(
+    withErrorHandling(async (options) => {
+      const globalOptions = getGlobalOptions(createCommand);
+      const client = await getAPIClientFromOptions(globalOptions);
 
-    const result = await coreCreateUser(client, {
-      email: options.email,
-      name: options.name,
-      role: options.role,
-    });
+      const result = await coreCreateUser(client, {
+        email: options.email,
+        name: options.name,
+        role: options.role,
+      });
 
-    console.log(chalk.green(`✓ User created with ID: ${result.data.id}`));
-  }));
+      console.log(chalk.green(`✓ User created with ID: ${result.data.id}`));
+    })
+  );
 
 const updateCommand = new Command('update')
   .description('Update a user')
   .argument('<id>', 'user ID', parseUserId)
   .option('--name <name>', 'new full name')
   .option('--role <role>', 'new role')
-  .action(withErrorHandling(async (id: UserId, options) => {
-    const globalOptions = getGlobalOptions(updateCommand);
-    const client = await getAPIClientFromOptions(globalOptions);
+  .action(
+    withErrorHandling(async (id: UserId, options) => {
+      const globalOptions = getGlobalOptions(updateCommand);
+      const client = await getAPIClientFromOptions(globalOptions);
 
-    await coreUpdateUser(client, {
-      id,
-      name: options.name,
-      role: options.role,
-    });
-    console.log(chalk.green(`✓ User ${id} updated`));
-  }));
+      await coreUpdateUser(client, {
+        id,
+        name: options.name,
+        role: options.role,
+      });
+      console.log(chalk.green(`✓ User ${id} updated`));
+    })
+  );
 
 const archiveCommand = new Command('archive')
   .description('Archive or unarchive a user')
   .argument('<id>', 'user ID', parseUserId)
   .option('--unarchive', 'unarchive the user')
-  .action(withErrorHandling(async (id: UserId, options) => {
-    const globalOptions = getGlobalOptions(archiveCommand);
-    const client = await getAPIClientFromOptions(globalOptions);
+  .action(
+    withErrorHandling(async (id: UserId, options) => {
+      const globalOptions = getGlobalOptions(archiveCommand);
+      const client = await getAPIClientFromOptions(globalOptions);
 
-    await coreArchiveUser(client, { id, unarchive: options.unarchive });
-    const action = options.unarchive ? 'unarchived' : 'archived';
-    console.log(chalk.green(`✓ User ${id} ${action}`));
-  }));
+      await coreArchiveUser(client, { id, unarchive: options.unarchive });
+      const action = options.unarchive ? 'unarchived' : 'archived';
+      console.log(chalk.green(`✓ User ${id} ${action}`));
+    })
+  );
 
 usersCommand.addCommand(listCommand);
 usersCommand.addCommand(getCommand);

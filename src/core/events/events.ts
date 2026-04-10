@@ -28,7 +28,7 @@ export function columnarToRows(data: unknown): Record<string, unknown>[] {
     return [];
   }
   const cols = d.columnNames;
-  return d.rows.map(row => {
+  return d.rows.map((row) => {
     const obj: Record<string, unknown> = {};
     for (let i = 0; i < cols.length; i++) obj[cols[i]!] = row[i];
     return obj;
@@ -51,17 +51,19 @@ export interface ListEventsParams {
 
 export async function listEvents(
   client: APIClient,
-  params: ListEventsParams,
+  params: ListEventsParams
 ): Promise<CommandResult<unknown>> {
   const filters: Record<string, unknown> = {};
   if (params.from !== undefined) filters.from = params.from;
   if (params.to !== undefined) filters.to = params.to;
-  if (params.applications && params.applications.length > 0) filters.applications = params.applications;
+  if (params.applications && params.applications.length > 0)
+    filters.applications = params.applications;
   if (params.unitTypes && params.unitTypes.length > 0) filters.unit_types = params.unitTypes;
   if (params.eventTypes && params.eventTypes.length > 0) filters.event_types = params.eventTypes;
   if (params.eventNames && params.eventNames.length > 0) filters.event_names = params.eventNames;
   if (params.unitUids && params.unitUids.length > 0) filters.unit_uids = params.unitUids;
-  if (params.environmentTypes && params.environmentTypes.length > 0) filters.environment_types = params.environmentTypes;
+  if (params.environmentTypes && params.environmentTypes.length > 0)
+    filters.environment_types = params.environmentTypes;
   if (params.effectiveExposures) filters.effective_exposures = true;
 
   const body: Record<string, unknown> = {};
@@ -88,24 +90,28 @@ export interface ListEventsHistoryParams {
 
 export async function listEventsHistory(
   client: APIClient,
-  params: ListEventsHistoryParams,
+  params: ListEventsHistoryParams
 ): Promise<CommandResult<unknown>> {
   const filters: Record<string, unknown> = {};
   if (params.from !== undefined) filters.from = params.from;
   if (params.to !== undefined) filters.to = params.to;
-  if (params.applications && params.applications.length > 0) filters.applications = params.applications;
+  if (params.applications && params.applications.length > 0)
+    filters.applications = params.applications;
   if (params.unitTypes && params.unitTypes.length > 0) filters.unit_types = params.unitTypes;
   if (params.eventTypes && params.eventTypes.length > 0) filters.event_types = params.eventTypes;
   if (params.eventNames && params.eventNames.length > 0) filters.event_names = params.eventNames;
   if (params.unitUids && params.unitUids.length > 0) filters.unit_uids = params.unitUids;
-  if (params.environmentTypes && params.environmentTypes.length > 0) filters.environment_types = params.environmentTypes;
+  if (params.environmentTypes && params.environmentTypes.length > 0)
+    filters.environment_types = params.environmentTypes;
 
   const body: Record<string, unknown> = {};
   if (Object.keys(filters).length > 0) body.filters = filters;
   if (params.period !== undefined) body.period = params.period;
   if (params.tzOffset !== undefined) body.tz_offset = params.tzOffset;
 
-  const data = await client.listEventsHistory(body as Parameters<typeof client.listEventsHistory>[0]);
+  const data = await client.listEventsHistory(
+    body as Parameters<typeof client.listEventsHistory>[0]
+  );
   return { data };
 }
 
@@ -115,7 +121,7 @@ export interface GetEventUnitDataParams {
 
 export async function getEventUnitData(
   client: APIClient,
-  params: GetEventUnitDataParams,
+  params: GetEventUnitDataParams
 ): Promise<CommandResult<unknown>> {
   const parsed = parseUnits(params.units);
   const data = await client.getEventUnitData({ units: parsed });
@@ -128,7 +134,7 @@ export interface DeleteEventUnitDataParams {
 
 export async function deleteEventUnitData(
   client: APIClient,
-  params: DeleteEventUnitDataParams,
+  params: DeleteEventUnitDataParams
 ): Promise<CommandResult<unknown>> {
   const parsed = parseUnits(params.units);
   const data = await client.deleteEventUnitData({ units: parsed });
@@ -146,7 +152,7 @@ export interface GetEventJsonValuesParams {
 
 export async function getEventJsonValues(
   client: APIClient,
-  params: GetEventJsonValuesParams,
+  params: GetEventJsonValuesParams
 ): Promise<CommandResult<unknown>> {
   const body: Record<string, unknown> = {
     event_type: params.eventType,
@@ -157,7 +163,9 @@ export async function getEventJsonValues(
   if (params.from !== undefined) body.from = params.from;
   if (params.to !== undefined) body.to = params.to;
 
-  const data = await client.getEventJsonValues(body as Parameters<typeof client.getEventJsonValues>[0]);
+  const data = await client.getEventJsonValues(
+    body as Parameters<typeof client.getEventJsonValues>[0]
+  );
   return { data };
 }
 
@@ -172,7 +180,7 @@ export interface GetEventJsonLayoutsParams {
 
 export async function getEventJsonLayouts(
   client: APIClient,
-  params: GetEventJsonLayoutsParams,
+  params: GetEventJsonLayoutsParams
 ): Promise<CommandResult<unknown>> {
   const body: Record<string, unknown> = {
     source: params.source,
@@ -183,6 +191,8 @@ export async function getEventJsonLayouts(
   if (params.from !== undefined) body.from = params.from;
   if (params.to !== undefined) body.to = params.to;
 
-  const data = await client.getEventJsonLayouts(body as Parameters<typeof client.getEventJsonLayouts>[0]);
+  const data = await client.getEventJsonLayouts(
+    body as Parameters<typeof client.getEventJsonLayouts>[0]
+  );
   return { data };
 }

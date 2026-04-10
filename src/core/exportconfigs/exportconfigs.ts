@@ -2,9 +2,7 @@ import type { APIClient } from '../../api-client/api-client.js';
 import type { ExportConfigId } from '../../lib/api/branded-types.js';
 import type { CommandResult } from '../types.js';
 
-export async function listExportConfigs(
-  client: APIClient,
-): Promise<CommandResult<unknown>> {
+export async function listExportConfigs(client: APIClient): Promise<CommandResult<unknown>> {
   const data = await client.listExportConfigs();
   return { data };
 }
@@ -15,7 +13,7 @@ export interface GetExportConfigParams {
 
 export async function getExportConfig(
   client: APIClient,
-  params: GetExportConfigParams,
+  params: GetExportConfigParams
 ): Promise<CommandResult<unknown>> {
   const data = await client.getExportConfig(params.id);
   return { data };
@@ -27,7 +25,7 @@ export interface CreateExportConfigParams {
 
 export async function createExportConfig(
   client: APIClient,
-  params: CreateExportConfigParams,
+  params: CreateExportConfigParams
 ): Promise<CommandResult<unknown>> {
   const data = await client.createExportConfig(params.config);
   return { data };
@@ -40,7 +38,7 @@ export interface UpdateExportConfigParams {
 
 export async function updateExportConfig(
   client: APIClient,
-  params: UpdateExportConfigParams,
+  params: UpdateExportConfigParams
 ): Promise<CommandResult<unknown>> {
   const data = await client.updateExportConfig(params.id, params.config);
   return { data };
@@ -53,7 +51,7 @@ export interface ArchiveExportConfigParams {
 
 export async function archiveExportConfig(
   client: APIClient,
-  params: ArchiveExportConfigParams,
+  params: ArchiveExportConfigParams
 ): Promise<CommandResult<void>> {
   await client.archiveExportConfig(params.id, params.unarchive);
   return { data: undefined };
@@ -65,7 +63,7 @@ export interface PauseExportConfigParams {
 
 export async function pauseExportConfig(
   client: APIClient,
-  params: PauseExportConfigParams,
+  params: PauseExportConfigParams
 ): Promise<CommandResult<void>> {
   await client.pauseExportConfig(params.id);
   return { data: undefined };
@@ -77,7 +75,7 @@ export interface ListExportHistoriesParams {
 
 export async function listExportHistories(
   client: APIClient,
-  params: ListExportHistoriesParams,
+  params: ListExportHistoriesParams
 ): Promise<CommandResult<unknown>> {
   const data = await client.listExportHistories(params.id);
   return { data };
@@ -91,7 +89,7 @@ export interface CancelExportHistoryParams {
 
 export async function cancelExportHistory(
   client: APIClient,
-  params: CancelExportHistoryParams,
+  params: CancelExportHistoryParams
 ): Promise<CommandResult<void>> {
   await client.cancelExportHistory(params.exportConfigId, params.historyId, params.reason);
   return { data: undefined };

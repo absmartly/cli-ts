@@ -1,11 +1,20 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { unitsCommand } from './index.js';
-import { getAPIClientFromOptions, getGlobalOptions, printFormatted } from '../../lib/utils/api-helper.js';
+import {
+  getAPIClientFromOptions,
+  getGlobalOptions,
+  printFormatted,
+} from '../../lib/utils/api-helper.js';
 import { resetCommand } from '../../test/helpers/command-reset.js';
 
 vi.mock('../../lib/utils/api-helper.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../lib/utils/api-helper.js')>();
-  return { ...actual, getAPIClientFromOptions: vi.fn(), getGlobalOptions: vi.fn(), printFormatted: vi.fn() };
+  return {
+    ...actual,
+    getAPIClientFromOptions: vi.fn(),
+    getGlobalOptions: vi.fn(),
+    printFormatted: vi.fn(),
+  };
 });
 
 describe('units command', () => {
@@ -44,10 +53,7 @@ describe('units command', () => {
     await unitsCommand.parseAsync(['node', 'test', 'list']);
 
     expect(mockClient.listUnitTypes).toHaveBeenCalled();
-    expect(printFormatted).toHaveBeenCalledWith(
-      [{ id: 1, name: 'user_id' }],
-      expect.anything()
-    );
+    expect(printFormatted).toHaveBeenCalledWith([{ id: 1, name: 'user_id' }], expect.anything());
   });
 
   it('should get unit type by id', async () => {
@@ -61,8 +67,19 @@ describe('units command', () => {
   });
 
   it('should create unit type', async () => {
-    await unitsCommand.parseAsync(['node', 'test', 'create', '--name', 'session_id', '--description', 'Session identifier']);
-    expect(mockClient.createUnitType).toHaveBeenCalledWith({ name: 'session_id', description: 'Session identifier' });
+    await unitsCommand.parseAsync([
+      'node',
+      'test',
+      'create',
+      '--name',
+      'session_id',
+      '--description',
+      'Session identifier',
+    ]);
+    expect(mockClient.createUnitType).toHaveBeenCalledWith({
+      name: 'session_id',
+      description: 'Session identifier',
+    });
   });
 
   it('should update unit type', async () => {
@@ -71,7 +88,14 @@ describe('units command', () => {
   });
 
   it('should update unit type description', async () => {
-    await unitsCommand.parseAsync(['node', 'test', 'update', '1', '--description', 'New description']);
+    await unitsCommand.parseAsync([
+      'node',
+      'test',
+      'update',
+      '1',
+      '--description',
+      'New description',
+    ]);
     expect(mockClient.updateUnitType).toHaveBeenCalledWith(1, { description: 'New description' });
   });
 

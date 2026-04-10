@@ -2,9 +2,7 @@ import type { APIClient } from '../../api-client/api-client.js';
 import type { DatasourceId } from '../../lib/api/branded-types.js';
 import type { CommandResult } from '../types.js';
 
-export async function listDatasources(
-  client: APIClient,
-): Promise<CommandResult<unknown>> {
+export async function listDatasources(client: APIClient): Promise<CommandResult<unknown>> {
   const data = await client.listDatasources();
   return { data };
 }
@@ -15,7 +13,7 @@ export interface GetDatasourceParams {
 
 export async function getDatasource(
   client: APIClient,
-  params: GetDatasourceParams,
+  params: GetDatasourceParams
 ): Promise<CommandResult<unknown>> {
   const data = await client.getDatasource(params.id);
   return { data };
@@ -27,7 +25,7 @@ export interface CreateDatasourceParams {
 
 export async function createDatasource(
   client: APIClient,
-  params: CreateDatasourceParams,
+  params: CreateDatasourceParams
 ): Promise<CommandResult<unknown>> {
   const data = await client.createDatasource(params.config);
   return { data };
@@ -40,7 +38,7 @@ export interface UpdateDatasourceParams {
 
 export async function updateDatasource(
   client: APIClient,
-  params: UpdateDatasourceParams,
+  params: UpdateDatasourceParams
 ): Promise<CommandResult<unknown>> {
   const data = await client.updateDatasource(params.id, params.config);
   return { data };
@@ -53,7 +51,7 @@ export interface ArchiveDatasourceParams {
 
 export async function archiveDatasource(
   client: APIClient,
-  params: ArchiveDatasourceParams,
+  params: ArchiveDatasourceParams
 ): Promise<CommandResult<void>> {
   await client.archiveDatasource(params.id, params.unarchive);
   return { data: undefined };
@@ -65,7 +63,7 @@ export interface TestDatasourceParams {
 
 export async function testDatasource(
   client: APIClient,
-  params: TestDatasourceParams,
+  params: TestDatasourceParams
 ): Promise<CommandResult<void>> {
   await client.testDatasource(params.config);
   return { data: undefined };
@@ -77,7 +75,7 @@ export interface IntrospectDatasourceParams {
 
 export async function introspectDatasource(
   client: APIClient,
-  params: IntrospectDatasourceParams,
+  params: IntrospectDatasourceParams
 ): Promise<CommandResult<unknown>> {
   const data = await client.introspectDatasource(params.config);
   return { data };
@@ -89,7 +87,7 @@ export interface ValidateDatasourceQueryParams {
 
 export async function validateDatasourceQuery(
   client: APIClient,
-  params: ValidateDatasourceQueryParams,
+  params: ValidateDatasourceQueryParams
 ): Promise<CommandResult<void>> {
   await client.validateDatasourceQuery(params.config);
   return { data: undefined };
@@ -101,7 +99,7 @@ export interface PreviewDatasourceQueryParams {
 
 export async function previewDatasourceQuery(
   client: APIClient,
-  params: PreviewDatasourceQueryParams,
+  params: PreviewDatasourceQueryParams
 ): Promise<CommandResult<unknown>> {
   const data = await client.previewDatasourceQuery(params.config);
   return { data };
@@ -113,7 +111,7 @@ export interface SetDefaultDatasourceParams {
 
 export async function setDefaultDatasource(
   client: APIClient,
-  params: SetDefaultDatasourceParams,
+  params: SetDefaultDatasourceParams
 ): Promise<CommandResult<void>> {
   await client.setDefaultDatasource(params.id);
   return { data: undefined };
@@ -125,7 +123,7 @@ export interface GetDatasourceSchemaParams {
 
 export async function getDatasourceSchema(
   client: APIClient,
-  params: GetDatasourceSchemaParams,
+  params: GetDatasourceSchemaParams
 ): Promise<CommandResult<unknown>> {
   const data = await client.getDatasourceSchema(params.id);
   return { data };

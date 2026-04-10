@@ -1,6 +1,10 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
-import { getAPIClientFromOptions, getGlobalOptions, withErrorHandling } from '../../lib/utils/api-helper.js';
+import {
+  getAPIClientFromOptions,
+  getGlobalOptions,
+  withErrorHandling,
+} from '../../lib/utils/api-helper.js';
 import { experimentToMarkdown } from '../../api-client/template/serializer.js';
 import { parseExperimentMarkdown } from '../../api-client/template/parser.js';
 import { buildPayloadFromTemplate } from '../../api-client/template/build-from-template.js';
@@ -10,7 +14,13 @@ import type { ExperimentInput } from '../../api-client/index.js';
 import { parseExperimentIdOrName } from './resolve-id.js';
 import { getDefaultType } from './default-type.js';
 import { registerCustomFieldOptions, extractCustomFieldValues } from './custom-field-options.js';
-import { validateRestartParams, buildRestartChanges, restartExperiment, VALID_RESTART_REASONS, VALID_RESTART_TYPES } from '../../core/experiments/restart.js';
+import {
+  validateRestartParams,
+  buildRestartChanges,
+  restartExperiment,
+  VALID_RESTART_REASONS,
+  VALID_RESTART_TYPES,
+} from '../../core/experiments/restart.js';
 
 export const restartCommand = new Command('restart')
   .description('Restart a stopped experiment')
@@ -28,7 +38,8 @@ restartCommand
   .option('-i, --interactive', 'interactive step-by-step editor')
   .option('--dry-run', 'show the changes without restarting');
 
-restartCommand.action(withErrorHandling(async (nameOrId: string, options) => {
+restartCommand.action(
+  withErrorHandling(async (nameOrId: string, options) => {
     const globalOptions = getGlobalOptions(restartCommand);
     const client = await getAPIClientFromOptions(globalOptions);
     const id = await client.resolveExperimentId(nameOrId);
@@ -42,7 +53,11 @@ restartCommand.action(withErrorHandling(async (nameOrId: string, options) => {
       asType: options.asType,
       templateContent: options.fromFile ? readTemplateFile(options.fromFile) : undefined,
       defaultType: getDefaultType(),
-      customFieldValues: extractCustomFieldValues(options, getDefaultType(), globalOptions.profile as string),
+      customFieldValues: extractCustomFieldValues(
+        options,
+        getDefaultType(),
+        globalOptions.profile as string
+      ),
     };
 
     validateRestartParams(params);
@@ -53,9 +68,17 @@ restartCommand.action(withErrorHandling(async (nameOrId: string, options) => {
       const experiment = await client.getExperiment(id);
       const md = await experimentToMarkdown(experiment);
       const template = parseExperimentMarkdown(md);
-      const edited = await runInteractiveEditor(client, template, options.asType || getDefaultType());
+      const edited = await runInteractiveEditor(
+        client,
+        template,
+        options.asType || getDefaultType()
+      );
       if (!edited) return;
-      const result = await buildPayloadFromTemplate(client, edited, options.asType || getDefaultType());
+      const result = await buildPayloadFromTemplate(
+        client,
+        edited,
+        options.asType || getDefaultType()
+      );
       for (const warning of result.warnings) {
         console.log(chalk.yellow(`Warning: ${warning}`));
       }
@@ -84,5 +107,8 @@ restartCommand.action(withErrorHandling(async (nameOrId: string, options) => {
 
     const result = await restartExperiment(client, params, changes);
     const typeNote = options.asType ? ` as ${options.asType}` : '';
-    console.log(chalk.green(`Experiment ${id} restarted${typeNote} → new iteration ID: ${result.data.newId}`));
-  }));
+    console.log(
+      chalk.green(`Experiment ${id} restarted${typeNote} → new iteration ID: ${result.data.newId}`)
+    );
+  })
+);

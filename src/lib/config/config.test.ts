@@ -33,7 +33,7 @@ describe('Config Management', () => {
     } catch {}
 
     try {
-      const tempFiles = readdirSync(testConfigDir).filter(f => f.includes('.tmp.'));
+      const tempFiles = readdirSync(testConfigDir).filter((f) => f.includes('.tmp.'));
       for (const file of tempFiles) {
         try {
           unlinkSync(`${testConfigDir}/${file}`);
@@ -262,7 +262,7 @@ describe('Config Management', () => {
 
       expect(existsSync(testConfigPath)).toBe(true);
 
-      const tempFiles = readdirSync(testConfigDir).filter(f => f.includes('.tmp.'));
+      const tempFiles = readdirSync(testConfigDir).filter((f) => f.includes('.tmp.'));
       expect(tempFiles.length).toBe(0);
     });
 
@@ -272,7 +272,7 @@ describe('Config Management', () => {
 
       saveConfig(config);
 
-      const tempFiles = readdirSync(testConfigDir).filter(f => f.includes('.tmp.'));
+      const tempFiles = readdirSync(testConfigDir).filter((f) => f.includes('.tmp.'));
       expect(tempFiles.length).toBe(0);
 
       const loaded = loadConfig();
@@ -291,7 +291,7 @@ describe('Config Management', () => {
       const loaded = loadConfig();
       expect(loaded['default-profile']).toBe('profile2');
 
-      const tempFiles = readdirSync(testConfigDir).filter(f => f.includes('.tmp.'));
+      const tempFiles = readdirSync(testConfigDir).filter((f) => f.includes('.tmp.'));
       expect(tempFiles.length).toBe(0);
     });
 
@@ -306,7 +306,7 @@ describe('Config Management', () => {
       const loaded = loadConfig();
       expect(loaded['default-profile']).toBe('atomic-test');
 
-      const tempFiles = readdirSync(testConfigDir).filter(f => f.includes('.tmp.'));
+      const tempFiles = readdirSync(testConfigDir).filter((f) => f.includes('.tmp.'));
       expect(tempFiles.length).toBe(0);
     });
   });

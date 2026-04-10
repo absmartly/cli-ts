@@ -20,7 +20,7 @@ export interface ListUserApiKeysParams {
 
 export async function listUserApiKeys(
   client: APIClient,
-  params: ListUserApiKeysParams,
+  params: ListUserApiKeysParams
 ): Promise<CommandResult<unknown[]>> {
   const userId = await resolveUserId(client, params.userRef);
   const data = await client.listUserApiKeysByUserId(userId, params.items, params.page);
@@ -41,7 +41,7 @@ export interface GetUserApiKeyParams {
 
 export async function getUserApiKey(
   client: APIClient,
-  params: GetUserApiKeyParams,
+  params: GetUserApiKeyParams
 ): Promise<CommandResult<unknown>> {
   const userId = await resolveUserId(client, params.userRef);
   const data = await client.getUserApiKeyByUserId(userId, params.keyId);
@@ -56,7 +56,7 @@ export interface CreateUserApiKeyParams {
 
 export async function createUserApiKey(
   client: APIClient,
-  params: CreateUserApiKeyParams,
+  params: CreateUserApiKeyParams
 ): Promise<CommandResult<{ name: string; key: string }>> {
   const userId = await resolveUserId(client, params.userRef);
   const payload: { name: string; description?: string } = { name: params.name };
@@ -74,7 +74,7 @@ export interface UpdateUserApiKeyParams {
 
 export async function updateUserApiKey(
   client: APIClient,
-  params: UpdateUserApiKeyParams,
+  params: UpdateUserApiKeyParams
 ): Promise<CommandResult<void>> {
   const userId = await resolveUserId(client, params.userRef);
   const data: Record<string, string> = {};
@@ -96,7 +96,7 @@ export interface DeleteUserApiKeyParams {
 
 export async function deleteUserApiKey(
   client: APIClient,
-  params: DeleteUserApiKeyParams,
+  params: DeleteUserApiKeyParams
 ): Promise<CommandResult<void>> {
   const userId = await resolveUserId(client, params.userRef);
   await client.deleteUserApiKeyByUserId(userId, params.keyId);

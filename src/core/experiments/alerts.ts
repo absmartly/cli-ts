@@ -9,7 +9,7 @@ export interface ListExperimentAlertsParams {
 
 export async function listExperimentAlerts(
   client: APIClient,
-  params: ListExperimentAlertsParams,
+  params: ListExperimentAlertsParams
 ): Promise<CommandResult<unknown[]>> {
   const alerts = await client.listExperimentAlerts(params.experimentId);
   return { data: alerts as unknown[] };
@@ -22,7 +22,7 @@ export interface DismissAlertParams {
 
 export async function dismissAlert(
   client: APIClient,
-  params: DismissAlertParams,
+  params: DismissAlertParams
 ): Promise<CommandResult<{ alertId: AlertId }>> {
   await client.dismissAlert(params.alertId);
   return { data: { alertId: params.alertId } };

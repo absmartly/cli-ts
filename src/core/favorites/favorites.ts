@@ -11,7 +11,7 @@ export interface AddFavoriteParams {
 
 export async function addFavorite(
   client: APIClient,
-  params: AddFavoriteParams,
+  params: AddFavoriteParams
 ): Promise<CommandResult<void>> {
   if (params.type === 'experiment') {
     await client.favoriteExperiment(params.id as ExperimentId, true);
@@ -30,7 +30,7 @@ export interface RemoveFavoriteParams {
 
 export async function removeFavorite(
   client: APIClient,
-  params: RemoveFavoriteParams,
+  params: RemoveFavoriteParams
 ): Promise<CommandResult<void>> {
   if (params.type === 'experiment') {
     await client.favoriteExperiment(params.id as ExperimentId, false);

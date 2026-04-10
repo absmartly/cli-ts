@@ -21,7 +21,9 @@ describe('startCallbackServer', () => {
     server = await startCallbackServer();
     const codePromise = server.waitForCode(5000);
 
-    const response = await fetch(`http://localhost:${server.port}/oauth/callback?code=test-auth-code`);
+    const response = await fetch(
+      `http://localhost:${server.port}/oauth/callback?code=test-auth-code`
+    );
     expect(response.ok).toBe(true);
 
     const code = await codePromise;

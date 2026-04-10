@@ -1,11 +1,20 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { appsCommand } from './index.js';
-import { getAPIClientFromOptions, getGlobalOptions, printFormatted } from '../../lib/utils/api-helper.js';
+import {
+  getAPIClientFromOptions,
+  getGlobalOptions,
+  printFormatted,
+} from '../../lib/utils/api-helper.js';
 import { resetCommand } from '../../test/helpers/command-reset.js';
 
 vi.mock('../../lib/utils/api-helper.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../lib/utils/api-helper.js')>();
-  return { ...actual, getAPIClientFromOptions: vi.fn(), getGlobalOptions: vi.fn(), printFormatted: vi.fn() };
+  return {
+    ...actual,
+    getAPIClientFromOptions: vi.fn(),
+    getGlobalOptions: vi.fn(),
+    printFormatted: vi.fn(),
+  };
 });
 
 describe('apps command', () => {
@@ -44,10 +53,7 @@ describe('apps command', () => {
     await appsCommand.parseAsync(['node', 'test', 'list']);
 
     expect(mockClient.listApplications).toHaveBeenCalled();
-    expect(printFormatted).toHaveBeenCalledWith(
-      [{ id: 1, name: 'web' }],
-      expect.anything()
-    );
+    expect(printFormatted).toHaveBeenCalledWith([{ id: 1, name: 'web' }], expect.anything());
   });
 
   it('should get application by id', async () => {
@@ -61,9 +67,9 @@ describe('apps command', () => {
   });
 
   it('should reject invalid id', async () => {
-    await expect(
-      appsCommand.parseAsync(['node', 'test', 'get', 'abc'])
-    ).rejects.toThrow('is not a valid number');
+    await expect(appsCommand.parseAsync(['node', 'test', 'get', 'abc'])).rejects.toThrow(
+      'is not a valid number'
+    );
   });
 
   it('should create application', async () => {

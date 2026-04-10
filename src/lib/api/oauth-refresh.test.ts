@@ -71,13 +71,13 @@ describe('OAuth JWT auto-refresh interceptor', () => {
       onExpired,
     });
 
-    await expect(
-      client.request({ method: 'GET', url: '/experiments' })
-    ).rejects.toThrow(/token refresh unsuccessful.*refresh failed/);
+    await expect(client.request({ method: 'GET', url: '/experiments' })).rejects.toThrow(
+      /token refresh unsuccessful.*refresh failed/
+    );
 
-    await expect(
-      client.request({ method: 'GET', url: '/experiments' })
-    ).rejects.toThrow('abs auth login');
+    await expect(client.request({ method: 'GET', url: '/experiments' })).rejects.toThrow(
+      'abs auth login'
+    );
 
     expect(onExpired).toHaveBeenCalled();
     expect(stderrSpy).toHaveBeenCalledWith(
@@ -100,9 +100,9 @@ describe('OAuth JWT auto-refresh interceptor', () => {
       onExpired,
     });
 
-    await expect(
-      client.request({ method: 'GET', url: '/experiments' })
-    ).rejects.toThrow('Forbidden');
+    await expect(client.request({ method: 'GET', url: '/experiments' })).rejects.toThrow(
+      'Forbidden'
+    );
 
     expect(onExpired).not.toHaveBeenCalled();
   });
@@ -121,9 +121,9 @@ describe('OAuth JWT auto-refresh interceptor', () => {
       apiKey: 'bad-key',
     });
 
-    await expect(
-      client.request({ method: 'GET', url: '/experiments' })
-    ).rejects.toThrow('Unauthorized');
+    await expect(client.request({ method: 'GET', url: '/experiments' })).rejects.toThrow(
+      'Unauthorized'
+    );
 
     expect(callCount).toBe(1);
   });

@@ -1,11 +1,20 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { annotationsCommand } from './annotations.js';
-import { getAPIClientFromOptions, getGlobalOptions, printFormatted } from '../../lib/utils/api-helper.js';
+import {
+  getAPIClientFromOptions,
+  getGlobalOptions,
+  printFormatted,
+} from '../../lib/utils/api-helper.js';
 import { resetCommand } from '../../test/helpers/command-reset.js';
 
 vi.mock('../../lib/utils/api-helper.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../lib/utils/api-helper.js')>();
-  return { ...actual, getAPIClientFromOptions: vi.fn(), getGlobalOptions: vi.fn(), printFormatted: vi.fn() };
+  return {
+    ...actual,
+    getAPIClientFromOptions: vi.fn(),
+    getGlobalOptions: vi.fn(),
+    printFormatted: vi.fn(),
+  };
 });
 
 describe('experiments annotations', () => {
@@ -56,7 +65,10 @@ describe('experiments annotations', () => {
 
       await annotationsCommand.parseAsync(['node', 'test', 'create', '42', '--type', 'deployment']);
 
-      expect(mockClient.createAnnotation).toHaveBeenCalledWith({ experiment_id: 42, type: 'deployment' });
+      expect(mockClient.createAnnotation).toHaveBeenCalledWith({
+        experiment_id: 42,
+        type: 'deployment',
+      });
       const output = consoleSpy.mock.calls.flat().join(' ');
       expect(output).toContain('Annotation created');
     });

@@ -9,7 +9,7 @@ export interface ArchiveMetricParams {
 
 export async function archiveMetric(
   client: APIClient,
-  params: ArchiveMetricParams,
+  params: ArchiveMetricParams
 ): Promise<CommandResult<void>> {
   await client.archiveMetric(params.id, params.unarchive);
   return { data: undefined };

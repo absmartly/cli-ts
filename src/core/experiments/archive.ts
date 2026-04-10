@@ -10,7 +10,7 @@ export interface ArchiveExperimentParams {
 
 export async function archiveExperiment(
   client: APIClient,
-  params: ArchiveExperimentParams,
+  params: ArchiveExperimentParams
 ): Promise<CommandResult<{ id: ExperimentId; action: string }>> {
   await client.archiveExperiment(params.experimentId, params.unarchive, params.note);
   const action = params.unarchive ? 'unarchived' : 'archived';

@@ -18,14 +18,14 @@ describe('stop', () => {
       stopExperiment(mockClient as any, {
         experimentId: id(1),
         reason: 'bad_reason' as any,
-      }),
+      })
     ).rejects.toThrow('Invalid reason: "bad_reason"');
 
     await expect(
       stopExperiment(mockClient as any, {
         experimentId: id(1),
         reason: 'bad_reason' as any,
-      }),
+      })
     ).rejects.toThrow('Valid reasons:');
   });
 

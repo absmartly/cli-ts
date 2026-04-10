@@ -13,7 +13,10 @@ describe('summarizeExperiment', () => {
     applications: [{ application: { name: 'web-app' } }],
     unit_type: { name: 'user_id' },
     primary_metric: { name: 'conversion' },
-    variants: [{ variant: 0, name: 'control' }, { variant: 1, name: 'treatment' }],
+    variants: [
+      { variant: 0, name: 'control' },
+      { variant: 1, name: 'treatment' },
+    ],
     owners: [{ user_id: 1, user: { first_name: 'John', last_name: 'Doe' } }],
     teams: [{ name: 'growth' }],
     experiment_tags: [{ tag: { name: 'important' } }],
@@ -112,7 +115,15 @@ describe('summarizeExperiment', () => {
       variants: [],
       primary_metric_id: 5,
       preview_variants: [
-        { metric_id: 5, variant: 1, unit_count: 100, impact: 0.01, pvalue: 0.5, impact_lower: -0.01, impact_upper: 0.03 },
+        {
+          metric_id: 5,
+          variant: 1,
+          unit_count: 100,
+          impact: 0.01,
+          pvalue: 0.5,
+          impact_lower: -0.01,
+          impact_upper: 0.03,
+        },
       ],
     };
     const summary = summarizeExperiment(exp);
@@ -167,7 +178,9 @@ describe('stateToDate', () => {
   });
 
   it('should return stop_at for archived state', () => {
-    expect(stateToDate('archived', exp)).toBe(new Date('2025-03-01T12:00:00Z').toLocaleDateString());
+    expect(stateToDate('archived', exp)).toBe(
+      new Date('2025-03-01T12:00:00Z').toLocaleDateString()
+    );
   });
 
   it('should return created_at for other states', () => {
@@ -179,7 +192,9 @@ describe('stateToDate', () => {
   });
 
   it('should truncate to date portion only', () => {
-    expect(stateToDate('running', { start_at: '2025-06-15T23:59:59Z' })).toBe(new Date('2025-06-15T23:59:59Z').toLocaleDateString());
+    expect(stateToDate('running', { start_at: '2025-06-15T23:59:59Z' })).toBe(
+      new Date('2025-06-15T23:59:59Z').toLocaleDateString()
+    );
   });
 });
 
@@ -245,7 +260,12 @@ describe('summarizeExperimentRow', () => {
   });
 
   it('should handle missing optional fields gracefully', () => {
-    const row = summarizeExperimentRow({ id: 1, name: 'min', state: 'created', percentage_of_traffic: 100 });
+    const row = summarizeExperimentRow({
+      id: 1,
+      name: 'min',
+      state: 'created',
+      percentage_of_traffic: 100,
+    });
     expect(row.app).toBe('');
     expect(row.primary_metric).toBe('');
     expect(row.unit_type).toBeUndefined();

@@ -105,7 +105,7 @@ describe('APIClient', () => {
               return HttpResponse.json({ error: 'Unauthorized' }, { status: 401 });
             }
             return HttpResponse.json({ experiments: [] });
-          }),
+          })
         );
       }
       const badClient = createAPIClient(BASE_URL, 'invalid-key-that-does-not-exist');
@@ -186,7 +186,11 @@ describe('APIClient', () => {
           if (attemptCount < 3) {
             return new HttpResponse(null, { status: 500 });
           }
-          return HttpResponse.json({ ok: true, experiment: { id: 123, name: 'updated' }, errors: [] });
+          return HttpResponse.json({
+            ok: true,
+            experiment: { id: 123, name: 'updated' },
+            errors: [],
+          });
         })
       );
 

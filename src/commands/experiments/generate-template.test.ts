@@ -46,7 +46,10 @@ describe('generate-template command', () => {
   it('should output template to stdout', async () => {
     await generateTemplateCommand.parseAsync(['node', 'test']);
 
-    expect(generateTemplateFromClient).toHaveBeenCalledWith(mockClient, { name: 'My Experiment', type: 'test' });
+    expect(generateTemplateFromClient).toHaveBeenCalledWith(mockClient, {
+      name: 'My Experiment',
+      type: 'test',
+    });
     const output = consoleSpy.mock.calls.flat().join('\n');
     expect(output).toContain('Template Content');
   });
@@ -60,6 +63,9 @@ describe('generate-template command', () => {
   it('should pass custom name and type', async () => {
     await generateTemplateCommand.parseAsync(['node', 'test', '--name', 'X', '--type', 'feature']);
 
-    expect(generateTemplateFromClient).toHaveBeenCalledWith(mockClient, { name: 'X', type: 'feature' });
+    expect(generateTemplateFromClient).toHaveBeenCalledWith(mockClient, {
+      name: 'X',
+      type: 'feature',
+    });
   });
 });

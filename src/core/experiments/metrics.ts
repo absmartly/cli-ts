@@ -2,7 +2,15 @@ import type { APIClient } from '../../api-client/api-client.js';
 import type { ExperimentId, MetricId } from '../../lib/api/branded-types.js';
 import type { CommandResult } from '../types.js';
 import { parseDateFlagOrUndefined } from '../../lib/utils/date-parser.js';
-import { extractMetricInfos, extractVariantNames, fetchAllMetricResults, formatResultRows, metricOwners, parseCachedMetricData, type MetricInfo } from '../../api-client/metric-results.js';
+import {
+  extractMetricInfos,
+  extractVariantNames,
+  fetchAllMetricResults,
+  formatResultRows,
+  metricOwners,
+  parseCachedMetricData,
+  type MetricInfo,
+} from '../../api-client/metric-results.js';
 
 // --- List metrics ---
 export interface ListExperimentMetricsParams {
@@ -11,7 +19,7 @@ export interface ListExperimentMetricsParams {
 
 export async function listExperimentMetrics(
   client: APIClient,
-  params: ListExperimentMetricsParams,
+  params: ListExperimentMetricsParams
 ): Promise<CommandResult<Record<string, unknown>[]>> {
   const experiment = await client.getExperiment(params.experimentId);
   const exp = experiment as Record<string, unknown>;
@@ -20,14 +28,24 @@ export async function listExperimentMetrics(
 
   const primary = exp.primary_metric as Record<string, unknown> | undefined;
   if (primary) {
-    rows.push({ id: exp.primary_metric_id, name: primary.name, type: 'primary', owners: metricOwners(primary) });
+    rows.push({
+      id: exp.primary_metric_id,
+      name: primary.name,
+      type: 'primary',
+      owners: metricOwners(primary),
+    });
   }
 
   const secondary = exp.secondary_metrics as Array<Record<string, unknown>> | undefined;
   if (secondary) {
     for (const m of secondary) {
       const metric = m.metric as Record<string, unknown> | undefined;
-      rows.push({ id: m.metric_id, name: metric?.name || m.metric_id, type: m.type || 'secondary', owners: metricOwners(metric) });
+      rows.push({
+        id: m.metric_id,
+        name: metric?.name || m.metric_id,
+        type: m.type || 'secondary',
+        owners: metricOwners(metric),
+      });
     }
   }
 
@@ -45,7 +63,7 @@ export interface AddExperimentMetricsParams {
 
 export async function addExperimentMetrics(
   client: APIClient,
-  params: AddExperimentMetricsParams,
+  params: AddExperimentMetricsParams
 ): Promise<CommandResult<{ experimentId: ExperimentId }>> {
   await client.addExperimentMetrics(params.experimentId, params.metricIds);
   return { data: { experimentId: params.experimentId } };
@@ -64,7 +82,7 @@ export type RemoveMetricImpactParams = ExperimentMetricActionParams;
 
 export async function confirmMetricImpact(
   client: APIClient,
-  params: ExperimentMetricActionParams,
+  params: ExperimentMetricActionParams
 ): Promise<CommandResult<{ experimentId: ExperimentId; metricId: MetricId }>> {
   await client.confirmMetricImpact(params.experimentId, params.metricId);
   return { data: { experimentId: params.experimentId, metricId: params.metricId } };
@@ -72,7 +90,7 @@ export async function confirmMetricImpact(
 
 export async function excludeExperimentMetric(
   client: APIClient,
-  params: ExperimentMetricActionParams,
+  params: ExperimentMetricActionParams
 ): Promise<CommandResult<{ experimentId: ExperimentId; metricId: MetricId }>> {
   await client.excludeExperimentMetric(params.experimentId, params.metricId);
   return { data: { experimentId: params.experimentId, metricId: params.metricId } };
@@ -80,7 +98,7 @@ export async function excludeExperimentMetric(
 
 export async function includeExperimentMetric(
   client: APIClient,
-  params: ExperimentMetricActionParams,
+  params: ExperimentMetricActionParams
 ): Promise<CommandResult<{ experimentId: ExperimentId; metricId: MetricId }>> {
   await client.includeExperimentMetric(params.experimentId, params.metricId);
   return { data: { experimentId: params.experimentId, metricId: params.metricId } };
@@ -88,7 +106,7 @@ export async function includeExperimentMetric(
 
 export async function removeMetricImpact(
   client: APIClient,
-  params: ExperimentMetricActionParams,
+  params: ExperimentMetricActionParams
 ): Promise<CommandResult<{ experimentId: ExperimentId; metricId: MetricId }>> {
   await client.removeMetricImpact(params.experimentId, params.metricId);
   return { data: { experimentId: params.experimentId, metricId: params.metricId } };
@@ -112,26 +130,35 @@ export interface MetricResultsParams {
 export interface MetricResultsData {
   results: unknown[];
   formattedRows: Record<string, unknown>[];
-  cachedMeta?: {
-    snapshotData?: Record<string, unknown>;
-    pendingUpdateRequest?: unknown;
-  } | undefined;
+  cachedMeta?:
+    | {
+        snapshotData?: Record<string, unknown>;
+        pendingUpdateRequest?: unknown;
+      }
+    | undefined;
 }
 
 export async function getMetricResults(
   client: APIClient,
-  params: MetricResultsParams,
+  params: MetricResultsParams
 ): Promise<CommandResult<MetricResultsData>> {
   const experiment = await client.getExperiment(params.experimentId);
   const exp = experiment as Record<string, unknown>;
   const variantNames = extractVariantNames(exp);
 
   const metricInfos: MetricInfo[] = params.metricId
-    ? [await (async () => {
-        const metric = await client.getMetric(params.metricId as unknown as MetricId);
-        const m = metric as Record<string, unknown>;
-        return { id: params.metricId as unknown as MetricId, name: m.name as string ?? String(params.metricId), type: 'custom', effect: m.effect as string };
-      })()]
+    ? [
+        await (async () => {
+          const metric = await client.getMetric(params.metricId as unknown as MetricId);
+          const m = metric as Record<string, unknown>;
+          return {
+            id: params.metricId as unknown as MetricId,
+            name: (m.name as string) ?? String(params.metricId),
+            type: 'custom',
+            effect: m.effect as string,
+          };
+        })(),
+      ]
     : extractMetricInfos(exp);
 
   if (metricInfos.length === 0) {
@@ -159,7 +186,7 @@ export async function getMetricResults(
     }
 
     const results = parseCachedMetricData(metricInfos, cached);
-    const formattedRows = results.flatMap(r => formatResultRows(r, variantNames, formatOpts));
+    const formattedRows = results.flatMap((r) => formatResultRows(r, variantNames, formatOpts));
 
     return {
       data: {
@@ -173,7 +200,11 @@ export async function getMetricResults(
     };
   }
 
-  type MetricQueryBody = { segment_id?: number; segment_source?: string; filters?: { segments?: string; from?: number; to?: number } };
+  type MetricQueryBody = {
+    segment_id?: number;
+    segment_source?: string;
+    filters?: { segments?: string; from?: number; to?: number };
+  };
 
   const baseFilters: { segments?: string; from?: number; to?: number } = {};
   if (params.filter) baseFilters.segments = params.filter;
@@ -191,9 +222,13 @@ export async function getMetricResults(
       if (!isNaN(asInt) && String(asInt) === ref.trim()) {
         segmentIds.push(asInt);
       } else {
-        const match = allSegments.find(s => (s as Record<string, unknown>).name?.toString().toLowerCase() === ref.toLowerCase());
+        const match = allSegments.find(
+          (s) => (s as Record<string, unknown>).name?.toString().toLowerCase() === ref.toLowerCase()
+        );
         if (!match) {
-          const available = allSegments.map(s => `  ${s.id} ${(s as Record<string, unknown>).name}`).join('\n');
+          const available = allSegments
+            .map((s) => `  ${s.id} ${(s as Record<string, unknown>).name}`)
+            .join('\n');
           throw new Error(`Segment "${ref}" not found. Available segments:\n${available}`);
         }
         segmentIds.push(match.id);
@@ -213,7 +248,7 @@ export async function getMetricResults(
     }
 
     const results = await fetchAllMetricResults(client, params.experimentId, metricInfos, body);
-    const formattedRows = results.flatMap(r => formatResultRows(r, variantNames, formatOpts));
+    const formattedRows = results.flatMap((r) => formatResultRows(r, variantNames, formatOpts));
     return { data: { results, formattedRows } };
   } else {
     const allRows: Record<string, unknown>[] = [];
@@ -222,7 +257,7 @@ export async function getMetricResults(
       const body: MetricQueryBody = { segment_id: segId };
       if (hasFilters) body.filters = baseFilters;
       const results = await fetchAllMetricResults(client, params.experimentId, metricInfos, body);
-      const rows = results.flatMap(r => formatResultRows(r, variantNames, formatOpts));
+      const rows = results.flatMap((r) => formatResultRows(r, variantNames, formatOpts));
       allRows.push(...rows);
     }
 
@@ -243,7 +278,7 @@ export interface MetricDepsData {
 
 export async function getMetricDeps(
   client: APIClient,
-  params: MetricDepsParams,
+  params: MetricDepsParams
 ): Promise<CommandResult<MetricDepsData | null>> {
   const allUsages = await client.listMetricUsages();
 

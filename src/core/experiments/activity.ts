@@ -9,7 +9,7 @@ export interface ListExperimentActivityParams {
 
 export async function listExperimentActivity(
   client: APIClient,
-  params: ListExperimentActivityParams,
+  params: ListExperimentActivityParams
 ): Promise<CommandResult<unknown[]>> {
   const notes = await client.listExperimentActivity(params.experimentId);
   return { data: notes as unknown[] };
@@ -23,7 +23,7 @@ export interface CreateExperimentNoteParams {
 
 export async function createExperimentNote(
   client: APIClient,
-  params: CreateExperimentNoteParams,
+  params: CreateExperimentNoteParams
 ): Promise<CommandResult<{ id: number }>> {
   const note = await client.createExperimentNote(params.experimentId, params.note);
   return { data: { id: note.id } };
@@ -38,7 +38,7 @@ export interface EditExperimentNoteParams {
 
 export async function editExperimentNote(
   client: APIClient,
-  params: EditExperimentNoteParams,
+  params: EditExperimentNoteParams
 ): Promise<CommandResult<{ noteId: NoteId }>> {
   await client.editExperimentNote(params.experimentId, params.noteId, params.note);
   return { data: { noteId: params.noteId } };
@@ -53,7 +53,7 @@ export interface ReplyToExperimentNoteParams {
 
 export async function replyToExperimentNote(
   client: APIClient,
-  params: ReplyToExperimentNoteParams,
+  params: ReplyToExperimentNoteParams
 ): Promise<CommandResult<{ id: number }>> {
   const note = await client.replyToExperimentNote(params.experimentId, params.noteId, params.note);
   return { data: { id: note.id } };

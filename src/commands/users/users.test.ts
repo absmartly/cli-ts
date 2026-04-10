@@ -1,11 +1,20 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { usersCommand } from './index.js';
-import { getAPIClientFromOptions, getGlobalOptions, printFormatted } from '../../lib/utils/api-helper.js';
+import {
+  getAPIClientFromOptions,
+  getGlobalOptions,
+  printFormatted,
+} from '../../lib/utils/api-helper.js';
 import { resetCommand } from '../../test/helpers/command-reset.js';
 
 vi.mock('../../lib/utils/api-helper.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../lib/utils/api-helper.js')>();
-  return { ...actual, getAPIClientFromOptions: vi.fn(), getGlobalOptions: vi.fn(), printFormatted: vi.fn() };
+  return {
+    ...actual,
+    getAPIClientFromOptions: vi.fn(),
+    getGlobalOptions: vi.fn(),
+    printFormatted: vi.fn(),
+  };
 });
 
 describe('users command', () => {
@@ -43,14 +52,22 @@ describe('users command', () => {
   it('should list users', async () => {
     await usersCommand.parseAsync(['node', 'test', 'list']);
 
-    expect(mockClient.listUsers).toHaveBeenCalledWith({ includeArchived: undefined, items: 20, page: 1 });
+    expect(mockClient.listUsers).toHaveBeenCalledWith({
+      includeArchived: undefined,
+      items: 20,
+      page: 1,
+    });
     expect(printFormatted).toHaveBeenCalled();
   });
 
   it('should list users with --include-archived', async () => {
     await usersCommand.parseAsync(['node', 'test', 'list', '--include-archived']);
 
-    expect(mockClient.listUsers).toHaveBeenCalledWith({ includeArchived: true, items: 20, page: 1 });
+    expect(mockClient.listUsers).toHaveBeenCalledWith({
+      includeArchived: true,
+      items: 20,
+      page: 1,
+    });
   });
 
   it('should get user by id', async () => {
@@ -64,7 +81,15 @@ describe('users command', () => {
   });
 
   it('should create a user', async () => {
-    await usersCommand.parseAsync(['node', 'test', 'create', '--email', 'j@t.com', '--name', 'John Doe']);
+    await usersCommand.parseAsync([
+      'node',
+      'test',
+      'create',
+      '--email',
+      'j@t.com',
+      '--name',
+      'John Doe',
+    ]);
 
     expect(mockClient.createUser).toHaveBeenCalledWith({
       email: 'j@t.com',

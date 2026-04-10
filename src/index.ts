@@ -55,7 +55,11 @@ program
   .option('--endpoint <url>', 'override API endpoint')
   .option('--app <name>', 'override default application')
   .option('--env <name>', 'override default environment')
-  .option('-o, --output <format>', 'output format (table, json, yaml, plain, markdown, rendered, vertical, template)', 'table')
+  .option(
+    '-o, --output <format>',
+    'output format (table, json, yaml, plain, markdown, rendered, vertical, template)',
+    'table'
+  )
   .option('--no-color', 'disable colored output')
   .option('-v, --verbose', 'verbose output')
   .option('-q, --quiet', 'minimal output')
@@ -105,7 +109,9 @@ program.addCommand(storageConfigsCommand);
 program.addCommand(statisticsCommand);
 program.addCommand(actionDialogFieldsCommand);
 program.addCommand(activityFeedCommand);
-process.on('unhandledRejection', (reason) => handleFatalError('unhandled promise rejection', reason));
+process.on('unhandledRejection', (reason) =>
+  handleFatalError('unhandled promise rejection', reason)
+);
 process.on('uncaughtException', (error) => handleFatalError('uncaught exception', error));
 
 program.parseAsync().catch((error) => handleFatalError('command parsing', error));

@@ -53,9 +53,9 @@ describe('experiments/annotations', () => {
   });
 
   it('should throw when updating with no fields', async () => {
-    await expect(
-      updateAnnotation(mockClient as any, { annotationId: 5 as any }),
-    ).rejects.toThrow('At least one update field is required');
+    await expect(updateAnnotation(mockClient as any, { annotationId: 5 as any })).rejects.toThrow(
+      'At least one update field is required'
+    );
   });
 
   it('should archive annotation', async () => {

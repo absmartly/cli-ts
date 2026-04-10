@@ -1,11 +1,20 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { estimateParticipantsCommand } from './estimate-participants.js';
-import { getAPIClientFromOptions, getGlobalOptions, printFormatted } from '../../lib/utils/api-helper.js';
+import {
+  getAPIClientFromOptions,
+  getGlobalOptions,
+  printFormatted,
+} from '../../lib/utils/api-helper.js';
 import { resetCommand } from '../../test/helpers/command-reset.js';
 
 vi.mock('../../lib/utils/api-helper.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../lib/utils/api-helper.js')>();
-  return { ...actual, getAPIClientFromOptions: vi.fn(), getGlobalOptions: vi.fn(), printFormatted: vi.fn() };
+  return {
+    ...actual,
+    getAPIClientFromOptions: vi.fn(),
+    getGlobalOptions: vi.fn(),
+    printFormatted: vi.fn(),
+  };
 });
 
 const ESTIMATE_RESPONSE = {
@@ -86,7 +95,12 @@ describe('estimate-participants command', () => {
 
     it('should resolve application by name', async () => {
       await estimateParticipantsCommand.parseAsync([
-        'node', 'test', '--unit-type', '42', '--application', 'absmartly.com',
+        'node',
+        'test',
+        '--unit-type',
+        '42',
+        '--application',
+        'absmartly.com',
       ]);
 
       expect(mockClient.estimateMaxParticipants).toHaveBeenCalledWith(
@@ -96,7 +110,12 @@ describe('estimate-participants command', () => {
 
     it('should resolve application by ID', async () => {
       await estimateParticipantsCommand.parseAsync([
-        'node', 'test', '--unit-type', '42', '--application', '2',
+        'node',
+        'test',
+        '--unit-type',
+        '42',
+        '--application',
+        '2',
       ]);
 
       expect(mockClient.estimateMaxParticipants).toHaveBeenCalledWith(
@@ -106,9 +125,14 @@ describe('estimate-participants command', () => {
 
     it('should support multiple --application flags', async () => {
       await estimateParticipantsCommand.parseAsync([
-        'node', 'test', '--unit-type', '42',
-        '--application', 'absmartly.com',
-        '--application', 'mobile-app',
+        'node',
+        'test',
+        '--unit-type',
+        '42',
+        '--application',
+        'absmartly.com',
+        '--application',
+        'mobile-app',
       ]);
 
       expect(mockClient.estimateMaxParticipants).toHaveBeenCalledWith(
@@ -119,7 +143,12 @@ describe('estimate-participants command', () => {
     it('should print error when application name is not found', async () => {
       await expect(
         estimateParticipantsCommand.parseAsync([
-          'node', 'test', '--unit-type', '42', '--application', 'nonexistent-app',
+          'node',
+          'test',
+          '--unit-type',
+          '42',
+          '--application',
+          'nonexistent-app',
         ])
       ).rejects.toThrow('process.exit: 1');
 
@@ -129,10 +158,16 @@ describe('estimate-participants command', () => {
 
   describe('audience', () => {
     it('should pass audience JSON when provided', async () => {
-      const audience = '{"filter":{"and":[{"eq":[{"var":{"path":"application"}},{"value":"absmartly.com"}]}]}}';
+      const audience =
+        '{"filter":{"and":[{"eq":[{"var":{"path":"application"}},{"value":"absmartly.com"}]}]}}';
 
       await estimateParticipantsCommand.parseAsync([
-        'node', 'test', '--unit-type', '42', '--audience', audience,
+        'node',
+        'test',
+        '--unit-type',
+        '42',
+        '--audience',
+        audience,
       ]);
 
       expect(mockClient.estimateMaxParticipants).toHaveBeenCalledWith(
@@ -149,7 +184,12 @@ describe('estimate-participants command', () => {
     it('should reject invalid audience JSON', async () => {
       await expect(
         estimateParticipantsCommand.parseAsync([
-          'node', 'test', '--unit-type', '42', '--audience', '{invalid json}',
+          'node',
+          'test',
+          '--unit-type',
+          '42',
+          '--audience',
+          '{invalid json}',
         ])
       ).rejects.toThrow('process.exit: 1');
 
@@ -160,7 +200,12 @@ describe('estimate-participants command', () => {
   describe('--from', () => {
     it('should include from timestamp in payload', async () => {
       await estimateParticipantsCommand.parseAsync([
-        'node', 'test', '--unit-type', '42', '--from', '30d',
+        'node',
+        'test',
+        '--unit-type',
+        '42',
+        '--from',
+        '30d',
       ]);
 
       const call = mockClient.estimateMaxParticipants.mock.calls[0]![0];
@@ -170,7 +215,12 @@ describe('estimate-participants command', () => {
 
     it('should accept an ISO 8601 date for --from', async () => {
       await estimateParticipantsCommand.parseAsync([
-        'node', 'test', '--unit-type', '42', '--from', '2024-01-01T00:00:00Z',
+        'node',
+        'test',
+        '--unit-type',
+        '42',
+        '--from',
+        '2024-01-01T00:00:00Z',
       ]);
 
       const call = mockClient.estimateMaxParticipants.mock.calls[0]![0];

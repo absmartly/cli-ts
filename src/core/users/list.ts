@@ -9,7 +9,7 @@ export interface ListUsersParams {
 
 export async function listUsers(
   client: APIClient,
-  params: ListUsersParams,
+  params: ListUsersParams
 ): Promise<CommandResult<unknown[]>> {
   const opts: { includeArchived?: boolean; items?: number; page?: number } = {};
   if (params.includeArchived !== undefined) opts.includeArchived = params.includeArchived;

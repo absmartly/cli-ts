@@ -1,7 +1,12 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
 import Table from 'cli-table3';
-import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
+import {
+  getAPIClientFromOptions,
+  getGlobalOptions,
+  printFormatted,
+  withErrorHandling,
+} from '../../lib/utils/api-helper.js';
 import { validateJSON } from '../../lib/utils/validators.js';
 import { getPowerMatrix as coreGetPowerMatrix } from '../../core/statistics/statistics.js';
 
@@ -10,7 +15,7 @@ export const statisticsCommand = new Command('statistics')
   .description('Statistical analysis commands');
 
 function parseNumberList(value: string): number[] {
-  return value.split(',').map(s => {
+  return value.split(',').map((s) => {
     const n = Number(s.trim());
     if (isNaN(n)) throw new Error(`Invalid number: "${s.trim()}"`);
     return n;
@@ -48,9 +53,15 @@ interface PowerMatrixConfig {
 }
 
 const RECURRENCE_ALIASES: Record<string, string> = {
-  d: 'day', day: 'day', daily: 'day',
-  w: 'week', week: 'week', weekly: 'week',
-  m: 'month', month: 'month', monthly: 'month',
+  d: 'day',
+  day: 'day',
+  daily: 'day',
+  w: 'week',
+  week: 'week',
+  weekly: 'week',
+  m: 'month',
+  month: 'month',
+  monthly: 'month',
 };
 
 function parseParticipants(value: string): { count: number; recurrence: string } {
@@ -58,7 +69,9 @@ function parseParticipants(value: string): { count: number; recurrence: string }
   if (!match) {
     const n = Number(value);
     if (!isNaN(n)) return { count: n, recurrence: 'week' };
-    throw new Error(`Invalid --participants format: "${value}". Use <number>/<unit> (e.g., 1000/week, 500/day, 30000/month)`);
+    throw new Error(
+      `Invalid --participants format: "${value}". Use <number>/<unit> (e.g., 1000/week, 500/day, 30000/month)`
+    );
   }
 
   const count = Number(match[1]);
@@ -72,9 +85,12 @@ function parseParticipants(value: string): { count: number; recurrence: string }
 
 function toParticipantsPerWeek(participants: number, recurrence: string): number {
   switch (recurrence) {
-    case 'day': return participants * 7;
-    case 'month': return (participants / 30) * 7;
-    default: return participants;
+    case 'day':
+      return participants * 7;
+    case 'month':
+      return (participants / 30) * 7;
+    default:
+      return participants;
   }
 }
 
@@ -85,16 +101,20 @@ function buildConfigFromOptions(options: Record<string, unknown>): PowerMatrixCo
   if (options.metricType) config.metric_type = options.metricType as string;
   if (options.metricMean !== undefined) config.metric_mean = Number(options.metricMean);
   if (options.metricVariance !== undefined) config.metric_variance = Number(options.metricVariance);
-  if (options.metricCustomStatisticsType) config.metric_custom_statistics_type = options.metricCustomStatisticsType as string;
+  if (options.metricCustomStatisticsType)
+    config.metric_custom_statistics_type = options.metricCustomStatisticsType as string;
   if (options.alpha !== undefined) config.alpha = Number(options.alpha);
   if (options.powers) config.powers = parseNumberList(options.powers as string);
   if (options.split) config.split = parseNumberList(options.split as string);
   if (options.sampleSizes) config.sample_sizes = parseNumberList(options.sampleSizes as string);
-  if (options.minimumDetectableEffects) config.minimum_detectable_effects = parseNumberList(options.minimumDetectableEffects as string);
+  if (options.minimumDetectableEffects)
+    config.minimum_detectable_effects = parseNumberList(options.minimumDetectableEffects as string);
   if (options.twoSided) config.two_sided = true;
   if (options.futilityType) config.group_sequential_futility_type = options.futilityType as string;
-  if (options.firstAnalysis) config.group_sequential_first_analysis_interval = options.firstAnalysis as string;
-  if (options.minAnalysisInterval) config.group_sequential_min_analysis_interval = options.minAnalysisInterval as string;
+  if (options.firstAnalysis)
+    config.group_sequential_first_analysis_interval = options.firstAnalysis as string;
+  if (options.minAnalysisInterval)
+    config.group_sequential_min_analysis_interval = options.minAnalysisInterval as string;
 
   if (options.participants !== undefined) {
     const { count, recurrence } = parseParticipants(options.participants as string);
@@ -107,7 +127,7 @@ function buildConfigFromOptions(options: Record<string, unknown>): PowerMatrixCo
 function formatPowerMatrixTable(
   matrix: number[][],
   config: PowerMatrixConfig,
-  noColor: boolean,
+  noColor: boolean
 ): string {
   const powers = config.powers ?? (config.power !== undefined ? [config.power] : [0.8]);
   const sampleSizes = config.sample_sizes;
@@ -122,24 +142,24 @@ function formatPowerMatrixTable(
 
   if (isMDEBased) {
     rowLabel = 'MDE / Power';
-    rowLabels = mdes.map(m => formatMDE(m));
+    rowLabels = mdes.map((m) => formatMDE(m));
   } else if (isTimeBased) {
     rowLabel = 'Max runtime';
-    rowLabels = sampleSizes.map(s => `${Math.round(s / participantsPerWeek)}w`);
+    rowLabels = sampleSizes.map((s) => `${Math.round(s / participantsPerWeek)}w`);
   } else if (sampleSizes) {
     rowLabel = 'Participants / Power';
-    rowLabels = sampleSizes.map(s => formatParticipants(s));
+    rowLabels = sampleSizes.map((s) => formatParticipants(s));
   } else {
     rowLabel = 'Row';
     rowLabels = matrix.map((_, i) => String(i + 1));
   }
 
-  const powerHeaders = powers.map(p => `${(p * 100).toFixed(0)}%`);
+  const powerHeaders = powers.map((p) => `${(p * 100).toFixed(0)}%`);
 
   const table = new Table({
     head: [
       noColor ? rowLabel : chalk.cyan(rowLabel),
-      ...powerHeaders.map(h => noColor ? h : chalk.cyan(h)),
+      ...powerHeaders.map((h) => (noColor ? h : chalk.cyan(h))),
     ],
     style: {
       head: [],
@@ -150,17 +170,15 @@ function formatPowerMatrixTable(
 
   for (let i = 0; i < matrix.length; i++) {
     const row = matrix[i]!;
-    table.push([
-      rowLabels[i] ?? String(i + 1),
-      ...row.map(v => formatMDE(v)),
-    ]);
+    table.push([rowLabels[i] ?? String(i + 1), ...row.map((v) => formatMDE(v))]);
   }
 
   return table.toString();
 }
 
 const powerMatrixCommand = new Command('power-matrix')
-  .description(`Calculate power analysis matrix (minimum detectable effects or required sample sizes)
+  .description(
+    `Calculate power analysis matrix (minimum detectable effects or required sample sizes)
 
 Examples:
   # Max runtime mode — how long to run for a given MDE at 80% power
@@ -178,8 +196,12 @@ Examples:
     --minimum-detectable-effects 0.05,0.10,0.15 --powers 0.8
 
   # Raw JSON config (passed directly to the API)
-  abs stats power-matrix --config '{"sample_sizes":[2000,3000],...}'`)
-  .option('--config <json>', 'power analysis configuration as JSON (alternative to individual options)')
+  abs stats power-matrix --config '{"sample_sizes":[2000,3000],...}'`
+  )
+  .option(
+    '--config <json>',
+    'power analysis configuration as JSON (alternative to individual options)'
+  )
   .option('--analysis-type <type>', 'analysis type (e.g., group_sequential)')
   .option('--metric-type <type>', 'metric type (e.g., goal_count, goal_unique)')
   .option('--metric-mean <n>', 'metric mean (μ)', parseFloat)
@@ -191,35 +213,50 @@ Examples:
   .option('--sample-sizes <sizes>', 'sample sizes, comma-separated')
   .option('--minimum-detectable-effects <values>', 'MDEs, comma-separated')
   .option('--two-sided', 'use two-sided test')
-  .option('--participants <n/unit>', 'participant rate as <count>/<unit> where unit is day, week, or month (e.g., 1000/week, 500/day, 30000/month). Plain number defaults to per week. Enables time-based display when used with --sample-sizes')
+  .option(
+    '--participants <n/unit>',
+    'participant rate as <count>/<unit> where unit is day, week, or month (e.g., 1000/week, 500/day, 30000/month). Plain number defaults to per week. Enables time-based display when used with --sample-sizes'
+  )
   .option('--futility-type <type>', 'futility type (binding, non_binding)')
   .option('--first-analysis <interval>', 'first analysis interval (e.g., 7d)')
   .option('--min-analysis-interval <interval>', 'min interval between analyses (e.g., 1d)')
-  .action(withErrorHandling(async (options) => {
-    const globalOptions = getGlobalOptions(powerMatrixCommand);
-    const client = await getAPIClientFromOptions(globalOptions);
+  .action(
+    withErrorHandling(async (options) => {
+      const globalOptions = getGlobalOptions(powerMatrixCommand);
+      const client = await getAPIClientFromOptions(globalOptions);
 
-    let config: PowerMatrixConfig;
-    if (options.config) {
-      config = validateJSON(options.config, '--config') as PowerMatrixConfig;
-    } else {
-      config = buildConfigFromOptions(options);
-      if (!config.metric_type || config.metric_mean === undefined || config.metric_variance === undefined) {
-        throw new Error('Required: --metric-type, --metric-mean, and --metric-variance (or use --config with JSON)');
+      let config: PowerMatrixConfig;
+      if (options.config) {
+        config = validateJSON(options.config, '--config') as PowerMatrixConfig;
+      } else {
+        config = buildConfigFromOptions(options);
+        if (
+          !config.metric_type ||
+          config.metric_mean === undefined ||
+          config.metric_variance === undefined
+        ) {
+          throw new Error(
+            'Required: --metric-type, --metric-mean, and --metric-variance (or use --config with JSON)'
+          );
+        }
+        if (!config.sample_sizes && !config.minimum_detectable_effects) {
+          throw new Error(
+            'Required: --sample-sizes or --minimum-detectable-effects (or use --config with JSON)'
+          );
+        }
       }
-      if (!config.sample_sizes && !config.minimum_detectable_effects) {
-        throw new Error('Required: --sample-sizes or --minimum-detectable-effects (or use --config with JSON)');
+
+      const result = await coreGetPowerMatrix(client, {
+        config: config as Record<string, unknown>,
+      });
+
+      if (globalOptions.raw || globalOptions.output === 'json' || globalOptions.output === 'yaml') {
+        printFormatted(result.data, globalOptions);
+      } else {
+        const matrix = result.data as { matrix: number[][] };
+        console.log(formatPowerMatrixTable(matrix.matrix, config, globalOptions.noColor ?? false));
       }
-    }
-
-    const result = await coreGetPowerMatrix(client, { config: config as Record<string, unknown> });
-
-    if (globalOptions.raw || globalOptions.output === 'json' || globalOptions.output === 'yaml') {
-      printFormatted(result.data, globalOptions);
-    } else {
-      const matrix = result.data as { matrix: number[][] };
-      console.log(formatPowerMatrixTable(matrix.matrix, config, globalOptions.noColor ?? false));
-    }
-  }));
+    })
+  );
 
 statisticsCommand.addCommand(powerMatrixCommand);

@@ -100,12 +100,14 @@ describe('full-on command', () => {
   });
 
   it('should reject --variant 0', async () => {
-    await expect(fullOnCommand.parseAsync(['node', 'test', '42', '--variant', '0']))
-      .rejects.toThrow('must be an integer >= 1');
+    await expect(
+      fullOnCommand.parseAsync(['node', 'test', '42', '--variant', '0'])
+    ).rejects.toThrow('must be an integer >= 1');
   });
 
   it('should reject non-integer --variant', async () => {
-    await expect(fullOnCommand.parseAsync(['node', 'test', '42', '--variant', 'abc']))
-      .rejects.toThrow('must be an integer >= 1');
+    await expect(
+      fullOnCommand.parseAsync(['node', 'test', '42', '--variant', 'abc'])
+    ).rejects.toThrow('must be an integer >= 1');
   });
 });

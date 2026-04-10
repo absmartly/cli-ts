@@ -34,9 +34,7 @@ const context: ResolverContext = {
     { id: 14, name: 'bounce_rate' },
     { id: 15, name: 'archived_metric' },
   ],
-  goals: [
-    { id: 1, name: 'purchase' },
-  ],
+  goals: [{ id: 1, name: 'purchase' }],
   users: [
     { id: 100, email: 'alice@example.com', first_name: 'Alice', last_name: 'Smith' },
     { id: 101, email: 'bob@example.com', first_name: 'Bob', last_name: 'Jones' },
@@ -102,19 +100,36 @@ function makeExperiment(overrides: Record<string, unknown> = {}): Experiment {
     applications: [{ application_id: 1, application: { name: 'web' }, application_version: '0' }],
     primary_metric: { metric_id: 10, name: 'clicks' },
     secondary_metrics: [
-      { metric_id: 11, metric: { name: 'revenue' }, name: 'revenue', type: 'secondary', order_index: 0 },
-      { metric_id: 12, metric: { name: 'latency' }, name: 'latency', type: 'guardrail', order_index: 1 },
-      { metric_id: 13, metric: { name: 'conversion_rate' }, name: 'conversion_rate', type: 'exploratory', order_index: 2 },
+      {
+        metric_id: 11,
+        metric: { name: 'revenue' },
+        name: 'revenue',
+        type: 'secondary',
+        order_index: 0,
+      },
+      {
+        metric_id: 12,
+        metric: { name: 'latency' },
+        name: 'latency',
+        type: 'guardrail',
+        order_index: 1,
+      },
+      {
+        metric_id: 13,
+        metric: { name: 'conversion_rate' },
+        name: 'conversion_rate',
+        type: 'exploratory',
+        order_index: 2,
+      },
     ],
     owners: [
-      { user_id: 100, user: { first_name: 'Alice', last_name: 'Smith', email: 'alice@example.com' } },
+      {
+        user_id: 100,
+        user: { first_name: 'Alice', last_name: 'Smith', email: 'alice@example.com' },
+      },
     ],
-    teams: [
-      { team_id: 50, team: { name: 'Growth' } },
-    ],
-    experiment_tags: [
-      { experiment_tag_id: 200, experiment_tag: { tag: 'pricing' } },
-    ],
+    teams: [{ team_id: 50, team: { name: 'Growth' } }],
+    experiment_tags: [{ experiment_tag_id: 200, experiment_tag: { tag: 'pricing' } }],
     variants: [
       { name: 'control', variant: 0, config: '{"color":"red"}' },
       { name: 'treatment', variant: 1, config: '{"color":"blue"}' },
@@ -254,7 +269,7 @@ describe('template roundtrip', () => {
       expect(String(payload.required_power)).toBe('0.8');
       expect(String(payload.baseline_participants_per_day)).toBe('50');
 
-      const unknownFieldWarnings = warnings.filter(w => w.includes('Unknown template field'));
+      const unknownFieldWarnings = warnings.filter((w) => w.includes('Unknown template field'));
       expect(unknownFieldWarnings).toEqual([]);
     });
   });
@@ -316,7 +331,10 @@ describe('template roundtrip', () => {
       template.custom_fields = { 'Rollout Plan': 'Gradual 10% -> 50% -> 100%' };
       const { payload } = await buildExperimentPayload(template, context);
 
-      const customValues = payload.custom_section_field_values as Record<string, { type: string; value: string }>;
+      const customValues = payload.custom_section_field_values as Record<
+        string,
+        { type: string; value: string }
+      >;
       expect(customValues[310]).toEqual({ type: 'string', value: 'Gradual 10% -> 50% -> 100%' });
       expect(customValues[300]).toBeUndefined();
     });
@@ -341,8 +359,14 @@ describe('template roundtrip', () => {
     it('should resolve Name <email> format to user_id', async () => {
       const experiment = makeExperiment({
         owners: [
-          { user_id: 100, user: { first_name: 'Alice', last_name: 'Smith', email: 'alice@example.com' } },
-          { user_id: 101, user: { first_name: 'Bob', last_name: 'Jones', email: 'bob@example.com' } },
+          {
+            user_id: 100,
+            user: { first_name: 'Alice', last_name: 'Smith', email: 'alice@example.com' },
+          },
+          {
+            user_id: 101,
+            user: { first_name: 'Bob', last_name: 'Jones', email: 'bob@example.com' },
+          },
         ],
       });
       const markdown = await experimentToMarkdown(experiment);
@@ -359,14 +383,17 @@ describe('template roundtrip', () => {
     it('should warn when owner email is not found', async () => {
       const experiment = makeExperiment({
         owners: [
-          { user_id: 999, user: { first_name: 'Unknown', last_name: 'User', email: 'unknown@example.com' } },
+          {
+            user_id: 999,
+            user: { first_name: 'Unknown', last_name: 'User', email: 'unknown@example.com' },
+          },
         ],
       });
       const markdown = await experimentToMarkdown(experiment);
       const template = parseExperimentMarkdown(markdown);
 
       const { warnings } = await buildExperimentPayload(template, context);
-      expect(warnings.some(w => w.includes('not found'))).toBe(true);
+      expect(warnings.some((w) => w.includes('not found'))).toBe(true);
     });
   });
 
@@ -503,7 +530,10 @@ describe('template roundtrip', () => {
       const template = parseExperimentMarkdown(markdown);
       const { payload } = await buildExperimentPayload(template, context);
 
-      const customValues = payload.custom_section_field_values as Record<string, { type: string; value: string }>;
+      const customValues = payload.custom_section_field_values as Record<
+        string,
+        { type: string; value: string }
+      >;
       expect(customValues[300]).toEqual({ type: 'string', value: 'My hypothesis text' });
     });
 
@@ -515,7 +545,10 @@ describe('template roundtrip', () => {
       const template = parseExperimentMarkdown(markdown);
       const { payload } = await buildExperimentPayload(template, context);
 
-      const customValues = payload.custom_section_field_values as Record<string, { type: string; value: string }>;
+      const customValues = payload.custom_section_field_values as Record<
+        string,
+        { type: string; value: string }
+      >;
       expect(customValues[302]).toEqual({ type: 'user', value: '{"selected":[{"userId":100}]}' });
     });
 
@@ -534,7 +567,7 @@ some value
       const template = parseExperimentMarkdown(markdown);
       const { warnings } = await buildExperimentPayload(template, context);
 
-      expect(warnings.some(w => w.includes('Nonexistent Field'))).toBe(true);
+      expect(warnings.some((w) => w.includes('Nonexistent Field'))).toBe(true);
     });
   });
 
@@ -583,7 +616,10 @@ some value
     });
 
     it('should build payload with screenshot from file path via screenshot: syntax', async () => {
-      const pngBuffer = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
+      const pngBuffer = Buffer.from(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+        'base64'
+      );
       vi.mocked(existsSync).mockReturnValue(true);
       vi.mocked(readFileSync).mockReturnValue(pngBuffer);
 
@@ -616,7 +652,10 @@ name: treatment
     });
 
     it('should build payload with screenshot from markdown image syntax', async () => {
-      const pngBuffer = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==', 'base64');
+      const pngBuffer = Buffer.from(
+        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==',
+        'base64'
+      );
       vi.mocked(existsSync).mockReturnValue(true);
       vi.mocked(readFileSync).mockReturnValue(pngBuffer);
 
@@ -653,7 +692,8 @@ name: treatment
     });
 
     it('should handle data URI screenshots through roundtrip', async () => {
-      const dataUri = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+      const dataUri =
+        'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
 
       const template = parseExperimentMarkdown(`---
 name: data-uri-test
@@ -752,9 +792,7 @@ screenshot: ${dataUri}
             ],
           },
           {
-            and: [
-              { type: 'device', op: 'eq', value: 'mobile' },
-            ],
+            and: [{ type: 'device', op: 'eq', value: 'mobile' }],
           },
         ],
       };

@@ -1,11 +1,20 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { metricsCommand } from './index.js';
-import { getAPIClientFromOptions, getGlobalOptions, printFormatted } from '../../lib/utils/api-helper.js';
+import {
+  getAPIClientFromOptions,
+  getGlobalOptions,
+  printFormatted,
+} from '../../lib/utils/api-helper.js';
 import { resetCommand } from '../../test/helpers/command-reset.js';
 
 vi.mock('../../lib/utils/api-helper.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../lib/utils/api-helper.js')>();
-  return { ...actual, getAPIClientFromOptions: vi.fn(), getGlobalOptions: vi.fn(), printFormatted: vi.fn() };
+  return {
+    ...actual,
+    getAPIClientFromOptions: vi.fn(),
+    getGlobalOptions: vi.fn(),
+    printFormatted: vi.fn(),
+  };
 });
 
 describe('metrics command', () => {
@@ -20,17 +29,21 @@ describe('metrics command', () => {
     updateMetric: vi.fn().mockResolvedValue({}),
     archiveMetric: vi.fn().mockResolvedValue({}),
     resolveUsers: vi.fn().mockImplementation((refs: string[]) =>
-      Promise.resolve(refs.map(ref => {
-        if (ref === 'jane@example.com') return { id: 10, email: 'jane@example.com' };
-        if (ref === 'John Smith') return { id: 20, email: 'john@example.com' };
-        return { id: parseInt(ref, 10), email: `user${ref}@example.com` };
-      }))
+      Promise.resolve(
+        refs.map((ref) => {
+          if (ref === 'jane@example.com') return { id: 10, email: 'jane@example.com' };
+          if (ref === 'John Smith') return { id: 20, email: 'john@example.com' };
+          return { id: parseInt(ref, 10), email: `user${ref}@example.com` };
+        })
+      )
     ),
     resolveTeams: vi.fn().mockImplementation((refs: string[]) =>
-      Promise.resolve(refs.map(ref => {
-        if (ref === 'Growth') return { id: 5, name: 'Growth' };
-        return { id: parseInt(ref, 10), name: `Team ${ref}` };
-      }))
+      Promise.resolve(
+        refs.map((ref) => {
+          if (ref === 'Growth') return { id: 5, name: 'Growth' };
+          return { id: parseInt(ref, 10), name: `Team ${ref}` };
+        })
+      )
     ),
   };
 
@@ -84,7 +97,11 @@ describe('metrics command', () => {
   it('should list metrics with sort and direction', async () => {
     await metricsCommand.parseAsync(['node', 'test', 'list', '--sort', 'name', '--asc']);
 
-    expect(mockClient.listMetrics).toHaveBeenCalledWith({ ...defaultListParams, sort: 'name', sort_asc: true });
+    expect(mockClient.listMetrics).toHaveBeenCalledWith({
+      ...defaultListParams,
+      sort: 'name',
+      sort_asc: true,
+    });
     expect(printFormatted).toHaveBeenCalled();
   });
 
@@ -126,15 +143,30 @@ describe('metrics command', () => {
   it('should list metrics filtered by review status', async () => {
     await metricsCommand.parseAsync(['node', 'test', 'list', '--review-status', 'pending']);
 
-    expect(mockClient.listMetrics).toHaveBeenCalledWith({ ...defaultListParams, review_status: 'pending' });
+    expect(mockClient.listMetrics).toHaveBeenCalledWith({
+      ...defaultListParams,
+      review_status: 'pending',
+    });
     expect(printFormatted).toHaveBeenCalled();
   });
 
   it('should list metrics with all filters combined', async () => {
     await metricsCommand.parseAsync([
-      'node', 'test', 'list',
-      '--archived', '--search', 'conversion', '--sort', 'created_at', '--desc',
-      '--owners', '1', '--teams', '2', '--review-status', 'approved',
+      'node',
+      'test',
+      'list',
+      '--archived',
+      '--search',
+      'conversion',
+      '--sort',
+      'created_at',
+      '--desc',
+      '--owners',
+      '1',
+      '--teams',
+      '2',
+      '--review-status',
+      'approved',
     ]);
 
     expect(mockClient.listMetrics).toHaveBeenCalledWith({
@@ -152,7 +184,10 @@ describe('metrics command', () => {
   it('should list metrics with include-drafts flag', async () => {
     await metricsCommand.parseAsync(['node', 'test', 'list', '--include-drafts']);
 
-    expect(mockClient.listMetrics).toHaveBeenCalledWith({ ...defaultListParams, include_drafts: true });
+    expect(mockClient.listMetrics).toHaveBeenCalledWith({
+      ...defaultListParams,
+      include_drafts: true,
+    });
     expect(printFormatted).toHaveBeenCalled();
   });
 
@@ -167,22 +202,52 @@ describe('metrics command', () => {
   });
 
   it('should create a metric with required fields', async () => {
-    await metricsCommand.parseAsync(['node', 'test', 'create', '--name', 'ctr', '--type', 'goal_count', '--description', 'Click-through rate']);
+    await metricsCommand.parseAsync([
+      'node',
+      'test',
+      'create',
+      '--name',
+      'ctr',
+      '--type',
+      'goal_count',
+      '--description',
+      'Click-through rate',
+    ]);
 
     expect(mockClient.createMetric).toHaveBeenCalledWith(
-      expect.objectContaining({ name: 'ctr', type: 'goal_count', description: 'Click-through rate', effect: 'positive' })
+      expect.objectContaining({
+        name: 'ctr',
+        type: 'goal_count',
+        description: 'Click-through rate',
+        effect: 'positive',
+      })
     );
   });
 
   it('should create a goal_property metric with value-source-property', async () => {
     await metricsCommand.parseAsync([
-      'node', 'test', 'create',
-      '--name', 'Net Revenue', '--type', 'goal_property', '--goal-id', '1',
-      '--description', 'Net revenue', '--value-source-property', 'amount',
+      'node',
+      'test',
+      'create',
+      '--name',
+      'Net Revenue',
+      '--type',
+      'goal_property',
+      '--goal-id',
+      '1',
+      '--description',
+      'Net revenue',
+      '--value-source-property',
+      'amount',
     ]);
 
     expect(mockClient.createMetric).toHaveBeenCalledWith(
-      expect.objectContaining({ name: 'Net Revenue', type: 'goal_property', goal_id: 1, value_source_property: 'amount' })
+      expect.objectContaining({
+        name: 'Net Revenue',
+        type: 'goal_property',
+        goal_id: 1,
+        value_source_property: 'amount',
+      })
     );
   });
 

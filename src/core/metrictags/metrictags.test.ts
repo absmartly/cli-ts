@@ -1,5 +1,11 @@
 import { describe, it, expect, vi } from 'vitest';
-import { listMetricTags, getMetricTag, createMetricTag, updateMetricTag, deleteMetricTag } from './metrictags.js';
+import {
+  listMetricTags,
+  getMetricTag,
+  createMetricTag,
+  updateMetricTag,
+  deleteMetricTag,
+} from './metrictags.js';
 
 describe('metrictags', () => {
   const mockClient = {

@@ -1,9 +1,7 @@
 import type { APIClient } from '../../api-client/api-client.js';
 import type { CommandResult } from '../types.js';
 
-export async function listStorageConfigs(
-  client: APIClient,
-): Promise<CommandResult<unknown>> {
+export async function listStorageConfigs(client: APIClient): Promise<CommandResult<unknown>> {
   const data = await client.listStorageConfigs();
   return { data };
 }
@@ -14,7 +12,7 @@ export interface GetStorageConfigParams {
 
 export async function getStorageConfig(
   client: APIClient,
-  params: GetStorageConfigParams,
+  params: GetStorageConfigParams
 ): Promise<CommandResult<unknown>> {
   const data = await client.getStorageConfig(params.id);
   return { data };
@@ -26,7 +24,7 @@ export interface CreateStorageConfigParams {
 
 export async function createStorageConfig(
   client: APIClient,
-  params: CreateStorageConfigParams,
+  params: CreateStorageConfigParams
 ): Promise<CommandResult<unknown>> {
   const data = await client.createStorageConfig(params.config);
   return { data };
@@ -39,7 +37,7 @@ export interface UpdateStorageConfigParams {
 
 export async function updateStorageConfig(
   client: APIClient,
-  params: UpdateStorageConfigParams,
+  params: UpdateStorageConfigParams
 ): Promise<CommandResult<unknown>> {
   const data = await client.updateStorageConfig(params.id, params.config);
   return { data };
@@ -51,7 +49,7 @@ export interface TestStorageConfigParams {
 
 export async function testStorageConfig(
   client: APIClient,
-  params: TestStorageConfigParams,
+  params: TestStorageConfigParams
 ): Promise<CommandResult<unknown>> {
   await client.testStorageConfig(params.config);
   return { data: { success: true } };

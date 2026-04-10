@@ -1,6 +1,12 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
-import { getAPIClientFromOptions, getGlobalOptions, resolveAPIKey, resolveEndpoint, withErrorHandling } from '../../lib/utils/api-helper.js';
+import {
+  getAPIClientFromOptions,
+  getGlobalOptions,
+  resolveAPIKey,
+  resolveEndpoint,
+  withErrorHandling,
+} from '../../lib/utils/api-helper.js';
 import { parseExperimentFile } from '../../lib/template/parser.js';
 import { buildPayloadFromTemplate } from '../../api-client/template/build-from-template.js';
 import { runInteractiveEditor } from '../../lib/interactive/run.js';
@@ -34,10 +40,23 @@ export const createCommand = new Command('create')
   .option('--unit-type <id>', 'unit type ID', parseInteger('--unit-type'))
   .option('--primary-metric <id>', 'primary metric ID', parseInteger('--primary-metric'))
   .option('--percentages <values>', 'comma-separated traffic split per variant (e.g. 50,50)')
-  .option('--percentage-of-traffic <pct>', 'percentage of total traffic (0-100)', parseInteger('--percentage-of-traffic'), 100)
+  .option(
+    '--percentage-of-traffic <pct>',
+    'percentage of total traffic (0-100)',
+    parseInteger('--percentage-of-traffic'),
+    100
+  )
   .option('--env <name>', 'environment name')
-  .option('--owner <user_id>', 'owner user ID (can specify multiple)', (val: string, prev: string[]) => [...prev, val], [] as string[])
-  .option('--screenshot <variant:source...>', 'variant screenshot (variant_index:path_or_url, can specify multiple)')
+  .option(
+    '--owner <user_id>',
+    'owner user ID (can specify multiple)',
+    (val: string, prev: string[]) => [...prev, val],
+    [] as string[]
+  )
+  .option(
+    '--screenshot <variant:source...>',
+    'variant screenshot (variant_index:path_or_url, can specify multiple)'
+  )
   .option('--secondary-metrics <names>', 'comma-separated secondary metric names or IDs')
   .option('--guardrail-metrics <names>', 'comma-separated guardrail metric names or IDs')
   .option('--exploratory-metrics <names>', 'comma-separated exploratory metric names or IDs')
@@ -53,9 +72,18 @@ export const createCommand = new Command('create')
   .option('--baseline-stdev <value>', 'baseline primary metric standard deviation')
   .option('--gs-futility-type <type>', 'group sequential futility type (binding, non_binding)')
   .option('--gs-analysis-count <n>', 'group sequential number of analyses')
-  .option('--gs-min-analysis-interval <interval>', 'group sequential min analysis interval (e.g. 1d)')
-  .option('--gs-first-analysis-interval <interval>', 'group sequential first analysis interval (e.g. 7d)')
-  .option('--gs-max-duration-interval <interval>', 'group sequential max duration interval (e.g. 6w)');
+  .option(
+    '--gs-min-analysis-interval <interval>',
+    'group sequential min analysis interval (e.g. 1d)'
+  )
+  .option(
+    '--gs-first-analysis-interval <interval>',
+    'group sequential first analysis interval (e.g. 7d)'
+  )
+  .option(
+    '--gs-max-duration-interval <interval>',
+    'group sequential max duration interval (e.g. 6w)'
+  );
 
 registerCustomFieldOptions(createCommand, getDefaultType());
 
@@ -64,7 +92,8 @@ createCommand
   .option('--dry-run', 'show the request payload without making the API call')
   .option('--as-curl', 'output as curl command instead of making the API call');
 
-createCommand.action(withErrorHandling(async (options) => {
+createCommand.action(
+  withErrorHandling(async (options) => {
     const globalOptions = getGlobalOptions(createCommand);
     const client = await getAPIClientFromOptions(globalOptions);
 
@@ -92,7 +121,7 @@ createCommand.action(withErrorHandling(async (options) => {
       if (!options.name) {
         throw new Error(
           'Missing required option: --name\n' +
-          'Either provide --name or use --from-file with a template.'
+            'Either provide --name or use --from-file with a template.'
         );
       }
       const ownerIds = options.owner?.map((id: string) => parseInt(id, 10));
@@ -128,7 +157,11 @@ createCommand.action(withErrorHandling(async (options) => {
         groupSequentialMinAnalysisInterval: options.gsMinAnalysisInterval,
         groupSequentialFirstAnalysisInterval: options.gsFirstAnalysisInterval,
         groupSequentialMaxDurationInterval: options.gsMaxDurationInterval,
-        customFields: extractCustomFieldValues(options, getDefaultType(), globalOptions.profile as string),
+        customFields: extractCustomFieldValues(
+          options,
+          getDefaultType(),
+          globalOptions.profile as string
+        ),
       });
     }
 
@@ -166,4 +199,5 @@ createCommand.action(withErrorHandling(async (options) => {
     console.log(chalk.green(`✓ Experiment created with ID: ${result.data.id}`));
     console.log(`  Name: ${result.data.name}`);
     console.log(`  Type: ${result.data.type}`);
-  }));
+  })
+);

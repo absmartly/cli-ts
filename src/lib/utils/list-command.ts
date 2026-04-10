@@ -1,5 +1,10 @@
 import { Command } from 'commander';
-import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from './api-helper.js';
+import {
+  getAPIClientFromOptions,
+  getGlobalOptions,
+  printFormatted,
+  withErrorHandling,
+} from './api-helper.js';
 import { isStdoutPiped } from './stdin.js';
 import { addPaginationOptions, printPaginationFooter } from './pagination.js';
 import { applyShowExclude } from '../../api-client/entity-summary.js';
@@ -22,31 +27,38 @@ export function createListCommand(opts: ListCommandOptions): Command {
     .option('--show <fields...>', 'include additional fields from API response')
     .option('--exclude <fields...>', 'hide fields from summary');
 
-  cmd.action(withErrorHandling(async (options) => {
-    const globalOptions = getGlobalOptions(cmd);
-    const client = await getAPIClientFromOptions(globalOptions);
-    const show = (options.show as string[] | undefined) ?? [];
-    const exclude = (options.exclude as string[] | undefined) ?? [];
+  cmd.action(
+    withErrorHandling(async (options) => {
+      const globalOptions = getGlobalOptions(cmd);
+      const client = await getAPIClientFromOptions(globalOptions);
+      const show = (options.show as string[] | undefined) ?? [];
+      const exclude = (options.exclude as string[] | undefined) ?? [];
 
-    const items = await opts.fetch(client, options);
+      const items = await opts.fetch(client, options);
 
-    if (isStdoutPiped() && globalOptions.output === 'table') {
-      for (const item of items) console.log((item as Record<string, unknown>).id);
-      return;
-    }
+      if (isStdoutPiped() && globalOptions.output === 'table') {
+        for (const item of items) console.log((item as Record<string, unknown>).id);
+        return;
+      }
 
-    let data: unknown;
-    if (globalOptions.raw || !opts.summarizeRow) {
-      data = items;
-    } else {
-      data = (items as Array<Record<string, unknown>>).map(item =>
-        applyShowExclude(opts.summarizeRow!(item), item, show, exclude)
+      let data: unknown;
+      if (globalOptions.raw || !opts.summarizeRow) {
+        data = items;
+      } else {
+        data = (items as Array<Record<string, unknown>>).map((item) =>
+          applyShowExclude(opts.summarizeRow!(item), item, show, exclude)
+        );
+      }
+
+      printFormatted(data, globalOptions);
+      printPaginationFooter(
+        items.length,
+        options.items,
+        options.page,
+        globalOptions.output as string
       );
-    }
-
-    printFormatted(data, globalOptions);
-    printPaginationFooter(items.length, options.items, options.page, globalOptions.output as string);
-  }));
+    })
+  );
 
   return cmd;
 }

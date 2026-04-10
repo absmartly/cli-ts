@@ -1,11 +1,20 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { membersCommand } from './members.js';
-import { getAPIClientFromOptions, getGlobalOptions, printFormatted } from '../../lib/utils/api-helper.js';
+import {
+  getAPIClientFromOptions,
+  getGlobalOptions,
+  printFormatted,
+} from '../../lib/utils/api-helper.js';
 import { resetCommand } from '../../test/helpers/command-reset.js';
 
 vi.mock('../../lib/utils/api-helper.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../lib/utils/api-helper.js')>();
-  return { ...actual, getAPIClientFromOptions: vi.fn(), getGlobalOptions: vi.fn(), printFormatted: vi.fn() };
+  return {
+    ...actual,
+    getAPIClientFromOptions: vi.fn(),
+    getGlobalOptions: vi.fn(),
+    printFormatted: vi.fn(),
+  };
 });
 
 describe('team members command', () => {
@@ -62,7 +71,16 @@ describe('team members command', () => {
 
   it('should edit team member roles', async () => {
     mockClient.editTeamMemberRoles.mockResolvedValue(undefined);
-    await membersCommand.parseAsync(['node', 'test', 'edit-roles', '1', '--users', '2,3', '--roles', '4']);
+    await membersCommand.parseAsync([
+      'node',
+      'test',
+      'edit-roles',
+      '1',
+      '--users',
+      '2,3',
+      '--roles',
+      '4',
+    ]);
     expect(mockClient.editTeamMemberRoles).toHaveBeenCalledWith(1, [2, 3], [4]);
     const output = consoleSpy.mock.calls.flat().join(' ');
     expect(output).toContain('Updated roles');

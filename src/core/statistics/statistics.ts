@@ -7,8 +7,10 @@ export interface PowerMatrixParams {
 
 export async function getPowerMatrix(
   client: APIClient,
-  params: PowerMatrixParams,
+  params: PowerMatrixParams
 ): Promise<CommandResult<unknown>> {
-  const data = await client.getPowerAnalysisMatrix(params.config as Parameters<typeof client.getPowerAnalysisMatrix>[0]);
+  const data = await client.getPowerAnalysisMatrix(
+    params.config as Parameters<typeof client.getPowerAnalysisMatrix>[0]
+  );
   return { data };
 }

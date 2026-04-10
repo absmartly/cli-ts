@@ -128,18 +128,19 @@ export function loadConfig(): Config {
     }
     if ((error as NodeJS.ErrnoException).code === 'EACCES') {
       throw new Error(
-        `Permission denied reading config file: ${path}\n` +
-        `Run: chmod 600 ${path}`
+        `Permission denied reading config file: ${path}\n` + `Run: chmod 600 ${path}`
       );
     }
     if (error instanceof Error && error.name === 'YAMLException') {
       throw new Error(
         `Invalid YAML syntax in config file: ${path}\n` +
-        `${error.message}\n` +
-        `Please fix the syntax or delete the file to reset to defaults.`
+          `${error.message}\n` +
+          `Please fix the syntax or delete the file to reset to defaults.`
       );
     }
-    throw new Error(`Failed to load config from ${path}: ${error instanceof Error ? error.message : error}`);
+    throw new Error(
+      `Failed to load config from ${path}: ${error instanceof Error ? error.message : error}`
+    );
   }
 }
 
@@ -155,31 +156,31 @@ export function saveConfig(config: Config): void {
 
     ensureConfigDir();
     renameSync(tempPath, path);
-
   } catch (error) {
     try {
       unlinkSync(tempPath);
     } catch (cleanupErr) {
-      if (process.env.DEBUG) console.error(`Warning: Could not clean up temp file ${tempPath}: ${cleanupErr instanceof Error ? cleanupErr.message : cleanupErr}`);
+      if (process.env.DEBUG)
+        console.error(
+          `Warning: Could not clean up temp file ${tempPath}: ${cleanupErr instanceof Error ? cleanupErr.message : cleanupErr}`
+        );
     }
 
     if (error instanceof Error) {
       if (error.message.includes('ENOSPC')) {
         throw new Error(
-          `Disk full - cannot save config file.\n` +
-          `Please free up disk space and try again.`
+          `Disk full - cannot save config file.\n` + `Please free up disk space and try again.`
         );
       }
       if (error.message.includes('EACCES')) {
         throw new Error(
-          `Permission denied writing config file: ${path}\n` +
-          `Run: chmod u+w ${getConfigDir()}`
+          `Permission denied writing config file: ${path}\n` + `Run: chmod u+w ${getConfigDir()}`
         );
       }
     }
     throw new Error(
       `Failed to save config to ${path}: ${error instanceof Error ? error.message : error}\n` +
-      `Please check file permissions and available disk space.`
+        `Please check file permissions and available disk space.`
     );
   }
 }
@@ -209,7 +210,7 @@ export function deleteProfile(name: string): void {
   if (profileNames.length === 1 && profileNames[0] === name) {
     throw new Error(
       `Cannot delete the only remaining profile: ${name}\n` +
-      `Create another profile first, then delete this one.`
+        `Create another profile first, then delete this one.`
     );
   }
 
@@ -243,7 +244,7 @@ export function listProfiles(): string[] {
 }
 
 const ALLOWED_CONFIG_KEYS = ['output', 'analytics-opt-out', 'default-profile'] as const;
-type AllowedConfigKey = typeof ALLOWED_CONFIG_KEYS[number];
+type AllowedConfigKey = (typeof ALLOWED_CONFIG_KEYS)[number];
 
 function validateConfigKey(key: string): asserts key is AllowedConfigKey {
   if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
@@ -275,8 +276,7 @@ export function setConfigValue(key: string, value: string | boolean): void {
       finalValue = false;
     } else {
       throw new Error(
-        `Invalid boolean value for ${key}: "${value}"\n` +
-        `Use: true, false, 1, 0, yes, or no`
+        `Invalid boolean value for ${key}: "${value}"\n` + `Use: true, false, 1, 0, yes, or no`
       );
     }
   }

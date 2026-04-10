@@ -54,7 +54,7 @@ export function parseExperimentMarkdown(content: string): ExperimentTemplate {
   } catch (error) {
     throw new Error(
       `Invalid YAML frontmatter in template content\n` +
-      `${error instanceof Error ? error.message : error}`
+        `${error instanceof Error ? error.message : error}`
     );
   }
 

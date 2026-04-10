@@ -9,10 +9,7 @@ export interface GeneratorOptions {
   type?: string;
 }
 
-export function generateTemplate(
-  context: GeneratorContext,
-  opts: GeneratorOptions = {}
-): string {
+export function generateTemplate(context: GeneratorContext, opts: GeneratorOptions = {}): string {
   const { applications, unitTypes, metrics } = context;
   const name = opts.name || 'my_experiment';
   const experimentType = opts.type || 'test';

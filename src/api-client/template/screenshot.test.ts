@@ -3,7 +3,8 @@ import { writeFileSync, unlinkSync, mkdirSync, existsSync } from 'fs';
 import { join } from 'path';
 import { resolveScreenshot } from './screenshot.js';
 
-const TINY_PNG_BASE64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwADhQGAWjR9awAAAABJRU5ErkJggg==';
+const TINY_PNG_BASE64 =
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwADhQGAWjR9awAAAABJRU5ErkJggg==';
 const TINY_PNG_BYTES = Buffer.from(TINY_PNG_BASE64, 'base64');
 
 describe('resolveScreenshot', () => {
@@ -90,7 +91,9 @@ describe('resolveScreenshot', () => {
     });
 
     it('should throw if file does not exist', async () => {
-      await expect(resolveScreenshot('/nonexistent/file.png', 'v')).rejects.toThrow('Screenshot file not found');
+      await expect(resolveScreenshot('/nonexistent/file.png', 'v')).rejects.toThrow(
+        'Screenshot file not found'
+      );
     });
   });
 
@@ -98,25 +101,43 @@ describe('resolveScreenshot', () => {
     it('should fetch image from HTTP URL', async () => {
       const mockResponse = {
         ok: true,
-        arrayBuffer: () => Promise.resolve(TINY_PNG_BYTES.buffer.slice(TINY_PNG_BYTES.byteOffset, TINY_PNG_BYTES.byteOffset + TINY_PNG_BYTES.byteLength)),
+        arrayBuffer: () =>
+          Promise.resolve(
+            TINY_PNG_BYTES.buffer.slice(
+              TINY_PNG_BYTES.byteOffset,
+              TINY_PNG_BYTES.byteOffset + TINY_PNG_BYTES.byteLength
+            )
+          ),
         headers: new Headers({ 'content-type': 'image/png' }),
       };
       vi.spyOn(globalThis, 'fetch').mockResolvedValue(mockResponse as Response);
 
-      const result = await resolveScreenshot('https://example.com/images/screenshot.png', 'control');
+      const result = await resolveScreenshot(
+        'https://example.com/images/screenshot.png',
+        'control'
+      );
 
       expect(result).not.toBeNull();
       expect(result!.data).toBe(TINY_PNG_BASE64);
       expect(result!.content_type).toBe('image/png');
       expect(result!.file_name).toBe('screenshot.png');
       expect(result!.file_size).toBe(TINY_PNG_BYTES.length);
-      expect(fetch).toHaveBeenCalledWith('https://example.com/images/screenshot.png', expect.objectContaining({ signal: expect.any(AbortSignal) }));
+      expect(fetch).toHaveBeenCalledWith(
+        'https://example.com/images/screenshot.png',
+        expect.objectContaining({ signal: expect.any(AbortSignal) })
+      );
     });
 
     it('should derive filename from content-type when URL has no extension', async () => {
       const mockResponse = {
         ok: true,
-        arrayBuffer: () => Promise.resolve(TINY_PNG_BYTES.buffer.slice(TINY_PNG_BYTES.byteOffset, TINY_PNG_BYTES.byteOffset + TINY_PNG_BYTES.byteLength)),
+        arrayBuffer: () =>
+          Promise.resolve(
+            TINY_PNG_BYTES.buffer.slice(
+              TINY_PNG_BYTES.byteOffset,
+              TINY_PNG_BYTES.byteOffset + TINY_PNG_BYTES.byteLength
+            )
+          ),
         headers: new Headers({ 'content-type': 'image/jpeg' }),
       };
       vi.spyOn(globalThis, 'fetch').mockResolvedValue(mockResponse as Response);
@@ -136,13 +157,21 @@ describe('resolveScreenshot', () => {
       };
       vi.spyOn(globalThis, 'fetch').mockResolvedValue(mockResponse as Response);
 
-      await expect(resolveScreenshot('https://example.com/missing.png', 'v')).rejects.toThrow('Failed to fetch screenshot');
+      await expect(resolveScreenshot('https://example.com/missing.png', 'v')).rejects.toThrow(
+        'Failed to fetch screenshot'
+      );
     });
 
     it('should handle http:// URLs', async () => {
       const mockResponse = {
         ok: true,
-        arrayBuffer: () => Promise.resolve(TINY_PNG_BYTES.buffer.slice(TINY_PNG_BYTES.byteOffset, TINY_PNG_BYTES.byteOffset + TINY_PNG_BYTES.byteLength)),
+        arrayBuffer: () =>
+          Promise.resolve(
+            TINY_PNG_BYTES.buffer.slice(
+              TINY_PNG_BYTES.byteOffset,
+              TINY_PNG_BYTES.byteOffset + TINY_PNG_BYTES.byteLength
+            )
+          ),
         headers: new Headers({ 'content-type': 'image/png' }),
       };
       vi.spyOn(globalThis, 'fetch').mockResolvedValue(mockResponse as Response);

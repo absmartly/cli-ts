@@ -20,7 +20,7 @@ export interface CreateMetricParams {
 
 export async function createMetric(
   client: APIClient,
-  params: CreateMetricParams,
+  params: CreateMetricParams
 ): Promise<CommandResult<{ id: number }>> {
   const payload: Record<string, unknown> = {
     name: params.name,

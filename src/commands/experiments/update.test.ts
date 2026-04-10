@@ -34,24 +34,36 @@ describe('update command', () => {
       { id: 10, tag: 'v1' },
       { id: 11, tag: 'mobile' },
     ]),
-    resolveMetrics: vi.fn().mockImplementation((names: string[]) => Promise.resolve(
-      names.map((n, i) => ({ id: i + 1, name: n }))
-    )),
+    resolveMetrics: vi
+      .fn()
+      .mockImplementation((names: string[]) =>
+        Promise.resolve(names.map((n, i) => ({ id: i + 1, name: n })))
+      ),
     resolveTeams: vi.fn().mockImplementation((names: string[]) => {
-      const teams = [{ id: 1, name: 'Product' }, { id: 2, name: 'Engineering' }];
-      return Promise.resolve(names.map(n => {
-        const t = teams.find(t => t.name.toLowerCase() === n.toLowerCase());
-        if (!t) throw new Error(`Team "${n}" not found`);
-        return t;
-      }));
+      const teams = [
+        { id: 1, name: 'Product' },
+        { id: 2, name: 'Engineering' },
+      ];
+      return Promise.resolve(
+        names.map((n) => {
+          const t = teams.find((t) => t.name.toLowerCase() === n.toLowerCase());
+          if (!t) throw new Error(`Team "${n}" not found`);
+          return t;
+        })
+      );
     }),
     resolveTags: vi.fn().mockImplementation((names: string[]) => {
-      const tags = [{ id: 10, tag: 'v1' }, { id: 11, tag: 'mobile' }];
-      return Promise.resolve(names.map(n => {
-        const t = tags.find(t => t.tag.toLowerCase() === n.toLowerCase());
-        if (!t) throw new Error(`Tag "${n}" not found`);
-        return t;
-      }));
+      const tags = [
+        { id: 10, tag: 'v1' },
+        { id: 11, tag: 'mobile' },
+      ];
+      return Promise.resolve(
+        names.map((n) => {
+          const t = tags.find((t) => t.tag.toLowerCase() === n.toLowerCase());
+          if (!t) throw new Error(`Tag "${n}" not found`);
+          return t;
+        })
+      );
     }),
   };
 
@@ -79,7 +91,7 @@ describe('update command', () => {
     expect(mockClient.updateExperiment).toHaveBeenCalledWith(
       42,
       expect.objectContaining({ display_name: 'New Name' }),
-      undefined,
+      undefined
     );
     const output = consoleSpy.mock.calls.flat().join(' ');
     expect(output).toContain('Experiment 42 updated');
@@ -91,7 +103,7 @@ describe('update command', () => {
     expect(mockClient.updateExperiment).toHaveBeenCalledWith(
       42,
       expect.objectContaining({ name: 'new-name' }),
-      undefined,
+      undefined
     );
   });
 
@@ -101,7 +113,7 @@ describe('update command', () => {
     expect(mockClient.updateExperiment).toHaveBeenCalledWith(
       42,
       expect.objectContaining({ percentage_of_traffic: 50 }),
-      undefined,
+      undefined
     );
   });
 
@@ -111,7 +123,7 @@ describe('update command', () => {
     expect(mockClient.updateExperiment).toHaveBeenCalledWith(
       42,
       expect.objectContaining({ state: 'running' }),
-      undefined,
+      undefined
     );
   });
 
@@ -121,7 +133,7 @@ describe('update command', () => {
     expect(mockClient.updateExperiment).toHaveBeenCalledWith(
       42,
       expect.objectContaining({ primary_metric: { metric_id: 145 } }),
-      undefined,
+      undefined
     );
   });
 
@@ -131,7 +143,7 @@ describe('update command', () => {
     expect(mockClient.updateExperiment).toHaveBeenCalledWith(
       42,
       expect.objectContaining({ unit_type: { unit_type_id: 3 } }),
-      undefined,
+      undefined
     );
   });
 
@@ -141,12 +153,18 @@ describe('update command', () => {
     expect(mockClient.updateExperiment).toHaveBeenCalledWith(
       42,
       expect.objectContaining({ applications: [{ application_id: 5, application_version: '0' }] }),
-      undefined,
+      undefined
     );
   });
 
   it('should update variants', async () => {
-    await updateCommand.parseAsync(['node', 'test', '42', '--variants', 'control,treatment,treatment2']);
+    await updateCommand.parseAsync([
+      'node',
+      'test',
+      '42',
+      '--variants',
+      'control,treatment,treatment2',
+    ]);
 
     expect(mockClient.updateExperiment).toHaveBeenCalledWith(
       42,
@@ -158,7 +176,7 @@ describe('update command', () => {
           { name: 'treatment2', variant: 2, config: '{}' },
         ],
       }),
-      undefined,
+      undefined
     );
   });
 
@@ -168,7 +186,7 @@ describe('update command', () => {
     expect(mockClient.updateExperiment).toHaveBeenCalledWith(
       42,
       expect.objectContaining({ percentages: '30/70' }),
-      undefined,
+      undefined
     );
   });
 
@@ -178,7 +196,7 @@ describe('update command', () => {
     expect(mockClient.updateExperiment).toHaveBeenCalledWith(
       42,
       expect.objectContaining({ owners: [{ user_id: 10 }, { user_id: 20 }] }),
-      undefined,
+      undefined
     );
   });
 
@@ -188,7 +206,7 @@ describe('update command', () => {
     expect(mockClient.updateExperiment).toHaveBeenCalledWith(
       42,
       expect.objectContaining({ teams: [{ team_id: 1 }, { team_id: 2 }] }),
-      undefined,
+      undefined
     );
   });
 
@@ -197,8 +215,10 @@ describe('update command', () => {
 
     expect(mockClient.updateExperiment).toHaveBeenCalledWith(
       42,
-      expect.objectContaining({ experiment_tags: [{ experiment_tag_id: 10 }, { experiment_tag_id: 11 }] }),
-      undefined,
+      expect.objectContaining({
+        experiment_tags: [{ experiment_tag_id: 10 }, { experiment_tag_id: 11 }],
+      }),
+      undefined
     );
   });
 
@@ -209,7 +229,7 @@ describe('update command', () => {
     expect(mockClient.updateExperiment).toHaveBeenCalledWith(
       42,
       expect.objectContaining({ audience }),
-      undefined,
+      undefined
     );
   });
 
@@ -219,17 +239,25 @@ describe('update command', () => {
     expect(mockClient.updateExperiment).toHaveBeenCalledWith(
       42,
       expect.objectContaining({ analysis_type: 'fixed_horizon' }),
-      undefined,
+      undefined
     );
   });
 
   it('should update required alpha and power', async () => {
-    await updateCommand.parseAsync(['node', 'test', '42', '--required-alpha', '0.05', '--required-power', '0.9']);
+    await updateCommand.parseAsync([
+      'node',
+      'test',
+      '42',
+      '--required-alpha',
+      '0.05',
+      '--required-power',
+      '0.9',
+    ]);
 
     expect(mockClient.updateExperiment).toHaveBeenCalledWith(
       42,
       expect.objectContaining({ required_alpha: '0.05', required_power: '0.9' }),
-      undefined,
+      undefined
     );
   });
 
@@ -239,7 +267,7 @@ describe('update command', () => {
     expect(mockClient.updateExperiment).toHaveBeenCalledWith(
       42,
       expect.objectContaining({ baseline_participants_per_day: '100' }),
-      undefined,
+      undefined
     );
   });
 
@@ -249,7 +277,13 @@ describe('update command', () => {
       { id: 20, name: 'Bookings' },
     ]);
 
-    await updateCommand.parseAsync(['node', 'test', '42', '--secondary-metrics', 'Revenue,Bookings']);
+    await updateCommand.parseAsync([
+      'node',
+      'test',
+      '42',
+      '--secondary-metrics',
+      'Revenue,Bookings',
+    ]);
 
     expect(mockClient.resolveMetrics).toHaveBeenCalledWith(['Revenue', 'Bookings']);
     expect(mockClient.updateExperiment).toHaveBeenCalledWith(
@@ -260,7 +294,7 @@ describe('update command', () => {
           { metric_id: 20, type: 'secondary', order_index: 1 },
         ],
       }),
-      undefined,
+      undefined
     );
   });
 
@@ -281,7 +315,7 @@ describe('update command', () => {
         percentage_of_traffic: 75,
         state: 'running',
       }),
-      undefined,
+      undefined
     );
   });
 
@@ -295,7 +329,15 @@ describe('update command', () => {
   });
 
   it('should pass --note to updateExperiment', async () => {
-    await updateCommand.parseAsync(['node', 'test', '42', '--display-name', 'New Name', '--note', 'my update note']);
+    await updateCommand.parseAsync([
+      'node',
+      'test',
+      '42',
+      '--display-name',
+      'New Name',
+      '--note',
+      'my update note',
+    ]);
 
     expect(mockClient.updateExperiment).toHaveBeenCalledWith(
       42,

@@ -1,11 +1,20 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { storageConfigsCommand } from './index.js';
-import { getAPIClientFromOptions, getGlobalOptions, printFormatted } from '../../lib/utils/api-helper.js';
+import {
+  getAPIClientFromOptions,
+  getGlobalOptions,
+  printFormatted,
+} from '../../lib/utils/api-helper.js';
 import { resetCommand } from '../../test/helpers/command-reset.js';
 
 vi.mock('../../lib/utils/api-helper.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../lib/utils/api-helper.js')>();
-  return { ...actual, getAPIClientFromOptions: vi.fn(), getGlobalOptions: vi.fn(), printFormatted: vi.fn() };
+  return {
+    ...actual,
+    getAPIClientFromOptions: vi.fn(),
+    getGlobalOptions: vi.fn(),
+    printFormatted: vi.fn(),
+  };
 });
 
 describe('storage-configs command', () => {
@@ -62,7 +71,14 @@ describe('storage-configs command', () => {
   });
 
   it('should update a storage config', async () => {
-    await storageConfigsCommand.parseAsync(['node', 'test', 'update', '1', '--config', '{"bucket":"new"}']);
+    await storageConfigsCommand.parseAsync([
+      'node',
+      'test',
+      'update',
+      '1',
+      '--config',
+      '{"bucket":"new"}',
+    ]);
 
     expect(mockClient.updateStorageConfig).toHaveBeenCalledWith(1, { bucket: 'new' });
     expect(printFormatted).toHaveBeenCalled();
@@ -72,6 +88,8 @@ describe('storage-configs command', () => {
     await storageConfigsCommand.parseAsync(['node', 'test', 'test', '--config', '{"type":"s3"}']);
 
     expect(mockClient.testStorageConfig).toHaveBeenCalledWith({ type: 's3' });
-    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Storage config connection test passed'));
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Storage config connection test passed')
+    );
   });
 });

@@ -39,7 +39,10 @@ describe('cors', () => {
 
   it('should update cors origin', async () => {
     mockClient.updateCorsOrigin.mockResolvedValue({ id: 1, origin: 'http://updated.com' });
-    const result = await updateCorsOrigin(mockClient as any, { id: 1 as any, origin: 'http://updated.com' });
+    const result = await updateCorsOrigin(mockClient as any, {
+      id: 1 as any,
+      origin: 'http://updated.com',
+    });
     expect(mockClient.updateCorsOrigin).toHaveBeenCalledWith(1, { origin: 'http://updated.com' });
     expect(result.data).toEqual({ id: 1, origin: 'http://updated.com' });
   });

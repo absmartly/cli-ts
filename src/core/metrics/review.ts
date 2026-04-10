@@ -8,7 +8,7 @@ export interface GetMetricReviewParams {
 
 export async function getMetricReview(
   client: APIClient,
-  params: GetMetricReviewParams,
+  params: GetMetricReviewParams
 ): Promise<CommandResult<unknown>> {
   const data = await client.getMetricReview(params.id);
   return { data };
@@ -20,7 +20,7 @@ export interface RequestMetricReviewParams {
 
 export async function requestMetricReview(
   client: APIClient,
-  params: RequestMetricReviewParams,
+  params: RequestMetricReviewParams
 ): Promise<CommandResult<void>> {
   await client.requestMetricReview(params.id);
   return { data: undefined };
@@ -32,7 +32,7 @@ export interface ApproveMetricReviewParams {
 
 export async function approveMetricReview(
   client: APIClient,
-  params: ApproveMetricReviewParams,
+  params: ApproveMetricReviewParams
 ): Promise<CommandResult<void>> {
   await client.approveMetricReview(params.id);
   return { data: undefined };
@@ -44,7 +44,7 @@ export interface ListMetricReviewCommentsParams {
 
 export async function listMetricReviewComments(
   client: APIClient,
-  params: ListMetricReviewCommentsParams,
+  params: ListMetricReviewCommentsParams
 ): Promise<CommandResult<unknown>> {
   const data = await client.listMetricReviewComments(params.id);
   return { data };
@@ -57,7 +57,7 @@ export interface AddMetricReviewCommentParams {
 
 export async function addMetricReviewComment(
   client: APIClient,
-  params: AddMetricReviewCommentParams,
+  params: AddMetricReviewCommentParams
 ): Promise<CommandResult<void>> {
   await client.addMetricReviewComment(params.id, params.message);
   return { data: undefined };
@@ -71,7 +71,7 @@ export interface ReplyToMetricReviewCommentParams {
 
 export async function replyToMetricReviewComment(
   client: APIClient,
-  params: ReplyToMetricReviewCommentParams,
+  params: ReplyToMetricReviewCommentParams
 ): Promise<CommandResult<void>> {
   await client.replyToMetricReviewComment(params.id, params.commentId, params.message);
   return { data: undefined };

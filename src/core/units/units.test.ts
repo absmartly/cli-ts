@@ -34,7 +34,10 @@ describe('units', () => {
   it('should create unit with description', async () => {
     mockClient.createUnitType.mockResolvedValue({ id: 3 });
     const result = await createUnit(mockClient as any, { name: 'session_id', description: 'desc' });
-    expect(mockClient.createUnitType).toHaveBeenCalledWith({ name: 'session_id', description: 'desc' });
+    expect(mockClient.createUnitType).toHaveBeenCalledWith({
+      name: 'session_id',
+      description: 'desc',
+    });
     expect(result.data).toEqual({ id: 3 });
   });
 

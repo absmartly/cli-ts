@@ -111,7 +111,7 @@ describe('resolve-custom-fields', () => {
       },
     ]);
     const result = await resolveCustomFieldValues(mockClient as any, {
-      customFieldValues: { 'Nonexistent': 'val' },
+      customFieldValues: { Nonexistent: 'val' },
       defaultType: 'experiment',
     });
     expect(result).toEqual({});

@@ -8,7 +8,7 @@ export interface ListGoalAccessUsersParams {
 
 export async function listGoalAccessUsers(
   client: APIClient,
-  params: ListGoalAccessUsersParams,
+  params: ListGoalAccessUsersParams
 ): Promise<CommandResult<unknown>> {
   const data = await client.listGoalAccessUsers(params.id);
   return { data };
@@ -22,7 +22,7 @@ export interface GrantGoalAccessUserParams {
 
 export async function grantGoalAccessUser(
   client: APIClient,
-  params: GrantGoalAccessUserParams,
+  params: GrantGoalAccessUserParams
 ): Promise<CommandResult<void>> {
   await client.grantGoalAccessUser(params.id, params.userId, params.roleId);
   return { data: undefined };
@@ -36,7 +36,7 @@ export interface RevokeGoalAccessUserParams {
 
 export async function revokeGoalAccessUser(
   client: APIClient,
-  params: RevokeGoalAccessUserParams,
+  params: RevokeGoalAccessUserParams
 ): Promise<CommandResult<void>> {
   await client.revokeGoalAccessUser(params.id, params.userId, params.roleId);
   return { data: undefined };
@@ -48,7 +48,7 @@ export interface ListGoalAccessTeamsParams {
 
 export async function listGoalAccessTeams(
   client: APIClient,
-  params: ListGoalAccessTeamsParams,
+  params: ListGoalAccessTeamsParams
 ): Promise<CommandResult<unknown>> {
   const data = await client.listGoalAccessTeams(params.id);
   return { data };
@@ -62,7 +62,7 @@ export interface GrantGoalAccessTeamParams {
 
 export async function grantGoalAccessTeam(
   client: APIClient,
-  params: GrantGoalAccessTeamParams,
+  params: GrantGoalAccessTeamParams
 ): Promise<CommandResult<void>> {
   await client.grantGoalAccessTeam(params.id, params.teamId, params.roleId);
   return { data: undefined };
@@ -76,7 +76,7 @@ export interface RevokeGoalAccessTeamParams {
 
 export async function revokeGoalAccessTeam(
   client: APIClient,
-  params: RevokeGoalAccessTeamParams,
+  params: RevokeGoalAccessTeamParams
 ): Promise<CommandResult<void>> {
   await client.revokeGoalAccessTeam(params.id, params.teamId, params.roleId);
   return { data: undefined };

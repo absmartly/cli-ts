@@ -1,6 +1,10 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
-import { getAPIClientFromOptions, getGlobalOptions, withErrorHandling } from '../../lib/utils/api-helper.js';
+import {
+  getAPIClientFromOptions,
+  getGlobalOptions,
+  withErrorHandling,
+} from '../../lib/utils/api-helper.js';
 import { parseExperimentIdOrName } from './resolve-id.js';
 import { isStdinPiped, isStdoutPiped, readLinesFromStdin } from '../../lib/utils/stdin.js';
 import { resolveNote } from './resolve-note.js';
@@ -20,32 +24,42 @@ export const fullOnCommand = new Command('full-on')
   .option('--note <text>', 'note about the action')
   .option('-i, --interactive', 'prompt for note interactively')
   .option('--pass-through', 'pass failed IDs through in pipe mode')
-  .action(withErrorHandling(async (nameOrId: string | undefined, options) => {
-    const globalOptions = getGlobalOptions(fullOnCommand);
-    const client = await getAPIClientFromOptions(globalOptions);
+  .action(
+    withErrorHandling(async (nameOrId: string | undefined, options) => {
+      const globalOptions = getGlobalOptions(fullOnCommand);
+      const client = await getAPIClientFromOptions(globalOptions);
 
-    const ids: string[] = nameOrId ? [nameOrId] : isStdinPiped() ? await readLinesFromStdin() : [];
-    if (ids.length === 0) throw new Error('Provide an experiment ID or pipe IDs from stdin');
-    const outputPiped = isStdoutPiped();
+      const ids: string[] = nameOrId
+        ? [nameOrId]
+        : isStdinPiped()
+          ? await readLinesFromStdin()
+          : [];
+      if (ids.length === 0) throw new Error('Provide an experiment ID or pipe IDs from stdin');
+      const outputPiped = isStdoutPiped();
 
-    const note = await resolveNote(options, 'full_on', getDefaultType(), globalOptions.profile);
+      const note = await resolveNote(options, 'full_on', getDefaultType(), globalOptions.profile);
 
-    let hasFailures = false;
-    for (const idStr of ids) {
-      try {
-        const id = await client.resolveExperimentId(idStr);
-        await fullOnExperiment(client, { experimentId: id, variant: options.variant, note });
-        if (outputPiped) {
-          console.log(id);
-          console.error(chalk.green(`✓ Experiment ${id} set to full-on (variant ${options.variant})`));
-        } else {
-          console.log(chalk.green(`✓ Experiment ${id} set to full-on (variant ${options.variant})`));
+      let hasFailures = false;
+      for (const idStr of ids) {
+        try {
+          const id = await client.resolveExperimentId(idStr);
+          await fullOnExperiment(client, { experimentId: id, variant: options.variant, note });
+          if (outputPiped) {
+            console.log(id);
+            console.error(
+              chalk.green(`✓ Experiment ${id} set to full-on (variant ${options.variant})`)
+            );
+          } else {
+            console.log(
+              chalk.green(`✓ Experiment ${id} set to full-on (variant ${options.variant})`)
+            );
+          }
+        } catch (e) {
+          hasFailures = true;
+          if (outputPiped && options.passThrough) console.log(idStr);
+          console.error(chalk.red(`✗ Experiment ${idStr}: ${e instanceof Error ? e.message : e}`));
         }
-      } catch (e) {
-        hasFailures = true;
-        if (outputPiped && options.passThrough) console.log(idStr);
-        console.error(chalk.red(`✗ Experiment ${idStr}: ${e instanceof Error ? e.message : e}`));
       }
-    }
-    if (hasFailures) process.exitCode = 1;
-  }));
+      if (hasFailures) process.exitCode = 1;
+    })
+  );

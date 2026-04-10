@@ -1,6 +1,11 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
-import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
+import {
+  getAPIClientFromOptions,
+  getGlobalOptions,
+  printFormatted,
+  withErrorHandling,
+} from '../../lib/utils/api-helper.js';
 import { parseExperimentIdOrName } from './resolve-id.js';
 import { startPolling } from '../../lib/utils/polling.js';
 import { watchExperimentTick } from '../../core/experiments/watch.js';
@@ -10,58 +15,60 @@ export const watchCommand = new Command('watch')
   .argument('<id>', 'experiment ID or name', parseExperimentIdOrName)
   .option('--interval <seconds>', 'poll interval in seconds', '60')
   .option('--variant-index', 'use variant index (0, 1, 2) instead of names')
-  .action(withErrorHandling(async (nameOrId: string, options) => {
-    const globalOptions = getGlobalOptions(watchCommand);
-    const client = await getAPIClientFromOptions(globalOptions);
-    const id = await client.resolveExperimentId(nameOrId);
-    const intervalSeconds = parseInt(options.interval, 10);
+  .action(
+    withErrorHandling(async (nameOrId: string, options) => {
+      const globalOptions = getGlobalOptions(watchCommand);
+      const client = await getAPIClientFromOptions(globalOptions);
+      const id = await client.resolveExperimentId(nameOrId);
+      const intervalSeconds = parseInt(options.interval, 10);
 
-    if (isNaN(intervalSeconds) || intervalSeconds < 1) {
-      throw new Error('Interval must be a positive integer');
-    }
-
-    let previousJson = '';
-    let isFirstTick = true;
-
-    const fetchAndDisplay = async () => {
-      const result = await watchExperimentTick(client, {
-        experimentId: id,
-        variantIndex: options.variantIndex,
-      });
-
-      const { displayName, state, hasMetrics, results, formattedRows, resultsJson } = result.data;
-
-      if (!hasMetrics) {
-        console.log(chalk.blue('No metrics assigned to this experiment.'));
-        return;
+      if (isNaN(intervalSeconds) || intervalSeconds < 1) {
+        throw new Error('Interval must be a positive integer');
       }
 
-      const timestamp = new Date().toLocaleTimeString();
+      let previousJson = '';
+      let isFirstTick = true;
 
-      if (isFirstTick || resultsJson !== previousJson) {
-        console.clear();
-        console.log(chalk.bold(`Watching experiment ${id} — ${displayName} (${state})`));
-        console.log(chalk.gray(`Last updated: ${timestamp}`));
-        console.log(chalk.gray(`Polling every ${intervalSeconds}s... Press Ctrl+C to stop\n`));
+      const fetchAndDisplay = async () => {
+        const result = await watchExperimentTick(client, {
+          experimentId: id,
+          variantIndex: options.variantIndex,
+        });
 
-        const useRaw = globalOptions.output === 'json' || globalOptions.output === 'yaml';
-        if (useRaw) {
-          printFormatted(results, globalOptions);
-        } else {
-          printFormatted(formattedRows, globalOptions);
+        const { displayName, state, hasMetrics, results, formattedRows, resultsJson } = result.data;
+
+        if (!hasMetrics) {
+          console.log(chalk.blue('No metrics assigned to this experiment.'));
+          return;
         }
 
-        previousJson = resultsJson;
-        isFirstTick = false;
-      } else {
-        process.stdout.write(chalk.gray('.'));
-      }
-    };
+        const timestamp = new Date().toLocaleTimeString();
 
-    await fetchAndDisplay();
+        if (isFirstTick || resultsJson !== previousJson) {
+          console.clear();
+          console.log(chalk.bold(`Watching experiment ${id} — ${displayName} (${state})`));
+          console.log(chalk.gray(`Last updated: ${timestamp}`));
+          console.log(chalk.gray(`Polling every ${intervalSeconds}s... Press Ctrl+C to stop\n`));
 
-    startPolling({
-      intervalMs: intervalSeconds * 1000,
-      onTick: fetchAndDisplay,
-    });
-  }));
+          const useRaw = globalOptions.output === 'json' || globalOptions.output === 'yaml';
+          if (useRaw) {
+            printFormatted(results, globalOptions);
+          } else {
+            printFormatted(formattedRows, globalOptions);
+          }
+
+          previousJson = resultsJson;
+          isFirstTick = false;
+        } else {
+          process.stdout.write(chalk.gray('.'));
+        }
+      };
+
+      await fetchAndDisplay();
+
+      startPolling({
+        intervalMs: intervalSeconds * 1000,
+        onTick: fetchAndDisplay,
+      });
+    })
+  );

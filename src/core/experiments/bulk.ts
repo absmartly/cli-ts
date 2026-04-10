@@ -39,14 +39,18 @@ export interface BulkOperationResult {
 export async function collectBulkIds(
   client: APIClient,
   rawIds: string[],
-  options: { stdinIds?: ExperimentId[] | undefined; state?: string | undefined; app?: string | undefined },
+  options: {
+    stdinIds?: ExperimentId[] | undefined;
+    state?: string | undefined;
+    app?: string | undefined;
+  }
 ): Promise<ExperimentId[]> {
   if (options.stdinIds && options.stdinIds.length > 0) {
     return options.stdinIds;
   }
 
   if (rawIds.length > 0) {
-    return rawIds.map(id => parseExperimentId(id));
+    return rawIds.map((id) => parseExperimentId(id));
   }
 
   if (!options.state && !options.app) {
@@ -58,12 +62,12 @@ export async function collectBulkIds(
   if (options.app) listOptions.application = options.app;
 
   const experiments = await client.listExperiments(listOptions);
-  return experiments.map(e => e.id);
+  return experiments.map((e) => e.id);
 }
 
 export async function fetchBulkNames(
   client: APIClient,
-  ids: ExperimentId[],
+  ids: ExperimentId[]
 ): Promise<Map<ExperimentId, string>> {
   const names = new Map<ExperimentId, string>();
   const queue = [...ids];
@@ -75,8 +79,8 @@ export async function fetchBulkNames(
         const exp = await client.getExperiment(id);
         names.set(id, exp.name);
       } catch (err: unknown) {
-        const status = (err as { statusCode?: number }).statusCode
-          ?? (err as { status?: number }).status;
+        const status =
+          (err as { statusCode?: number }).statusCode ?? (err as { status?: number }).status;
         if (status === 404) {
           names.set(id, `(unknown #${id})`);
         } else {
@@ -98,7 +102,7 @@ export async function fetchBulkNames(
 export async function runBulkOperation(
   ids: ExperimentId[],
   names: Map<ExperimentId, string>,
-  action: (id: ExperimentId) => Promise<unknown>,
+  action: (id: ExperimentId) => Promise<unknown>
 ): Promise<CommandResult<BulkOperationResult>> {
   const results: BulkResult[] = [];
   const queue = [...ids];
@@ -133,8 +137,8 @@ export async function runBulkOperation(
   const workers = Array.from({ length: Math.min(CONCURRENCY_LIMIT, ids.length) }, () => worker());
   await Promise.all(workers);
 
-  const succeeded = results.filter(r => r.success).length;
-  const failed = results.filter(r => !r.success).length;
+  const succeeded = results.filter((r) => r.success).length;
+  const failed = results.filter((r) => !r.success).length;
   const skipped = ids.length - results.length;
 
   const warnings: string[] = [];
@@ -157,9 +161,9 @@ export async function bulkStart(
   client: APIClient,
   ids: ExperimentId[],
   names: Map<ExperimentId, string>,
-  note?: string,
+  note?: string
 ): Promise<CommandResult<BulkOperationResult>> {
-  return runBulkOperation(ids, names, id => client.startExperiment(id, note));
+  return runBulkOperation(ids, names, (id) => client.startExperiment(id, note));
 }
 
 export async function bulkStop(
@@ -167,28 +171,28 @@ export async function bulkStop(
   ids: ExperimentId[],
   names: Map<ExperimentId, string>,
   reason: string,
-  note?: string,
+  note?: string
 ): Promise<CommandResult<BulkOperationResult>> {
-  return runBulkOperation(ids, names, id => client.stopExperiment(id, reason, note));
+  return runBulkOperation(ids, names, (id) => client.stopExperiment(id, reason, note));
 }
 
 export async function bulkArchive(
   client: APIClient,
   ids: ExperimentId[],
   names: Map<ExperimentId, string>,
-  note?: string,
+  note?: string
 ): Promise<CommandResult<BulkOperationResult>> {
-  return runBulkOperation(ids, names, id => client.archiveExperiment(id, false, note));
+  return runBulkOperation(ids, names, (id) => client.archiveExperiment(id, false, note));
 }
 
 export async function bulkDevelopment(
   client: APIClient,
   ids: ExperimentId[],
   names: Map<ExperimentId, string>,
-  note?: string,
+  note?: string
 ): Promise<CommandResult<BulkOperationResult>> {
   const effectiveNote = note ?? 'Bulk development via CLI';
-  return runBulkOperation(ids, names, id => client.developmentExperiment(id, effectiveNote));
+  return runBulkOperation(ids, names, (id) => client.developmentExperiment(id, effectiveNote));
 }
 
 export async function bulkFullOn(
@@ -196,8 +200,8 @@ export async function bulkFullOn(
   ids: ExperimentId[],
   names: Map<ExperimentId, string>,
   variant: number,
-  note?: string,
+  note?: string
 ): Promise<CommandResult<BulkOperationResult>> {
   const effectiveNote = note ?? 'Bulk full-on via CLI';
-  return runBulkOperation(ids, names, id => client.fullOnExperiment(id, variant, effectiveNote));
+  return runBulkOperation(ids, names, (id) => client.fullOnExperiment(id, variant, effectiveNote));
 }

@@ -9,9 +9,7 @@ function buildTestProgram(): Command {
     .option('--config <path>', 'config file path')
     .option('-o, --output <format>', 'output format');
 
-  const experiments = new Command('experiments')
-    .alias('exp')
-    .description('Experiment commands');
+  const experiments = new Command('experiments').alias('exp').description('Experiment commands');
   experiments.addCommand(new Command('list').description('List experiments'));
   experiments.addCommand(new Command('get').description('Get experiment'));
   program.addCommand(experiments);
@@ -47,7 +45,7 @@ describe('completion command', () => {
 
   it('should output bash completion script', async () => {
     const program = buildTestProgram();
-    const completionCmd = program.commands.find(c => c.name() === 'completion')!;
+    const completionCmd = program.commands.find((c) => c.name() === 'completion')!;
 
     try {
       await completionCmd.parseAsync(['node', 'test', 'bash']);
@@ -71,7 +69,7 @@ describe('completion command', () => {
 
   it('should output zsh completion script', async () => {
     const program = buildTestProgram();
-    const completionCmd = program.commands.find(c => c.name() === 'completion')!;
+    const completionCmd = program.commands.find((c) => c.name() === 'completion')!;
 
     try {
       await completionCmd.parseAsync(['node', 'test', 'zsh']);
@@ -92,7 +90,7 @@ describe('completion command', () => {
 
   it('should show error for unsupported shell', async () => {
     const program = buildTestProgram();
-    const completionCmd = program.commands.find(c => c.name() === 'completion')!;
+    const completionCmd = program.commands.find((c) => c.name() === 'completion')!;
 
     try {
       await completionCmd.parseAsync(['node', 'test', 'fish']);

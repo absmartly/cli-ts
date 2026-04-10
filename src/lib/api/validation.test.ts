@@ -70,7 +70,6 @@ describe.skipIf(isLiveMode)('APIClient - Validation and Error Scenarios', () => 
         expect(error.response.message).toContain('not running');
       }
     });
-
   });
 
   describe('Goal Validation', () => {

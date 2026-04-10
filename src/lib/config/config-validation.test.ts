@@ -52,15 +52,11 @@ describe('Config Key Validation', () => {
     });
 
     it('should block __proto__ key in getConfigValue', () => {
-      expect(() => getConfigValue('__proto__')).toThrow(
-        'Cannot set protected key: __proto__'
-      );
+      expect(() => getConfigValue('__proto__')).toThrow('Cannot set protected key: __proto__');
     });
 
     it('should block __proto__ key in unsetConfigValue', () => {
-      expect(() => unsetConfigValue('__proto__')).toThrow(
-        'Cannot set protected key: __proto__'
-      );
+      expect(() => unsetConfigValue('__proto__')).toThrow('Cannot set protected key: __proto__');
     });
   });
 

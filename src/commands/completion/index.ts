@@ -82,7 +82,7 @@ function generateBashCompletion(tree: CommandTree, globalOptions: string[]): str
   let subcmdCases = '';
   for (const [name, entry] of Object.entries(tree)) {
     if (entry.subcommands.length === 0) continue;
-    const subcmdNames = entry.subcommands.map(s => s.name).join(' ');
+    const subcmdNames = entry.subcommands.map((s) => s.name).join(' ');
     const patterns = [name, ...entry.aliases].join('|');
     subcmdCases += `    ${patterns})\n`;
     subcmdCases += `      if [ "$COMP_CWORD" -eq 2 ]; then\n`;
@@ -202,7 +202,7 @@ function generateZshCompletion(tree: CommandTree, globalOptions: string[]): stri
     subcommandCases += `        ;;\n`;
   }
 
-  const globalOptsStr = globalOptions.map(o => `'${o}'`).join(' ');
+  const globalOptsStr = globalOptions.map((o) => `'${o}'`).join(' ');
 
   return `#compdef abs
 # zsh completion for abs (ABSmartly CLI)

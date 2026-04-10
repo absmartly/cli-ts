@@ -31,11 +31,31 @@ import { customFieldsCommand } from './custom-fields.js';
 import { estimateParticipantsCommand } from './estimate-participants.js';
 
 const subcommands = [
-  listCommand, getCommand, searchCommand, createCommand, cloneCommand, updateCommand,
-  startCommand, stopCommand, archiveCommand, activityCommand, generateTemplateCommand,
-  developmentCommand, restartCommand, fullOnCommand, scheduleCommand, metricsCommand,
-  parentCommand, accessCommand, followCommand, unfollowCommand,
-  annotationsCommand, alertsCommand, recommendationsCommand, exportCommand, requestUpdateCommand,
+  listCommand,
+  getCommand,
+  searchCommand,
+  createCommand,
+  cloneCommand,
+  updateCommand,
+  startCommand,
+  stopCommand,
+  archiveCommand,
+  activityCommand,
+  generateTemplateCommand,
+  developmentCommand,
+  restartCommand,
+  fullOnCommand,
+  scheduleCommand,
+  metricsCommand,
+  parentCommand,
+  accessCommand,
+  followCommand,
+  unfollowCommand,
+  annotationsCommand,
+  alertsCommand,
+  recommendationsCommand,
+  exportCommand,
+  requestUpdateCommand,
   refreshFieldsCommand,
   diffCommand,
   watchCommand,
@@ -52,4 +72,3 @@ export const experimentsCommand = new Command('experiments')
   .description('Experiment and feature flag commands');
 
 for (const cmd of subcommands) experimentsCommand.addCommand(cmd);
-

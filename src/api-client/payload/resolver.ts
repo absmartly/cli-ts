@@ -20,7 +20,7 @@ export interface ResolverContext {
 export function resolveByName<T extends { id: number; name: string }>(
   items: T[],
   nameOrId: string,
-  entityType: string,
+  entityType: string
 ): T {
   const trimmed = nameOrId.trim();
   const asInt = parseInt(trimmed, 10);
@@ -31,9 +31,7 @@ export function resolveByName<T extends { id: number; name: string }>(
       return byId;
     }
     const availableNames = items.map((item) => `"${item.name}" (id: ${item.id})`).join(', ');
-    throw new Error(
-      `${entityType} with ID ${asInt} not found. Available: ${availableNames}`,
-    );
+    throw new Error(`${entityType} with ID ${asInt} not found. Available: ${availableNames}`);
   }
 
   const lowerName = trimmed.toLowerCase();
@@ -45,13 +43,9 @@ export function resolveByName<T extends { id: number; name: string }>(
 
   if (matches.length > 1) {
     const suggestions = matches.map((item) => `"${item.name}" (id: ${item.id})`).join(', ');
-    throw new Error(
-      `Multiple ${entityType} entries match "${trimmed}". Matches: ${suggestions}`,
-    );
+    throw new Error(`Multiple ${entityType} entries match "${trimmed}". Matches: ${suggestions}`);
   }
 
   const availableNames = items.map((item) => `"${item.name}" (id: ${item.id})`).join(', ');
-  throw new Error(
-    `${entityType} "${trimmed}" not found. Available: ${availableNames}`,
-  );
+  throw new Error(`${entityType} "${trimmed}" not found. Available: ${availableNames}`);
 }

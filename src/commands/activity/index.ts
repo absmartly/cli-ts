@@ -3,7 +3,11 @@ import chalk from 'chalk';
 import { Marked } from 'marked';
 import { markedTerminal } from 'marked-terminal';
 import { highlight } from 'cli-highlight';
-import { getAPIClientFromOptions, getGlobalOptions, withErrorHandling } from '../../lib/utils/api-helper.js';
+import {
+  getAPIClientFromOptions,
+  getGlobalOptions,
+  withErrorHandling,
+} from '../../lib/utils/api-helper.js';
 import { parseDateFlagOrUndefined } from '../../lib/utils/date-parser.js';
 import { startPolling } from '../../lib/utils/polling.js';
 import { formatDateTime } from '../../api-client/format-helpers.js';
@@ -20,19 +24,25 @@ import {
 // Re-export for use by experiments/get.ts
 export type { NoteLookups } from '../../core/activity/activity.js';
 
-const terminalMarked = new Marked(markedTerminal({
-  code: (code: string, lang: string) => {
-    try {
-      return highlight(code, { language: lang || 'text', ignoreIllegals: true }) + '\n';
-    } catch {
-      return chalk.yellow(code) + '\n';
-    }
-  },
-  blockquote: (text: string) => {
-    const lines = text.trim().split('\n');
-    return lines.map(line => chalk.gray('│ ') + chalk.italic(line.replace(/^ {1,4}/, ''))).join('\n') + '\n';
-  },
-} as any) as any);
+const terminalMarked = new Marked(
+  markedTerminal({
+    code: (code: string, lang: string) => {
+      try {
+        return highlight(code, { language: lang || 'text', ignoreIllegals: true }) + '\n';
+      } catch {
+        return chalk.yellow(code) + '\n';
+      }
+    },
+    blockquote: (text: string) => {
+      const lines = text.trim().split('\n');
+      return (
+        lines
+          .map((line) => chalk.gray('│ ') + chalk.italic(line.replace(/^ {1,4}/, '')))
+          .join('\n') + '\n'
+      );
+    },
+  } as any) as any
+);
 
 export { resolveMentions };
 
@@ -47,9 +57,7 @@ function parsePositiveIntFlag(value: string, flag: string): number {
 export function formatNoteText(text: string, lookups: NoteLookups = {}): string {
   const resolved = resolveMentions(text, lookups);
   const rendered = terminalMarked.parse(resolved) as string;
-  return rendered
-    .replace(/^( *)(\* )/gm, '$1● ')
-    .trim();
+  return rendered.replace(/^( *)(\* )/gm, '$1● ').trim();
 }
 
 function printActivityEntries(entries: ActivityEntry[], showNotes = false): void {
@@ -75,8 +83,9 @@ function printActivityEntries(entries: ActivityEntry[], showNotes = false): void
   }
 }
 
-export const activityFeedCommand = new Command('activity-feed')
-  .description('Global activity feed across experiments (scans recent experiments by updated_at)');
+export const activityFeedCommand = new Command('activity-feed').description(
+  'Global activity feed across experiments (scans recent experiments by updated_at)'
+);
 
 const listCommand = new Command('list')
   .description('List recent activity across all experiments')
@@ -88,31 +97,36 @@ const listCommand = new Command('list')
   .option('--search <query>', 'filter experiments by name')
   .option('--sort <field>', 'sort experiments by (updated_at, created_at)', 'updated_at')
   .option('--notes', 'show note text for each activity entry')
-  .action(withErrorHandling(async (options) => {
-    const globalOptions = getGlobalOptions(listCommand);
-    const client = await getAPIClientFromOptions(globalOptions);
+  .action(
+    withErrorHandling(async (options) => {
+      const globalOptions = getGlobalOptions(listCommand);
+      const client = await getAPIClientFromOptions(globalOptions);
 
-    const since = parseDateFlagOrUndefined(options.since);
-    const experiments = parsePositiveIntFlag(options.items ?? options.experiments, '--experiments');
-    const limit = parsePositiveIntFlag(options.limit, '--limit');
+      const since = parseDateFlagOrUndefined(options.since);
+      const experiments = parsePositiveIntFlag(
+        options.items ?? options.experiments,
+        '--experiments'
+      );
+      const limit = parsePositiveIntFlag(options.limit, '--limit');
 
-    const result = await coreListActivity(client, {
-      experiments,
-      limit,
-      since,
-      state: options.state,
-      search: options.search,
-      sort: options.sort,
-      includeNotes: options.notes,
-    });
+      const result = await coreListActivity(client, {
+        experiments,
+        limit,
+        since,
+        state: options.state,
+        search: options.search,
+        sort: options.sort,
+        includeNotes: options.notes,
+      });
 
-    printActivityEntries(result.data, options.notes);
-    if (result.warnings) {
-      for (const w of result.warnings) {
-        console.log(chalk.gray(w));
+      printActivityEntries(result.data, options.notes);
+      if (result.warnings) {
+        for (const w of result.warnings) {
+          console.log(chalk.gray(w));
+        }
       }
-    }
-  }));
+    })
+  );
 
 const watchCommand = new Command('watch')
   .description('Watch activity feed in real-time')
@@ -122,48 +136,55 @@ const watchCommand = new Command('watch')
   .option('--state <state>', 'filter experiments by state')
   .option('--sort <field>', 'sort experiments by (updated_at, created_at)', 'updated_at')
   .option('--notes', 'show note text for each activity entry')
-  .action(withErrorHandling(async (options) => {
-    const globalOptions = getGlobalOptions(watchCommand);
-    const client = await getAPIClientFromOptions(globalOptions);
+  .action(
+    withErrorHandling(async (options) => {
+      const globalOptions = getGlobalOptions(watchCommand);
+      const client = await getAPIClientFromOptions(globalOptions);
 
-    const intervalSeconds = parsePositiveIntFlag(options.interval, '--interval');
-    const experiments = parsePositiveIntFlag(options.items ?? options.experiments, '--experiments');
+      const intervalSeconds = parsePositiveIntFlag(options.interval, '--interval');
+      const experiments = parsePositiveIntFlag(
+        options.items ?? options.experiments,
+        '--experiments'
+      );
 
-    let lastSeenTimestamp: number | undefined;
-    const lookups = options.notes ? await buildLookups(client) : {} as NoteLookups;
+      let lastSeenTimestamp: number | undefined;
+      const lookups = options.notes ? await buildLookups(client) : ({} as NoteLookups);
 
-    console.log(chalk.blue(`Watching activity (polling every ${intervalSeconds}s)... Press Ctrl+C to stop\n`));
+      console.log(
+        chalk.blue(
+          `Watching activity (polling every ${intervalSeconds}s)... Press Ctrl+C to stop\n`
+        )
+      );
 
-    const onTick = async () => {
-      const notes = await fetchAllActivity(client, {
-        items: experiments,
-        state: options.state,
-        sort: options.sort,
-        since: lastSeenTimestamp,
-      });
+      const onTick = async () => {
+        const notes = await fetchAllActivity(client, {
+          items: experiments,
+          state: options.state,
+          sort: options.sort,
+          since: lastSeenTimestamp,
+        });
 
-      if (notes.length > 0) {
-        const entries = notes.map(n => formatActivityEntry(n, lookups));
-        printActivityEntries(entries, options.notes);
+        if (notes.length > 0) {
+          const entries = notes.map((n) => formatActivityEntry(n, lookups));
+          printActivityEntries(entries, options.notes);
 
-        const newestTimestamp = Math.max(
-          ...notes.map((n) =>
-            n.note.created_at ? new Date(n.note.created_at).getTime() : 0
-          )
-        );
-        if (newestTimestamp > 0) {
-          lastSeenTimestamp = newestTimestamp + 1;
+          const newestTimestamp = Math.max(
+            ...notes.map((n) => (n.note.created_at ? new Date(n.note.created_at).getTime() : 0))
+          );
+          if (newestTimestamp > 0) {
+            lastSeenTimestamp = newestTimestamp + 1;
+          }
         }
-      }
-    };
+      };
 
-    await onTick();
+      await onTick();
 
-    startPolling({
-      intervalMs: intervalSeconds * 1000,
-      onTick,
-    });
-  }));
+      startPolling({
+        intervalMs: intervalSeconds * 1000,
+        onTick,
+      });
+    })
+  );
 
 activityFeedCommand.addCommand(listCommand);
 activityFeedCommand.addCommand(watchCommand);

@@ -42,20 +42,30 @@ describe('api command', () => {
   });
 
   it('should make POST with --method and --data', async () => {
-    await apiCommand.parseAsync(['node', 'test', '/experiments', '-X', 'POST', '-d', '{"name":"test"}']);
+    await apiCommand.parseAsync([
+      'node',
+      'test',
+      '/experiments',
+      '-X',
+      'POST',
+      '-d',
+      '{"name":"test"}',
+    ]);
 
-    expect(mockClient.rawRequest).toHaveBeenCalledWith('/experiments', 'POST', { name: 'test' }, {});
+    expect(mockClient.rawRequest).toHaveBeenCalledWith(
+      '/experiments',
+      'POST',
+      { name: 'test' },
+      {}
+    );
   });
 
   it('should parse custom headers', async () => {
     await apiCommand.parseAsync(['node', 'test', '/experiments', '-H', 'X-Custom: value']);
 
-    expect(mockClient.rawRequest).toHaveBeenCalledWith(
-      '/experiments',
-      'GET',
-      undefined,
-      { 'X-Custom': 'value' }
-    );
+    expect(mockClient.rawRequest).toHaveBeenCalledWith('/experiments', 'GET', undefined, {
+      'X-Custom': 'value',
+    });
   });
 
   it('should output result as JSON', async () => {

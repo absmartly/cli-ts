@@ -17,7 +17,10 @@ describe('APIClient - Resources', () => {
     let goalId: number;
 
     beforeAll(async () => {
-      const goal = await client.createGoal({ name: `test_goal_${Date.now()}`, description: 'Vitest goal' });
+      const goal = await client.createGoal({
+        name: `test_goal_${Date.now()}`,
+        description: 'Vitest goal',
+      });
       goalId = goal.id;
     });
 
@@ -48,7 +51,11 @@ describe('APIClient - Resources', () => {
     let segmentId: number;
 
     beforeAll(async () => {
-      const segment = await client.createSegment({ name: `test_segment_${Date.now()}`, value_source_attribute: 'plan', description: 'Vitest segment' });
+      const segment = await client.createSegment({
+        name: `test_segment_${Date.now()}`,
+        value_source_attribute: 'plan',
+        description: 'Vitest segment',
+      });
       segmentId = segment.id;
     });
 
@@ -202,7 +209,13 @@ describe('APIClient - Resources', () => {
         server.use(
           http.post(`${BASE_URL}/experiments/estimate/max_participants`, () =>
             HttpResponse.json({
-              columnNames: ['variant', 'first_exposure_at', 'last_exposure_at', 'last_event_at', 'unit_count'],
+              columnNames: [
+                'variant',
+                'first_exposure_at',
+                'last_exposure_at',
+                'last_event_at',
+                'unit_count',
+              ],
               columnTypes: ['UInt8', 'Int64', 'Int64', 'Int64', 'UInt32'],
               rows: [[0, 1769812802910, 1774995544371, 0, 1945010]],
             })
@@ -210,10 +223,7 @@ describe('APIClient - Resources', () => {
         );
       }
 
-      const [apps, units] = await Promise.all([
-        client.listApplications(),
-        client.listUnitTypes(),
-      ]);
+      const [apps, units] = await Promise.all([client.listApplications(), client.listUnitTypes()]);
 
       const result = await client.estimateMaxParticipants({
         from: Date.now() - 30 * 24 * 60 * 60 * 1000,
@@ -235,7 +245,13 @@ describe('APIClient - Resources', () => {
         server.use(
           http.post(`${BASE_URL}/experiments/estimate/max_participants`, () =>
             HttpResponse.json({
-              columnNames: ['variant', 'first_exposure_at', 'last_exposure_at', 'last_event_at', 'unit_count'],
+              columnNames: [
+                'variant',
+                'first_exposure_at',
+                'last_exposure_at',
+                'last_event_at',
+                'unit_count',
+              ],
               columnTypes: ['UInt8', 'Int64', 'Int64', 'Int64', 'UInt32'],
               rows: [[0, 1769812802910, 1774995544371, 0, 500000]],
             })

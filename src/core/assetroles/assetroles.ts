@@ -3,9 +3,7 @@ import type { AssetRoleId } from '../../lib/api/branded-types.js';
 import type { CommandResult } from '../types.js';
 import { requireAtLeastOneField } from '../../lib/utils/validators.js';
 
-export async function listAssetRoles(
-  client: APIClient,
-): Promise<CommandResult<unknown>> {
+export async function listAssetRoles(client: APIClient): Promise<CommandResult<unknown>> {
   const data = await client.listAssetRoles();
   return { data };
 }
@@ -16,7 +14,7 @@ export interface GetAssetRoleParams {
 
 export async function getAssetRole(
   client: APIClient,
-  params: GetAssetRoleParams,
+  params: GetAssetRoleParams
 ): Promise<CommandResult<unknown>> {
   const data = await client.getAssetRole(params.id);
   return { data };
@@ -28,7 +26,7 @@ export interface CreateAssetRoleParams {
 
 export async function createAssetRole(
   client: APIClient,
-  params: CreateAssetRoleParams,
+  params: CreateAssetRoleParams
 ): Promise<CommandResult<unknown>> {
   const data = await client.createAssetRole({ name: params.name });
   return { data };
@@ -41,7 +39,7 @@ export interface UpdateAssetRoleParams {
 
 export async function updateAssetRole(
   client: APIClient,
-  params: UpdateAssetRoleParams,
+  params: UpdateAssetRoleParams
 ): Promise<CommandResult<unknown>> {
   const data: Record<string, unknown> = {};
   if (params.name !== undefined) data.name = params.name;
@@ -57,7 +55,7 @@ export interface DeleteAssetRoleParams {
 
 export async function deleteAssetRole(
   client: APIClient,
-  params: DeleteAssetRoleParams,
+  params: DeleteAssetRoleParams
 ): Promise<CommandResult<unknown>> {
   await client.deleteAssetRole(params.id);
   return { data: { id: params.id } };

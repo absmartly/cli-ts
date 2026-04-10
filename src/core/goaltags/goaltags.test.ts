@@ -1,5 +1,11 @@
 import { describe, it, expect, vi } from 'vitest';
-import { listGoalTags, getGoalTag, createGoalTag, updateGoalTag, deleteGoalTag } from './goaltags.js';
+import {
+  listGoalTags,
+  getGoalTag,
+  createGoalTag,
+  updateGoalTag,
+  deleteGoalTag,
+} from './goaltags.js';
 
 describe('goaltags', () => {
   const mockClient = {

@@ -1,4 +1,5 @@
-const RELATIVE_PATTERN = /^(\d+)\s*(m|min|minutes?|h|hours?|d|days?|w|weeks?|mo|months?|y|years?)\s*(ago)?$/i;
+const RELATIVE_PATTERN =
+  /^(\d+)\s*(m|min|minutes?|h|hours?|d|days?|w|weeks?|mo|months?|y|years?)\s*(ago)?$/i;
 
 const RELATIVE_KEYWORDS: Record<string, number> = {
   now: 0,
@@ -61,13 +62,13 @@ export function parseDateFlag(dateStr: string): number {
   if (!isoPattern.test(dateStr)) {
     throw new Error(
       `Invalid date format: "${dateStr}"\n` +
-      `Expected formats:\n` +
-      `  - Relative: 7d, 2w, 30d ago, yesterday, today\n` +
-      `  - ISO 8601 date: 2024-01-01\n` +
-      `  - ISO 8601 datetime: 2024-01-01T00:00:00Z\n` +
-      `  - Milliseconds since epoch: 1704067200000\n` +
-      `\n` +
-      `Relative units: m (minutes), h (hours), d (days), w (weeks), mo (months), y (years)`
+        `Expected formats:\n` +
+        `  - Relative: 7d, 2w, 30d ago, yesterday, today\n` +
+        `  - ISO 8601 date: 2024-01-01\n` +
+        `  - ISO 8601 datetime: 2024-01-01T00:00:00Z\n` +
+        `  - Milliseconds since epoch: 1704067200000\n` +
+        `\n` +
+        `Relative units: m (minutes), h (hours), d (days), w (weeks), mo (months), y (years)`
     );
   }
 

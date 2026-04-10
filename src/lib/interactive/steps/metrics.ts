@@ -6,13 +6,13 @@ import type { ExperimentTemplate } from '../../../api-client/template/parser.js'
 
 async function searchMetrics(context: EditorContext, term: string) {
   const results = await context.client.listMetrics({ search: term, archived: true });
-  return results.map(m => ({ name: m.name, value: m.name }));
+  return results.map((m) => ({ name: m.name, value: m.name }));
 }
 
 async function editMetricList(
   label: string,
   current: string[],
-  context: EditorContext,
+  context: EditorContext
 ): Promise<string[]> {
   const result = [...current];
   console.log(chalk.gray(`Current ${label}: ${result.length > 0 ? result.join(', ') : '(none)'}`));
@@ -35,9 +35,8 @@ async function editMetricList(
       result.length = 0;
       editing = false;
     } else if (action === 'add') {
-      const metric = await promptAsyncSearch(
-        `Search ${label}`,
-        (term) => searchMetrics(context, term),
+      const metric = await promptAsyncSearch(`Search ${label}`, (term) =>
+        searchMetrics(context, term)
       );
       if (metric && !result.includes(metric)) {
         result.push(metric);
@@ -46,7 +45,7 @@ async function editMetricList(
     } else if (action === 'remove') {
       const toRemove = await select({
         message: 'Select metric to remove:',
-        choices: result.map(r => ({ name: r, value: r })),
+        choices: result.map((r) => ({ name: r, value: r })),
       });
       const idx = result.indexOf(toRemove);
       if (idx >= 0) result.splice(idx, 1);
@@ -62,25 +61,25 @@ export const metricsStep: Step = {
     const primaryMetric = await promptAsyncSearch(
       'Primary metric (type to search)',
       (term) => searchMetrics(context, term),
-      template.primary_metric,
+      template.primary_metric
     );
 
     const secondaryMetrics = await editMetricList(
       'Secondary metrics',
       template.secondary_metrics ?? [],
-      context,
+      context
     );
 
     const guardrailMetrics = await editMetricList(
       'Guardrail metrics',
       template.guardrail_metrics ?? [],
-      context,
+      context
     );
 
     const exploratoryMetrics = await editMetricList(
       'Exploratory metrics',
       template.exploratory_metrics ?? [],
-      context,
+      context
     );
 
     const updated: ExperimentTemplate = {

@@ -1,11 +1,20 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { webhooksCommand } from './index.js';
-import { getAPIClientFromOptions, getGlobalOptions, printFormatted } from '../../lib/utils/api-helper.js';
+import {
+  getAPIClientFromOptions,
+  getGlobalOptions,
+  printFormatted,
+} from '../../lib/utils/api-helper.js';
 import { resetCommand } from '../../test/helpers/command-reset.js';
 
 vi.mock('../../lib/utils/api-helper.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../lib/utils/api-helper.js')>();
-  return { ...actual, getAPIClientFromOptions: vi.fn(), getGlobalOptions: vi.fn(), printFormatted: vi.fn() };
+  return {
+    ...actual,
+    getAPIClientFromOptions: vi.fn(),
+    getGlobalOptions: vi.fn(),
+    printFormatted: vi.fn(),
+  };
 });
 
 describe('webhooks command', () => {
@@ -19,7 +28,9 @@ describe('webhooks command', () => {
     createWebhook: vi.fn().mockResolvedValue({ id: 99 }),
     updateWebhook: vi.fn().mockResolvedValue({}),
     deleteWebhook: vi.fn().mockResolvedValue({}),
-    listWebhookEvents: vi.fn().mockResolvedValue([{ id: 'experiment.started', name: 'Experiment Started' }]),
+    listWebhookEvents: vi
+      .fn()
+      .mockResolvedValue([{ id: 'experiment.started', name: 'Experiment Started' }]),
   };
 
   beforeEach(() => {
@@ -59,7 +70,15 @@ describe('webhooks command', () => {
   });
 
   it('should create a webhook', async () => {
-    await webhooksCommand.parseAsync(['node', 'test', 'create', '--name', 'hook', '--url', 'https://example.com']);
+    await webhooksCommand.parseAsync([
+      'node',
+      'test',
+      'create',
+      '--name',
+      'hook',
+      '--url',
+      'https://example.com',
+    ]);
 
     expect(mockClient.createWebhook).toHaveBeenCalledWith(
       expect.objectContaining({

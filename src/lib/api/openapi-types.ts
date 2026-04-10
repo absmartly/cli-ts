@@ -1,24 +1,38 @@
 import type { paths, components } from 'absmartly-api-mocks/src/generated/schema';
 
-export type ExperimentsListResponse = paths['/experiments']['get']['responses']['200']['content']['application/json'];
-export type ExperimentDetailResponse = paths['/experiments/{experimentId}']['get']['responses']['200']['content']['application/json'];
-export type ExperimentCreateRequest = paths['/experiments']['post']['requestBody']['content']['application/json'];
-export type ExperimentUpdateRequest = paths['/experiments/{experimentId}']['put']['requestBody']['content']['application/json'];
+export type ExperimentsListResponse =
+  paths['/experiments']['get']['responses']['200']['content']['application/json'];
+export type ExperimentDetailResponse =
+  paths['/experiments/{experimentId}']['get']['responses']['200']['content']['application/json'];
+export type ExperimentCreateRequest =
+  paths['/experiments']['post']['requestBody']['content']['application/json'];
+export type ExperimentUpdateRequest =
+  paths['/experiments/{experimentId}']['put']['requestBody']['content']['application/json'];
 
-export type GoalsListResponse = paths['/goals']['get']['responses']['200']['content']['application/json'];
-export type GoalDetailResponse = paths['/goals/{goalId}']['get']['responses']['200']['content']['application/json'];
+export type GoalsListResponse =
+  paths['/goals']['get']['responses']['200']['content']['application/json'];
+export type GoalDetailResponse =
+  paths['/goals/{goalId}']['get']['responses']['200']['content']['application/json'];
 
-export type SegmentsListResponse = paths['/segments']['get']['responses']['200']['content']['application/json'];
-export type SegmentDetailResponse = paths['/segments/{segmentId}']['get']['responses']['200']['content']['application/json'];
+export type SegmentsListResponse =
+  paths['/segments']['get']['responses']['200']['content']['application/json'];
+export type SegmentDetailResponse =
+  paths['/segments/{segmentId}']['get']['responses']['200']['content']['application/json'];
 
-export type TeamsListResponse = paths['/teams']['get']['responses']['200']['content']['application/json'];
-export type TeamDetailResponse = paths['/teams/{teamId}']['get']['responses']['200']['content']['application/json'];
+export type TeamsListResponse =
+  paths['/teams']['get']['responses']['200']['content']['application/json'];
+export type TeamDetailResponse =
+  paths['/teams/{teamId}']['get']['responses']['200']['content']['application/json'];
 
-export type UsersListResponse = paths['/users']['get']['responses']['200']['content']['application/json'];
-export type UserDetailResponse = paths['/users/{userId}']['get']['responses']['200']['content']['application/json'];
+export type UsersListResponse =
+  paths['/users']['get']['responses']['200']['content']['application/json'];
+export type UserDetailResponse =
+  paths['/users/{userId}']['get']['responses']['200']['content']['application/json'];
 
-export type MetricsListResponse = paths['/metrics']['get']['responses']['200']['content']['application/json'];
-export type MetricDetailResponse = paths['/metrics/{metricId}']['get']['responses']['200']['content']['application/json'];
+export type MetricsListResponse =
+  paths['/metrics']['get']['responses']['200']['content']['application/json'];
+export type MetricDetailResponse =
+  paths['/metrics/{metricId}']['get']['responses']['200']['content']['application/json'];
 
 export type Experiment = components['schemas']['Experiment'];
 export type ExperimentShort = components['schemas']['ExperimentShort'];

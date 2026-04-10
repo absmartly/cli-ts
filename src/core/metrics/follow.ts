@@ -8,7 +8,7 @@ export interface FollowMetricParams {
 
 export async function followMetric(
   client: APIClient,
-  params: FollowMetricParams,
+  params: FollowMetricParams
 ): Promise<CommandResult<void>> {
   await client.followMetric(params.id);
   return { data: undefined };
@@ -20,7 +20,7 @@ export interface UnfollowMetricParams {
 
 export async function unfollowMetric(
   client: APIClient,
-  params: UnfollowMetricParams,
+  params: UnfollowMetricParams
 ): Promise<CommandResult<void>> {
   await client.unfollowMetric(params.id);
   return { data: undefined };

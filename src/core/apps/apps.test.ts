@@ -1,11 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import {
-  listApps,
-  getApp,
-  createApp,
-  updateApp,
-  archiveApp,
-} from './apps.js';
+import { listApps, getApp, createApp, updateApp, archiveApp } from './apps.js';
 
 const mockClient = {
   listApplications: vi.fn(),

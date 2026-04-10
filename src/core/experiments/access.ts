@@ -9,7 +9,7 @@ export interface ListExperimentAccessUsersParams {
 
 export async function listExperimentAccessUsers(
   client: APIClient,
-  params: ListExperimentAccessUsersParams,
+  params: ListExperimentAccessUsersParams
 ): Promise<CommandResult<unknown[]>> {
   const users = await client.listExperimentAccessUsers(params.experimentId);
   return { data: users as unknown[] };
@@ -24,7 +24,7 @@ export interface GrantExperimentAccessUserParams {
 
 export async function grantExperimentAccessUser(
   client: APIClient,
-  params: GrantExperimentAccessUserParams,
+  params: GrantExperimentAccessUserParams
 ): Promise<CommandResult<{ experimentId: ExperimentId; userId: UserId }>> {
   await client.grantExperimentAccessUser(params.experimentId, params.userId, params.roleId);
   return { data: { experimentId: params.experimentId, userId: params.userId } };
@@ -39,7 +39,7 @@ export interface RevokeExperimentAccessUserParams {
 
 export async function revokeExperimentAccessUser(
   client: APIClient,
-  params: RevokeExperimentAccessUserParams,
+  params: RevokeExperimentAccessUserParams
 ): Promise<CommandResult<{ experimentId: ExperimentId; userId: UserId }>> {
   await client.revokeExperimentAccessUser(params.experimentId, params.userId, params.roleId);
   return { data: { experimentId: params.experimentId, userId: params.userId } };
@@ -52,7 +52,7 @@ export interface ListExperimentAccessTeamsParams {
 
 export async function listExperimentAccessTeams(
   client: APIClient,
-  params: ListExperimentAccessTeamsParams,
+  params: ListExperimentAccessTeamsParams
 ): Promise<CommandResult<unknown[]>> {
   const teams = await client.listExperimentAccessTeams(params.experimentId);
   return { data: teams as unknown[] };
@@ -67,7 +67,7 @@ export interface GrantExperimentAccessTeamParams {
 
 export async function grantExperimentAccessTeam(
   client: APIClient,
-  params: GrantExperimentAccessTeamParams,
+  params: GrantExperimentAccessTeamParams
 ): Promise<CommandResult<{ experimentId: ExperimentId; teamId: TeamId }>> {
   await client.grantExperimentAccessTeam(params.experimentId, params.teamId, params.roleId);
   return { data: { experimentId: params.experimentId, teamId: params.teamId } };
@@ -82,7 +82,7 @@ export interface RevokeExperimentAccessTeamParams {
 
 export async function revokeExperimentAccessTeam(
   client: APIClient,
-  params: RevokeExperimentAccessTeamParams,
+  params: RevokeExperimentAccessTeamParams
 ): Promise<CommandResult<{ experimentId: ExperimentId; teamId: TeamId }>> {
   await client.revokeExperimentAccessTeam(params.experimentId, params.teamId, params.roleId);
   return { data: { experimentId: params.experimentId, teamId: params.teamId } };

@@ -120,13 +120,22 @@ describe('schedule command', () => {
   describe('create', () => {
     it('should create scheduled action', async () => {
       await scheduleCommand.parseAsync([
-        'node', 'test', 'create', '42',
-        '--action', 'start',
-        '--at', '2030-04-01T10:00:00Z',
+        'node',
+        'test',
+        'create',
+        '42',
+        '--action',
+        'start',
+        '--at',
+        '2030-04-01T10:00:00Z',
       ]);
 
       expect(mockClient.createScheduledAction).toHaveBeenCalledWith(
-        42, 'start', '2030-04-01T10:00:00.000Z', 'Scheduled via CLI', undefined
+        42,
+        'start',
+        '2030-04-01T10:00:00.000Z',
+        'Scheduled via CLI',
+        undefined
       );
       const output = consoleSpy.mock.calls.flat().join(' ');
       expect(output).toContain('Scheduled "start"');
@@ -135,9 +144,14 @@ describe('schedule command', () => {
     it('should reject invalid --action', async () => {
       try {
         await scheduleCommand.parseAsync([
-          'node', 'test', 'create', '42',
-          '--action', 'invalid',
-          '--at', '2030-04-01T10:00:00Z',
+          'node',
+          'test',
+          'create',
+          '42',
+          '--action',
+          'invalid',
+          '--at',
+          '2030-04-01T10:00:00Z',
         ]);
         throw new Error('Should have thrown');
       } catch (error) {
@@ -154,9 +168,14 @@ describe('schedule command', () => {
     it('should reject datetime without timezone', async () => {
       try {
         await scheduleCommand.parseAsync([
-          'node', 'test', 'create', '42',
-          '--action', 'start',
-          '--at', '2026-04-01T10:00:00',
+          'node',
+          'test',
+          'create',
+          '42',
+          '--action',
+          'start',
+          '--at',
+          '2026-04-01T10:00:00',
         ]);
         throw new Error('Should have thrown');
       } catch (error) {
@@ -172,9 +191,14 @@ describe('schedule command', () => {
     it('should reject past datetime', async () => {
       try {
         await scheduleCommand.parseAsync([
-          'node', 'test', 'create', '42',
-          '--action', 'start',
-          '--at', '2020-01-01T00:00:00Z',
+          'node',
+          'test',
+          'create',
+          '42',
+          '--action',
+          'start',
+          '--at',
+          '2020-01-01T00:00:00Z',
         ]);
         throw new Error('Should have thrown');
       } catch (error) {

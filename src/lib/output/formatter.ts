@@ -5,21 +5,35 @@ import { Marked } from 'marked';
 import { markedTerminal } from 'marked-terminal';
 import { highlight } from 'cli-highlight';
 
-const terminalMarked = new Marked(markedTerminal({
-  code: (code: string, lang: string) => {
-    try {
-      return highlight(code, { language: lang || 'text', ignoreIllegals: true }) + '\n';
-    } catch {
-      return chalk.yellow(code) + '\n';
-    }
-  },
-  blockquote: (text: string) => {
-    const lines = text.trim().split('\n');
-    return lines.map(line => chalk.gray('│ ') + chalk.italic(line.replace(/^ {1,4}/, ''))).join('\n') + '\n';
-  },
-} as any) as any);
+const terminalMarked = new Marked(
+  markedTerminal({
+    code: (code: string, lang: string) => {
+      try {
+        return highlight(code, { language: lang || 'text', ignoreIllegals: true }) + '\n';
+      } catch {
+        return chalk.yellow(code) + '\n';
+      }
+    },
+    blockquote: (text: string) => {
+      const lines = text.trim().split('\n');
+      return (
+        lines
+          .map((line) => chalk.gray('│ ') + chalk.italic(line.replace(/^ {1,4}/, '')))
+          .join('\n') + '\n'
+      );
+    },
+  } as any) as any
+);
 
-export type OutputFormat = 'table' | 'json' | 'yaml' | 'plain' | 'markdown' | 'rendered' | 'template' | 'vertical';
+export type OutputFormat =
+  | 'table'
+  | 'json'
+  | 'yaml'
+  | 'plain'
+  | 'markdown'
+  | 'rendered'
+  | 'template'
+  | 'vertical';
 
 export interface OutputOptions {
   format?: OutputFormat;
@@ -54,7 +68,9 @@ export function formatOutput(
     case 'markdown':
       return formatMarkdown(data, options);
     case 'rendered':
-      return (terminalMarked.parse(formatMarkdown(data, options)) as string).replace(/^( *)(\* )/gm, '$1● ').trim();
+      return (terminalMarked.parse(formatMarkdown(data, options)) as string)
+        .replace(/^( *)(\* )/gm, '$1● ')
+        .trim();
     case 'vertical':
       return formatVertical(data, options);
     case 'table':
@@ -172,32 +188,40 @@ export function formatVertical(data: unknown, options: OutputOptions = {}): stri
   if (Array.isArray(data)) {
     if (data.length === 0) return 'No results found.';
 
-    return data.map((item, idx) => {
-      const header = options.noColor
-        ? `*** ${idx + 1}. row ***`
-        : chalk.cyan(`*** ${idx + 1}. row ***`);
+    return data
+      .map((item, idx) => {
+        const header = options.noColor
+          ? `*** ${idx + 1}. row ***`
+          : chalk.cyan(`*** ${idx + 1}. row ***`);
 
-      if (typeof item !== 'object' || item === null) {
-        return `${header}\n  ${formatValue(item, options)}`;
-      }
+        if (typeof item !== 'object' || item === null) {
+          return `${header}\n  ${formatValue(item, options)}`;
+        }
 
-      const maxKeyLen = Math.max(...Object.keys(item).map(k => k.length));
-      const lines = Object.entries(item).map(([key, value]) => {
-        const label = options.noColor ? key.padStart(maxKeyLen) : chalk.bold(key.padStart(maxKeyLen));
-        return `${label}: ${formatValue(value, { ...options, full: true })}`;
-      });
+        const maxKeyLen = Math.max(...Object.keys(item).map((k) => k.length));
+        const lines = Object.entries(item).map(([key, value]) => {
+          const label = options.noColor
+            ? key.padStart(maxKeyLen)
+            : chalk.bold(key.padStart(maxKeyLen));
+          return `${label}: ${formatValue(value, { ...options, full: true })}`;
+        });
 
-      return `${header}\n${lines.join('\n')}`;
-    }).join('\n\n');
+        return `${header}\n${lines.join('\n')}`;
+      })
+      .join('\n\n');
   }
 
   if (typeof data === 'object' && data !== null) {
     const entries = Object.entries(data);
     const maxKeyLen = Math.max(...entries.map(([k]) => k.length));
-    return entries.map(([key, value]) => {
-      const label = options.noColor ? key.padStart(maxKeyLen) : chalk.bold(key.padStart(maxKeyLen));
-      return `${label}: ${formatValue(value, { ...options, full: true })}`;
-    }).join('\n');
+    return entries
+      .map(([key, value]) => {
+        const label = options.noColor
+          ? key.padStart(maxKeyLen)
+          : chalk.bold(key.padStart(maxKeyLen));
+        return `${label}: ${formatValue(value, { ...options, full: true })}`;
+      })
+      .join('\n');
   }
 
   return String(data);
@@ -240,7 +264,16 @@ export function truncateText(text: string, options: OutputOptions = {}): string 
   return text.substring(0, maxLength - 3) + '...';
 }
 
-type ChalkColor = 'red' | 'green' | 'yellow' | 'blue' | 'cyan' | 'magenta' | 'white' | 'gray' | 'grey';
+type ChalkColor =
+  | 'red'
+  | 'green'
+  | 'yellow'
+  | 'blue'
+  | 'cyan'
+  | 'magenta'
+  | 'white'
+  | 'gray'
+  | 'grey';
 
 const CHALK_COLORS: Record<ChalkColor, (text: string) => string> = {
   red: chalk.red,

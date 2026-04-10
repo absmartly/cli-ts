@@ -1,5 +1,11 @@
 import { describe, it, expect, vi } from 'vitest';
-import { listSegments, getSegment, createSegment, updateSegment, deleteSegment } from './segments.js';
+import {
+  listSegments,
+  getSegment,
+  createSegment,
+  updateSegment,
+  deleteSegment,
+} from './segments.js';
 
 vi.mock('../../api-client/entity-summary.js', () => ({
   summarizeSegmentRow: (s: Record<string, unknown>) => ({ id: s.id, name: s.name }),
@@ -44,7 +50,10 @@ describe('segments', () => {
   it('should create segment with required fields', async () => {
     mockClient.createSegment.mockResolvedValue({ id: 2 });
     const result = await createSegment(mockClient as any, { name: 'seg', attribute: 'attr' });
-    expect(mockClient.createSegment).toHaveBeenCalledWith({ name: 'seg', value_source_attribute: 'attr' });
+    expect(mockClient.createSegment).toHaveBeenCalledWith({
+      name: 'seg',
+      value_source_attribute: 'attr',
+    });
     expect(result.data).toEqual({ id: 2 });
   });
 
@@ -65,7 +74,10 @@ describe('segments', () => {
 
   it('should update segment with displayName', async () => {
     mockClient.updateSegment.mockResolvedValue(undefined);
-    const result = await updateSegment(mockClient as any, { id: 1 as any, displayName: 'new name' });
+    const result = await updateSegment(mockClient as any, {
+      id: 1 as any,
+      displayName: 'new name',
+    });
     expect(mockClient.updateSegment).toHaveBeenCalledWith(1, { display_name: 'new name' });
     expect(result.data).toEqual({ id: 1 });
   });

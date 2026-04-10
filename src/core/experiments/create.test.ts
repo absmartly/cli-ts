@@ -69,7 +69,8 @@ describe('createExperimentFromTemplate', () => {
   });
 
   it('should pass defaultType to buildPayloadFromTemplate', async () => {
-    const { buildPayloadFromTemplate } = await import('../../api-client/template/build-from-template.js');
+    const { buildPayloadFromTemplate } =
+      await import('../../api-client/template/build-from-template.js');
     mockClient.createExperiment.mockResolvedValue({ id: 101, name: 'feat', type: 'feature' });
 
     await createExperimentFromTemplate(mockClient as any, {
@@ -77,25 +78,18 @@ describe('createExperimentFromTemplate', () => {
       defaultType: 'feature',
     });
 
-    expect(buildPayloadFromTemplate).toHaveBeenCalledWith(
-      mockClient,
-      expect.anything(),
-      'feature',
-    );
+    expect(buildPayloadFromTemplate).toHaveBeenCalledWith(mockClient, expect.anything(), 'feature');
   });
 
   it('should default to type test when no defaultType', async () => {
-    const { buildPayloadFromTemplate } = await import('../../api-client/template/build-from-template.js');
+    const { buildPayloadFromTemplate } =
+      await import('../../api-client/template/build-from-template.js');
     mockClient.createExperiment.mockResolvedValue({ id: 102, name: 'exp', type: 'test' });
 
     await createExperimentFromTemplate(mockClient as any, {
       templateContent: '---\nname: exp\n---',
     });
 
-    expect(buildPayloadFromTemplate).toHaveBeenCalledWith(
-      mockClient,
-      expect.anything(),
-      'test',
-    );
+    expect(buildPayloadFromTemplate).toHaveBeenCalledWith(mockClient, expect.anything(), 'test');
   });
 });

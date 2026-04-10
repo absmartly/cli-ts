@@ -1,11 +1,20 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { statisticsCommand } from './index.js';
-import { getAPIClientFromOptions, getGlobalOptions, printFormatted } from '../../lib/utils/api-helper.js';
+import {
+  getAPIClientFromOptions,
+  getGlobalOptions,
+  printFormatted,
+} from '../../lib/utils/api-helper.js';
 import { resetCommand } from '../../test/helpers/command-reset.js';
 
 vi.mock('../../lib/utils/api-helper.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../lib/utils/api-helper.js')>();
-  return { ...actual, getAPIClientFromOptions: vi.fn(), getGlobalOptions: vi.fn(), printFormatted: vi.fn() };
+  return {
+    ...actual,
+    getAPIClientFromOptions: vi.fn(),
+    getGlobalOptions: vi.fn(),
+    printFormatted: vi.fn(),
+  };
 });
 
 describe('statistics command', () => {
@@ -38,8 +47,11 @@ describe('statistics command', () => {
 
   it('should calculate power analysis matrix with --config JSON', async () => {
     await statisticsCommand.parseAsync([
-      'node', 'test', 'power-matrix',
-      '--config', '{"split":[0.5,0.5],"metric_mean":100,"metric_variance":25,"metric_type":"count","powers":[0.8],"sample_sizes":[2000,3000,4000]}',
+      'node',
+      'test',
+      'power-matrix',
+      '--config',
+      '{"split":[0.5,0.5],"metric_mean":100,"metric_variance":25,"metric_type":"count","powers":[0.8],"sample_sizes":[2000,3000,4000]}',
     ]);
 
     expect(mockClient.getPowerAnalysisMatrix).toHaveBeenCalledWith({
@@ -61,8 +73,11 @@ describe('statistics command', () => {
 
   it('should display time-based rows when participants_per_week is provided', async () => {
     await statisticsCommand.parseAsync([
-      'node', 'test', 'power-matrix',
-      '--config', '{"sample_sizes":[2000,3000,4000],"powers":[0.8],"metric_mean":10,"metric_variance":10000,"metric_type":"goal_count","participants_per_week":1000}',
+      'node',
+      'test',
+      'power-matrix',
+      '--config',
+      '{"sample_sizes":[2000,3000,4000],"powers":[0.8],"metric_mean":10,"metric_variance":10000,"metric_type":"goal_count","participants_per_week":1000}',
     ]);
 
     const output = consoleSpy.mock.calls[0][0] as string;
@@ -76,8 +91,11 @@ describe('statistics command', () => {
     mockClient.getPowerAnalysisMatrix.mockResolvedValueOnce({ matrix: [[0.6268], [0.4432]] });
 
     await statisticsCommand.parseAsync([
-      'node', 'test', 'power-matrix',
-      '--config', '{"sample_sizes":[5000,10000],"powers":[0.8],"metric_mean":10,"metric_variance":10000,"metric_type":"goal_count"}',
+      'node',
+      'test',
+      'power-matrix',
+      '--config',
+      '{"sample_sizes":[5000,10000],"powers":[0.8],"metric_mean":10,"metric_variance":10000,"metric_type":"goal_count"}',
     ]);
 
     const output = consoleSpy.mock.calls[0][0] as string;
@@ -89,20 +107,34 @@ describe('statistics command', () => {
 
   it('should build config from individual CLI options', async () => {
     await statisticsCommand.parseAsync([
-      'node', 'test', 'power-matrix',
-      '--analysis-type', 'group_sequential',
-      '--metric-type', 'goal_count',
-      '--metric-mean', '10',
-      '--metric-variance', '10000',
-      '--alpha', '0.1',
-      '--powers', '0.8',
-      '--split', '0.5,0.5',
-      '--sample-sizes', '2000,3000,4000',
-      '--participants', '1000/week',
+      'node',
+      'test',
+      'power-matrix',
+      '--analysis-type',
+      'group_sequential',
+      '--metric-type',
+      'goal_count',
+      '--metric-mean',
+      '10',
+      '--metric-variance',
+      '10000',
+      '--alpha',
+      '0.1',
+      '--powers',
+      '0.8',
+      '--split',
+      '0.5,0.5',
+      '--sample-sizes',
+      '2000,3000,4000',
+      '--participants',
+      '1000/week',
       '--two-sided',
-      '--futility-type', 'binding',
-      '--first-analysis', '7d',
-      '--min-analysis-interval', '1d',
+      '--futility-type',
+      'binding',
+      '--first-analysis',
+      '7d',
+      '--min-analysis-interval',
+      '1d',
     ]);
 
     expect(mockClient.getPowerAnalysisMatrix).toHaveBeenCalledWith({
@@ -124,61 +156,89 @@ describe('statistics command', () => {
 
   it('should convert daily participants to weekly', async () => {
     await statisticsCommand.parseAsync([
-      'node', 'test', 'power-matrix',
-      '--metric-type', 'goal_count',
-      '--metric-mean', '10',
-      '--metric-variance', '10000',
-      '--sample-sizes', '2000',
-      '--participants', '500/day',
+      'node',
+      'test',
+      'power-matrix',
+      '--metric-type',
+      'goal_count',
+      '--metric-mean',
+      '10',
+      '--metric-variance',
+      '10000',
+      '--sample-sizes',
+      '2000',
+      '--participants',
+      '500/day',
     ]);
 
     expect(mockClient.getPowerAnalysisMatrix).toHaveBeenCalledWith(
-      expect.objectContaining({ participants_per_week: 3500 }),
+      expect.objectContaining({ participants_per_week: 3500 })
     );
   });
 
   it('should convert monthly participants to weekly', async () => {
     await statisticsCommand.parseAsync([
-      'node', 'test', 'power-matrix',
-      '--metric-type', 'goal_count',
-      '--metric-mean', '10',
-      '--metric-variance', '10000',
-      '--sample-sizes', '2000',
-      '--participants', '30000/month',
+      'node',
+      'test',
+      'power-matrix',
+      '--metric-type',
+      'goal_count',
+      '--metric-mean',
+      '10',
+      '--metric-variance',
+      '10000',
+      '--sample-sizes',
+      '2000',
+      '--participants',
+      '30000/month',
     ]);
 
     expect(mockClient.getPowerAnalysisMatrix).toHaveBeenCalledWith(
-      expect.objectContaining({ participants_per_week: 7000 }),
+      expect.objectContaining({ participants_per_week: 7000 })
     );
   });
 
   it('should default to weekly when no unit is specified', async () => {
     await statisticsCommand.parseAsync([
-      'node', 'test', 'power-matrix',
-      '--metric-type', 'goal_count',
-      '--metric-mean', '10',
-      '--metric-variance', '10000',
-      '--sample-sizes', '2000',
-      '--participants', '1000',
+      'node',
+      'test',
+      'power-matrix',
+      '--metric-type',
+      'goal_count',
+      '--metric-mean',
+      '10',
+      '--metric-variance',
+      '10000',
+      '--sample-sizes',
+      '2000',
+      '--participants',
+      '1000',
     ]);
 
     expect(mockClient.getPowerAnalysisMatrix).toHaveBeenCalledWith(
-      expect.objectContaining({ participants_per_week: 1000 }),
+      expect.objectContaining({ participants_per_week: 1000 })
     );
   });
 
   it('should accept short recurrence aliases', async () => {
     await statisticsCommand.parseAsync([
-      'node', 'test', 'power-matrix',
-      '--metric-type', 'goal_count',
-      '--metric-mean', '10',
-      '--metric-variance', '10000',
-      '--sample-sizes', '2000',
-      '--participants', '500/d',
+      'node',
+      'test',
+      'power-matrix',
+      '--metric-type',
+      'goal_count',
+      '--metric-mean',
+      '10',
+      '--metric-variance',
+      '10000',
+      '--sample-sizes',
+      '2000',
+      '--participants',
+      '500/d',
     ]);
 
     expect(mockClient.getPowerAnalysisMatrix).toHaveBeenCalledWith(
-      expect.objectContaining({ participants_per_week: 3500 }),
+      expect.objectContaining({ participants_per_week: 3500 })
     );
   });
 
@@ -188,22 +248,29 @@ describe('statistics command', () => {
     ).rejects.toThrow('process.exit');
 
     expect(consoleErrorSpy).toHaveBeenCalledWith(
-      'Error:', expect.stringContaining('--metric-type, --metric-mean, and --metric-variance')
+      'Error:',
+      expect.stringContaining('--metric-type, --metric-mean, and --metric-variance')
     );
   });
 
   it('should error when neither sample-sizes nor MDEs are provided', async () => {
     await expect(
       statisticsCommand.parseAsync([
-        'node', 'test', 'power-matrix',
-        '--metric-type', 'goal_count',
-        '--metric-mean', '10',
-        '--metric-variance', '10000',
+        'node',
+        'test',
+        'power-matrix',
+        '--metric-type',
+        'goal_count',
+        '--metric-mean',
+        '10',
+        '--metric-variance',
+        '10000',
       ])
     ).rejects.toThrow('process.exit');
 
     expect(consoleErrorSpy).toHaveBeenCalledWith(
-      'Error:', expect.stringContaining('--sample-sizes or --minimum-detectable-effects')
+      'Error:',
+      expect.stringContaining('--sample-sizes or --minimum-detectable-effects')
     );
   });
 
@@ -211,24 +278,33 @@ describe('statistics command', () => {
     vi.mocked(getGlobalOptions).mockReturnValue({ output: 'json', noColor: true } as any);
 
     await statisticsCommand.parseAsync([
-      'node', 'test', 'power-matrix',
-      '--config', '{"sample_sizes":[2000],"powers":[0.8],"metric_mean":10,"metric_variance":10000,"metric_type":"goal_count"}',
+      'node',
+      'test',
+      'power-matrix',
+      '--config',
+      '{"sample_sizes":[2000],"powers":[0.8],"metric_mean":10,"metric_variance":10000,"metric_type":"goal_count"}',
     ]);
 
     expect(printFormatted).toHaveBeenCalledWith(
       { matrix: [[0.9857], [0.8092], [0.7008]] },
-      expect.objectContaining({ output: 'json' }),
+      expect.objectContaining({ output: 'json' })
     );
   });
 
   it('should handle multiple power columns', async () => {
     mockClient.getPowerAnalysisMatrix.mockResolvedValueOnce({
-      matrix: [[0.95, 0.80], [0.70, 0.50]],
+      matrix: [
+        [0.95, 0.8],
+        [0.7, 0.5],
+      ],
     });
 
     await statisticsCommand.parseAsync([
-      'node', 'test', 'power-matrix',
-      '--config', '{"sample_sizes":[2000,3000],"powers":[0.8,0.9],"metric_mean":10,"metric_variance":10000,"metric_type":"goal_count"}',
+      'node',
+      'test',
+      'power-matrix',
+      '--config',
+      '{"sample_sizes":[2000,3000],"powers":[0.8,0.9],"metric_mean":10,"metric_variance":10000,"metric_type":"goal_count"}',
     ]);
 
     const output = consoleSpy.mock.calls[0][0] as string;
@@ -244,8 +320,11 @@ describe('statistics command', () => {
     });
 
     await statisticsCommand.parseAsync([
-      'node', 'test', 'power-matrix',
-      '--config', '{"minimum_detectable_effects":[0.05,0.10],"powers":[0.8],"metric_mean":10,"metric_variance":10000,"metric_type":"goal_count"}',
+      'node',
+      'test',
+      'power-matrix',
+      '--config',
+      '{"minimum_detectable_effects":[0.05,0.10],"powers":[0.8],"metric_mean":10,"metric_variance":10000,"metric_type":"goal_count"}',
     ]);
 
     const output = consoleSpy.mock.calls[0][0] as string;

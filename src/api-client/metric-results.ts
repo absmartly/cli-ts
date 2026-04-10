@@ -28,7 +28,7 @@ export interface MetricResult {
 
 export function parseMetricData(
   metricId: number,
-  data: { columnNames: string[]; rows: unknown[][] },
+  data: { columnNames: string[]; rows: unknown[][] }
 ): VariantResult[] {
   const cols = data.columnNames;
   const variantIdx = cols.indexOf('variant');
@@ -49,12 +49,12 @@ export function parseMetricData(
   const absImpactLIdx = col('_abs_impact_ci_lower');
   const absImpactUIdx = col('_abs_impact_ci_upper');
 
-  const segmentIdx = cols.findIndex(c => c.startsWith('segment_'));
+  const segmentIdx = cols.findIndex((c) => c.startsWith('segment_'));
 
   const num = (row: unknown[], idx: number): number | null =>
     idx >= 0 ? (row[idx] as number | null) : null;
 
-  return data.rows.map(row => ({
+  return data.rows.map((row) => ({
     ...(segmentIdx >= 0 && { segment: row[segmentIdx] as string }),
     variant: row[variantIdx] as number,
     unit_count: row[unitIdx] as number,
@@ -78,22 +78,26 @@ function variantLabel(idx: number, variantNames: Map<number, string>, useIndex?:
   return `Variant ${String.fromCharCode(65 + idx)}`;
 }
 
-export function formatResultRows(r: MetricResult, variantNames: Map<number, string>, options?: { ciBar?: boolean; variantIndex?: boolean }): Record<string, unknown>[] {
-  const control = r.variants.find(v => v.variant === 0);
-  const treatments = r.variants.filter(v => v.variant > 0);
+export function formatResultRows(
+  r: MetricResult,
+  variantNames: Map<number, string>,
+  options?: { ciBar?: boolean; variantIndex?: boolean }
+): Record<string, unknown>[] {
+  const control = r.variants.find((v) => v.variant === 0);
+  const treatments = r.variants.filter((v) => v.variant > 0);
   if (treatments.length === 0) {
     return [{ metric: r.name, type: r.type, impact: '', confidence: '', samples: '' }];
   }
 
-  const formatNum = (n: number | null) => n !== null ? n.toLocaleString(undefined, { maximumFractionDigits: 4 }) : '';
-  const formatMean = (n: number | null) => n !== null ? n.toLocaleString(undefined, { maximumFractionDigits: 6 }) : '';
+  const formatNum = (n: number | null) =>
+    n !== null ? n.toLocaleString(undefined, { maximumFractionDigits: 4 }) : '';
+  const formatMean = (n: number | null) =>
+    n !== null ? n.toLocaleString(undefined, { maximumFractionDigits: 6 }) : '';
   const useIndex = options?.variantIndex;
   const controlLabel = variantLabel(0, variantNames, useIndex);
 
-  return treatments.map(treatment => {
-    const confidence = treatment.pvalue !== null
-      ? formatConfidenceValue(treatment.pvalue)
-      : '';
+  return treatments.map((treatment) => {
+    const confidence = treatment.pvalue !== null ? formatConfidenceValue(treatment.pvalue) : '';
 
     const tLabel = variantLabel(treatment.variant, variantNames, useIndex);
 
@@ -102,9 +106,13 @@ export function formatResultRows(r: MetricResult, variantNames: Map<number, stri
       type: r.type,
       ...(treatment.segment !== undefined && { segment: treatment.segment }),
       variant: tLabel,
-      impact: treatment.impact !== null
-        ? formatImpactWithCI(treatment.impact, treatment.impact_lower, treatment.impact_upper, { ...(r.effect && { effect: r.effect }), ...(options?.ciBar && { ciBar: true }) })
-        : '',
+      impact:
+        treatment.impact !== null
+          ? formatImpactWithCI(treatment.impact, treatment.impact_lower, treatment.impact_upper, {
+              ...(r.effect && { effect: r.effect }),
+              ...(options?.ciBar && { ciBar: true }),
+            })
+          : '',
       confidence,
       samples: treatment.unit_count.toLocaleString(),
     };
@@ -124,8 +132,19 @@ export function formatResultRows(r: MetricResult, variantNames: Map<number, stri
   });
 }
 
-export function formatResultRow(r: MetricResult, variantNames: Map<number, string>): Record<string, unknown> {
-  return formatResultRows(r, variantNames)[0] ?? { metric: r.name, type: r.type, impact: '', confidence: '', samples: '' };
+export function formatResultRow(
+  r: MetricResult,
+  variantNames: Map<number, string>
+): Record<string, unknown> {
+  return (
+    formatResultRows(r, variantNames)[0] ?? {
+      metric: r.name,
+      type: r.type,
+      impact: '',
+      confidence: '',
+      samples: '',
+    }
+  );
 }
 
 export interface MetricInfo {
@@ -140,9 +159,16 @@ export function extractMetricInfos(experiment: Record<string, unknown>): MetricI
   const primaryMetric = experiment.primary_metric as Record<string, unknown> | undefined;
   const primaryMetricId = experiment.primary_metric_id as MetricId | undefined;
   if (primaryMetricId && primaryMetric) {
-    infos.push({ id: primaryMetricId, name: primaryMetric.name as string, type: 'primary', effect: primaryMetric.effect as string });
+    infos.push({
+      id: primaryMetricId,
+      name: primaryMetric.name as string,
+      type: 'primary',
+      effect: primaryMetric.effect as string,
+    });
   }
-  const secondaryMetrics = experiment.secondary_metrics as Array<Record<string, unknown>> | undefined;
+  const secondaryMetrics = experiment.secondary_metrics as
+    | Array<Record<string, unknown>>
+    | undefined;
   if (secondaryMetrics) {
     for (const m of secondaryMetrics) {
       const metric = m.metric as Record<string, unknown> | undefined;
@@ -174,16 +200,23 @@ export async function fetchAllMetricResults(
     segment_id?: number;
     segment_source?: string;
     filters?: { segments?: string; from?: number; to?: number };
-  },
+  }
 ): Promise<MetricResult[]> {
-  const dataPromises = metricInfos.map(m => client.getExperimentMetricData(experimentId, m.id, queryBody));
+  const dataPromises = metricInfos.map((m) =>
+    client.getExperimentMetricData(experimentId, m.id, queryBody)
+  );
   const allData = await Promise.all(dataPromises);
   const results: MetricResult[] = [];
   for (let i = 0; i < metricInfos.length; i++) {
     const info = metricInfos[i]!;
     const data = allData[i]!;
     const parsed = parseMetricData(info.id, data);
-    const result: MetricResult = { metric_id: info.id, name: info.name, type: info.type, variants: parsed };
+    const result: MetricResult = {
+      metric_id: info.id,
+      name: info.name,
+      type: info.type,
+      variants: parsed,
+    };
     if (info.effect) result.effect = info.effect;
     results.push(result);
   }
@@ -192,13 +225,18 @@ export async function fetchAllMetricResults(
 
 export function parseCachedMetricData(
   metricInfos: MetricInfo[],
-  data: { columnNames: string[]; rows: unknown[][] },
+  data: { columnNames: string[]; rows: unknown[][] }
 ): MetricResult[] {
   const results: MetricResult[] = [];
   for (const info of metricInfos) {
     const parsed = parseMetricData(info.id, data);
     if (parsed.length === 0) continue;
-    const result: MetricResult = { metric_id: info.id, name: info.name, type: info.type, variants: parsed };
+    const result: MetricResult = {
+      metric_id: info.id,
+      name: info.name,
+      type: info.type,
+      variants: parsed,
+    };
     if (info.effect) result.effect = info.effect;
     results.push(result);
   }
@@ -208,5 +246,5 @@ export function parseCachedMetricData(
 export function metricOwners(metric: Record<string, unknown> | undefined): string {
   const owners = metric?.owners as Array<Record<string, unknown>> | undefined;
   if (!owners || owners.length === 0) return '';
-  return owners.map(o => formatOwnerLabel(o)).join(', ');
+  return owners.map((o) => formatOwnerLabel(o)).join(', ');
 }

@@ -9,7 +9,7 @@ export interface ArchiveUserParams {
 
 export async function archiveUser(
   client: APIClient,
-  params: ArchiveUserParams,
+  params: ArchiveUserParams
 ): Promise<CommandResult<void>> {
   await client.archiveUser(params.id, params.unarchive);
   return { data: undefined };

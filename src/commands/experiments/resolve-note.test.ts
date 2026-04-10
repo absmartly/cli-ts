@@ -24,9 +24,15 @@ describe('resolveNote', () => {
 
   it('should return default_value from cache when no --note', async () => {
     vi.mocked(cache.getActionDialogField).mockReturnValue({
-      id: 1, type: 'test', subtitle: 'Comment', description: null,
-      placeholder: null, default_value: 'Stopped from dashboard', required: false,
-      action_type: 'stop', order_index: 0,
+      id: 1,
+      type: 'test',
+      subtitle: 'Comment',
+      description: null,
+      placeholder: null,
+      default_value: 'Stopped from dashboard',
+      required: false,
+      action_type: 'stop',
+      order_index: 0,
     });
     const result = await resolveNote({}, 'stop', 'test');
     expect(result).toBe('Stopped from dashboard');
@@ -34,18 +40,30 @@ describe('resolveNote', () => {
 
   it('should throw when required and no --note provided', async () => {
     vi.mocked(cache.getActionDialogField).mockReturnValue({
-      id: 1, type: 'test', subtitle: 'Comment', description: null,
-      placeholder: null, default_value: null, required: true,
-      action_type: 'stop', order_index: 0,
+      id: 1,
+      type: 'test',
+      subtitle: 'Comment',
+      description: null,
+      placeholder: null,
+      default_value: null,
+      required: true,
+      action_type: 'stop',
+      order_index: 0,
     });
     await expect(resolveNote({}, 'stop', 'test')).rejects.toThrow('--note is required');
   });
 
   it('should not throw when required but --note provided', async () => {
     vi.mocked(cache.getActionDialogField).mockReturnValue({
-      id: 1, type: 'test', subtitle: 'Comment', description: null,
-      placeholder: null, default_value: null, required: true,
-      action_type: 'stop', order_index: 0,
+      id: 1,
+      type: 'test',
+      subtitle: 'Comment',
+      description: null,
+      placeholder: null,
+      default_value: null,
+      required: true,
+      action_type: 'stop',
+      order_index: 0,
     });
     const result = await resolveNote({ note: 'provided' }, 'stop', 'test');
     expect(result).toBe('provided');
@@ -65,15 +83,23 @@ describe('resolveNote', () => {
     const { input } = await import('@inquirer/prompts');
     vi.mocked(input).mockResolvedValue('my note');
     vi.mocked(cache.getActionDialogField).mockReturnValue({
-      id: 1, type: 'test', subtitle: 'Comment', description: 'Why are you stopping?',
-      placeholder: null, default_value: 'default text', required: true,
-      action_type: 'stop', order_index: 0,
+      id: 1,
+      type: 'test',
+      subtitle: 'Comment',
+      description: 'Why are you stopping?',
+      placeholder: null,
+      default_value: 'default text',
+      required: true,
+      action_type: 'stop',
+      order_index: 0,
     });
 
     await resolveNote({ interactive: true }, 'stop', 'test');
-    expect(input).toHaveBeenCalledWith(expect.objectContaining({
-      message: 'Why are you stopping?',
-      default: 'default text',
-    }));
+    expect(input).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: 'Why are you stopping?',
+        default: 'default text',
+      })
+    );
   });
 });

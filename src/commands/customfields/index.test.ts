@@ -1,11 +1,20 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { customFieldsCommand } from './index.js';
-import { getAPIClientFromOptions, getGlobalOptions, printFormatted } from '../../lib/utils/api-helper.js';
+import {
+  getAPIClientFromOptions,
+  getGlobalOptions,
+  printFormatted,
+} from '../../lib/utils/api-helper.js';
 import { resetCommand } from '../../test/helpers/command-reset.js';
 
 vi.mock('../../lib/utils/api-helper.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../lib/utils/api-helper.js')>();
-  return { ...actual, getAPIClientFromOptions: vi.fn(), getGlobalOptions: vi.fn(), printFormatted: vi.fn() };
+  return {
+    ...actual,
+    getAPIClientFromOptions: vi.fn(),
+    getGlobalOptions: vi.fn(),
+    printFormatted: vi.fn(),
+  };
 });
 
 describe('custom fields command', () => {
@@ -61,8 +70,20 @@ describe('custom fields command', () => {
   });
 
   it('should create a custom section field', async () => {
-    mockClient.createCustomSectionField.mockResolvedValue({ id: 1, name: 'field1', type: 'string' });
-    await customFieldsCommand.parseAsync(['node', 'test', 'create', '--name', 'field1', '--type', 'string']);
+    mockClient.createCustomSectionField.mockResolvedValue({
+      id: 1,
+      name: 'field1',
+      type: 'string',
+    });
+    await customFieldsCommand.parseAsync([
+      'node',
+      'test',
+      'create',
+      '--name',
+      'field1',
+      '--type',
+      'string',
+    ]);
     expect(mockClient.createCustomSectionField).toHaveBeenCalledWith(
       expect.objectContaining({ name: 'field1', type: 'string' })
     );
@@ -70,7 +91,17 @@ describe('custom fields command', () => {
 
   it('should create with --default-value', async () => {
     mockClient.createCustomSectionField.mockResolvedValue({ id: 1, name: 'f', type: 'string' });
-    await customFieldsCommand.parseAsync(['node', 'test', 'create', '--name', 'f', '--type', 'string', '--default-value', 'hello']);
+    await customFieldsCommand.parseAsync([
+      'node',
+      'test',
+      'create',
+      '--name',
+      'f',
+      '--type',
+      'string',
+      '--default-value',
+      'hello',
+    ]);
     expect(mockClient.createCustomSectionField).toHaveBeenCalledWith(
       expect.objectContaining({ name: 'f', type: 'string', default_value: 'hello' })
     );
@@ -79,13 +110,26 @@ describe('custom fields command', () => {
   it('should update a custom section field', async () => {
     mockClient.updateCustomSectionField.mockResolvedValue({ id: 1, name: 'updated' });
     await customFieldsCommand.parseAsync(['node', 'test', 'update', '1', '--name', 'updated']);
-    expect(mockClient.updateCustomSectionField).toHaveBeenCalledWith(1, expect.objectContaining({ name: 'updated' }));
+    expect(mockClient.updateCustomSectionField).toHaveBeenCalledWith(
+      1,
+      expect.objectContaining({ name: 'updated' })
+    );
   });
 
   it('should update with --type and --default-value', async () => {
     mockClient.updateCustomSectionField.mockResolvedValue({ id: 1 });
-    await customFieldsCommand.parseAsync(['node', 'test', 'update', '1', '--type', 'number', '--default-value', '42']);
-    expect(mockClient.updateCustomSectionField).toHaveBeenCalledWith(1,
+    await customFieldsCommand.parseAsync([
+      'node',
+      'test',
+      'update',
+      '1',
+      '--type',
+      'number',
+      '--default-value',
+      '42',
+    ]);
+    expect(mockClient.updateCustomSectionField).toHaveBeenCalledWith(
+      1,
       expect.objectContaining({ type: 'number', default_value: '42' })
     );
   });

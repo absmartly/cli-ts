@@ -2,7 +2,7 @@ import { resolveScreenshot } from '../template/screenshot.js';
 
 export async function parseScreenshotEntries(
   entries: string[],
-  variants?: Array<{ name: string }>,
+  variants?: Array<{ name: string }>
 ): Promise<Array<{ variant: number; file_upload: unknown }>> {
   const results: Array<{ variant: number; file_upload: unknown }> = [];
   for (const entry of entries) {
@@ -10,8 +10,8 @@ export async function parseScreenshotEntries(
     if (colonIdx === -1) {
       throw new Error(
         `Invalid --screenshot format: "${entry}"\n` +
-        `Expected: <variant_index>:<file_path_or_url>\n` +
-        `Example: --screenshot 0:./control.png --screenshot 1:https://example.com/treatment.png`
+          `Expected: <variant_index>:<file_path_or_url>\n` +
+          `Example: --screenshot 0:./control.png --screenshot 1:https://example.com/treatment.png`
       );
     }
     const variantIdx = parseInt(entry.substring(0, colonIdx), 10);

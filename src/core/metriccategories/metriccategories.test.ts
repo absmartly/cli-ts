@@ -74,7 +74,10 @@ describe('metriccategories', () => {
 
   it('should unarchive metric category', async () => {
     mockClient.archiveMetricCategory.mockResolvedValue(undefined);
-    const result = await archiveMetricCategory(mockClient as any, { id: 1 as any, unarchive: true });
+    const result = await archiveMetricCategory(mockClient as any, {
+      id: 1 as any,
+      unarchive: true,
+    });
     expect(mockClient.archiveMetricCategory).toHaveBeenCalledWith(1, false);
     expect(result.data).toEqual({ id: 1, archived: false });
   });

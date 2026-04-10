@@ -1,11 +1,20 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { goalsCommand } from './index.js';
-import { getAPIClientFromOptions, getGlobalOptions, printFormatted } from '../../lib/utils/api-helper.js';
+import {
+  getAPIClientFromOptions,
+  getGlobalOptions,
+  printFormatted,
+} from '../../lib/utils/api-helper.js';
 import { resetCommand } from '../../test/helpers/command-reset.js';
 
 vi.mock('../../lib/utils/api-helper.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../lib/utils/api-helper.js')>();
-  return { ...actual, getAPIClientFromOptions: vi.fn(), getGlobalOptions: vi.fn(), printFormatted: vi.fn() };
+  return {
+    ...actual,
+    getAPIClientFromOptions: vi.fn(),
+    getGlobalOptions: vi.fn(),
+    printFormatted: vi.fn(),
+  };
 });
 
 describe('goals access command', () => {
@@ -50,13 +59,33 @@ describe('goals access command', () => {
 
   it('should grant goal access user', async () => {
     mockClient.grantGoalAccessUser.mockResolvedValue(undefined);
-    await goalsCommand.parseAsync(['node', 'test', 'access', 'grant-user', '42', '--user', '1', '--role', '2']);
+    await goalsCommand.parseAsync([
+      'node',
+      'test',
+      'access',
+      'grant-user',
+      '42',
+      '--user',
+      '1',
+      '--role',
+      '2',
+    ]);
     expect(mockClient.grantGoalAccessUser).toHaveBeenCalledWith(42, 1, 2);
   });
 
   it('should revoke goal access user', async () => {
     mockClient.revokeGoalAccessUser.mockResolvedValue(undefined);
-    await goalsCommand.parseAsync(['node', 'test', 'access', 'revoke-user', '42', '--user', '1', '--role', '2']);
+    await goalsCommand.parseAsync([
+      'node',
+      'test',
+      'access',
+      'revoke-user',
+      '42',
+      '--user',
+      '1',
+      '--role',
+      '2',
+    ]);
     expect(mockClient.revokeGoalAccessUser).toHaveBeenCalledWith(42, 1, 2);
   });
 
@@ -69,13 +98,33 @@ describe('goals access command', () => {
 
   it('should grant goal access team', async () => {
     mockClient.grantGoalAccessTeam.mockResolvedValue(undefined);
-    await goalsCommand.parseAsync(['node', 'test', 'access', 'grant-team', '42', '--team', '5', '--role', '2']);
+    await goalsCommand.parseAsync([
+      'node',
+      'test',
+      'access',
+      'grant-team',
+      '42',
+      '--team',
+      '5',
+      '--role',
+      '2',
+    ]);
     expect(mockClient.grantGoalAccessTeam).toHaveBeenCalledWith(42, 5, 2);
   });
 
   it('should revoke goal access team', async () => {
     mockClient.revokeGoalAccessTeam.mockResolvedValue(undefined);
-    await goalsCommand.parseAsync(['node', 'test', 'access', 'revoke-team', '42', '--team', '5', '--role', '2']);
+    await goalsCommand.parseAsync([
+      'node',
+      'test',
+      'access',
+      'revoke-team',
+      '42',
+      '--team',
+      '5',
+      '--role',
+      '2',
+    ]);
     expect(mockClient.revokeGoalAccessTeam).toHaveBeenCalledWith(42, 5, 2);
   });
 });

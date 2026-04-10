@@ -102,7 +102,9 @@ export function experimentToInput(experiment: Experiment): ExperimentInput {
     : [];
 
   input.experiment_tags = Array.isArray(experiment.experiment_tags)
-    ? experiment.experiment_tags.map((t: Record<string, unknown>) => ({ experiment_tag_id: t.experiment_tag_id as number }))
+    ? experiment.experiment_tags.map((t: Record<string, unknown>) => ({
+        experiment_tag_id: t.experiment_tag_id as number,
+      }))
     : [];
 
   input.applications = Array.isArray(experiment.applications)
@@ -140,14 +142,14 @@ export function experimentToInput(experiment: Experiment): ExperimentInput {
       }))
     : [];
 
-  input.custom_section_field_values = transformCustomFieldValues(experiment.custom_section_field_values);
+  input.custom_section_field_values = transformCustomFieldValues(
+    experiment.custom_section_field_values
+  );
 
   return input as ExperimentInput;
 }
 
-function transformCustomFieldValues(
-  values: unknown
-): Record<string, CustomFieldValueInput> {
+function transformCustomFieldValues(values: unknown): Record<string, CustomFieldValueInput> {
   if (!values) return {};
 
   if (!Array.isArray(values)) {
@@ -157,9 +159,7 @@ function transformCustomFieldValues(
   const result: Record<string, CustomFieldValueInput> = {};
   for (const v of values) {
     const entry = v as Record<string, unknown>;
-    const key = String(
-      entry.experiment_custom_section_field_id ?? entry.field_id ?? entry.id
-    );
+    const key = String(entry.experiment_custom_section_field_id ?? entry.field_id ?? entry.id);
     const input: CustomFieldValueInput = {
       type: entry.type as string,
       value: entry.value as string,
@@ -168,7 +168,8 @@ function transformCustomFieldValues(
       input.experiment_id = entry.experiment_id as number;
     }
     if (entry.experiment_custom_section_field_id ?? entry.field_id) {
-      input.experiment_custom_section_field_id = (entry.experiment_custom_section_field_id ?? entry.field_id) as number;
+      input.experiment_custom_section_field_id = (entry.experiment_custom_section_field_id ??
+        entry.field_id) as number;
     }
     result[key] = input;
   }

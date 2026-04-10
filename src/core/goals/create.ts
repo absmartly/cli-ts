@@ -8,7 +8,7 @@ export interface CreateGoalParams {
 
 export async function createGoal(
   client: APIClient,
-  params: CreateGoalParams,
+  params: CreateGoalParams
 ): Promise<CommandResult<{ id: number }>> {
   const payload: Record<string, unknown> = { name: params.name };
   if (params.description !== undefined) payload.description = params.description;

@@ -1,11 +1,20 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { metricsCommand } from './index.js';
-import { getAPIClientFromOptions, getGlobalOptions, printFormatted } from '../../lib/utils/api-helper.js';
+import {
+  getAPIClientFromOptions,
+  getGlobalOptions,
+  printFormatted,
+} from '../../lib/utils/api-helper.js';
 import { resetCommand } from '../../test/helpers/command-reset.js';
 
 vi.mock('../../lib/utils/api-helper.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../lib/utils/api-helper.js')>();
-  return { ...actual, getAPIClientFromOptions: vi.fn(), getGlobalOptions: vi.fn(), printFormatted: vi.fn() };
+  return {
+    ...actual,
+    getAPIClientFromOptions: vi.fn(),
+    getGlobalOptions: vi.fn(),
+    printFormatted: vi.fn(),
+  };
 });
 
 describe('metrics access command', () => {
@@ -50,13 +59,33 @@ describe('metrics access command', () => {
 
   it('should grant metric access user', async () => {
     mockClient.grantMetricAccessUser.mockResolvedValue(undefined);
-    await metricsCommand.parseAsync(['node', 'test', 'access', 'grant-user', '42', '--user', '1', '--role', '2']);
+    await metricsCommand.parseAsync([
+      'node',
+      'test',
+      'access',
+      'grant-user',
+      '42',
+      '--user',
+      '1',
+      '--role',
+      '2',
+    ]);
     expect(mockClient.grantMetricAccessUser).toHaveBeenCalledWith(42, 1, 2);
   });
 
   it('should revoke metric access user', async () => {
     mockClient.revokeMetricAccessUser.mockResolvedValue(undefined);
-    await metricsCommand.parseAsync(['node', 'test', 'access', 'revoke-user', '42', '--user', '1', '--role', '2']);
+    await metricsCommand.parseAsync([
+      'node',
+      'test',
+      'access',
+      'revoke-user',
+      '42',
+      '--user',
+      '1',
+      '--role',
+      '2',
+    ]);
     expect(mockClient.revokeMetricAccessUser).toHaveBeenCalledWith(42, 1, 2);
   });
 
@@ -69,13 +98,33 @@ describe('metrics access command', () => {
 
   it('should grant metric access team', async () => {
     mockClient.grantMetricAccessTeam.mockResolvedValue(undefined);
-    await metricsCommand.parseAsync(['node', 'test', 'access', 'grant-team', '42', '--team', '5', '--role', '2']);
+    await metricsCommand.parseAsync([
+      'node',
+      'test',
+      'access',
+      'grant-team',
+      '42',
+      '--team',
+      '5',
+      '--role',
+      '2',
+    ]);
     expect(mockClient.grantMetricAccessTeam).toHaveBeenCalledWith(42, 5, 2);
   });
 
   it('should revoke metric access team', async () => {
     mockClient.revokeMetricAccessTeam.mockResolvedValue(undefined);
-    await metricsCommand.parseAsync(['node', 'test', 'access', 'revoke-team', '42', '--team', '5', '--role', '2']);
+    await metricsCommand.parseAsync([
+      'node',
+      'test',
+      'access',
+      'revoke-team',
+      '42',
+      '--team',
+      '5',
+      '--role',
+      '2',
+    ]);
     expect(mockClient.revokeMetricAccessTeam).toHaveBeenCalledWith(42, 5, 2);
   });
 });

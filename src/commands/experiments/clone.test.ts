@@ -1,6 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { cloneCommand } from './clone.js';
-import { getAPIClientFromOptions, getGlobalOptions, resolveEndpoint, resolveAPIKey } from '../../lib/utils/api-helper.js';
+import {
+  getAPIClientFromOptions,
+  getGlobalOptions,
+  resolveEndpoint,
+  resolveAPIKey,
+} from '../../lib/utils/api-helper.js';
 import { resetCommand } from '../../test/helpers/command-reset.js';
 
 vi.mock('../../lib/utils/api-helper.js', async (importOriginal) => {
@@ -106,13 +111,11 @@ describe('clone command', () => {
   });
 
   it('fails without --name', async () => {
-    await expect(
-      cloneCommand.parseAsync(['node', 'test', '100'])
-    ).rejects.toThrow('process.exit');
+    await expect(cloneCommand.parseAsync(['node', 'test', '100'])).rejects.toThrow('process.exit');
 
     expect(consoleErrorSpy).toHaveBeenCalledWith(
       expect.anything(),
-      expect.stringContaining('--name is required'),
+      expect.stringContaining('--name is required')
     );
     expect(mockClient.createExperiment).not.toHaveBeenCalled();
   });

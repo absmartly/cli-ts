@@ -44,9 +44,13 @@ describe('APIClient - Admin Resources', () => {
     it.skipIf(isLiveMode)('should update role and return unwrapped entity', async () => {
       server.use(
         http.put(`${BASE_URL}/roles/:id`, async ({ params, request }) => {
-          const body = await request.json() as Record<string, unknown>;
+          const body = (await request.json()) as Record<string, unknown>;
           const data = (body as any).data || body;
-          return HttpResponse.json({ ok: true, role: { id: Number(params.id), ...data }, errors: [] });
+          return HttpResponse.json({
+            ok: true,
+            role: { id: Number(params.id), ...data },
+            errors: [],
+          });
         })
       );
       const role = await client.updateRole(1, { description: 'Updated' });
@@ -97,7 +101,10 @@ describe('APIClient - Admin Resources', () => {
     });
 
     it('should create API key and return unwrapped entity', async () => {
-      const key = await client.createApiKey({ name: `Test Key ${Date.now()}`, permissions: 'read' });
+      const key = await client.createApiKey({
+        name: `Test Key ${Date.now()}`,
+        permissions: 'read',
+      });
       expect(key.id).toBeDefined();
       expect(key).toHaveProperty('name');
       expect(key).not.toHaveProperty('ok');
@@ -106,9 +113,13 @@ describe('APIClient - Admin Resources', () => {
     it.skipIf(isLiveMode)('should update API key and return unwrapped entity', async () => {
       server.use(
         http.put(`${BASE_URL}/api_keys/:id`, async ({ params, request }) => {
-          const body = await request.json() as Record<string, unknown>;
+          const body = (await request.json()) as Record<string, unknown>;
           const data = (body as any).data || body;
-          return HttpResponse.json({ ok: true, api_key: { id: Number(params.id), ...data }, errors: [] });
+          return HttpResponse.json({
+            ok: true,
+            api_key: { id: Number(params.id), ...data },
+            errors: [],
+          });
         })
       );
       const key = await client.updateApiKey(1, { description: 'Updated' });
@@ -171,9 +182,13 @@ describe('APIClient - Admin Resources', () => {
     it.skipIf(isLiveMode)('should update webhook and return unwrapped entity', async () => {
       server.use(
         http.put(`${BASE_URL}/webhooks/:id`, async ({ params, request }) => {
-          const body = await request.json() as Record<string, unknown>;
+          const body = (await request.json()) as Record<string, unknown>;
           const data = (body as any).data || body;
-          return HttpResponse.json({ ok: true, webhook: { id: Number(params.id), ...data }, errors: [] });
+          return HttpResponse.json({
+            ok: true,
+            webhook: { id: Number(params.id), ...data },
+            errors: [],
+          });
         })
       );
       const webhook = await client.updateWebhook(1, { enabled: false });

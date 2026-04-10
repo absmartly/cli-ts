@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { validateScheduleParams, createScheduledAction, deleteScheduledAction, VALID_SCHEDULE_ACTIONS } from './schedule.js';
+import {
+  validateScheduleParams,
+  createScheduledAction,
+  deleteScheduledAction,
+  VALID_SCHEDULE_ACTIONS,
+} from './schedule.js';
 import type { ExperimentId, ScheduledActionId } from '../../lib/api/branded-types.js';
 
 const id = (n: number) => n as ExperimentId;
@@ -21,39 +26,43 @@ describe('schedule', () => {
 
     it('throws for invalid action', () => {
       expect(() =>
-        validateScheduleParams({ experimentId: id(1), action: 'invalid', at: futureDate }),
+        validateScheduleParams({ experimentId: id(1), action: 'invalid', at: futureDate })
       ).toThrow('Invalid action: "invalid"');
     });
 
     it('accepts all valid actions', () => {
       for (const action of VALID_SCHEDULE_ACTIONS) {
         expect(() =>
-          validateScheduleParams({ experimentId: id(1), action, at: futureDate }),
+          validateScheduleParams({ experimentId: id(1), action, at: futureDate })
         ).not.toThrow();
       }
     });
 
     it('throws when timezone is missing', () => {
       expect(() =>
-        validateScheduleParams({ experimentId: id(1), action: 'start', at: '2099-12-31T10:00:00' }),
+        validateScheduleParams({ experimentId: id(1), action: 'start', at: '2099-12-31T10:00:00' })
       ).toThrow('Missing timezone');
     });
 
     it('accepts timezone offset format', () => {
       expect(() =>
-        validateScheduleParams({ experimentId: id(1), action: 'start', at: '2099-12-31T10:00:00+02:00' }),
+        validateScheduleParams({
+          experimentId: id(1),
+          action: 'start',
+          at: '2099-12-31T10:00:00+02:00',
+        })
       ).not.toThrow();
     });
 
     it('throws for invalid datetime', () => {
       expect(() =>
-        validateScheduleParams({ experimentId: id(1), action: 'start', at: 'not-a-dateZ' }),
+        validateScheduleParams({ experimentId: id(1), action: 'start', at: 'not-a-dateZ' })
       ).toThrow('Invalid datetime');
     });
 
     it('throws when scheduled time is in the past', () => {
       expect(() =>
-        validateScheduleParams({ experimentId: id(1), action: 'start', at: '2020-01-01T00:00:00Z' }),
+        validateScheduleParams({ experimentId: id(1), action: 'start', at: '2020-01-01T00:00:00Z' })
       ).toThrow('must be in the future');
     });
   });
@@ -67,7 +76,11 @@ describe('schedule', () => {
         note: 'schedule it',
       });
       expect(mockClient.createScheduledAction).toHaveBeenCalledWith(
-        id(5), 'start', '2099-06-01T10:00:00.000Z', 'schedule it', undefined,
+        id(5),
+        'start',
+        '2099-06-01T10:00:00.000Z',
+        'schedule it',
+        undefined
       );
       expect(result.data.experimentId).toBe(id(5));
       expect(result.data.actionId).toBe(99);
@@ -80,7 +93,11 @@ describe('schedule', () => {
         at: '2099-01-01T00:00:00Z',
       });
       expect(mockClient.createScheduledAction).toHaveBeenCalledWith(
-        id(1), 'stop', expect.any(String), 'Scheduled via CLI', undefined,
+        id(1),
+        'stop',
+        expect.any(String),
+        'Scheduled via CLI',
+        undefined
       );
     });
 
@@ -92,7 +109,11 @@ describe('schedule', () => {
         reason: 'testing',
       });
       expect(mockClient.createScheduledAction).toHaveBeenCalledWith(
-        id(1), 'stop', expect.any(String), 'Scheduled via CLI', 'testing',
+        id(1),
+        'stop',
+        expect.any(String),
+        'Scheduled via CLI',
+        'testing'
       );
     });
   });

@@ -1,7 +1,11 @@
 import type { APIClient } from '../../api-client/api-client.js';
 import type { CommandResult } from '../types.js';
 import type { SegmentId } from '../../lib/api/branded-types.js';
-import { summarizeSegmentRow, applyShowExclude, summarizeSegment } from '../../api-client/entity-summary.js';
+import {
+  summarizeSegmentRow,
+  applyShowExclude,
+  summarizeSegment,
+} from '../../api-client/entity-summary.js';
 import { requireAtLeastOneField } from '../../lib/utils/validators.js';
 
 export interface ListSegmentsParams {

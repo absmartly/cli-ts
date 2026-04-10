@@ -1,11 +1,20 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { updateSchedulesCommand } from './index.js';
-import { getAPIClientFromOptions, getGlobalOptions, printFormatted } from '../../lib/utils/api-helper.js';
+import {
+  getAPIClientFromOptions,
+  getGlobalOptions,
+  printFormatted,
+} from '../../lib/utils/api-helper.js';
 import { resetCommand } from '../../test/helpers/command-reset.js';
 
 vi.mock('../../lib/utils/api-helper.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../lib/utils/api-helper.js')>();
-  return { ...actual, getAPIClientFromOptions: vi.fn(), getGlobalOptions: vi.fn(), printFormatted: vi.fn() };
+  return {
+    ...actual,
+    getAPIClientFromOptions: vi.fn(),
+    getGlobalOptions: vi.fn(),
+    printFormatted: vi.fn(),
+  };
 });
 
 describe('update-schedules command', () => {
@@ -55,13 +64,26 @@ describe('update-schedules command', () => {
   });
 
   it('should create an update schedule', async () => {
-    await updateSchedulesCommand.parseAsync(['node', 'test', 'create', '--config', '{"name":"daily"}']);
+    await updateSchedulesCommand.parseAsync([
+      'node',
+      'test',
+      'create',
+      '--config',
+      '{"name":"daily"}',
+    ]);
 
     expect(mockClient.createUpdateSchedule).toHaveBeenCalledWith({ name: 'daily' });
   });
 
   it('should update an update schedule', async () => {
-    await updateSchedulesCommand.parseAsync(['node', 'test', 'update', '1', '--config', '{"name":"weekly"}']);
+    await updateSchedulesCommand.parseAsync([
+      'node',
+      'test',
+      'update',
+      '1',
+      '--config',
+      '{"name":"weekly"}',
+    ]);
 
     expect(mockClient.updateUpdateSchedule).toHaveBeenCalledWith(1, { name: 'weekly' });
   });

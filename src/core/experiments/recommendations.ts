@@ -9,7 +9,7 @@ export interface ListRecommendedActionsParams {
 
 export async function listRecommendedActions(
   client: APIClient,
-  params: ListRecommendedActionsParams,
+  params: ListRecommendedActionsParams
 ): Promise<CommandResult<unknown[]>> {
   const actions = await client.listRecommendedActions(params.experimentId);
   return { data: actions as unknown[] };
@@ -22,7 +22,7 @@ export interface DismissRecommendedActionParams {
 
 export async function dismissRecommendedAction(
   client: APIClient,
-  params: DismissRecommendedActionParams,
+  params: DismissRecommendedActionParams
 ): Promise<CommandResult<{ actionId: RecommendedActionId }>> {
   await client.dismissRecommendedAction(params.actionId);
   return { data: { actionId: params.actionId } };

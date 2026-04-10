@@ -1,11 +1,20 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { segmentsCommand } from './index.js';
-import { getAPIClientFromOptions, getGlobalOptions, printFormatted } from '../../lib/utils/api-helper.js';
+import {
+  getAPIClientFromOptions,
+  getGlobalOptions,
+  printFormatted,
+} from '../../lib/utils/api-helper.js';
 import { resetCommand } from '../../test/helpers/command-reset.js';
 
 vi.mock('../../lib/utils/api-helper.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../lib/utils/api-helper.js')>();
-  return { ...actual, getAPIClientFromOptions: vi.fn(), getGlobalOptions: vi.fn(), printFormatted: vi.fn() };
+  return {
+    ...actual,
+    getAPIClientFromOptions: vi.fn(),
+    getGlobalOptions: vi.fn(),
+    printFormatted: vi.fn(),
+  };
 });
 
 describe('segments command', () => {
@@ -58,7 +67,14 @@ describe('segments command', () => {
   });
 
   it('should create a segment', async () => {
-    await segmentsCommand.parseAsync(['node', 'test', 'create', 'my-seg', '--attribute', 'user_id']);
+    await segmentsCommand.parseAsync([
+      'node',
+      'test',
+      'create',
+      'my-seg',
+      '--attribute',
+      'user_id',
+    ]);
 
     expect(mockClient.createSegment).toHaveBeenCalledWith({
       name: 'my-seg',

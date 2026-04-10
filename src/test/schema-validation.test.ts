@@ -41,14 +41,17 @@ async function expectSchemaValid(
   endpointPath: string,
   method: string,
   data: unknown,
-  statusCode: number | string = 200,
+  statusCode: number | string = 200
 ) {
   const schema = await getSchemaForEndpoint(endpointPath, method, statusCode);
-  expect(schema, `No schema found for ${method.toUpperCase()} ${endpointPath} ${statusCode}`).not.toBeNull();
+  expect(
+    schema,
+    `No schema found for ${method.toUpperCase()} ${endpointPath} ${statusCode}`
+  ).not.toBeNull();
   const result = await validateAgainstSchema(data, schema!);
   if (!result.valid) {
     const errors = (result.errors as ValidationError[] | null)
-      ?.map(e => `${e.instancePath || '/'}: ${e.message}`)
+      ?.map((e) => `${e.instancePath || '/'}: ${e.message}`)
       .join('\n');
     expect.fail(`Schema validation failed for ${method.toUpperCase()} ${endpointPath}:\n${errors}`);
   }
@@ -203,17 +206,15 @@ describe('API contract validation', () => {
   });
 
   describe('request payload validation (strict)', () => {
-    async function expectStrictRequestValid(
-      endpointPath: string,
-      method: string,
-      data: unknown,
-    ) {
+    async function expectStrictRequestValid(endpointPath: string, method: string, data: unknown) {
       const result = await validateRequestStrict(endpointPath, method, data);
       if (!result.valid) {
         const errors = result.errors
-          .map(e => `${e.path || '/'}: [${e.keyword}] ${e.message}`)
+          .map((e) => `${e.path || '/'}: [${e.keyword}] ${e.message}`)
           .join('\n');
-        expect.fail(`Strict request validation failed for ${method.toUpperCase()} ${endpointPath}:\n${errors}`);
+        expect.fail(
+          `Strict request validation failed for ${method.toUpperCase()} ${endpointPath}:\n${errors}`
+        );
       }
     }
 
@@ -221,11 +222,11 @@ describe('API contract validation', () => {
       endpointPath: string,
       method: string,
       data: unknown,
-      expectedKeyword: string,
+      expectedKeyword: string
     ) {
       const result = await validateRequestStrict(endpointPath, method, data);
       expect(result.valid).toBe(false);
-      expect(result.errors.some(e => e.keyword === expectedKeyword)).toBe(true);
+      expect(result.errors.some((e) => e.keyword === expectedKeyword)).toBe(true);
     }
 
     it('should accept valid experiment create payload', async () => {
@@ -249,17 +250,27 @@ describe('API contract validation', () => {
     });
 
     it('should reject experiment payload with unknown properties', async () => {
-      await expectStrictRequestInvalid('/experiments', 'post', {
-        name: 'test_exp',
-        traffic: 100,
-      }, 'additionalProperties');
+      await expectStrictRequestInvalid(
+        '/experiments',
+        'post',
+        {
+          name: 'test_exp',
+          traffic: 100,
+        },
+        'additionalProperties'
+      );
     });
 
     it('should reject experiment payload with typo in field name', async () => {
-      await expectStrictRequestInvalid('/experiments', 'post', {
-        name: 'test_exp',
-        display_Name: 'Wrong Case',
-      }, 'additionalProperties');
+      await expectStrictRequestInvalid(
+        '/experiments',
+        'post',
+        {
+          name: 'test_exp',
+          display_Name: 'Wrong Case',
+        },
+        'additionalProperties'
+      );
     });
   });
 });

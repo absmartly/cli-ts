@@ -1,11 +1,20 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { metricCategoriesCommand } from './index.js';
-import { getAPIClientFromOptions, getGlobalOptions, printFormatted } from '../../lib/utils/api-helper.js';
+import {
+  getAPIClientFromOptions,
+  getGlobalOptions,
+  printFormatted,
+} from '../../lib/utils/api-helper.js';
 import { resetCommand } from '../../test/helpers/command-reset.js';
 
 vi.mock('../../lib/utils/api-helper.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../lib/utils/api-helper.js')>();
-  return { ...actual, getAPIClientFromOptions: vi.fn(), getGlobalOptions: vi.fn(), printFormatted: vi.fn() };
+  return {
+    ...actual,
+    getAPIClientFromOptions: vi.fn(),
+    getGlobalOptions: vi.fn(),
+    printFormatted: vi.fn(),
+  };
 });
 
 describe('metric-categories command', () => {
@@ -55,9 +64,20 @@ describe('metric-categories command', () => {
   });
 
   it('should create a metric category', async () => {
-    await metricCategoriesCommand.parseAsync(['node', 'test', 'create', '--name', 'engagement', '--color', '#FF0000']);
+    await metricCategoriesCommand.parseAsync([
+      'node',
+      'test',
+      'create',
+      '--name',
+      'engagement',
+      '--color',
+      '#FF0000',
+    ]);
 
-    expect(mockClient.createMetricCategory).toHaveBeenCalledWith({ name: 'engagement', color: '#FF0000' });
+    expect(mockClient.createMetricCategory).toHaveBeenCalledWith({
+      name: 'engagement',
+      color: '#FF0000',
+    });
     const output = consoleSpy.mock.calls.flat().join(' ');
     expect(output).toContain('created');
   });

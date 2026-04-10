@@ -134,7 +134,11 @@ describe.skipIf(isLiveMode)('APIClient - Error Handling', () => {
           if (attempts < 2) {
             return HttpResponse.json({ error: 'Server error' }, { status: 500 });
           }
-          return HttpResponse.json({ ok: true, experiment: { id: 123, name: 'updated' }, errors: [] });
+          return HttpResponse.json({
+            ok: true,
+            experiment: { id: 123, name: 'updated' },
+            errors: [],
+          });
         })
       );
 
@@ -222,9 +226,7 @@ describe.skipIf(isLiveMode)('APIClient - Error Handling', () => {
 
   describe('Network Errors', () => {
     it('should provide friendly message on connection refused', async () => {
-      server.use(
-        http.all('http://localhost:1/*', () => passthrough())
-      );
+      server.use(http.all('http://localhost:1/*', () => passthrough()));
       const badClient = createAPIClient('http://localhost:1', 'key');
       await expect(badClient.listExperiments()).rejects.toThrow(/Cannot connect/);
     });
@@ -272,10 +274,7 @@ describe.skipIf(isLiveMode)('APIClient - Error Handling', () => {
     it('should handle 429 without retry-after header', async () => {
       server.use(
         http.get(`${BASE_URL}/experiments`, () => {
-          return HttpResponse.json(
-            { error: 'Rate limit exceeded' },
-            { status: 429 }
-          );
+          return HttpResponse.json({ error: 'Rate limit exceeded' }, { status: 429 });
         })
       );
 

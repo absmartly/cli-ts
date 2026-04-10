@@ -15,7 +15,7 @@ export interface StartExperimentResult {
 
 export async function startExperiment(
   client: APIClient,
-  params: StartExperimentParams,
+  params: StartExperimentParams
 ): Promise<CommandResult<StartExperimentResult>> {
   const experiment = await client.getExperiment(params.experimentId);
   if (experiment.state === 'created') {

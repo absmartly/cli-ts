@@ -1,11 +1,20 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { metricsCommand } from './index.js';
-import { getAPIClientFromOptions, getGlobalOptions, printFormatted } from '../../lib/utils/api-helper.js';
+import {
+  getAPIClientFromOptions,
+  getGlobalOptions,
+  printFormatted,
+} from '../../lib/utils/api-helper.js';
 import { resetCommand } from '../../test/helpers/command-reset.js';
 
 vi.mock('../../lib/utils/api-helper.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../lib/utils/api-helper.js')>();
-  return { ...actual, getAPIClientFromOptions: vi.fn(), getGlobalOptions: vi.fn(), printFormatted: vi.fn() };
+  return {
+    ...actual,
+    getAPIClientFromOptions: vi.fn(),
+    getGlobalOptions: vi.fn(),
+    printFormatted: vi.fn(),
+  };
 });
 
 describe('metrics review command', () => {
@@ -69,13 +78,30 @@ describe('metrics review command', () => {
 
   it('should add metric review comment', async () => {
     mockClient.addMetricReviewComment.mockResolvedValue(undefined);
-    await metricsCommand.parseAsync(['node', 'test', 'review', 'comment', '42', '--message', 'looks good']);
+    await metricsCommand.parseAsync([
+      'node',
+      'test',
+      'review',
+      'comment',
+      '42',
+      '--message',
+      'looks good',
+    ]);
     expect(mockClient.addMetricReviewComment).toHaveBeenCalledWith(42, 'looks good');
   });
 
   it('should reply to metric review comment', async () => {
     mockClient.replyToMetricReviewComment.mockResolvedValue(undefined);
-    await metricsCommand.parseAsync(['node', 'test', 'review', 'reply', '42', '5', '--message', 'thanks']);
+    await metricsCommand.parseAsync([
+      'node',
+      'test',
+      'review',
+      'reply',
+      '42',
+      '5',
+      '--message',
+      'thanks',
+    ]);
     expect(mockClient.replyToMetricReviewComment).toHaveBeenCalledWith(42, 5, 'thanks');
   });
 });

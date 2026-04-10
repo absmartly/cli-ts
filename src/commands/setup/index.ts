@@ -14,16 +14,18 @@ export const setupCommand = new Command('setup')
   .option('--profile <name>', 'profile name (default: "default")')
   .option('--app <name>', 'default application name')
   .option('--env <name>', 'default environment name')
-  .action(withErrorHandling(async (_options, command) => {
-    const options = command.optsWithGlobals();
-    const hasInlineArgs = options.apiKey && options.endpoint;
+  .action(
+    withErrorHandling(async (_options, command) => {
+      const options = command.optsWithGlobals();
+      const hasInlineArgs = options.apiKey && options.endpoint;
 
-    if (hasInlineArgs) {
-      await setupNonInteractive(options);
-    } else {
-      await setupInteractive(options);
-    }
-  }));
+      if (hasInlineArgs) {
+        await setupNonInteractive(options);
+      } else {
+        await setupInteractive(options);
+      }
+    })
+  );
 
 async function setupNonInteractive(options: Record<string, string>) {
   const profileName = options.profile || 'default';
@@ -68,13 +70,13 @@ async function setupInteractive(options: Record<string, string>) {
     console.log(chalk.bold('\nABSmartly CLI Setup\n'));
     console.log('This wizard will help you configure the ABSmartly CLI.\n');
 
-    const apiKey = options.apiKey || await rl.question('API Key: ');
+    const apiKey = options.apiKey || (await rl.question('API Key: '));
     if (!apiKey) {
       console.log(chalk.red('API key is required'));
       process.exit(1);
     }
 
-    const endpoint = options.endpoint || await rl.question('API Endpoint: ');
+    const endpoint = options.endpoint || (await rl.question('API Endpoint: '));
     if (!endpoint) {
       console.log(chalk.red('API endpoint is required'));
       process.exit(1);

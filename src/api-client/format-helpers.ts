@@ -25,7 +25,12 @@ export function colorByEffect(text: string, impact: number, effect?: string): st
   return chalk.gray(text);
 }
 
-export function colorCIInterval(bar: string, lower: number | null, upper: number | null, effect?: string): string {
+export function colorCIInterval(
+  bar: string,
+  lower: number | null,
+  upper: number | null,
+  effect?: string
+): string {
   if (!bar || lower === null || upper === null) return bar;
   if (Math.sign(lower) !== Math.sign(upper)) return bar;
   const direction = lower > 0;
@@ -36,15 +41,19 @@ export function colorCIInterval(bar: string, lower: number | null, upper: number
     const expected = effect === 'positive';
     color = direction === expected ? chalk.green : chalk.red;
   }
-  return bar.replace(/[═●]+/g, match => color(match));
+  return bar.replace(/[═●]+/g, (match) => color(match));
 }
 
 export function formatImpactWithCI(
-  impact: number, lower: number | null, upper: number | null,
-  options?: { effect?: string; ciBar?: boolean },
+  impact: number,
+  lower: number | null,
+  upper: number | null,
+  options?: { effect?: string; ciBar?: boolean }
 ): string {
   const crossesZero = lower !== null && upper !== null && Math.sign(lower) !== Math.sign(upper);
-  const pctText = crossesZero ? formatPct(impact) : colorByEffect(formatPct(impact), impact, options?.effect);
+  const pctText = crossesZero
+    ? formatPct(impact)
+    : colorByEffect(formatPct(impact), impact, options?.effect);
 
   if (lower === null || upper === null) return pctText;
 
@@ -77,7 +86,7 @@ export function formatImpact(exp: Record<string, unknown>, ciBar = false): strin
   if (!previewVariants || previewVariants.length === 0) return '';
 
   const confidenceVariant = (exp.confidence_variant as number) ?? 1;
-  const result = previewVariants.find(v => v.variant === confidenceVariant);
+  const result = previewVariants.find((v) => v.variant === confidenceVariant);
   if (!result) return '';
 
   const impact = result.impact as number | null;
@@ -95,7 +104,8 @@ export function renderCIBar(lower: number, upper: number, impact: number): strin
   const min = -range;
   const max = range;
 
-  const toPos = (v: number) => Math.max(0, Math.min(CI_WIDTH - 1, Math.round(((v - min) / (max - min)) * (CI_WIDTH - 1))));
+  const toPos = (v: number) =>
+    Math.max(0, Math.min(CI_WIDTH - 1, Math.round(((v - min) / (max - min)) * (CI_WIDTH - 1))));
 
   const zeroPos = toPos(0);
   const lowerPos = toPos(lower);
@@ -124,7 +134,7 @@ export function formatConfidence(exp: Record<string, unknown>): string {
   if (!previewVariants || previewVariants.length === 0) return '';
 
   const confidenceVariant = (exp.confidence_variant as number) ?? 1;
-  const result = previewVariants.find(v => v.variant === confidenceVariant);
+  const result = previewVariants.find((v) => v.variant === confidenceVariant);
   if (!result) return '';
 
   const pvalue = result.pvalue as number | null;
@@ -164,7 +174,8 @@ export function formatConfidenceValue(pvalue: number): string {
 
 export function formatOwnerName(owner: Record<string, unknown>): string {
   const user = owner.user as Record<string, unknown> | undefined;
-  if (user) return `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim() || `user ${owner.user_id}`;
+  if (user)
+    return `${user.first_name ?? ''} ${user.last_name ?? ''}`.trim() || `user ${owner.user_id}`;
   return `user ${owner.user_id}`;
 }
 

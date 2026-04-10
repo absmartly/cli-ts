@@ -8,7 +8,7 @@ export interface GetUserParams {
 
 export async function getUser(
   client: APIClient,
-  params: GetUserParams,
+  params: GetUserParams
 ): Promise<CommandResult<unknown>> {
   const data = await client.getUser(params.id);
   return { data };

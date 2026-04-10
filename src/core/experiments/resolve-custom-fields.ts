@@ -7,11 +7,12 @@ export interface ResolveCustomFieldValuesParams {
 
 export async function resolveCustomFieldValues(
   client: APIClient,
-  params: ResolveCustomFieldValuesParams,
+  params: ResolveCustomFieldValuesParams
 ): Promise<Record<string, { type: string; value: string }>> {
   const allFields = await client.listCustomSectionFields();
   const relevant = allFields.filter(
-    f => !f.archived && f.custom_section?.type === params.defaultType && !f.custom_section?.archived,
+    (f) =>
+      !f.archived && f.custom_section?.type === params.defaultType && !f.custom_section?.archived
   );
 
   const fieldValues: Record<string, { type: string; value: string }> = {};

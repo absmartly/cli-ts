@@ -27,16 +27,19 @@ export interface CloneExperimentResult {
 
 export async function buildClonePayload(
   client: APIClient,
-  params: CloneExperimentParams,
+  params: CloneExperimentParams
 ): Promise<{ payload: Partial<Experiment>; warnings: string[] }> {
   const experiment = await client.getExperiment(params.experimentId);
-  const hasScreenshots = ((experiment.variant_screenshots as unknown[] | undefined)?.length ?? 0) > 0;
+  const hasScreenshots =
+    ((experiment.variant_screenshots as unknown[] | undefined)?.length ?? 0) > 0;
   const md = await experimentToMarkdown(experiment, {
     apiEndpoint: params.apiEndpoint,
-    ...(hasScreenshots && params.apiKey ? {
-      apiKey: params.apiKey,
-      screenshotsDir: '.screenshots',
-    } : {}),
+    ...(hasScreenshots && params.apiKey
+      ? {
+          apiKey: params.apiKey,
+          screenshotsDir: '.screenshots',
+        }
+      : {}),
   });
 
   let template = parseExperimentMarkdown(md);
@@ -57,7 +60,7 @@ export async function buildClonePayload(
 export async function cloneExperiment(
   client: APIClient,
   payload: Record<string, unknown>,
-  sourceId: ExperimentId,
+  sourceId: ExperimentId
 ): Promise<CommandResult<CloneExperimentResult>> {
   const created = await client.createExperiment(payload);
   return {

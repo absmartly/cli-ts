@@ -1,11 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import {
-  listApiKeys,
-  getApiKey,
-  createApiKey,
-  updateApiKey,
-  deleteApiKey,
-} from './apikeys.js';
+import { listApiKeys, getApiKey, createApiKey, updateApiKey, deleteApiKey } from './apikeys.js';
 
 const mockClient = {
   listApiKeys: vi.fn(),

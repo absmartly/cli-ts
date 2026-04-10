@@ -6,7 +6,7 @@ describe('watch command', () => {
     expect(watchCommand).toBeDefined();
     expect(watchCommand.name()).toBe('watch');
 
-    const intervalOption = watchCommand.options.find(o => o.long === '--interval');
+    const intervalOption = watchCommand.options.find((o) => o.long === '--interval');
     expect(intervalOption).toBeDefined();
     expect(intervalOption!.defaultValue).toBe('60');
   });

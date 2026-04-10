@@ -135,9 +135,9 @@ describe('updateUserApiKey', () => {
   });
 
   it('should throw when no update fields', async () => {
-    await expect(
-      updateUserApiKey(mockClient, { userRef: '1', keyId: 5 })
-    ).rejects.toThrow('At least one update field is required');
+    await expect(updateUserApiKey(mockClient, { userRef: '1', keyId: 5 })).rejects.toThrow(
+      'At least one update field is required'
+    );
   });
 });
 

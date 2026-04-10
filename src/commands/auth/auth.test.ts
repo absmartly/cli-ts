@@ -2,14 +2,25 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { authCommand } from './index.js';
 import * as config from '../../lib/config/config.js';
 import * as keyring from '../../lib/config/keyring.js';
-import { getAPIClientFromOptions, getGlobalOptions, printFormatted } from '../../lib/utils/api-helper.js';
+import {
+  getAPIClientFromOptions,
+  getGlobalOptions,
+  printFormatted,
+} from '../../lib/utils/api-helper.js';
 import { resetCommand } from '../../test/helpers/command-reset.js';
 
 vi.mock('../../lib/config/config.js');
 vi.mock('../../lib/config/keyring.js');
 vi.mock('../../lib/utils/api-helper.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../lib/utils/api-helper.js')>();
-  return { ...actual, getAPIClientFromOptions: vi.fn(), getGlobalOptions: vi.fn(), printFormatted: vi.fn(), resolveAPIKey: vi.fn().mockResolvedValue('test-key'), resolveEndpoint: vi.fn().mockReturnValue('https://api.example.com/v1') };
+  return {
+    ...actual,
+    getAPIClientFromOptions: vi.fn(),
+    getGlobalOptions: vi.fn(),
+    printFormatted: vi.fn(),
+    resolveAPIKey: vi.fn().mockResolvedValue('test-key'),
+    resolveEndpoint: vi.fn().mockReturnValue('https://api.example.com/v1'),
+  };
 });
 vi.mock('../../lib/auth/oauth.js');
 vi.mock('@inquirer/prompts');
@@ -85,13 +96,17 @@ describe('auth API key management', () => {
   let processExitSpy: ReturnType<typeof vi.spyOn>;
 
   const mockClient = {
-    getCurrentUser: vi.fn().mockResolvedValue({ id: 1, email: 'test@test.com', first_name: 'Test', last_name: 'User' }),
+    getCurrentUser: vi
+      .fn()
+      .mockResolvedValue({ id: 1, email: 'test@test.com', first_name: 'Test', last_name: 'User' }),
     listUserApiKeys: vi.fn().mockResolvedValue([{ id: 1, name: 'key1' }]),
     getUserApiKey: vi.fn().mockResolvedValue({ id: 1, name: 'key1' }),
     createUserApiKey: vi.fn().mockResolvedValue({ id: 2, name: 'new', key: 'secret' }),
     updateUserApiKey: vi.fn().mockResolvedValue({ id: 1, name: 'updated' }),
     deleteUserApiKey: vi.fn().mockResolvedValue(undefined),
-    updateCurrentUser: vi.fn().mockResolvedValue({ id: 1, email: 'test@test.com', first_name: 'New', last_name: 'Name' }),
+    updateCurrentUser: vi
+      .fn()
+      .mockResolvedValue({ id: 1, email: 'test@test.com', first_name: 'New', last_name: 'Name' }),
   };
 
   beforeEach(() => {
@@ -144,9 +159,20 @@ describe('auth API key management', () => {
   });
 
   it('should edit user profile', async () => {
-    await authCommand.parseAsync(['node', 'test', 'edit-profile', '--first-name', 'New', '--last-name', 'Name']);
+    await authCommand.parseAsync([
+      'node',
+      'test',
+      'edit-profile',
+      '--first-name',
+      'New',
+      '--last-name',
+      'Name',
+    ]);
 
-    expect(mockClient.updateCurrentUser).toHaveBeenCalledWith({ first_name: 'New', last_name: 'Name' });
+    expect(mockClient.updateCurrentUser).toHaveBeenCalledWith({
+      first_name: 'New',
+      last_name: 'Name',
+    });
     const output = consoleSpy.mock.calls.flat().join(' ');
     expect(output).toContain('updated');
   });
@@ -186,9 +212,9 @@ describe('auth API key management', () => {
         .mockResolvedValueOnce('new-pass')
         .mockResolvedValueOnce('different-pass');
 
-      await expect(
-        authCommand.parseAsync(['node', 'test', 'reset-my-password'])
-      ).rejects.toThrow('process.exit: 1');
+      await expect(authCommand.parseAsync(['node', 'test', 'reset-my-password'])).rejects.toThrow(
+        'process.exit: 1'
+      );
       expect(consoleErrorSpy).toHaveBeenCalledWith('Error:', 'Passwords do not match.');
     });
   });
@@ -219,9 +245,13 @@ describe('auth login command', () => {
 
   it('should store credentials when --api-key and --endpoint are provided', async () => {
     await authCommand.parseAsync([
-      'node', 'test', 'login',
-      '--api-key', 'my-key',
-      '--endpoint', 'https://api.example.com/v1',
+      'node',
+      'test',
+      'login',
+      '--api-key',
+      'my-key',
+      '--endpoint',
+      'https://api.example.com/v1',
     ]);
 
     expect(keyring.setAPIKey).toHaveBeenCalledWith('my-key', 'default');
@@ -234,19 +264,28 @@ describe('auth login command', () => {
     await expect(
       authCommand.parseAsync(['node', 'test', 'login', '--api-key', 'my-key'])
     ).rejects.toThrow('process.exit: 1');
-    expect(consoleErrorSpy).toHaveBeenCalledWith('Error:', '--endpoint is required when using --api-key');
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      'Error:',
+      '--endpoint is required when using --api-key'
+    );
   });
 
   it('should error when both --session and --persistent are provided', async () => {
     await expect(
       authCommand.parseAsync([
-        'node', 'test', 'login',
-        '--endpoint', 'https://api.example.com/v1',
+        'node',
+        'test',
+        'login',
+        '--endpoint',
+        'https://api.example.com/v1',
         '--session',
         '--persistent',
       ])
     ).rejects.toThrow('process.exit: 1');
-    expect(consoleErrorSpy).toHaveBeenCalledWith('Error:', 'Cannot use both --session and --persistent');
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      'Error:',
+      'Cannot use both --session and --persistent'
+    );
   });
 
   it('should log warning when getProfile throws unexpected error during login endpoint lookup', async () => {
@@ -256,9 +295,9 @@ describe('auth login command', () => {
 
     // No --endpoint provided forces it into the getProfile lookup code path
     // The unexpected error should be logged, then it will fail with "endpoint required"
-    await expect(
-      authCommand.parseAsync(['node', 'test', 'login'])
-    ).rejects.toThrow('process.exit: 1');
+    await expect(authCommand.parseAsync(['node', 'test', 'login'])).rejects.toThrow(
+      'process.exit: 1'
+    );
 
     const errorOutput = consoleErrorSpy.mock.calls.flat().join(' ');
     expect(errorOutput).toContain('unexpected error reading profile');
@@ -271,9 +310,9 @@ describe('auth login command', () => {
     });
 
     // Without endpoint and without profile, this will error asking for endpoint
-    await expect(
-      authCommand.parseAsync(['node', 'test', 'login'])
-    ).rejects.toThrow('process.exit: 1');
+    await expect(authCommand.parseAsync(['node', 'test', 'login'])).rejects.toThrow(
+      'process.exit: 1'
+    );
 
     const errorOutput = consoleErrorSpy.mock.calls.flat().join(' ');
     expect(errorOutput).not.toContain('unexpected error');
@@ -290,7 +329,9 @@ describe('auth logout command', () => {
     resetCommand(authCommand);
     vi.mocked(config.loadConfig).mockReturnValue({
       'default-profile': 'default',
-      profiles: { default: { api: { endpoint: 'https://api.example.com' }, expctld: { endpoint: '' } } },
+      profiles: {
+        default: { api: { endpoint: 'https://api.example.com' }, expctld: { endpoint: '' } },
+      },
     });
     consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -356,4 +397,3 @@ describe('auth logout command', () => {
     expect(output).not.toContain('Logged out');
   });
 });
-

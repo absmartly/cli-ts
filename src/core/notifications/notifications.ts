@@ -7,15 +7,13 @@ export interface ListNotificationsParams {
 
 export async function listNotifications(
   client: APIClient,
-  params: ListNotificationsParams,
+  params: ListNotificationsParams
 ): Promise<CommandResult<unknown>> {
   const data = await client.getNotifications(params.cursor);
   return { data };
 }
 
-export async function markNotificationsSeen(
-  client: APIClient,
-): Promise<CommandResult<void>> {
+export async function markNotificationsSeen(client: APIClient): Promise<CommandResult<void>> {
   await client.markNotificationsSeen();
   return { data: undefined };
 }
@@ -26,7 +24,7 @@ export interface MarkNotificationsReadParams {
 
 export async function markNotificationsRead(
   client: APIClient,
-  params: MarkNotificationsReadParams,
+  params: MarkNotificationsReadParams
 ): Promise<CommandResult<void>> {
   await client.markNotificationsRead(params.ids);
   return { data: undefined };
@@ -38,7 +36,7 @@ export interface CheckNotificationsParams {
 
 export async function checkNotifications(
   client: APIClient,
-  params: CheckNotificationsParams,
+  params: CheckNotificationsParams
 ): Promise<CommandResult<{ hasNew: boolean }>> {
   const hasNew = await client.hasNewNotifications(params.lastId);
   return { data: { hasNew } };

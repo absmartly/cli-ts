@@ -5,7 +5,12 @@ import { resetCommand } from '../../test/helpers/command-reset.js';
 
 vi.mock('../../lib/utils/api-helper.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../lib/utils/api-helper.js')>();
-  return { ...actual, getAPIClientFromOptions: vi.fn(), getGlobalOptions: vi.fn(), printFormatted: vi.fn() };
+  return {
+    ...actual,
+    getAPIClientFromOptions: vi.fn(),
+    getGlobalOptions: vi.fn(),
+    printFormatted: vi.fn(),
+  };
 });
 
 describe('activity-feed command', () => {
@@ -16,7 +21,11 @@ describe('activity-feed command', () => {
   const mockClient = {
     listExperiments: vi.fn(),
     listExperimentActivity: vi.fn(),
-    listUsers: vi.fn().mockResolvedValue([{ id: 50, first_name: 'Alice', last_name: 'Smith', email: 'alice@test.com' }]),
+    listUsers: vi
+      .fn()
+      .mockResolvedValue([
+        { id: 50, first_name: 'Alice', last_name: 'Smith', email: 'alice@test.com' },
+      ]),
     listTeams: vi.fn().mockResolvedValue([{ id: 76, name: 'Engineering' }]),
   };
 
@@ -46,10 +55,22 @@ describe('activity-feed command', () => {
 
     mockClient.listExperimentActivity
       .mockResolvedValueOnce([
-        { id: 10, created_at: '2026-03-22T14:30:00Z', action: 'start', note: 'Started', created_by: { first_name: 'Alice', last_name: 'Smith' } },
+        {
+          id: 10,
+          created_at: '2026-03-22T14:30:00Z',
+          action: 'start',
+          note: 'Started',
+          created_by: { first_name: 'Alice', last_name: 'Smith' },
+        },
       ])
       .mockResolvedValueOnce([
-        { id: 20, created_at: '2026-03-22T15:00:00Z', action: 'comment', note: 'Looks good', created_by: { first_name: 'Bob', last_name: 'Jones' } },
+        {
+          id: 20,
+          created_at: '2026-03-22T15:00:00Z',
+          action: 'comment',
+          note: 'Looks good',
+          created_by: { first_name: 'Bob', last_name: 'Jones' },
+        },
       ]);
 
     await activityFeedCommand.parseAsync(['node', 'test', 'list']);
@@ -68,16 +89,33 @@ describe('activity-feed command', () => {
   });
 
   it('should filter activity by --since flag', async () => {
-    mockClient.listExperiments.mockResolvedValue([
-      { id: 1, name: 'exp-one' },
-    ]);
+    mockClient.listExperiments.mockResolvedValue([{ id: 1, name: 'exp-one' }]);
 
     mockClient.listExperimentActivity.mockResolvedValue([
-      { id: 10, created_at: '2026-03-20T10:00:00Z', action: 'start', note: 'Old note', created_by: { first_name: 'Alice', last_name: 'Smith' } },
-      { id: 11, created_at: '2026-03-22T14:30:00Z', action: 'comment', note: 'Recent note', created_by: { first_name: 'Bob', last_name: 'Jones' } },
+      {
+        id: 10,
+        created_at: '2026-03-20T10:00:00Z',
+        action: 'start',
+        note: 'Old note',
+        created_by: { first_name: 'Alice', last_name: 'Smith' },
+      },
+      {
+        id: 11,
+        created_at: '2026-03-22T14:30:00Z',
+        action: 'comment',
+        note: 'Recent note',
+        created_by: { first_name: 'Bob', last_name: 'Jones' },
+      },
     ]);
 
-    await activityFeedCommand.parseAsync(['node', 'test', 'list', '--since', '2026-03-21', '--notes']);
+    await activityFeedCommand.parseAsync([
+      'node',
+      'test',
+      'list',
+      '--since',
+      '2026-03-21',
+      '--notes',
+    ]);
 
     const output = consoleSpy.mock.calls.flat().join('\n');
     expect(output).toContain('Recent note');
@@ -85,14 +123,30 @@ describe('activity-feed command', () => {
   });
 
   it('should sort activity by created_at descending', async () => {
-    mockClient.listExperiments.mockResolvedValue([
-      { id: 1, name: 'exp-one' },
-    ]);
+    mockClient.listExperiments.mockResolvedValue([{ id: 1, name: 'exp-one' }]);
 
     mockClient.listExperimentActivity.mockResolvedValue([
-      { id: 10, created_at: '2026-03-20T10:00:00Z', action: 'start', note: null, created_by: { first_name: 'Alice', last_name: 'Smith' } },
-      { id: 11, created_at: '2026-03-22T14:30:00Z', action: 'stop', note: null, created_by: { first_name: 'Bob', last_name: 'Jones' } },
-      { id: 12, created_at: '2026-03-21T08:00:00Z', action: 'comment', note: 'Middle', created_by: { first_name: 'Charlie', last_name: 'Brown' } },
+      {
+        id: 10,
+        created_at: '2026-03-20T10:00:00Z',
+        action: 'start',
+        note: null,
+        created_by: { first_name: 'Alice', last_name: 'Smith' },
+      },
+      {
+        id: 11,
+        created_at: '2026-03-22T14:30:00Z',
+        action: 'stop',
+        note: null,
+        created_by: { first_name: 'Bob', last_name: 'Jones' },
+      },
+      {
+        id: 12,
+        created_at: '2026-03-21T08:00:00Z',
+        action: 'comment',
+        note: 'Middle',
+        created_by: { first_name: 'Charlie', last_name: 'Brown' },
+      },
     ]);
 
     await activityFeedCommand.parseAsync(['node', 'test', 'list']);
@@ -131,7 +185,9 @@ describe('activity-feed command', () => {
 describe('resolveMentions', () => {
   it('should resolve user mentions with lookup', () => {
     const lookups = { users: new Map([[50, 'Jonas Alves']]) };
-    expect(resolveMentions('granted to [@user_id:50].', lookups)).toBe('granted to **@Jonas Alves**.');
+    expect(resolveMentions('granted to [@user_id:50].', lookups)).toBe(
+      'granted to **@Jonas Alves**.'
+    );
   });
 
   it('should fall back to @user:id without lookup', () => {
@@ -140,7 +196,9 @@ describe('resolveMentions', () => {
 
   it('should resolve team mentions with lookup', () => {
     const lookups = { teams: new Map([[76, 'Engineering']]) };
-    expect(resolveMentions('removed from [@team_id:76].', lookups)).toBe('removed from **@Engineering**.');
+    expect(resolveMentions('removed from [@team_id:76].', lookups)).toBe(
+      'removed from **@Engineering**.'
+    );
   });
 
   it('should fall back to @team:id without lookup', () => {

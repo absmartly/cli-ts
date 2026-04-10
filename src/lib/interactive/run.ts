@@ -6,7 +6,7 @@ import type { EditorContext } from './types.js';
 export async function runInteractiveEditor(
   client: APIClient,
   initial: ExperimentTemplate,
-  experimentType: string,
+  experimentType: string
 ): Promise<ExperimentTemplate | null> {
   const [applications, unitTypes, teams, experimentTags, customSectionFields] = await Promise.all([
     client.listApplications(),

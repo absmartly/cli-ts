@@ -2,21 +2,13 @@ import axios, { AxiosInstance, AxiosError } from 'axios';
 import https from 'https';
 import axiosRetry from 'axios-retry';
 import { version } from '../utils/version.js';
-import {
-  APIError,
-} from '../../api-client/http-client.js';
-import type {
-  HttpClient,
-  HttpRequestConfig,
-  HttpResponse,
-} from '../../api-client/http-client.js';
+import { APIError } from '../../api-client/http-client.js';
+import type { HttpClient, HttpRequestConfig, HttpResponse } from '../../api-client/http-client.js';
 
 const DEFAULT_TIMEOUT = 30000;
 const RETRY_COUNT = 3;
 
-const NON_IDEMPOTENT_PUT_PATHS = [
-  '/start', '/stop', '/restart', '/development', '/full_on',
-];
+const NON_IDEMPOTENT_PUT_PATHS = ['/start', '/stop', '/restart', '/development', '/full_on'];
 
 const IDEMPOTENT_METHODS = ['GET', 'HEAD', 'OPTIONS', 'PUT', 'DELETE'];
 
@@ -29,16 +21,19 @@ export class AxiosHttpClient implements HttpClient {
   private verbose: boolean;
   protected authConfig: AuthConfig;
 
-  constructor(endpoint: string, auth: string | AuthConfig, options: { verbose?: boolean; timeout?: number; insecure?: boolean } = {}) {
+  constructor(
+    endpoint: string,
+    auth: string | AuthConfig,
+    options: { verbose?: boolean; timeout?: number; insecure?: boolean } = {}
+  ) {
     this.verbose = options.verbose ?? false;
 
-    this.authConfig = typeof auth === 'string'
-      ? { method: 'api-key', apiKey: auth }
-      : auth;
+    this.authConfig = typeof auth === 'string' ? { method: 'api-key', apiKey: auth } : auth;
 
-    const authHeader = this.authConfig.method === 'api-key'
-      ? `Api-Key ${this.authConfig.apiKey}`
-      : `Bearer ${this.authConfig.token}`;
+    const authHeader =
+      this.authConfig.method === 'api-key'
+        ? `Api-Key ${this.authConfig.apiKey}`
+        : `Bearer ${this.authConfig.token}`;
 
     this.client = axios.create({
       baseURL: endpoint,
@@ -93,9 +88,8 @@ export class AxiosHttpClient implements HttpClient {
         isRefreshing = true;
         try {
           const newAuth = await onExpired();
-          const newHeader = newAuth.method === 'api-key'
-            ? `Api-Key ${newAuth.apiKey}`
-            : `Bearer ${newAuth.token}`;
+          const newHeader =
+            newAuth.method === 'api-key' ? `Api-Key ${newAuth.apiKey}` : `Bearer ${newAuth.token}`;
 
           this.client.defaults.headers.common['Authorization'] = newHeader;
           this.authConfig = newAuth;
@@ -105,13 +99,14 @@ export class AxiosHttpClient implements HttpClient {
             return this.client.request(error.config);
           }
         } catch (refreshError) {
-          const refreshMsg = refreshError instanceof Error ? refreshError.message : String(refreshError);
+          const refreshMsg =
+            refreshError instanceof Error ? refreshError.message : String(refreshError);
           console.error(`Warning: Token refresh failed: ${refreshMsg}`);
           const wrappedError = new APIError(
             `Authentication failed: token refresh unsuccessful (${refreshMsg}).\n` +
-            `Run: abs auth login`,
+              `Run: abs auth login`,
             401,
-            error.response?.data,
+            error.response?.data
           );
           return Promise.reject(wrappedError);
         } finally {
@@ -192,9 +187,7 @@ export class AxiosHttpClient implements HttpClient {
           `Please check your API key has the required permissions.`;
         break;
       case 404:
-        message =
-          `Not found: Resource does not exist.\n` +
-          `Endpoint: ${method} ${endpoint}`;
+        message = `Not found: Resource does not exist.\n` + `Endpoint: ${method} ${endpoint}`;
         break;
       case 429: {
         const retryAfter = error.response?.headers['retry-after'];
@@ -217,8 +210,7 @@ export class AxiosHttpClient implements HttpClient {
             `The server took too long to respond. Please try again.`;
         } else {
           message =
-            `API error: ${error.message || 'unknown error'}\n` +
-            `Endpoint: ${method} ${endpoint}`;
+            `API error: ${error.message || 'unknown error'}\n` + `Endpoint: ${method} ${endpoint}`;
         }
     }
 

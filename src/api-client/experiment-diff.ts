@@ -6,7 +6,7 @@ export interface DiffEntry {
 
 export function diffExperiments(
   left: Record<string, unknown>,
-  right: Record<string, unknown>,
+  right: Record<string, unknown>
 ): DiffEntry[] {
   const allKeys = new Set([...Object.keys(left), ...Object.keys(right)]);
   const diffs: DiffEntry[] = [];

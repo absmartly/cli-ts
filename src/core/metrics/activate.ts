@@ -9,7 +9,7 @@ export interface ActivateMetricParams {
 
 export async function activateMetric(
   client: APIClient,
-  params: ActivateMetricParams,
+  params: ActivateMetricParams
 ): Promise<CommandResult<void>> {
   await client.activateMetric(params.id, params.reason);
   return { data: undefined };

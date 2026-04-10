@@ -25,7 +25,7 @@ export interface EstimateParticipantsData {
 
 export async function estimateParticipants(
   client: APIClient,
-  params: EstimateParticipantsParams,
+  params: EstimateParticipantsParams
 ): Promise<CommandResult<EstimateParticipantsData>> {
   const from = parseDateFlag(params.from ?? '30d');
   const applicationNamesOrIds: string[] = params.application ?? [];
@@ -36,7 +36,7 @@ export async function estimateParticipants(
     } catch {
       throw new Error(
         `Invalid JSON in --audience: ${params.audience}\n` +
-        `Expected valid JSON, e.g.: --audience '{"filter":{"and":[...]}}'`
+          `Expected valid JSON, e.g.: --audience '{"filter":{"and":[...]}}'`
       );
     }
   }
@@ -48,7 +48,9 @@ export async function estimateParticipants(
   ]);
 
   const unitType = resolveByName(unitTypes, params.unitType, 'Unit type');
-  const applicationIds = applicationNamesOrIds.map((nameOrId) => resolveByName(applications, nameOrId, 'Application').id);
+  const applicationIds = applicationNamesOrIds.map(
+    (nameOrId) => resolveByName(applications, nameOrId, 'Application').id
+  );
 
   const apiParams: {
     from: number;

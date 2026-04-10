@@ -15,24 +15,31 @@ describe.skipIf(isLiveMode)('APIClient core', () => {
 
   describe('error status handling', () => {
     it('should throw with 401 unauthorized message', async () => {
-      server.use(http.get(`${BASE_URL}/experiments`, () => new HttpResponse(null, { status: 401 })));
+      server.use(
+        http.get(`${BASE_URL}/experiments`, () => new HttpResponse(null, { status: 401 }))
+      );
       await expect(client.listExperiments()).rejects.toThrow(/Unauthorized/);
     });
 
     it('should throw with 403 forbidden message', async () => {
-      server.use(http.get(`${BASE_URL}/experiments`, () => new HttpResponse(null, { status: 403 })));
+      server.use(
+        http.get(`${BASE_URL}/experiments`, () => new HttpResponse(null, { status: 403 }))
+      );
       await expect(client.listExperiments()).rejects.toThrow(/Forbidden/);
     });
 
     it('should throw with 404 not found message', async () => {
-      server.use(http.get(`${BASE_URL}/experiments/999`, () => new HttpResponse(null, { status: 404 })));
+      server.use(
+        http.get(`${BASE_URL}/experiments/999`, () => new HttpResponse(null, { status: 404 }))
+      );
       await expect(client.getExperiment(999)).rejects.toThrow(/Not found/);
     });
 
     it('should throw with 429 rate limit message', async () => {
       server.use(
-        http.get(`${BASE_URL}/experiments`, () =>
-          new HttpResponse(null, { status: 429, headers: { 'retry-after': '30' } })
+        http.get(
+          `${BASE_URL}/experiments`,
+          () => new HttpResponse(null, { status: 429, headers: { 'retry-after': '30' } })
         )
       );
       await expect(client.listExperiments()).rejects.toThrow(/Rate limit/);
@@ -98,7 +105,9 @@ describe.skipIf(isLiveMode)('APIClient core', () => {
       server.use(
         http.get(`${BASE_URL}/experiments`, ({ request }) => {
           const params = new URL(request.url).searchParams;
-          return HttpResponse.json({ experiments: [{ id: 1, name: 'test', state: params.get('state') }] });
+          return HttpResponse.json({
+            experiments: [{ id: 1, name: 'test', state: params.get('state') }],
+          });
         })
       );
       const result = await client.listExperiments({ state: 'running', items: 10 });
@@ -138,8 +147,10 @@ describe.skipIf(isLiveMode)('APIClient core', () => {
     it('should stop experiment with reason', async () => {
       server.use(
         http.put(`${BASE_URL}/experiments/1/stop`, async ({ request }) => {
-          const body = await request.json() as Record<string, unknown>;
-          return HttpResponse.json({ experiment: { id: 1, name: 'test', state: 'stopped', reason: body.reason } });
+          const body = (await request.json()) as Record<string, unknown>;
+          return HttpResponse.json({
+            experiment: { id: 1, name: 'test', state: 'stopped', reason: body.reason },
+          });
         })
       );
       const result = await client.stopExperiment(1, 'complete');
@@ -149,7 +160,7 @@ describe.skipIf(isLiveMode)('APIClient core', () => {
     it('should archive experiment', async () => {
       server.use(
         http.put(`${BASE_URL}/experiments/1/archive`, async ({ request }) => {
-          const body = await request.json() as Record<string, unknown>;
+          const body = (await request.json()) as Record<string, unknown>;
           expect(body.archive).toBe(true);
           return HttpResponse.json({ ok: true });
         })
@@ -160,7 +171,7 @@ describe.skipIf(isLiveMode)('APIClient core', () => {
     it('should unarchive experiment', async () => {
       server.use(
         http.put(`${BASE_URL}/experiments/1/archive`, async ({ request }) => {
-          const body = await request.json() as Record<string, unknown>;
+          const body = (await request.json()) as Record<string, unknown>;
           expect(body.archive).toBe(false);
           return HttpResponse.json({ ok: true });
         })
@@ -260,7 +271,9 @@ describe.skipIf(isLiveMode)('APIClient core', () => {
 
     it('should update goal', async () => {
       server.use(
-        http.put(`${BASE_URL}/goals/1`, () => HttpResponse.json({ goal: { id: 1, name: 'updated' } }))
+        http.put(`${BASE_URL}/goals/1`, () =>
+          HttpResponse.json({ goal: { id: 1, name: 'updated' } })
+        )
       );
       expect((await client.updateGoal(1, { name: 'updated' } as any)).name).toBe('updated');
     });
@@ -268,21 +281,23 @@ describe.skipIf(isLiveMode)('APIClient core', () => {
 
   describe('segments CRUD', () => {
     it('should list segments', async () => {
-      server.use(
-        http.get(`${BASE_URL}/segments`, () => HttpResponse.json({ segments: [] }))
-      );
+      server.use(http.get(`${BASE_URL}/segments`, () => HttpResponse.json({ segments: [] })));
       expect(await client.listSegments()).toEqual([]);
     });
 
     it('should create segment', async () => {
       server.use(
-        http.post(`${BASE_URL}/segments`, () => HttpResponse.json({ segment: { id: 1, name: 's1' } }))
+        http.post(`${BASE_URL}/segments`, () =>
+          HttpResponse.json({ segment: { id: 1, name: 's1' } })
+        )
       );
       expect((await client.createSegment({ name: 's1' } as any)).id).toBe(1);
     });
 
     it('should delete segment', async () => {
-      server.use(http.delete(`${BASE_URL}/segments/1`, () => new HttpResponse(null, { status: 204 })));
+      server.use(
+        http.delete(`${BASE_URL}/segments/1`, () => new HttpResponse(null, { status: 204 }))
+      );
       await client.deleteSegment(1);
     });
   });
@@ -313,21 +328,27 @@ describe.skipIf(isLiveMode)('APIClient core', () => {
 
     it('should list team members', async () => {
       server.use(
-        http.get(`${BASE_URL}/teams/1/members`, () => HttpResponse.json({ team_members: [{ id: 1, email: 'a@b.c' }] }))
+        http.get(`${BASE_URL}/teams/1/members`, () =>
+          HttpResponse.json({ team_members: [{ id: 1, email: 'a@b.c' }] })
+        )
       );
       expect(await client.listTeamMembers(1)).toHaveLength(1);
     });
 
     it('should add team members', async () => {
       server.use(
-        http.put(`${BASE_URL}/teams/1/members/add`, () => HttpResponse.json({ ok: true, errors: [] }))
+        http.put(`${BASE_URL}/teams/1/members/add`, () =>
+          HttpResponse.json({ ok: true, errors: [] })
+        )
       );
       await client.addTeamMembers(1, [1, 2] as any, [1] as any);
     });
 
     it('should remove team members', async () => {
       server.use(
-        http.put(`${BASE_URL}/teams/1/members/remove`, () => HttpResponse.json({ ok: true, errors: [] }))
+        http.put(`${BASE_URL}/teams/1/members/remove`, () =>
+          HttpResponse.json({ ok: true, errors: [] })
+        )
       );
       await client.removeTeamMembers(1, [1] as any);
     });
@@ -336,24 +357,30 @@ describe.skipIf(isLiveMode)('APIClient core', () => {
   describe('users CRUD', () => {
     it('should list users', async () => {
       server.use(
-        http.get(`${BASE_URL}/users`, () => HttpResponse.json({ users: [{ id: 1, email: 'a@b.c' }] }))
+        http.get(`${BASE_URL}/users`, () =>
+          HttpResponse.json({ users: [{ id: 1, email: 'a@b.c' }] })
+        )
       );
       expect(await client.listUsers()).toHaveLength(1);
     });
 
-      it('should reset user password', async () => {
-        server.use(
-          http.put(`${BASE_URL}/users/1/reset-password`, () => HttpResponse.json({ ok: true, password: 'newPass123', errors: [] }))
-        );
-        const result = await client.resetUserPassword(1);
-        expect(result).toEqual({ password: 'newPass123' });
-      });
+    it('should reset user password', async () => {
+      server.use(
+        http.put(`${BASE_URL}/users/1/reset-password`, () =>
+          HttpResponse.json({ ok: true, password: 'newPass123', errors: [] })
+        )
+      );
+      const result = await client.resetUserPassword(1);
+      expect(result).toEqual({ password: 'newPass123' });
+    });
   });
 
   describe('metrics CRUD', () => {
     it('should list metrics', async () => {
       server.use(
-        http.get(`${BASE_URL}/metrics`, () => HttpResponse.json({ metrics: [{ id: 1, name: 'm1' }] }))
+        http.get(`${BASE_URL}/metrics`, () =>
+          HttpResponse.json({ metrics: [{ id: 1, name: 'm1' }] })
+        )
       );
       expect(await client.listMetrics()).toHaveLength(1);
     });
@@ -533,8 +560,9 @@ describe.skipIf(isLiveMode)('APIClient core', () => {
 
     it('should delete scheduled action', async () => {
       server.use(
-        http.delete(`${BASE_URL}/experiments/1/scheduled_action/2`, () =>
-          new HttpResponse(null, { status: 204 })
+        http.delete(
+          `${BASE_URL}/experiments/1/scheduled_action/2`,
+          () => new HttpResponse(null, { status: 204 })
         )
       );
       await client.deleteScheduledAction(1, 2 as any);
@@ -543,50 +571,84 @@ describe.skipIf(isLiveMode)('APIClient core', () => {
 
   describe('applications, environments, unit types', () => {
     it('should list applications', async () => {
-      server.use(http.get(`${BASE_URL}/applications`, () => HttpResponse.json({ applications: [{ id: 1, name: 'web' }] })));
+      server.use(
+        http.get(`${BASE_URL}/applications`, () =>
+          HttpResponse.json({ applications: [{ id: 1, name: 'web' }] })
+        )
+      );
       expect(await client.listApplications()).toHaveLength(1);
     });
 
     it('should create application', async () => {
-      server.use(http.post(`${BASE_URL}/applications`, () => HttpResponse.json({ application: { id: 1, name: 'web' } })));
+      server.use(
+        http.post(`${BASE_URL}/applications`, () =>
+          HttpResponse.json({ application: { id: 1, name: 'web' } })
+        )
+      );
       expect((await client.createApplication({ name: 'web' })).name).toBe('web');
     });
 
     it('should archive application', async () => {
-      server.use(http.put(`${BASE_URL}/applications/1/archive`, () => HttpResponse.json({ ok: true })));
+      server.use(
+        http.put(`${BASE_URL}/applications/1/archive`, () => HttpResponse.json({ ok: true }))
+      );
       await client.archiveApplication(1);
     });
 
     it('should list environments', async () => {
-      server.use(http.get(`${BASE_URL}/environments`, () => HttpResponse.json({ environments: [{ id: 1, name: 'prod' }] })));
+      server.use(
+        http.get(`${BASE_URL}/environments`, () =>
+          HttpResponse.json({ environments: [{ id: 1, name: 'prod' }] })
+        )
+      );
       expect(await client.listEnvironments()).toHaveLength(1);
     });
 
     it('should create environment', async () => {
-      server.use(http.post(`${BASE_URL}/environments`, () => HttpResponse.json({ environment: { id: 1, name: 'staging' } })));
+      server.use(
+        http.post(`${BASE_URL}/environments`, () =>
+          HttpResponse.json({ environment: { id: 1, name: 'staging' } })
+        )
+      );
       expect((await client.createEnvironment({ name: 'staging' })).name).toBe('staging');
     });
 
     it('should list unit types', async () => {
-      server.use(http.get(`${BASE_URL}/unit_types`, () => HttpResponse.json({ unit_types: [{ id: 1, name: 'user_id' }] })));
+      server.use(
+        http.get(`${BASE_URL}/unit_types`, () =>
+          HttpResponse.json({ unit_types: [{ id: 1, name: 'user_id' }] })
+        )
+      );
       expect(await client.listUnitTypes()).toHaveLength(1);
     });
 
     it('should create unit type', async () => {
-      server.use(http.post(`${BASE_URL}/unit_types`, () => HttpResponse.json({ unit_type: { id: 1, name: 'device' } })));
+      server.use(
+        http.post(`${BASE_URL}/unit_types`, () =>
+          HttpResponse.json({ unit_type: { id: 1, name: 'device' } })
+        )
+      );
       expect((await client.createUnitType({ name: 'device' })).name).toBe('device');
     });
   });
 
   describe('tags (experiment, goal, metric)', () => {
     it('should CRUD experiment tags', async () => {
-      server.use(http.get(`${BASE_URL}/experiment_tags`, () => HttpResponse.json({ experiment_tags: [] })));
+      server.use(
+        http.get(`${BASE_URL}/experiment_tags`, () => HttpResponse.json({ experiment_tags: [] }))
+      );
       expect(await client.listExperimentTags()).toEqual([]);
 
-      server.use(http.post(`${BASE_URL}/experiment_tags`, () => HttpResponse.json({ experiment_tag: { id: 1, tag: 'v1' } })));
+      server.use(
+        http.post(`${BASE_URL}/experiment_tags`, () =>
+          HttpResponse.json({ experiment_tag: { id: 1, tag: 'v1' } })
+        )
+      );
       expect((await client.createExperimentTag({ tag: 'v1' })).tag).toBe('v1');
 
-      server.use(http.delete(`${BASE_URL}/experiment_tags/1`, () => new HttpResponse(null, { status: 204 })));
+      server.use(
+        http.delete(`${BASE_URL}/experiment_tags/1`, () => new HttpResponse(null, { status: 204 }))
+      );
       await client.deleteExperimentTag(1 as any);
     });
 
@@ -594,7 +656,11 @@ describe.skipIf(isLiveMode)('APIClient core', () => {
       server.use(http.get(`${BASE_URL}/goal_tags`, () => HttpResponse.json({ goal_tags: [] })));
       expect(await client.listGoalTags()).toEqual([]);
 
-      server.use(http.post(`${BASE_URL}/goal_tags`, () => HttpResponse.json({ goal_tag: { id: 1, tag: 'rev' } })));
+      server.use(
+        http.post(`${BASE_URL}/goal_tags`, () =>
+          HttpResponse.json({ goal_tag: { id: 1, tag: 'rev' } })
+        )
+      );
       expect((await client.createGoalTag({ tag: 'rev' })).tag).toBe('rev');
     });
 
@@ -606,27 +672,45 @@ describe.skipIf(isLiveMode)('APIClient core', () => {
 
   describe('metric categories', () => {
     it('should list and create', async () => {
-      server.use(http.get(`${BASE_URL}/metric_categories`, () => HttpResponse.json({ metric_categories: [] })));
+      server.use(
+        http.get(`${BASE_URL}/metric_categories`, () =>
+          HttpResponse.json({ metric_categories: [] })
+        )
+      );
       expect(await client.listMetricCategories()).toEqual([]);
 
-      server.use(http.post(`${BASE_URL}/metric_categories`, () => HttpResponse.json({ metric_category: { id: 1, name: 'Rev', color: '#ff0000' } })));
-      expect((await client.createMetricCategory({ name: 'Rev', color: '#ff0000' })).name).toBe('Rev');
+      server.use(
+        http.post(`${BASE_URL}/metric_categories`, () =>
+          HttpResponse.json({ metric_category: { id: 1, name: 'Rev', color: '#ff0000' } })
+        )
+      );
+      expect((await client.createMetricCategory({ name: 'Rev', color: '#ff0000' })).name).toBe(
+        'Rev'
+      );
     });
 
     it('should archive metric category', async () => {
-      server.use(http.put(`${BASE_URL}/metric_categories/1/archive`, () => HttpResponse.json({ ok: true })));
+      server.use(
+        http.put(`${BASE_URL}/metric_categories/1/archive`, () => HttpResponse.json({ ok: true }))
+      );
       await client.archiveMetricCategory(1 as any);
     });
   });
 
   describe('roles and permissions', () => {
     it('should list roles', async () => {
-      server.use(http.get(`${BASE_URL}/roles`, () => HttpResponse.json({ roles: [{ id: 1, name: 'Admin' }] })));
+      server.use(
+        http.get(`${BASE_URL}/roles`, () =>
+          HttpResponse.json({ roles: [{ id: 1, name: 'Admin' }] })
+        )
+      );
       expect(await client.listRoles()).toHaveLength(1);
     });
 
     it('should create role', async () => {
-      server.use(http.post(`${BASE_URL}/roles`, () => HttpResponse.json({ role: { id: 1, name: 'Editor' } })));
+      server.use(
+        http.post(`${BASE_URL}/roles`, () => HttpResponse.json({ role: { id: 1, name: 'Editor' } }))
+      );
       expect((await client.createRole({ name: 'Editor' } as any)).name).toBe('Editor');
     });
 
@@ -641,7 +725,11 @@ describe.skipIf(isLiveMode)('APIClient core', () => {
     });
 
     it('should list permission categories', async () => {
-      server.use(http.get(`${BASE_URL}/permission_categories`, () => HttpResponse.json({ permission_categories: [] })));
+      server.use(
+        http.get(`${BASE_URL}/permission_categories`, () =>
+          HttpResponse.json({ permission_categories: [] })
+        )
+      );
       expect(await client.listPermissionCategories()).toEqual([]);
     });
   });
@@ -653,10 +741,14 @@ describe.skipIf(isLiveMode)('APIClient core', () => {
     });
 
     it('should create and delete api key', async () => {
-      server.use(http.post(`${BASE_URL}/api_keys`, () => HttpResponse.json({ api_key: { id: 1 } })));
+      server.use(
+        http.post(`${BASE_URL}/api_keys`, () => HttpResponse.json({ api_key: { id: 1 } }))
+      );
       expect((await client.createApiKey({} as any)).id).toBe(1);
 
-      server.use(http.delete(`${BASE_URL}/api_keys/1`, () => new HttpResponse(null, { status: 204 })));
+      server.use(
+        http.delete(`${BASE_URL}/api_keys/1`, () => new HttpResponse(null, { status: 204 }))
+      );
       await client.deleteApiKey(1 as any);
     });
   });
@@ -668,38 +760,62 @@ describe.skipIf(isLiveMode)('APIClient core', () => {
     });
 
     it('should create webhook', async () => {
-      server.use(http.post(`${BASE_URL}/webhooks`, () => HttpResponse.json({ webhook: { id: 1 } })));
+      server.use(
+        http.post(`${BASE_URL}/webhooks`, () => HttpResponse.json({ webhook: { id: 1 } }))
+      );
       expect((await client.createWebhook({} as any)).id).toBe(1);
     });
 
     it('should list webhook events', async () => {
-      server.use(http.get(`${BASE_URL}/webhook_events`, () => HttpResponse.json({ webhook_events: ['experiment.started'] })));
+      server.use(
+        http.get(`${BASE_URL}/webhook_events`, () =>
+          HttpResponse.json({ webhook_events: ['experiment.started'] })
+        )
+      );
       expect(await client.listWebhookEvents()).toContain('experiment.started');
     });
   });
 
   describe('follow/unfollow', () => {
     it('should follow experiment', async () => {
-      server.use(http.post(`${BASE_URL}/experiments/1/follow`, () => HttpResponse.json({ ok: true, errors: [] })));
+      server.use(
+        http.post(`${BASE_URL}/experiments/1/follow`, () =>
+          HttpResponse.json({ ok: true, errors: [] })
+        )
+      );
       await client.followExperiment(1);
     });
 
     it('should unfollow experiment', async () => {
-      server.use(http.delete(`${BASE_URL}/experiments/1/follow`, () => HttpResponse.json({ ok: true, errors: [] })));
+      server.use(
+        http.delete(`${BASE_URL}/experiments/1/follow`, () =>
+          HttpResponse.json({ ok: true, errors: [] })
+        )
+      );
       await client.unfollowExperiment(1);
     });
 
     it('should follow/unfollow metric', async () => {
-      server.use(http.post(`${BASE_URL}/metrics/1/follow`, () => HttpResponse.json({ ok: true, errors: [] })));
+      server.use(
+        http.post(`${BASE_URL}/metrics/1/follow`, () => HttpResponse.json({ ok: true, errors: [] }))
+      );
       await client.followMetric(1 as any);
-      server.use(http.delete(`${BASE_URL}/metrics/1/follow`, () => HttpResponse.json({ ok: true, errors: [] })));
+      server.use(
+        http.delete(`${BASE_URL}/metrics/1/follow`, () =>
+          HttpResponse.json({ ok: true, errors: [] })
+        )
+      );
       await client.unfollowMetric(1 as any);
     });
 
     it('should follow/unfollow goal', async () => {
-      server.use(http.post(`${BASE_URL}/goals/1/follow`, () => HttpResponse.json({ ok: true, errors: [] })));
+      server.use(
+        http.post(`${BASE_URL}/goals/1/follow`, () => HttpResponse.json({ ok: true, errors: [] }))
+      );
       await client.followGoal(1 as any);
-      server.use(http.delete(`${BASE_URL}/goals/1/follow`, () => HttpResponse.json({ ok: true, errors: [] })));
+      server.use(
+        http.delete(`${BASE_URL}/goals/1/follow`, () => HttpResponse.json({ ok: true, errors: [] }))
+      );
       await client.unfollowGoal(1 as any);
     });
   });
@@ -718,9 +834,11 @@ describe.skipIf(isLiveMode)('APIClient core', () => {
 
   describe('notifications', () => {
     it('should get notifications', async () => {
-      server.use(http.get(`${BASE_URL}/notifications/summary`, () =>
-        HttpResponse.json({ notifications: [{ id: 1 }] })
-      ));
+      server.use(
+        http.get(`${BASE_URL}/notifications/summary`, () =>
+          HttpResponse.json({ notifications: [{ id: 1 }] })
+        )
+      );
       expect(await client.getNotifications()).toHaveLength(1);
     });
 
@@ -730,53 +848,79 @@ describe.skipIf(isLiveMode)('APIClient core', () => {
     });
 
     it('should mark notifications seen', async () => {
-      server.use(http.put(`${BASE_URL}/notifications/see`, () => HttpResponse.json({ ok: true, errors: [] })));
+      server.use(
+        http.put(`${BASE_URL}/notifications/see`, () => HttpResponse.json({ ok: true, errors: [] }))
+      );
       await client.markNotificationsSeen();
     });
 
     it('should mark notifications read', async () => {
-      server.use(http.put(`${BASE_URL}/notifications/read`, () => HttpResponse.json({ ok: true, errors: [] })));
+      server.use(
+        http.put(`${BASE_URL}/notifications/read`, () =>
+          HttpResponse.json({ ok: true, errors: [] })
+        )
+      );
       await client.markNotificationsRead([1, 2]);
     });
 
     it('should check for new notifications', async () => {
-      server.use(http.get(`${BASE_URL}/notifications/has-new`, () => HttpResponse.json({ has_new: true })));
+      server.use(
+        http.get(`${BASE_URL}/notifications/has-new`, () => HttpResponse.json({ has_new: true }))
+      );
       expect(await client.hasNewNotifications()).toBe(true);
     });
   });
 
   describe('access control', () => {
     it('should list/grant/revoke experiment access users', async () => {
-      server.use(http.get(`${BASE_URL}/experiments/1/asset_role_users`, () =>
-        HttpResponse.json({ asset_role_experiment_users: [{ user_id: 1 }] })
-      ));
+      server.use(
+        http.get(`${BASE_URL}/experiments/1/asset_role_users`, () =>
+          HttpResponse.json({ asset_role_experiment_users: [{ user_id: 1 }] })
+        )
+      );
       expect(await client.listExperimentAccessUsers(1)).toHaveLength(1);
 
-      server.use(http.post(`${BASE_URL}/experiments/1/asset_role_users`, () => new HttpResponse(null, { status: 201 })));
+      server.use(
+        http.post(
+          `${BASE_URL}/experiments/1/asset_role_users`,
+          () => new HttpResponse(null, { status: 201 })
+        )
+      );
       await client.grantExperimentAccessUser(1, 1 as any, 1 as any);
 
-      server.use(http.delete(`${BASE_URL}/experiments/1/asset_role_users/1/1`, () => new HttpResponse(null, { status: 204 })));
+      server.use(
+        http.delete(
+          `${BASE_URL}/experiments/1/asset_role_users/1/1`,
+          () => new HttpResponse(null, { status: 204 })
+        )
+      );
       await client.revokeExperimentAccessUser(1, 1 as any, 1 as any);
     });
 
     it('should list/grant/revoke experiment access teams', async () => {
-      server.use(http.get(`${BASE_URL}/experiments/1/asset_role_teams`, () =>
-        HttpResponse.json({ asset_role_experiment_teams: [] })
-      ));
+      server.use(
+        http.get(`${BASE_URL}/experiments/1/asset_role_teams`, () =>
+          HttpResponse.json({ asset_role_experiment_teams: [] })
+        )
+      );
       expect(await client.listExperimentAccessTeams(1)).toEqual([]);
     });
 
     it('should list metric access users', async () => {
-      server.use(http.get(`${BASE_URL}/metrics/1/asset_role_users`, () =>
-        HttpResponse.json({ asset_role_metric_users: [] })
-      ));
+      server.use(
+        http.get(`${BASE_URL}/metrics/1/asset_role_users`, () =>
+          HttpResponse.json({ asset_role_metric_users: [] })
+        )
+      );
       expect(await client.listMetricAccessUsers(1 as any)).toEqual([]);
     });
 
     it('should list goal access users', async () => {
-      server.use(http.get(`${BASE_URL}/goals/1/asset_role_users`, () =>
-        HttpResponse.json({ asset_role_goal_users: [] })
-      ));
+      server.use(
+        http.get(`${BASE_URL}/goals/1/asset_role_users`, () =>
+          HttpResponse.json({ asset_role_goal_users: [] })
+        )
+      );
       expect(await client.listGoalAccessUsers(1 as any)).toEqual([]);
     });
   });
@@ -788,91 +932,147 @@ describe.skipIf(isLiveMode)('APIClient core', () => {
     });
 
     it('should create and delete asset role', async () => {
-      server.use(http.post(`${BASE_URL}/asset_roles`, () => HttpResponse.json({ asset_role: { id: 1, name: 'Reviewer' } })));
+      server.use(
+        http.post(`${BASE_URL}/asset_roles`, () =>
+          HttpResponse.json({ asset_role: { id: 1, name: 'Reviewer' } })
+        )
+      );
       expect((await client.createAssetRole({ name: 'Reviewer' })).name).toBe('Reviewer');
 
-      server.use(http.delete(`${BASE_URL}/asset_roles/1`, () => HttpResponse.json({ ok: true, errors: [] })));
+      server.use(
+        http.delete(`${BASE_URL}/asset_roles/1`, () => HttpResponse.json({ ok: true, errors: [] }))
+      );
       await client.deleteAssetRole(1 as any);
     });
   });
 
   describe('metric reviews', () => {
     it('should request/get/approve metric review', async () => {
-      server.use(http.post(`${BASE_URL}/metrics/1/review/request`, () => HttpResponse.json({ ok: true, errors: [] })));
+      server.use(
+        http.post(`${BASE_URL}/metrics/1/review/request`, () =>
+          HttpResponse.json({ ok: true, errors: [] })
+        )
+      );
       await client.requestMetricReview(1 as any);
 
-      server.use(http.get(`${BASE_URL}/metrics/1/review`, () => HttpResponse.json({ ok: true, status: 'pending' })));
+      server.use(
+        http.get(`${BASE_URL}/metrics/1/review`, () =>
+          HttpResponse.json({ ok: true, status: 'pending' })
+        )
+      );
       const review = await client.getMetricReview(1 as any);
       expect(review).toBeDefined();
 
-      server.use(http.post(`${BASE_URL}/metrics/1/review/approve`, () => HttpResponse.json({ ok: true, errors: [] })));
+      server.use(
+        http.post(`${BASE_URL}/metrics/1/review/approve`, () =>
+          HttpResponse.json({ ok: true, errors: [] })
+        )
+      );
       await client.approveMetricReview(1 as any);
     });
 
     it('should list/add/reply review comments', async () => {
-      server.use(http.get(`${BASE_URL}/metrics/1/review/comments`, () => HttpResponse.json({ comments: [] })));
+      server.use(
+        http.get(`${BASE_URL}/metrics/1/review/comments`, () => HttpResponse.json({ comments: [] }))
+      );
       expect(await client.listMetricReviewComments(1 as any)).toEqual([]);
 
-      server.use(http.post(`${BASE_URL}/metrics/1/review/comments`, () => HttpResponse.json({ comment: { id: 1 } })));
+      server.use(
+        http.post(`${BASE_URL}/metrics/1/review/comments`, () =>
+          HttpResponse.json({ comment: { id: 1 } })
+        )
+      );
       await client.addMetricReviewComment(1 as any, 'looks good');
 
-      server.use(http.post(`${BASE_URL}/metrics/1/review/comments/1/reply`, () => HttpResponse.json({ comment: { id: 2 } })));
+      server.use(
+        http.post(`${BASE_URL}/metrics/1/review/comments/1/reply`, () =>
+          HttpResponse.json({ comment: { id: 2 } })
+        )
+      );
       await client.replyToMetricReviewComment(1 as any, 1, 'thanks');
     });
   });
 
   describe('annotations', () => {
     it('should list annotations', async () => {
-      server.use(http.get(`${BASE_URL}/experiment_annotations`, () => HttpResponse.json({ experiment_annotations: [] })));
+      server.use(
+        http.get(`${BASE_URL}/experiment_annotations`, () =>
+          HttpResponse.json({ experiment_annotations: [] })
+        )
+      );
       expect(await client.listAnnotations()).toEqual([]);
     });
 
     it('should create annotation', async () => {
-      server.use(http.post(`${BASE_URL}/experiment_annotations`, () =>
-        HttpResponse.json({ experiment_annotation: { id: 1 } })
-      ));
+      server.use(
+        http.post(`${BASE_URL}/experiment_annotations`, () =>
+          HttpResponse.json({ experiment_annotation: { id: 1 } })
+        )
+      );
       await client.createAnnotation({ experiment_id: 1 });
     });
 
     it('should archive annotation', async () => {
-      server.use(http.put(`${BASE_URL}/experiment_annotations/1/archive`, () => HttpResponse.json({ ok: true })));
+      server.use(
+        http.put(`${BASE_URL}/experiment_annotations/1/archive`, () =>
+          HttpResponse.json({ ok: true })
+        )
+      );
       await client.archiveAnnotation(1 as any);
     });
   });
 
   describe('custom sections and fields', () => {
     it('should list custom section fields', async () => {
-      server.use(http.get(`${BASE_URL}/experiment_custom_section_fields`, () =>
-        HttpResponse.json({ experiment_custom_section_fields: [{ id: 1, name: 'f1' }] })
-      ));
+      server.use(
+        http.get(`${BASE_URL}/experiment_custom_section_fields`, () =>
+          HttpResponse.json({ experiment_custom_section_fields: [{ id: 1, name: 'f1' }] })
+        )
+      );
       expect(await client.listCustomSectionFields()).toHaveLength(1);
     });
 
     it('should list custom sections', async () => {
-      server.use(http.get(`${BASE_URL}/experiment_custom_sections`, () =>
-        HttpResponse.json({ experiment_custom_sections: [] })
-      ));
+      server.use(
+        http.get(`${BASE_URL}/experiment_custom_sections`, () =>
+          HttpResponse.json({ experiment_custom_sections: [] })
+        )
+      );
       expect(await client.listCustomSections()).toEqual([]);
     });
 
     it('should reorder custom sections', async () => {
-      server.use(http.put(`${BASE_URL}/experiment_custom_sections/order`, () =>
-        HttpResponse.json({ ok: true, errors: [] })
-      ));
+      server.use(
+        http.put(`${BASE_URL}/experiment_custom_sections/order`, () =>
+          HttpResponse.json({ ok: true, errors: [] })
+        )
+      );
       await client.reorderCustomSections([{ id: 1, order_index: 0 }]);
     });
   });
 
   describe('insights', () => {
     it('should get velocity insights', async () => {
-      server.use(http.get(`${BASE_URL}/insights/velocity/summary`, () => HttpResponse.json({ data: [] })));
-      const result = await client.getVelocityInsights({ from: 1000, to: 2000, aggregation: 'month' });
+      server.use(
+        http.get(`${BASE_URL}/insights/velocity/summary`, () => HttpResponse.json({ data: [] }))
+      );
+      const result = await client.getVelocityInsights({
+        from: 1000,
+        to: 2000,
+        aggregation: 'month',
+      });
       expect(result).toBeDefined();
     });
 
     it('should get decision insights', async () => {
-      server.use(http.get(`${BASE_URL}/insights/decisions/widgets`, () => HttpResponse.json({ data: [] })));
-      const result = await client.getDecisionInsights({ from: 1000, to: 2000, aggregation: 'week' });
+      server.use(
+        http.get(`${BASE_URL}/insights/decisions/widgets`, () => HttpResponse.json({ data: [] }))
+      );
+      const result = await client.getDecisionInsights({
+        from: 1000,
+        to: 2000,
+        aggregation: 'week',
+      });
       expect(result).toBeDefined();
     });
   });
@@ -892,84 +1092,141 @@ describe.skipIf(isLiveMode)('APIClient core', () => {
 
   describe('CORS origins', () => {
     it('should list/create/delete CORS origins', async () => {
-      server.use(http.get(`${BASE_URL}/cors`, () => HttpResponse.json({ cors_allowed_origins: [] })));
+      server.use(
+        http.get(`${BASE_URL}/cors`, () => HttpResponse.json({ cors_allowed_origins: [] }))
+      );
       expect(await client.listCorsOrigins()).toEqual([]);
 
-      server.use(http.post(`${BASE_URL}/cors`, () => HttpResponse.json({ cors_allowed_origin: { id: 1, origin: 'https://a.com' } })));
+      server.use(
+        http.post(`${BASE_URL}/cors`, () =>
+          HttpResponse.json({ cors_allowed_origin: { id: 1, origin: 'https://a.com' } })
+        )
+      );
       await client.createCorsOrigin({ origin: 'https://a.com' });
 
-      server.use(http.delete(`${BASE_URL}/cors/1`, () => HttpResponse.json({ ok: true, errors: [] })));
+      server.use(
+        http.delete(`${BASE_URL}/cors/1`, () => HttpResponse.json({ ok: true, errors: [] }))
+      );
       await client.deleteCorsOrigin(1 as any);
     });
   });
 
   describe('datasources', () => {
     it('should list/create datasources', async () => {
-      server.use(http.get(`${BASE_URL}/datasources`, () => HttpResponse.json({ event_datasource_configs: [] })));
+      server.use(
+        http.get(`${BASE_URL}/datasources`, () =>
+          HttpResponse.json({ event_datasource_configs: [] })
+        )
+      );
       expect(await client.listDatasources()).toEqual([]);
 
-      server.use(http.post(`${BASE_URL}/datasources`, () => HttpResponse.json({ event_datasource_config: { id: 1 } })));
+      server.use(
+        http.post(`${BASE_URL}/datasources`, () =>
+          HttpResponse.json({ event_datasource_config: { id: 1 } })
+        )
+      );
       await client.createDatasource({ type: 'pg' });
     });
 
     it('should test/introspect/validate datasource', async () => {
-      server.use(http.post(`${BASE_URL}/datasources/test`, () => HttpResponse.json({ ok: true, errors: [] })));
+      server.use(
+        http.post(`${BASE_URL}/datasources/test`, () => HttpResponse.json({ ok: true, errors: [] }))
+      );
       await client.testDatasource({ type: 'pg' });
 
-      server.use(http.post(`${BASE_URL}/datasources/introspect`, () => HttpResponse.json({ tables: [] })));
+      server.use(
+        http.post(`${BASE_URL}/datasources/introspect`, () => HttpResponse.json({ tables: [] }))
+      );
       await client.introspectDatasource({ type: 'pg' });
 
-      server.use(http.post(`${BASE_URL}/datasources/validate_query`, () => HttpResponse.json({ ok: true, errors: [] })));
+      server.use(
+        http.post(`${BASE_URL}/datasources/validate_query`, () =>
+          HttpResponse.json({ ok: true, errors: [] })
+        )
+      );
       await client.validateDatasourceQuery({ query: 'SELECT 1' });
     });
 
     it('should archive datasource', async () => {
-      server.use(http.put(`${BASE_URL}/datasources/1/archive`, () => HttpResponse.json({ ok: true })));
+      server.use(
+        http.put(`${BASE_URL}/datasources/1/archive`, () => HttpResponse.json({ ok: true }))
+      );
       await client.archiveDatasource(1 as any);
     });
   });
 
   describe('export configs', () => {
     it('should list/create/archive export configs', async () => {
-      server.use(http.get(`${BASE_URL}/export_configs`, () => HttpResponse.json({ export_configs: [] })));
+      server.use(
+        http.get(`${BASE_URL}/export_configs`, () => HttpResponse.json({ export_configs: [] }))
+      );
       expect(await client.listExportConfigs()).toEqual([]);
 
-      server.use(http.post(`${BASE_URL}/export_configs`, () => HttpResponse.json({ export_config: { id: 1 } })));
+      server.use(
+        http.post(`${BASE_URL}/export_configs`, () =>
+          HttpResponse.json({ export_config: { id: 1 } })
+        )
+      );
       await client.createExportConfig({ dest: 's3' });
 
-      server.use(http.put(`${BASE_URL}/export_configs/1/archive`, () => HttpResponse.json({ ok: true })));
+      server.use(
+        http.put(`${BASE_URL}/export_configs/1/archive`, () => HttpResponse.json({ ok: true }))
+      );
       await client.archiveExportConfig(1 as any);
     });
 
     it('should pause export config', async () => {
-      server.use(http.put(`${BASE_URL}/export_configs/1/pause`, () => HttpResponse.json({ ok: true, errors: [] })));
+      server.use(
+        http.put(`${BASE_URL}/export_configs/1/pause`, () =>
+          HttpResponse.json({ ok: true, errors: [] })
+        )
+      );
       await client.pauseExportConfig(1 as any);
     });
 
     it('should list export histories', async () => {
-      server.use(http.get(`${BASE_URL}/export_configs/1/export_histories`, () => HttpResponse.json({ export_histories: [] })));
+      server.use(
+        http.get(`${BASE_URL}/export_configs/1/export_histories`, () =>
+          HttpResponse.json({ export_histories: [] })
+        )
+      );
       expect(await client.listExportHistories(1 as any)).toEqual([]);
     });
   });
 
   describe('update schedules', () => {
     it('should list/create/delete update schedules', async () => {
-      server.use(http.get(`${BASE_URL}/experiment_update_schedules`, () => HttpResponse.json({ experiment_update_schedules: [] })));
+      server.use(
+        http.get(`${BASE_URL}/experiment_update_schedules`, () =>
+          HttpResponse.json({ experiment_update_schedules: [] })
+        )
+      );
       expect(await client.listUpdateSchedules()).toEqual([]);
 
-      server.use(http.post(`${BASE_URL}/experiment_update_schedules`, () =>
-        HttpResponse.json({ experiment_update_schedule: { id: 1 } })
-      ));
+      server.use(
+        http.post(`${BASE_URL}/experiment_update_schedules`, () =>
+          HttpResponse.json({ experiment_update_schedule: { id: 1 } })
+        )
+      );
       await client.createUpdateSchedule({ interval: '1h' });
 
-      server.use(http.delete(`${BASE_URL}/experiment_update_schedules/1`, () => new HttpResponse(null, { status: 204 })));
+      server.use(
+        http.delete(
+          `${BASE_URL}/experiment_update_schedules/1`,
+          () => new HttpResponse(null, { status: 204 })
+        )
+      );
       await client.deleteUpdateSchedule(1 as any);
     });
   });
 
   describe('access control policies', () => {
     it('should list access control policies', async () => {
-      server.use(http.get(`${BASE_URL}/access_control_policies`, () => HttpResponse.json({ access_control_policies: [] })));
+      server.use(
+        http.get(`${BASE_URL}/access_control_policies`, () =>
+          HttpResponse.json({ access_control_policies: [] })
+        )
+      );
       expect(await client.listAccessControlPolicies()).toEqual([]);
     });
   });
@@ -1055,7 +1312,9 @@ describe.skipIf(isLiveMode)('APIClient core', () => {
     it('should return the single non-exact match when only one result exists', async () => {
       server.use(
         http.get(`${BASE_URL}/experiments`, () =>
-          HttpResponse.json({ experiments: [{ id: 99, name: 'my-experiment-v2', state: 'running' }] })
+          HttpResponse.json({
+            experiments: [{ id: 99, name: 'my-experiment-v2', state: 'running' }],
+          })
         )
       );
       const result = await client.resolveExperimentId('my-experiment');
@@ -1077,11 +1336,7 @@ describe.skipIf(isLiveMode)('APIClient core', () => {
     });
 
     it('should throw not found when search returns zero results', async () => {
-      server.use(
-        http.get(`${BASE_URL}/experiments`, () =>
-          HttpResponse.json({ experiments: [] })
-        )
-      );
+      server.use(http.get(`${BASE_URL}/experiments`, () => HttpResponse.json({ experiments: [] })));
       await expect(client.resolveExperimentId('nonexistent')).rejects.toThrow(/not found/);
     });
   });
@@ -1098,7 +1353,7 @@ describe.skipIf(isLiveMode)('APIClient core', () => {
       let sentBody: Record<string, unknown> = {};
       server.use(
         http.put(`${BASE_URL}/experiments/1`, async ({ request }) => {
-          sentBody = await request.json() as Record<string, unknown>;
+          sentBody = (await request.json()) as Record<string, unknown>;
           return HttpResponse.json({ ok: true, experiment: { id: 1, ...sentBody }, errors: [] });
         })
       );

@@ -146,8 +146,10 @@ description: Testing the full roundtrip flow
     expect(modifiedTemplate.percentage_of_traffic).toBe(60);
 
     const updateData: Record<string, unknown> = {};
-    if (modifiedTemplate.display_name !== undefined) updateData.display_name = modifiedTemplate.display_name;
-    if (modifiedTemplate.percentage_of_traffic !== undefined) updateData.percentage_of_traffic = modifiedTemplate.percentage_of_traffic;
+    if (modifiedTemplate.display_name !== undefined)
+      updateData.display_name = modifiedTemplate.display_name;
+    if (modifiedTemplate.percentage_of_traffic !== undefined)
+      updateData.percentage_of_traffic = modifiedTemplate.percentage_of_traffic;
 
     const updated = await client.updateExperiment(experimentId, updateData);
     expect(updated.id).toBe(experimentId);

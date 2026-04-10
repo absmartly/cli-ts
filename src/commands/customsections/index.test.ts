@@ -1,11 +1,20 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { customSectionsCommand } from './index.js';
-import { getAPIClientFromOptions, getGlobalOptions, printFormatted } from '../../lib/utils/api-helper.js';
+import {
+  getAPIClientFromOptions,
+  getGlobalOptions,
+  printFormatted,
+} from '../../lib/utils/api-helper.js';
 import { resetCommand } from '../../test/helpers/command-reset.js';
 
 vi.mock('../../lib/utils/api-helper.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../lib/utils/api-helper.js')>();
-  return { ...actual, getAPIClientFromOptions: vi.fn(), getGlobalOptions: vi.fn(), printFormatted: vi.fn() };
+  return {
+    ...actual,
+    getAPIClientFromOptions: vi.fn(),
+    getGlobalOptions: vi.fn(),
+    printFormatted: vi.fn(),
+  };
 });
 
 describe('custom-sections command', () => {
@@ -55,9 +64,20 @@ describe('custom-sections command', () => {
     it('should create a custom section', async () => {
       mockClient.createCustomSection.mockResolvedValue({ id: 10, name: 'Section A' });
 
-      await customSectionsCommand.parseAsync(['node', 'test', 'create', '--name', 'Section A', '--type', 'text']);
+      await customSectionsCommand.parseAsync([
+        'node',
+        'test',
+        'create',
+        '--name',
+        'Section A',
+        '--type',
+        'text',
+      ]);
 
-      expect(mockClient.createCustomSection).toHaveBeenCalledWith({ name: 'Section A', type: 'text' });
+      expect(mockClient.createCustomSection).toHaveBeenCalledWith({
+        name: 'Section A',
+        type: 'text',
+      });
       const output = consoleSpy.mock.calls.flat().join(' ');
       expect(output).toContain('Custom section created');
     });
@@ -101,7 +121,13 @@ describe('custom-sections command', () => {
     it('should reorder custom sections', async () => {
       mockClient.reorderCustomSections.mockResolvedValue(undefined);
 
-      await customSectionsCommand.parseAsync(['node', 'test', 'reorder', '--sections', '1:0,2:1,3:2']);
+      await customSectionsCommand.parseAsync([
+        'node',
+        'test',
+        'reorder',
+        '--sections',
+        '1:0,2:1,3:2',
+      ]);
 
       expect(mockClient.reorderCustomSections).toHaveBeenCalledWith([
         { id: 1, order_index: 0 },

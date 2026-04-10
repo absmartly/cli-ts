@@ -1,11 +1,20 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { permissionsCommand } from './index.js';
-import { getAPIClientFromOptions, getGlobalOptions, printFormatted } from '../../lib/utils/api-helper.js';
+import {
+  getAPIClientFromOptions,
+  getGlobalOptions,
+  printFormatted,
+} from '../../lib/utils/api-helper.js';
 import { resetCommand } from '../../test/helpers/command-reset.js';
 
 vi.mock('../../lib/utils/api-helper.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../lib/utils/api-helper.js')>();
-  return { ...actual, getAPIClientFromOptions: vi.fn(), getGlobalOptions: vi.fn(), printFormatted: vi.fn() };
+  return {
+    ...actual,
+    getAPIClientFromOptions: vi.fn(),
+    getGlobalOptions: vi.fn(),
+    printFormatted: vi.fn(),
+  };
 });
 
 describe('permissions command', () => {
@@ -42,10 +51,7 @@ describe('permissions command', () => {
     await permissionsCommand.parseAsync(['node', 'test', 'list']);
 
     expect(mockClient.listPermissions).toHaveBeenCalled();
-    expect(printFormatted).toHaveBeenCalledWith(
-      [{ id: 1, name: 'read' }],
-      expect.anything()
-    );
+    expect(printFormatted).toHaveBeenCalledWith([{ id: 1, name: 'read' }], expect.anything());
   });
 
   it('should list permission categories', async () => {

@@ -33,7 +33,7 @@ export function validateTasks(tasks: string[]): void {
 
 export async function requestUpdate(
   client: APIClient,
-  params: RequestUpdateParams,
+  params: RequestUpdateParams
 ): Promise<CommandResult<{ experimentId: ExperimentId }>> {
   if (params.tasks) {
     validateTasks(params.tasks);

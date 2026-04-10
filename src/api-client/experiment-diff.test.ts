@@ -12,27 +12,21 @@ describe('diffExperiments', () => {
     const a = { id: 1, name: 'test', state: 'running' };
     const b = { id: 1, name: 'test', state: 'stopped' };
     const diffs = diffExperiments(a, b);
-    expect(diffs).toEqual([
-      { field: 'state', left: 'running', right: 'stopped' },
-    ]);
+    expect(diffs).toEqual([{ field: 'state', left: 'running', right: 'stopped' }]);
   });
 
   it('should detect added fields', () => {
     const a = { id: 1, name: 'test' };
     const b = { id: 1, name: 'test', state: 'running' };
     const diffs = diffExperiments(a, b);
-    expect(diffs).toEqual([
-      { field: 'state', left: undefined, right: 'running' },
-    ]);
+    expect(diffs).toEqual([{ field: 'state', left: undefined, right: 'running' }]);
   });
 
   it('should detect removed fields', () => {
     const a = { id: 1, name: 'test', state: 'running' };
     const b = { id: 1, name: 'test' };
     const diffs = diffExperiments(a, b);
-    expect(diffs).toEqual([
-      { field: 'state', left: 'running', right: undefined },
-    ]);
+    expect(diffs).toEqual([{ field: 'state', left: 'running', right: undefined }]);
   });
 
   it('should detect array changes', () => {
@@ -62,7 +56,7 @@ describe('diffExperiments', () => {
     const b = { id: 1, name: 'new', state: 'stopped', traffic: 50 };
     const diffs = diffExperiments(a, b);
     expect(diffs).toHaveLength(2);
-    expect(diffs.map(d => d.field)).toEqual(['name', 'state']);
+    expect(diffs.map((d) => d.field)).toEqual(['name', 'state']);
   });
 
   it('should handle both objects being empty', () => {

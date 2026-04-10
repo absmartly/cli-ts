@@ -10,7 +10,10 @@ export interface SerializerOptions {
   apiKey?: string;
 }
 
-async function fetchScreenshotBuffer(url: string, apiKey?: string): Promise<{ buffer: Buffer; contentType: string } | null> {
+async function fetchScreenshotBuffer(
+  url: string,
+  apiKey?: string
+): Promise<{ buffer: Buffer; contentType: string } | null> {
   try {
     const headers: Record<string, string> = {};
     if (apiKey) headers['Authorization'] = `Api-Key ${apiKey}`;
@@ -23,7 +26,9 @@ async function fetchScreenshotBuffer(url: string, apiKey?: string): Promise<{ bu
     const buffer = Buffer.from(await response.arrayBuffer());
     return { buffer, contentType };
   } catch (error) {
-    console.error(`Warning: Screenshot fetch error: ${error instanceof Error ? error.message : url}`);
+    console.error(
+      `Warning: Screenshot fetch error: ${error instanceof Error ? error.message : url}`
+    );
     return null;
   }
 }
@@ -31,12 +36,19 @@ async function fetchScreenshotBuffer(url: string, apiKey?: string): Promise<{ bu
 function escapeYamlScalar(value: unknown): string {
   const str = String(value);
   if (/[:"'\n\r\\#\[\]{}&*!|>%`]/.test(str) || str.trim() !== str || str === '') {
-    return '"' + str.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '\\r') + '"';
+    return (
+      '"' +
+      str.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '\\r') +
+      '"'
+    );
   }
   return str;
 }
 
-export async function experimentToMarkdown(experiment: Experiment, options: SerializerOptions = {}): Promise<string> {
+export async function experimentToMarkdown(
+  experiment: Experiment,
+  options: SerializerOptions = {}
+): Promise<string> {
   const exp = experiment as Record<string, unknown>;
   const parts: string[] = [];
 
@@ -47,7 +59,8 @@ export async function experimentToMarkdown(experiment: Experiment, options: Seri
   }
   parts.push(`type: ${exp.type || 'test'}\n`);
   if (exp.state) parts.push(`state: ${exp.state}\n`);
-  if (exp.percentage_of_traffic !== undefined) parts.push(`percentage_of_traffic: ${exp.percentage_of_traffic}\n`);
+  if (exp.percentage_of_traffic !== undefined)
+    parts.push(`percentage_of_traffic: ${exp.percentage_of_traffic}\n`);
   if (exp.percentages) parts.push(`percentages: ${exp.percentages}\n`);
 
   const unitType = experiment.unit_type as Record<string, unknown> | undefined;
@@ -55,7 +68,7 @@ export async function experimentToMarkdown(experiment: Experiment, options: Seri
 
   const applications = experiment.applications as Array<Record<string, unknown>> | undefined;
   if (applications && applications.length > 0) {
-    const appNames = applications.map(a => {
+    const appNames = applications.map((a) => {
       const nested = a.application as Record<string, unknown> | undefined;
       return nested?.name ?? a.name ?? a.application_id;
     });
@@ -64,7 +77,9 @@ export async function experimentToMarkdown(experiment: Experiment, options: Seri
 
   const primaryMetric = experiment.primary_metric as Record<string, unknown> | undefined;
   if (primaryMetric) {
-    parts.push(`primary_metric: ${escapeYamlScalar(primaryMetric.name || primaryMetric.metric_id || primaryMetric.id)}\n`);
+    parts.push(
+      `primary_metric: ${escapeYamlScalar(primaryMetric.name || primaryMetric.metric_id || primaryMetric.id)}\n`
+    );
   }
 
   const allMetrics = experiment.secondary_metrics as Array<Record<string, unknown>> | undefined;
@@ -88,7 +103,7 @@ export async function experimentToMarkdown(experiment: Experiment, options: Seri
       parts.push(`${key}:\n`);
       for (const m of metrics) {
         const metric = m.metric as Record<string, unknown> | undefined;
-      parts.push(`  - ${escapeYamlScalar(metric?.name || m.name || m.metric_id)}\n`);
+        parts.push(`  - ${escapeYamlScalar(metric?.name || m.name || m.metric_id)}\n`);
       }
     }
   }
@@ -99,7 +114,9 @@ export async function experimentToMarkdown(experiment: Experiment, options: Seri
     for (const o of owners) {
       const user = o.user as Record<string, unknown> | undefined;
       if (user?.first_name && user?.email) {
-        parts.push(`  - ${escapeYamlScalar(`${user.first_name} ${user.last_name ?? ''} <${user.email}>`.trim())}\n`);
+        parts.push(
+          `  - ${escapeYamlScalar(`${user.first_name} ${user.last_name ?? ''} <${user.email}>`.trim())}\n`
+        );
       } else {
         parts.push(`  - ${escapeYamlScalar(user?.email ?? o.user_id)}\n`);
       }
@@ -108,10 +125,12 @@ export async function experimentToMarkdown(experiment: Experiment, options: Seri
 
   const teams = exp.teams as Array<Record<string, unknown>> | undefined;
   if (teams && teams.length > 0) {
-    const teamNames = teams.map(t => {
-      const nested = t.team as Record<string, unknown> | undefined;
-      return nested?.name ?? t.name;
-    }).filter(Boolean);
+    const teamNames = teams
+      .map((t) => {
+        const nested = t.team as Record<string, unknown> | undefined;
+        return nested?.name ?? t.name;
+      })
+      .filter(Boolean);
     if (teamNames.length > 0) {
       parts.push(`teams:\n`);
       for (const name of teamNames) parts.push(`  - ${escapeYamlScalar(name)}\n`);
@@ -120,10 +139,12 @@ export async function experimentToMarkdown(experiment: Experiment, options: Seri
 
   const tags = exp.experiment_tags as Array<Record<string, unknown>> | undefined;
   if (tags && tags.length > 0) {
-    const tagNames = tags.map(t => {
-      const nested = t.experiment_tag as Record<string, unknown> | undefined;
-      return (nested?.tag as string) ?? (t.tag as Record<string, unknown>)?.name ?? t.tag;
-    }).filter(Boolean);
+    const tagNames = tags
+      .map((t) => {
+        const nested = t.experiment_tag as Record<string, unknown> | undefined;
+        return (nested?.tag as string) ?? (t.tag as Record<string, unknown>)?.name ?? t.tag;
+      })
+      .filter(Boolean);
     if (tagNames.length > 0) {
       parts.push(`tags:\n`);
       for (const name of tagNames) parts.push(`  - ${escapeYamlScalar(name)}\n`);
@@ -133,14 +154,16 @@ export async function experimentToMarkdown(experiment: Experiment, options: Seri
   if (exp.analysis_type) parts.push(`analysis_type: ${exp.analysis_type}\n`);
   if (exp.required_alpha) parts.push(`required_alpha: ${exp.required_alpha}\n`);
   if (exp.required_power) parts.push(`required_power: ${exp.required_power}\n`);
-  if (exp.baseline_participants_per_day) parts.push(`baseline_participants: ${exp.baseline_participants_per_day}\n`);
+  if (exp.baseline_participants_per_day)
+    parts.push(`baseline_participants: ${exp.baseline_participants_per_day}\n`);
 
   parts.push('---\n');
 
   if (exp.audience) {
     let audienceObj: unknown;
     try {
-      audienceObj = typeof exp.audience === 'string' ? JSON.parse(exp.audience as string) : exp.audience;
+      audienceObj =
+        typeof exp.audience === 'string' ? JSON.parse(exp.audience as string) : exp.audience;
     } catch {
       audienceObj = exp.audience;
     }
@@ -163,7 +186,7 @@ export async function experimentToMarkdown(experiment: Experiment, options: Seri
         parts.push(`config: ${configStr}\n`);
       }
 
-      const screenshot = variantScreenshots?.find(s => s.variant === idx);
+      const screenshot = variantScreenshots?.find((s) => s.variant === idx);
       if (screenshot) {
         const uploadId = screenshot.screenshot_file_upload_id as number | undefined;
         const label = (screenshot.label as string) || '';
@@ -171,7 +194,8 @@ export async function experimentToMarkdown(experiment: Experiment, options: Seri
         if (fileUpload) {
           const fileName = fileUpload.file_name as string;
           const relativePath = `${fileUpload.base_url}/${fileName}`;
-          const needsFetch = (options.embedScreenshots || options.screenshotsDir) && options.apiEndpoint;
+          const needsFetch =
+            (options.embedScreenshots || options.screenshotsDir) && options.apiEndpoint;
 
           if (needsFetch) {
             const baseUrl = stripApiVersionPath(options.apiEndpoint!);
@@ -218,20 +242,24 @@ export async function experimentToMarkdown(experiment: Experiment, options: Seri
     if (ubId) userLookup.set(ubId, updatedBy.email as string);
   }
 
-  const customFieldValues = exp.custom_section_field_values as Array<Record<string, unknown>> | undefined;
+  const customFieldValues = exp.custom_section_field_values as
+    | Array<Record<string, unknown>>
+    | undefined;
   if (customFieldValues && customFieldValues.length > 0) {
-    const nonEmpty = customFieldValues.filter(entry => {
-      const field = entry.custom_section_field as Record<string, unknown> | undefined;
-      return field?.title;
-    }).sort((a, b) => {
-      const fa = a.custom_section_field as Record<string, unknown>;
-      const fb = b.custom_section_field as Record<string, unknown>;
-      const sa = fa.custom_section as Record<string, unknown> | undefined;
-      const sb = fb.custom_section as Record<string, unknown> | undefined;
-      const sectionDiff = ((sa?.order_index as number) ?? 0) - ((sb?.order_index as number) ?? 0);
-      if (sectionDiff !== 0) return sectionDiff;
-      return ((fa.order_index as number) ?? 0) - ((fb.order_index as number) ?? 0);
-    });
+    const nonEmpty = customFieldValues
+      .filter((entry) => {
+        const field = entry.custom_section_field as Record<string, unknown> | undefined;
+        return field?.title;
+      })
+      .sort((a, b) => {
+        const fa = a.custom_section_field as Record<string, unknown>;
+        const fb = b.custom_section_field as Record<string, unknown>;
+        const sa = fa.custom_section as Record<string, unknown> | undefined;
+        const sb = fb.custom_section as Record<string, unknown> | undefined;
+        const sectionDiff = ((sa?.order_index as number) ?? 0) - ((sb?.order_index as number) ?? 0);
+        if (sectionDiff !== 0) return sectionDiff;
+        return ((fa.order_index as number) ?? 0) - ((fb.order_index as number) ?? 0);
+      });
     if (nonEmpty.length > 0) {
       let currentSection = '';
       for (const entry of nonEmpty) {
@@ -245,11 +273,14 @@ export async function experimentToMarkdown(experiment: Experiment, options: Seri
         if (fieldType === 'user' && value) {
           try {
             const parsed = JSON.parse(value);
-            const userIds = (parsed.selected as Array<{ userId: number }>)?.map(s => s.userId) ?? [];
-            const resolved = userIds.map(id => userLookup.get(id) ?? `user:${id}`);
+            const userIds =
+              (parsed.selected as Array<{ userId: number }>)?.map((s) => s.userId) ?? [];
+            const resolved = userIds.map((id) => userLookup.get(id) ?? `user:${id}`);
             value = resolved.join(', ');
           } catch {
-            console.error(`Warning: Custom field "${title}" has non-JSON user value, keeping raw value`);
+            console.error(
+              `Warning: Custom field "${title}" has non-JSON user value, keeping raw value`
+            );
           }
         }
 

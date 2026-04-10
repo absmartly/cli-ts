@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { validateRestartParams, restartExperiment, VALID_RESTART_REASONS, VALID_RESTART_TYPES } from './restart.js';
+import {
+  validateRestartParams,
+  restartExperiment,
+  VALID_RESTART_REASONS,
+  VALID_RESTART_TYPES,
+} from './restart.js';
 import type { ExperimentId } from '../../lib/api/branded-types.js';
 
 vi.mock('../../api-client/template/parser.js', () => ({
@@ -33,15 +38,15 @@ describe('restart', () => {
     });
 
     it('throws for invalid reason', () => {
-      expect(() =>
-        validateRestartParams({ ...baseParams, reason: 'invalid' }),
-      ).toThrow('Invalid reason: "invalid"');
+      expect(() => validateRestartParams({ ...baseParams, reason: 'invalid' })).toThrow(
+        'Invalid reason: "invalid"'
+      );
     });
 
     it('includes valid reasons in error message', () => {
-      expect(() =>
-        validateRestartParams({ ...baseParams, reason: 'invalid' }),
-      ).toThrow('Valid reasons:');
+      expect(() => validateRestartParams({ ...baseParams, reason: 'invalid' })).toThrow(
+        'Valid reasons:'
+      );
     });
 
     it('accepts all valid reasons', () => {
@@ -51,9 +56,9 @@ describe('restart', () => {
     });
 
     it('throws for invalid state', () => {
-      expect(() =>
-        validateRestartParams({ ...baseParams, state: 'stopped' }),
-      ).toThrow('Invalid state: "stopped"');
+      expect(() => validateRestartParams({ ...baseParams, state: 'stopped' })).toThrow(
+        'Invalid state: "stopped"'
+      );
     });
 
     it('accepts running state', () => {
@@ -65,9 +70,9 @@ describe('restart', () => {
     });
 
     it('throws for invalid asType', () => {
-      expect(() =>
-        validateRestartParams({ ...baseParams, asType: 'invalid' }),
-      ).toThrow('Invalid type: "invalid"');
+      expect(() => validateRestartParams({ ...baseParams, asType: 'invalid' })).toThrow(
+        'Invalid type: "invalid"'
+      );
     });
 
     it('accepts all valid types', () => {
@@ -83,7 +88,9 @@ describe('restart', () => {
         experimentId: id(1),
         defaultType: 'experiment',
       });
-      expect(mockClient.restartExperiment).toHaveBeenCalledWith(id(1), { note: 'Restarted via CLI' });
+      expect(mockClient.restartExperiment).toHaveBeenCalledWith(id(1), {
+        note: 'Restarted via CLI',
+      });
       expect(result.data).toEqual({ id: id(1), newId: 200 });
     });
 
@@ -95,22 +102,32 @@ describe('restart', () => {
         reshuffle: true,
         note: 'custom',
       });
-      expect(mockClient.restartExperiment).toHaveBeenCalledWith(id(1), expect.objectContaining({
-        note: 'custom',
-        reason: 'testing',
-        reshuffle: true,
-      }));
+      expect(mockClient.restartExperiment).toHaveBeenCalledWith(
+        id(1),
+        expect.objectContaining({
+          note: 'custom',
+          reason: 'testing',
+          reshuffle: true,
+        })
+      );
     });
 
     it('passes changes when provided', async () => {
       const changes = { name: 'restarted' };
-      await restartExperiment(mockClient as any, {
-        experimentId: id(1),
-        defaultType: 'experiment',
-      }, changes as any);
-      expect(mockClient.restartExperiment).toHaveBeenCalledWith(id(1), expect.objectContaining({
-        changes: { name: 'restarted' },
-      }));
+      await restartExperiment(
+        mockClient as any,
+        {
+          experimentId: id(1),
+          defaultType: 'experiment',
+        },
+        changes as any
+      );
+      expect(mockClient.restartExperiment).toHaveBeenCalledWith(
+        id(1),
+        expect.objectContaining({
+          changes: { name: 'restarted' },
+        })
+      );
     });
 
     it('throws on invalid reason during restart', async () => {
@@ -119,7 +136,7 @@ describe('restart', () => {
           experimentId: id(1),
           defaultType: 'experiment',
           reason: 'bad',
-        }),
+        })
       ).rejects.toThrow('Invalid reason');
     });
   });

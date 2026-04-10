@@ -15,9 +15,7 @@ function makeExperiment(overrides: Partial<Record<string, unknown>> = {}): Exper
     unit_type: { unit_type_id: 1, name: 'user_id' },
     applications: [{ application_id: 10, application: { name: 'web' }, application_version: '0' }],
     primary_metric: { metric_id: 30, name: 'clicks' },
-    secondary_metrics: [
-      { metric_id: 31, name: 'revenue', type: 'secondary', order_index: 0 },
-    ],
+    secondary_metrics: [{ metric_id: 31, name: 'revenue', type: 'secondary', order_index: 0 }],
     variants: [
       { name: 'control', variant: 0, config: '{"color":"red"}' },
       { name: 'treatment', variant: 1, config: '{"color":"blue"}' },
@@ -47,11 +45,13 @@ describe('experimentToMarkdown', () => {
   });
 
   it('should fall back to IDs when names are missing', async () => {
-    const md = await experimentToMarkdown(makeExperiment({
-      unit_type: { unit_type_id: 5 },
-      applications: [{ application_id: 20 }],
-      primary_metric: { metric_id: 99 },
-    }));
+    const md = await experimentToMarkdown(
+      makeExperiment({
+        unit_type: { unit_type_id: 5 },
+        applications: [{ application_id: 20 }],
+        primary_metric: { metric_id: 99 },
+      })
+    );
 
     expect(md).toContain('unit_type: 5');
     expect(md).toContain('application: 20');
@@ -67,12 +67,14 @@ describe('experimentToMarkdown', () => {
   });
 
   it('should include guardrail metrics from secondary_metrics with type guardrail', async () => {
-    const md = await experimentToMarkdown(makeExperiment({
-      secondary_metrics: [
-        { metric_id: 31, type: 'secondary', order_index: 0, metric: { name: 'revenue' } },
-        { metric_id: 40, type: 'guardrail', order_index: 1, metric: { name: 'latency' } },
-      ],
-    }));
+    const md = await experimentToMarkdown(
+      makeExperiment({
+        secondary_metrics: [
+          { metric_id: 31, type: 'secondary', order_index: 0, metric: { name: 'revenue' } },
+          { metric_id: 40, type: 'guardrail', order_index: 1, metric: { name: 'latency' } },
+        ],
+      })
+    );
 
     expect(md).toContain('secondary_metrics:');
     expect(md).toContain('  - revenue');
@@ -81,12 +83,14 @@ describe('experimentToMarkdown', () => {
   });
 
   it('should include exploratory metrics from secondary_metrics with type exploratory', async () => {
-    const md = await experimentToMarkdown(makeExperiment({
-      secondary_metrics: [
-        { metric_id: 31, type: 'secondary', order_index: 0, metric: { name: 'revenue' } },
-        { metric_id: 50, type: 'exploratory', order_index: 1, metric: { name: 'page_views' } },
-      ],
-    }));
+    const md = await experimentToMarkdown(
+      makeExperiment({
+        secondary_metrics: [
+          { metric_id: 31, type: 'secondary', order_index: 0, metric: { name: 'revenue' } },
+          { metric_id: 50, type: 'exploratory', order_index: 1, metric: { name: 'page_views' } },
+        ],
+      })
+    );
 
     expect(md).toContain('secondary_metrics:');
     expect(md).toContain('  - revenue');
@@ -95,28 +99,34 @@ describe('experimentToMarkdown', () => {
   });
 
   it('should export custom fields grouped by section', async () => {
-    const md = await experimentToMarkdown(makeExperiment({
-      custom_section_field_values: [
-        {
-          experiment_custom_section_field_id: 1,
-          type: 'text',
-          value: 'Users will click more',
-          custom_section_field: {
-            id: 1, title: 'Hypothesis', order_index: 1,
-            custom_section: { title: 'Description', order_index: 2 },
+    const md = await experimentToMarkdown(
+      makeExperiment({
+        custom_section_field_values: [
+          {
+            experiment_custom_section_field_id: 1,
+            type: 'text',
+            value: 'Users will click more',
+            custom_section_field: {
+              id: 1,
+              title: 'Hypothesis',
+              order_index: 1,
+              custom_section: { title: 'Description', order_index: 2 },
+            },
           },
-        },
-        {
-          experiment_custom_section_field_id: 5,
-          type: 'text',
-          value: 'https://jira.example.com/IT-123',
-          custom_section_field: {
-            id: 5, title: 'JIRA URL', order_index: 1,
-            custom_section: { title: 'JIRA', order_index: 1 },
+          {
+            experiment_custom_section_field_id: 5,
+            type: 'text',
+            value: 'https://jira.example.com/IT-123',
+            custom_section_field: {
+              id: 5,
+              title: 'JIRA URL',
+              order_index: 1,
+              custom_section: { title: 'JIRA', order_index: 1 },
+            },
           },
-        },
-      ],
-    }));
+        ],
+      })
+    );
 
     expect(md).toContain('## JIRA');
     expect(md).toContain('### JIRA URL');
@@ -142,31 +152,35 @@ describe('experimentToMarkdown', () => {
   });
 
   it('should serialize object config as JSON', async () => {
-    const md = await experimentToMarkdown(makeExperiment({
-      variants: [
-        { name: 'control', variant: 0, config: { color: 'red' } },
-      ],
-    }));
+    const md = await experimentToMarkdown(
+      makeExperiment({
+        variants: [{ name: 'control', variant: 0, config: { color: 'red' } }],
+      })
+    );
 
     expect(md).toContain('config: {"color":"red"}');
   });
 
   it('should include owner email for single owner', async () => {
-    const md = await experimentToMarkdown(makeExperiment({
-      owners: [{ user_id: 42, user: { email: 'jane@example.com' } }],
-    }));
+    const md = await experimentToMarkdown(
+      makeExperiment({
+        owners: [{ user_id: 42, user: { email: 'jane@example.com' } }],
+      })
+    );
 
     expect(md).toContain('owners:');
     expect(md).toContain('  - jane@example.com');
   });
 
   it('should include owner emails for multiple owners', async () => {
-    const md = await experimentToMarkdown(makeExperiment({
-      owners: [
-        { user_id: 42, user: { email: 'jane@example.com' } },
-        { user_id: 43, user: { email: 'john@example.com' } },
-      ],
-    }));
+    const md = await experimentToMarkdown(
+      makeExperiment({
+        owners: [
+          { user_id: 42, user: { email: 'jane@example.com' } },
+          { user_id: 43, user: { email: 'john@example.com' } },
+        ],
+      })
+    );
 
     expect(md).toContain('owners:');
     expect(md).toContain('  - jane@example.com');
@@ -174,21 +188,22 @@ describe('experimentToMarkdown', () => {
   });
 
   it('should fall back to user_id when user object is missing', async () => {
-    const md = await experimentToMarkdown(makeExperiment({
-      owners: [{ user_id: 42 }],
-    }));
+    const md = await experimentToMarkdown(
+      makeExperiment({
+        owners: [{ user_id: 42 }],
+      })
+    );
 
     expect(md).toContain('owners:');
     expect(md).toContain('  - 42');
   });
 
   it('should include teams', async () => {
-    const md = await experimentToMarkdown(makeExperiment({
-      teams: [
-        { team: { name: 'Growth' } },
-        { team: { name: 'Engineering' } },
-      ],
-    }));
+    const md = await experimentToMarkdown(
+      makeExperiment({
+        teams: [{ team: { name: 'Growth' } }, { team: { name: 'Engineering' } }],
+      })
+    );
 
     expect(md).toContain('teams:');
     expect(md).toContain('  - Growth');
@@ -196,12 +211,14 @@ describe('experimentToMarkdown', () => {
   });
 
   it('should include tags', async () => {
-    const md = await experimentToMarkdown(makeExperiment({
-      experiment_tags: [
-        { experiment_tag: { tag: 'q1' } },
-        { experiment_tag: { tag: 'homepage' } },
-      ],
-    }));
+    const md = await experimentToMarkdown(
+      makeExperiment({
+        experiment_tags: [
+          { experiment_tag: { tag: 'q1' } },
+          { experiment_tag: { tag: 'homepage' } },
+        ],
+      })
+    );
 
     expect(md).toContain('tags:');
     expect(md).toContain('  - q1');
@@ -209,9 +226,11 @@ describe('experimentToMarkdown', () => {
   });
 
   it('should include audience as JSON block', async () => {
-    const md = await experimentToMarkdown(makeExperiment({
-      audience: '{"filter":[]}',
-    }));
+    const md = await experimentToMarkdown(
+      makeExperiment({
+        audience: '{"filter":[]}',
+      })
+    );
 
     expect(md).toContain('## Audience');
     expect(md).toContain('```json');
@@ -220,12 +239,14 @@ describe('experimentToMarkdown', () => {
   });
 
   it('should include analysis config fields', async () => {
-    const md = await experimentToMarkdown(makeExperiment({
-      analysis_type: 'group_sequential',
-      required_alpha: '0.05',
-      required_power: '0.8',
-      baseline_participants_per_day: '100',
-    }));
+    const md = await experimentToMarkdown(
+      makeExperiment({
+        analysis_type: 'group_sequential',
+        required_alpha: '0.05',
+        required_power: '0.8',
+        baseline_participants_per_day: '100',
+      })
+    );
 
     expect(md).toContain('analysis_type: group_sequential');
     expect(md).toContain('required_alpha: 0.05');
@@ -234,13 +255,15 @@ describe('experimentToMarkdown', () => {
   });
 
   it('should omit sections when data is absent', async () => {
-    const md = await experimentToMarkdown(makeExperiment({
-      unit_type: undefined,
-      applications: undefined,
-      primary_metric: undefined,
-      secondary_metrics: undefined,
-      variants: undefined,
-    }));
+    const md = await experimentToMarkdown(
+      makeExperiment({
+        unit_type: undefined,
+        applications: undefined,
+        primary_metric: undefined,
+        secondary_metrics: undefined,
+        variants: undefined,
+      })
+    );
 
     expect(md).not.toContain('unit_type:');
     expect(md).not.toContain('application:');
@@ -249,66 +272,72 @@ describe('experimentToMarkdown', () => {
   });
 
   it('should include screenshot URL from variant_screenshots', async () => {
-    const md = await experimentToMarkdown(makeExperiment({
-      variant_screenshots: [
-        {
-          experiment_id: 1,
-          variant: 0,
-          screenshot_file_upload_id: 100,
-          label: 'control.png',
-          file_upload: {
-            id: 100,
-            file_usage_id: 2,
-            file_name: 'control.png',
-            file_size: 1000,
-            content_type: 'image/png',
-            base_url: '/files/variant_screenshots/abc123',
-            width: 800,
-            height: 600,
-            crop_left: 0,
-            crop_top: 0,
-            crop_width: 800,
-            crop_height: 600,
+    const md = await experimentToMarkdown(
+      makeExperiment({
+        variant_screenshots: [
+          {
+            experiment_id: 1,
+            variant: 0,
+            screenshot_file_upload_id: 100,
+            label: 'control.png',
+            file_upload: {
+              id: 100,
+              file_usage_id: 2,
+              file_name: 'control.png',
+              file_size: 1000,
+              content_type: 'image/png',
+              base_url: '/files/variant_screenshots/abc123',
+              width: 800,
+              height: 600,
+              crop_left: 0,
+              crop_top: 0,
+              crop_width: 800,
+              crop_height: 600,
+            },
           },
-        },
-      ],
-    }));
+        ],
+      })
+    );
 
     expect(md).toContain('### variant_0');
     expect(md).toContain('![control.png](/files/variant_screenshots/abc123/control.png)');
   });
 
   it('should match screenshot to correct variant', async () => {
-    const md = await experimentToMarkdown(makeExperiment({
-      variant_screenshots: [
-        {
-          experiment_id: 1,
-          variant: 1,
-          screenshot_file_upload_id: 200,
-          label: 'treatment.png',
-          file_upload: {
-            id: 200,
-            file_usage_id: 2,
-            file_name: 'treatment.png',
-            file_size: 2000,
-            content_type: 'image/png',
-            base_url: '/files/variant_screenshots/def456',
-            width: 800,
-            height: 600,
-            crop_left: 0,
-            crop_top: 0,
-            crop_width: 800,
-            crop_height: 600,
+    const md = await experimentToMarkdown(
+      makeExperiment({
+        variant_screenshots: [
+          {
+            experiment_id: 1,
+            variant: 1,
+            screenshot_file_upload_id: 200,
+            label: 'treatment.png',
+            file_upload: {
+              id: 200,
+              file_usage_id: 2,
+              file_name: 'treatment.png',
+              file_size: 2000,
+              content_type: 'image/png',
+              base_url: '/files/variant_screenshots/def456',
+              width: 800,
+              height: 600,
+              crop_left: 0,
+              crop_top: 0,
+              crop_width: 800,
+              crop_height: 600,
+            },
           },
-        },
-      ],
-    }));
+        ],
+      })
+    );
 
     const v0Section = md.split('### variant_0')[1]?.split('### variant_1')[0] ?? '';
     expect(v0Section).not.toContain('![');
 
     const v1Section = md.split('### variant_1')[1] ?? '';
-    expect(v1Section).toContain('![treatment.png](/files/variant_screenshots/def456/treatment.png)');
+    expect(v1Section).toContain(
+      '![treatment.png](/files/variant_screenshots/def456/treatment.png)'
+    );
   });
 
   it('should produce output that round-trips through the parser', async () => {

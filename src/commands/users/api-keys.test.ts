@@ -1,11 +1,20 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { usersCommand } from './index.js';
-import { getAPIClientFromOptions, getGlobalOptions, printFormatted } from '../../lib/utils/api-helper.js';
+import {
+  getAPIClientFromOptions,
+  getGlobalOptions,
+  printFormatted,
+} from '../../lib/utils/api-helper.js';
 import { resetCommand } from '../../test/helpers/command-reset.js';
 
 vi.mock('../../lib/utils/api-helper.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../lib/utils/api-helper.js')>();
-  return { ...actual, getAPIClientFromOptions: vi.fn(), getGlobalOptions: vi.fn(), printFormatted: vi.fn() };
+  return {
+    ...actual,
+    getAPIClientFromOptions: vi.fn(),
+    getGlobalOptions: vi.fn(),
+    printFormatted: vi.fn(),
+  };
 });
 
 describe('users api-keys command', () => {
@@ -16,15 +25,19 @@ describe('users api-keys command', () => {
   const mockClient = {
     listUserApiKeysByUserId: vi.fn().mockResolvedValue([{ id: 1, name: 'key1' }]),
     getUserApiKeyByUserId: vi.fn().mockResolvedValue({ id: 1, name: 'key1' }),
-    createUserApiKeyByUserId: vi.fn().mockResolvedValue({ id: 2, name: 'new-key', key: 'secret-key-value' }),
+    createUserApiKeyByUserId: vi
+      .fn()
+      .mockResolvedValue({ id: 2, name: 'new-key', key: 'secret-key-value' }),
     updateUserApiKeyByUserId: vi.fn().mockResolvedValue({ id: 1, name: 'updated' }),
     deleteUserApiKeyByUserId: vi.fn().mockResolvedValue(undefined),
     resolveUsers: vi.fn().mockImplementation((refs: string[]) => {
-      return Promise.resolve(refs.map(ref => {
-        if (ref === 'jane@example.com') return { id: 42, email: 'jane@example.com' };
-        if (ref === 'Jane Doe') return { id: 42, email: 'jane@example.com' };
-        return { id: parseInt(ref, 10), email: `user${ref}@example.com` };
-      }));
+      return Promise.resolve(
+        refs.map((ref) => {
+          if (ref === 'jane@example.com') return { id: 42, email: 'jane@example.com' };
+          if (ref === 'Jane Doe') return { id: 42, email: 'jane@example.com' };
+          return { id: parseInt(ref, 10), email: `user${ref}@example.com` };
+        })
+      );
     }),
   };
 
@@ -56,7 +69,14 @@ describe('users api-keys command', () => {
   });
 
   it('should list api keys for a user by email', async () => {
-    await usersCommand.parseAsync(['node', 'test', 'api-keys', 'list', '--user', 'jane@example.com']);
+    await usersCommand.parseAsync([
+      'node',
+      'test',
+      'api-keys',
+      'list',
+      '--user',
+      'jane@example.com',
+    ]);
 
     expect(mockClient.resolveUsers).toHaveBeenCalledWith(['jane@example.com']);
     expect(mockClient.listUserApiKeysByUserId).toHaveBeenCalledWith(42, 20, 1);
@@ -70,7 +90,18 @@ describe('users api-keys command', () => {
   });
 
   it('should list api keys with pagination', async () => {
-    await usersCommand.parseAsync(['node', 'test', 'api-keys', 'list', '--user', '42', '--items', '10', '--page', '2']);
+    await usersCommand.parseAsync([
+      'node',
+      'test',
+      'api-keys',
+      'list',
+      '--user',
+      '42',
+      '--items',
+      '10',
+      '--page',
+      '2',
+    ]);
 
     expect(mockClient.listUserApiKeysByUserId).toHaveBeenCalledWith(42, 10, 2);
   });
@@ -83,9 +114,21 @@ describe('users api-keys command', () => {
   });
 
   it('should create an api key for a user', async () => {
-    await usersCommand.parseAsync(['node', 'test', 'api-keys', 'create', '--user', '42', '--name', 'my-key']);
+    await usersCommand.parseAsync([
+      'node',
+      'test',
+      'api-keys',
+      'create',
+      '--user',
+      '42',
+      '--name',
+      'my-key',
+    ]);
 
-    expect(mockClient.createUserApiKeyByUserId).toHaveBeenCalledWith(42, { name: 'my-key', description: undefined });
+    expect(mockClient.createUserApiKeyByUserId).toHaveBeenCalledWith(42, {
+      name: 'my-key',
+      description: undefined,
+    });
     const output = consoleSpy.mock.calls.flat().join(' ');
     expect(output).toContain('API key created');
     expect(output).toContain('secret-key-value');
@@ -93,20 +136,56 @@ describe('users api-keys command', () => {
   });
 
   it('should create an api key with description', async () => {
-    await usersCommand.parseAsync(['node', 'test', 'api-keys', 'create', '--user', '42', '--name', 'my-key', '--description', 'test key']);
+    await usersCommand.parseAsync([
+      'node',
+      'test',
+      'api-keys',
+      'create',
+      '--user',
+      '42',
+      '--name',
+      'my-key',
+      '--description',
+      'test key',
+    ]);
 
-    expect(mockClient.createUserApiKeyByUserId).toHaveBeenCalledWith(42, { name: 'my-key', description: 'test key' });
+    expect(mockClient.createUserApiKeyByUserId).toHaveBeenCalledWith(42, {
+      name: 'my-key',
+      description: 'test key',
+    });
   });
 
   it('should create an api key resolving user by email', async () => {
-    await usersCommand.parseAsync(['node', 'test', 'api-keys', 'create', '--user', 'jane@example.com', '--name', 'ci-key']);
+    await usersCommand.parseAsync([
+      'node',
+      'test',
+      'api-keys',
+      'create',
+      '--user',
+      'jane@example.com',
+      '--name',
+      'ci-key',
+    ]);
 
     expect(mockClient.resolveUsers).toHaveBeenCalledWith(['jane@example.com']);
-    expect(mockClient.createUserApiKeyByUserId).toHaveBeenCalledWith(42, { name: 'ci-key', description: undefined });
+    expect(mockClient.createUserApiKeyByUserId).toHaveBeenCalledWith(42, {
+      name: 'ci-key',
+      description: undefined,
+    });
   });
 
   it('should update an api key for a user', async () => {
-    await usersCommand.parseAsync(['node', 'test', 'api-keys', 'update', '1', '--user', '42', '--name', 'renamed']);
+    await usersCommand.parseAsync([
+      'node',
+      'test',
+      'api-keys',
+      'update',
+      '1',
+      '--user',
+      '42',
+      '--name',
+      'renamed',
+    ]);
 
     expect(mockClient.updateUserApiKeyByUserId).toHaveBeenCalledWith(42, 1, { name: 'renamed' });
     const output = consoleSpy.mock.calls.flat().join(' ');

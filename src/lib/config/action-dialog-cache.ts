@@ -46,7 +46,9 @@ function writeCache(data: CacheData): void {
     if (!existsSync(dir)) mkdirSync(dir, { recursive: true, mode: 0o700 });
     writeFileSync(CACHE_FILE, JSON.stringify(data, null, 2), { encoding: 'utf8', mode: 0o600 });
   } catch (e) {
-    console.error(`Warning: could not write action dialog cache: ${e instanceof Error ? e.message : e}`);
+    console.error(
+      `Warning: could not write action dialog cache: ${e instanceof Error ? e.message : e}`
+    );
   }
 }
 
@@ -64,8 +66,8 @@ export function saveCachedActionDialogFields(profile: string, fields: ActionDial
 export function getActionDialogField(
   profile: string,
   actionType: string,
-  experimentType: string,
+  experimentType: string
 ): ActionDialogField | undefined {
   const fields = loadCachedActionDialogFields(profile);
-  return fields.find(f => f.action_type === actionType && f.type === experimentType);
+  return fields.find((f) => f.action_type === actionType && f.type === experimentType);
 }

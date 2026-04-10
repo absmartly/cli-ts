@@ -28,9 +28,24 @@ describe('refresh-fields command', () => {
   let processExitSpy: ReturnType<typeof vi.spyOn>;
 
   const mockFields = [
-    { name: 'hypothesis', type: 'text', archived: false, custom_section: { type: 'test', archived: false } },
-    { name: 'owner', type: 'select', archived: false, custom_section: { type: 'feature', archived: false } },
-    { name: 'old-field', type: 'text', archived: true, custom_section: { type: 'test', archived: false } },
+    {
+      name: 'hypothesis',
+      type: 'text',
+      archived: false,
+      custom_section: { type: 'test', archived: false },
+    },
+    {
+      name: 'owner',
+      type: 'select',
+      archived: false,
+      custom_section: { type: 'feature', archived: false },
+    },
+    {
+      name: 'old-field',
+      type: 'text',
+      archived: true,
+      custom_section: { type: 'test', archived: false },
+    },
   ];
 
   const mockActionFields = [

@@ -13,8 +13,6 @@ function resolveLiveAuth(): string | AuthConfig {
   return process.env.LIVE_API_KEY!;
 }
 
-export const TEST_API_KEY: string | AuthConfig = isLiveMode
-  ? resolveLiveAuth()
-  : 'test-api-key';
+export const TEST_API_KEY: string | AuthConfig = isLiveMode ? resolveLiveAuth() : 'test-api-key';
 
 export const TEST_TIMEOUT = isLiveMode ? 10000 : undefined;

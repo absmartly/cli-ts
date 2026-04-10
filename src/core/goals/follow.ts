@@ -8,7 +8,7 @@ export interface FollowGoalParams {
 
 export async function followGoal(
   client: APIClient,
-  params: FollowGoalParams,
+  params: FollowGoalParams
 ): Promise<CommandResult<void>> {
   await client.followGoal(params.id);
   return { data: undefined };
@@ -20,7 +20,7 @@ export interface UnfollowGoalParams {
 
 export async function unfollowGoal(
   client: APIClient,
-  params: UnfollowGoalParams,
+  params: UnfollowGoalParams
 ): Promise<CommandResult<void>> {
   await client.unfollowGoal(params.id);
   return { data: undefined };

@@ -1,11 +1,20 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { metricsCommand } from './metrics.js';
-import { getAPIClientFromOptions, getGlobalOptions, printFormatted } from '../../lib/utils/api-helper.js';
+import {
+  getAPIClientFromOptions,
+  getGlobalOptions,
+  printFormatted,
+} from '../../lib/utils/api-helper.js';
 import { resetCommand } from '../../test/helpers/command-reset.js';
 
 vi.mock('../../lib/utils/api-helper.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../lib/utils/api-helper.js')>();
-  return { ...actual, getAPIClientFromOptions: vi.fn(), getGlobalOptions: vi.fn(), printFormatted: vi.fn() };
+  return {
+    ...actual,
+    getAPIClientFromOptions: vi.fn(),
+    getGlobalOptions: vi.fn(),
+    printFormatted: vi.fn(),
+  };
 });
 
 describe('experiments metrics', () => {
@@ -56,7 +65,7 @@ describe('experiments metrics', () => {
           { id: 1, name: 'Conversions', type: 'primary', owners: '' },
           { id: 2, name: 'Revenue', type: 'secondary', owners: '' },
         ],
-        expect.any(Object),
+        expect.any(Object)
       );
     });
   });
@@ -124,7 +133,20 @@ describe('experiments metrics', () => {
   describe('results --cached', () => {
     it('should fetch cached previewer results', async () => {
       const cachedData = {
-        columnNames: ['variant', 'unit_count', 'metric_1_impact', 'metric_1_impact_ci_lower', 'metric_1_impact_ci_upper', 'metric_1_pvalue', 'metric_1_mean', 'metric_1', 'metric_1_var', 'metric_1_abs_impact', 'metric_1_abs_impact_ci_lower', 'metric_1_abs_impact_ci_upper'],
+        columnNames: [
+          'variant',
+          'unit_count',
+          'metric_1_impact',
+          'metric_1_impact_ci_lower',
+          'metric_1_impact_ci_upper',
+          'metric_1_pvalue',
+          'metric_1_mean',
+          'metric_1',
+          'metric_1_var',
+          'metric_1_abs_impact',
+          'metric_1_abs_impact_ci_lower',
+          'metric_1_abs_impact_ci_upper',
+        ],
         rows: [
           [0, 1000, null, null, null, null, 2.0, 500, 0.5, null, null, null],
           [1, 1000, 0.05, 0.01, 0.09, 0.02, 2.1, 520, 0.6, 0.1, 0.02, 0.18],
@@ -136,7 +158,10 @@ describe('experiments metrics', () => {
         primary_metric_id: 1,
         primary_metric: { name: 'Conversions', effect: 'positive' },
         secondary_metrics: [],
-        variants: [{ variant: 0, name: 'Control' }, { variant: 1, name: 'Treatment' }],
+        variants: [
+          { variant: 0, name: 'Control' },
+          { variant: 1, name: 'Treatment' },
+        ],
       });
 
       await metricsCommand.parseAsync(['node', 'test', 'results', '42', '--cached']);
@@ -149,7 +174,20 @@ describe('experiments metrics', () => {
 
     it('should show pending update request status', async () => {
       const cachedData = {
-        columnNames: ['variant', 'unit_count', 'metric_1_impact', 'metric_1_impact_ci_lower', 'metric_1_impact_ci_upper', 'metric_1_pvalue', 'metric_1_mean', 'metric_1', 'metric_1_var', 'metric_1_abs_impact', 'metric_1_abs_impact_ci_lower', 'metric_1_abs_impact_ci_upper'],
+        columnNames: [
+          'variant',
+          'unit_count',
+          'metric_1_impact',
+          'metric_1_impact_ci_lower',
+          'metric_1_impact_ci_upper',
+          'metric_1_pvalue',
+          'metric_1_mean',
+          'metric_1',
+          'metric_1_var',
+          'metric_1_abs_impact',
+          'metric_1_abs_impact_ci_lower',
+          'metric_1_abs_impact_ci_upper',
+        ],
         rows: [
           [0, 1000, null, null, null, null, 2.0, 500, 0.5, null, null, null],
           [1, 1000, 0.05, 0.01, 0.09, 0.02, 2.1, 520, 0.6, 0.1, 0.02, 0.18],
@@ -161,7 +199,10 @@ describe('experiments metrics', () => {
         primary_metric_id: 1,
         primary_metric: { name: 'Conversions', effect: 'positive' },
         secondary_metrics: [],
-        variants: [{ variant: 0, name: 'Control' }, { variant: 1, name: 'Treatment' }],
+        variants: [
+          { variant: 0, name: 'Control' },
+          { variant: 1, name: 'Treatment' },
+        ],
       });
 
       await metricsCommand.parseAsync(['node', 'test', 'results', '42', '--cached']);

@@ -82,9 +82,15 @@ describe('metrics', () => {
       });
       const result = await listExperimentMetrics(mockClient as any, { experimentId: id(10) });
       expect(result.data).toHaveLength(3);
-      expect(result.data![0]).toEqual(expect.objectContaining({ id: 1, name: 'Click Rate', type: 'primary' }));
-      expect(result.data![1]).toEqual(expect.objectContaining({ id: 2, name: 'Revenue', type: 'secondary' }));
-      expect(result.data![2]).toEqual(expect.objectContaining({ id: 3, name: 'Error Rate', type: 'guardrail' }));
+      expect(result.data![0]).toEqual(
+        expect.objectContaining({ id: 1, name: 'Click Rate', type: 'primary' })
+      );
+      expect(result.data![1]).toEqual(
+        expect.objectContaining({ id: 2, name: 'Revenue', type: 'secondary' })
+      );
+      expect(result.data![2]).toEqual(
+        expect.objectContaining({ id: 3, name: 'Error Rate', type: 'guardrail' })
+      );
     });
 
     it('returns empty when no metrics', async () => {
@@ -100,7 +106,10 @@ describe('metrics', () => {
         experimentId: id(1),
         metricIds: [metricId(10), metricId(20)],
       });
-      expect(mockClient.addExperimentMetrics).toHaveBeenCalledWith(id(1), [metricId(10), metricId(20)]);
+      expect(mockClient.addExperimentMetrics).toHaveBeenCalledWith(id(1), [
+        metricId(10),
+        metricId(20),
+      ]);
       expect(result.data).toEqual({ experimentId: id(1) });
     });
   });

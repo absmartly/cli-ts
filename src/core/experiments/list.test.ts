@@ -29,7 +29,7 @@ describe('list', () => {
   it('calls listExperiments with page and items', async () => {
     await listExperiments(mockClient as any, { items: 25, page: 1 });
     expect(mockClient.listExperiments).toHaveBeenCalledWith(
-      expect.objectContaining({ page: 1, items: 25, previews: true }),
+      expect.objectContaining({ page: 1, items: 25, previews: true })
     );
   });
 
@@ -80,14 +80,14 @@ describe('list', () => {
         search: 'test',
         sort: 'created_at',
         ascending: true,
-      }),
+      })
     );
   });
 
   it('passes desc as ascending=false', async () => {
     await listExperiments(mockClient as any, { items: 25, page: 1, desc: true });
     expect(mockClient.listExperiments).toHaveBeenCalledWith(
-      expect.objectContaining({ ascending: false }),
+      expect.objectContaining({ ascending: false })
     );
   });
 
@@ -102,7 +102,7 @@ describe('list', () => {
       expect.objectContaining({
         alert_srm: 1,
         alert_cleanup_needed: 0,
-      }),
+      })
     );
   });
 });

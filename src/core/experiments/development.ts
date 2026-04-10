@@ -9,7 +9,7 @@ export interface DevelopmentExperimentParams {
 
 export async function developmentExperiment(
   client: APIClient,
-  params: DevelopmentExperimentParams,
+  params: DevelopmentExperimentParams
 ): Promise<CommandResult<{ id: ExperimentId }>> {
   await client.developmentExperiment(params.experimentId, params.note);
   return {

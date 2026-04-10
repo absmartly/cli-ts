@@ -39,7 +39,9 @@ function writeCache(data: CacheData): void {
     if (!existsSync(dir)) mkdirSync(dir, { recursive: true, mode: 0o700 });
     writeFileSync(CACHE_FILE, JSON.stringify(data, null, 2), { encoding: 'utf8', mode: 0o600 });
   } catch (e) {
-    console.error(`Warning: could not write custom fields cache: ${e instanceof Error ? e.message : e}`);
+    console.error(
+      `Warning: could not write custom fields cache: ${e instanceof Error ? e.message : e}`
+    );
   }
 }
 
@@ -66,7 +68,11 @@ export function loadAllCachedFields(type: string): CustomSectionField[] {
   return result;
 }
 
-export function saveCachedFields(profile: string, type: string, fields: CustomSectionField[]): void {
+export function saveCachedFields(
+  profile: string,
+  type: string,
+  fields: CustomSectionField[]
+): void {
   const cache = readCache();
   cache[cacheKey(profile, type)] = { fields, cachedAt: Date.now() };
   writeCache(cache);

@@ -1,11 +1,20 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { diffCommand } from './diff.js';
-import { getAPIClientFromOptions, getGlobalOptions, printFormatted } from '../../lib/utils/api-helper.js';
+import {
+  getAPIClientFromOptions,
+  getGlobalOptions,
+  printFormatted,
+} from '../../lib/utils/api-helper.js';
 import { resetCommand } from '../../test/helpers/command-reset.js';
 
 vi.mock('../../lib/utils/api-helper.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../lib/utils/api-helper.js')>();
-  return { ...actual, getAPIClientFromOptions: vi.fn(), getGlobalOptions: vi.fn(), printFormatted: vi.fn() };
+  return {
+    ...actual,
+    getAPIClientFromOptions: vi.fn(),
+    getGlobalOptions: vi.fn(),
+    printFormatted: vi.fn(),
+  };
 });
 
 const makeExperiment = (overrides: Record<string, unknown> = {}) => ({
@@ -71,7 +80,7 @@ describe('diff command', () => {
     const exp1 = makeExperiment({ id: 1, name: 'exp-a', state: 'running' });
     const exp2 = makeExperiment({ id: 2, name: 'exp-b', state: 'stopped' });
     mockClient.getExperiment.mockImplementation((id: number) =>
-      id === 1 ? Promise.resolve(exp1) : Promise.resolve(exp2),
+      id === 1 ? Promise.resolve(exp1) : Promise.resolve(exp2)
     );
 
     await diffCommand.parseAsync(['node', 'test', '1', '2']);
@@ -80,7 +89,7 @@ describe('diff command', () => {
     expect(mockClient.getExperiment).toHaveBeenCalledWith(2);
 
     const rows = vi.mocked(printFormatted).mock.calls[0]![0] as Array<Record<string, string>>;
-    const fields = rows.map(r => r.field);
+    const fields = rows.map((r) => r.field);
     expect(fields).toContain('id');
     expect(fields).toContain('name');
     expect(fields).toContain('state');
@@ -108,7 +117,7 @@ describe('diff command', () => {
 
     expect(mockClient.listExperiments).toHaveBeenCalledWith({ iterations_of: 1 });
     const rows = vi.mocked(printFormatted).mock.calls[0]![0] as Array<Record<string, string>>;
-    const fields = rows.map(r => r.field);
+    const fields = rows.map((r) => r.field);
     expect(fields).toContain('name');
   });
 
@@ -120,12 +129,12 @@ describe('diff command', () => {
     ]);
 
     await expect(
-      diffCommand.parseAsync(['node', 'test', '1', '--iteration', '99']),
+      diffCommand.parseAsync(['node', 'test', '1', '--iteration', '99'])
     ).rejects.toThrow('process.exit');
 
     expect(consoleErrorSpy).toHaveBeenCalledWith(
       'Error:',
-      expect.stringContaining('Iteration 99 not found'),
+      expect.stringContaining('Iteration 99 not found')
     );
   });
 
@@ -134,13 +143,13 @@ describe('diff command', () => {
     const exp1 = makeExperiment({ id: 1, audience: '{"filter":[]}' });
     const exp2 = makeExperiment({ id: 2, audience: '{"filter":["age>18"]}' });
     mockClient.getExperiment.mockImplementation((id: number) =>
-      id === 1 ? Promise.resolve(exp1) : Promise.resolve(exp2),
+      id === 1 ? Promise.resolve(exp1) : Promise.resolve(exp2)
     );
 
     await diffCommand.parseAsync(['node', 'test', '1', '2']);
 
     const rows = vi.mocked(printFormatted).mock.calls[0]![0] as Array<Record<string, string>>;
-    const fields = rows.map(r => r.field);
+    const fields = rows.map((r) => r.field);
     expect(fields).toContain('id');
     expect(fields).toContain('audience');
   });
@@ -148,13 +157,11 @@ describe('diff command', () => {
   it('should error when no second ID and no --iteration', async () => {
     mockClient.getExperiment.mockResolvedValue(makeExperiment());
 
-    await expect(
-      diffCommand.parseAsync(['node', 'test', '1']),
-    ).rejects.toThrow('process.exit');
+    await expect(diffCommand.parseAsync(['node', 'test', '1'])).rejects.toThrow('process.exit');
 
     expect(consoleErrorSpy).toHaveBeenCalledWith(
       'Error:',
-      expect.stringContaining('Provide a second experiment ID or use --iteration'),
+      expect.stringContaining('Provide a second experiment ID or use --iteration')
     );
   });
 });

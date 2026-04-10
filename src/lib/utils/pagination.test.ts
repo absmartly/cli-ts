@@ -7,7 +7,7 @@ describe('addPaginationOptions', () => {
     const cmd = new Command('test');
     addPaginationOptions(cmd);
 
-    const optionNames = cmd.options.map(o => o.long);
+    const optionNames = cmd.options.map((o) => o.long);
     expect(optionNames).toContain('--items');
     expect(optionNames).toContain('--page');
   });
@@ -16,7 +16,7 @@ describe('addPaginationOptions', () => {
     const cmd = new Command('test');
     addPaginationOptions(cmd, 50);
 
-    const itemsOpt = cmd.options.find(o => o.long === '--items');
+    const itemsOpt = cmd.options.find((o) => o.long === '--items');
     expect(itemsOpt?.defaultValue).toBe(50);
   });
 });

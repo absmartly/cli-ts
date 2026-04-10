@@ -1,6 +1,10 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
-import { getAPIClientFromOptions, getGlobalOptions, withErrorHandling } from '../../lib/utils/api-helper.js';
+import {
+  getAPIClientFromOptions,
+  getGlobalOptions,
+  withErrorHandling,
+} from '../../lib/utils/api-helper.js';
 import { experimentToMarkdown } from '../../api-client/template/serializer.js';
 import { parseExperimentMarkdown } from '../../api-client/template/parser.js';
 import { buildPayloadFromTemplate } from '../../api-client/template/build-from-template.js';
@@ -29,9 +33,20 @@ export const updateCommand = new Command('update')
   .option('--exploratory-metrics <names>', 'comma-separated exploratory metric names or IDs')
   .option('--percentages <values>', 'comma-separated traffic split per variant (e.g. 50,50)')
   .option('--percentage-of-traffic <pct>', 'percentage of total traffic (0-100)', parseInt)
-  .option('--owner <user_id>', 'owner user ID (can specify multiple)', (val: string, prev: string[]) => [...prev, val], [] as string[])
-  .option('--screenshot <variant:source...>', 'variant screenshot (variant_index:path_or_url, can specify multiple)')
-  .option('--screenshot-id <variant:upload_id...>', 'variant screenshot by existing file upload ID (variant_index:upload_id, can specify multiple)')
+  .option(
+    '--owner <user_id>',
+    'owner user ID (can specify multiple)',
+    (val: string, prev: string[]) => [...prev, val],
+    [] as string[]
+  )
+  .option(
+    '--screenshot <variant:source...>',
+    'variant screenshot (variant_index:path_or_url, can specify multiple)'
+  )
+  .option(
+    '--screenshot-id <variant:upload_id...>',
+    'variant screenshot by existing file upload ID (variant_index:upload_id, can specify multiple)'
+  )
   .option('--teams <names>', 'comma-separated team names or IDs')
   .option('--tags <names>', 'comma-separated tag names or IDs')
   .option('--audience <json>', 'audience filter JSON')
@@ -47,7 +62,8 @@ updateCommand
   .option('-i, --interactive', 'interactive step-by-step editor')
   .option('--dry-run', 'show the request payload without making the API call');
 
-updateCommand.action(withErrorHandling(async (nameOrId: string, options) => {
+updateCommand.action(
+  withErrorHandling(async (nameOrId: string, options) => {
     const globalOptions = getGlobalOptions(updateCommand);
     const client = await getAPIClientFromOptions(globalOptions);
     const id = await client.resolveExperimentId(nameOrId);
@@ -77,7 +93,11 @@ updateCommand.action(withErrorHandling(async (nameOrId: string, options) => {
       tags: options.tags,
       screenshot: options.screenshot,
       screenshotId: options.screenshotId,
-      customFieldValues: extractCustomFieldValues(options, getDefaultType(), globalOptions.profile as string),
+      customFieldValues: extractCustomFieldValues(
+        options,
+        getDefaultType(),
+        globalOptions.profile as string
+      ),
       templateContent: options.fromFile ? readTemplateFile(options.fromFile) : undefined,
       defaultType: getDefaultType(),
     });
@@ -113,4 +133,5 @@ updateCommand.action(withErrorHandling(async (nameOrId: string, options) => {
 
     await updateExperiment(client, { experimentId: id, changes, note });
     console.log(chalk.green(`Experiment ${id} updated`));
-  }));
+  })
+);

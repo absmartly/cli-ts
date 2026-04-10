@@ -8,7 +8,10 @@ export const basicsStep: Step = {
     const name = await promptText('Experiment name', template.name);
     const displayName = await promptText('Display name', template.display_name ?? name);
     const traffic = await promptNumber('Traffic %', template.percentage_of_traffic ?? 100);
-    const percentages = await promptText('Variant split (e.g. 50/50)', template.percentages ?? '50/50');
+    const percentages = await promptText(
+      'Variant split (e.g. 50/50)',
+      template.percentages ?? '50/50'
+    );
 
     const updated: ExperimentTemplate = {
       ...template,

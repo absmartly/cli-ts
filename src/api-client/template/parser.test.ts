@@ -73,7 +73,7 @@ john@example.com
     const result = parseExperimentMarkdown(md);
     expect(result.custom_fields).toEqual({
       'Launch Date': '2026-04-01',
-      'Reviewer': 'john@example.com',
+      Reviewer: 'john@example.com',
     });
   });
 
@@ -151,7 +151,8 @@ name: control
   });
 
   it('should parse markdown image syntax with data URI', () => {
-    const dataUri = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+    const dataUri =
+      'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
     const md = `---
 name: exp1
 ---

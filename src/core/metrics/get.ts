@@ -8,7 +8,7 @@ export interface GetMetricParams {
 
 export async function getMetric(
   client: APIClient,
-  params: GetMetricParams,
+  params: GetMetricParams
 ): Promise<CommandResult<unknown>> {
   const data = await client.getMetric(params.id);
   return { data };

@@ -35,7 +35,7 @@ describe('registerCustomFieldOptions', () => {
     const cmd = new Command('test');
     registerCustomFieldOptions(cmd, 'experiment');
 
-    const optionNames = cmd.options.map(o => o.long);
+    const optionNames = cmd.options.map((o) => o.long);
     expect(optionNames).toContain('--hypothesis');
     expect(optionNames).toContain('--owner-name');
   });
@@ -46,7 +46,7 @@ describe('registerCustomFieldOptions', () => {
     const cmd = new Command('test');
     registerCustomFieldOptions(cmd, 'experiment');
 
-    const optionNames = cmd.options.map(o => o.long);
+    const optionNames = cmd.options.map((o) => o.long);
     expect(optionNames).toContain('--field');
   });
 
@@ -59,7 +59,7 @@ describe('registerCustomFieldOptions', () => {
     const cmd = new Command('test');
     registerCustomFieldOptions(cmd, 'experiment');
 
-    const optionNames = cmd.options.map(o => o.long);
+    const optionNames = cmd.options.map((o) => o.long);
     expect(optionNames).toContain('--active-field');
     expect(optionNames).not.toContain('--archived-field');
   });
@@ -72,14 +72,9 @@ describe('extractCustomFieldValues', () => {
   });
 
   it('should extract values from dynamic flags', () => {
-    (loadCachedFields as any).mockReturnValue([
-      makeField('Hypothesis', 'experiment'),
-    ]);
+    (loadCachedFields as any).mockReturnValue([makeField('Hypothesis', 'experiment')]);
 
-    const result = extractCustomFieldValues(
-      { hypothesis: 'My hypothesis' },
-      'experiment',
-    );
+    const result = extractCustomFieldValues({ hypothesis: 'My hypothesis' }, 'experiment');
 
     expect(result).toEqual({ Hypothesis: 'My hypothesis' });
   });
@@ -89,7 +84,7 @@ describe('extractCustomFieldValues', () => {
 
     const result = extractCustomFieldValues(
       { field: ['Priority=High', 'Status=Active'] },
-      'experiment',
+      'experiment'
     );
 
     expect(result).toEqual({ Priority: 'High', Status: 'Active' });
@@ -98,25 +93,20 @@ describe('extractCustomFieldValues', () => {
   it('should ignore --field entries without =', () => {
     (loadCachedFields as any).mockReturnValue([]);
 
-    const result = extractCustomFieldValues(
-      { field: ['NoEquals', 'Valid=Value'] },
-      'experiment',
-    );
+    const result = extractCustomFieldValues({ field: ['NoEquals', 'Valid=Value'] }, 'experiment');
 
     expect(result).toEqual({ Valid: 'Value' });
   });
 
   it('should use configured default profile for registration', () => {
     (loadConfig as any).mockReturnValue({ 'default-profile': 'staging' });
-    (loadCachedFields as any).mockReturnValue([
-      makeField('Deploy Target', 'experiment'),
-    ]);
+    (loadCachedFields as any).mockReturnValue([makeField('Deploy Target', 'experiment')]);
 
     const cmd = new Command('test');
     registerCustomFieldOptions(cmd, 'experiment');
 
     expect(loadCachedFields).toHaveBeenCalledWith('staging', 'experiment');
-    const optionNames = cmd.options.map(o => o.long);
+    const optionNames = cmd.options.map((o) => o.long);
     expect(optionNames).toContain('--deploy-target');
   });
 
@@ -127,11 +117,7 @@ describe('extractCustomFieldValues', () => {
       return [];
     });
 
-    const result = extractCustomFieldValues(
-      { nextSteps: 'Do the thing' },
-      'experiment',
-      'test-1',
-    );
+    const result = extractCustomFieldValues({ nextSteps: 'Do the thing' }, 'experiment', 'test-1');
 
     expect(loadCachedFields).toHaveBeenCalledWith('test-1', 'experiment');
     expect(result).toEqual({ 'Next Steps': 'Do the thing' });
@@ -147,7 +133,7 @@ describe('extractCustomFieldValues', () => {
     const result = extractCustomFieldValues(
       { hypothesis: 'Test fallback' },
       'experiment',
-      'missing-profile',
+      'missing-profile'
     );
 
     expect(loadCachedFields).toHaveBeenCalledWith('missing-profile', 'experiment');

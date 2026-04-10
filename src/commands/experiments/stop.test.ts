@@ -47,7 +47,15 @@ describe('stop command', () => {
   });
 
   it('should pass --note to stopExperiment', async () => {
-    await stopCommand.parseAsync(['node', 'test', '42', '--reason', 'testing', '--note', 'my note']);
+    await stopCommand.parseAsync([
+      'node',
+      'test',
+      '42',
+      '--reason',
+      'testing',
+      '--note',
+      'my note',
+    ]);
 
     expect(mockClient.stopExperiment).toHaveBeenCalledWith(42, 'testing', 'my note');
   });
@@ -84,7 +92,9 @@ describe('stop command', () => {
       await stopCommand.parseAsync(['node', 'test', '--reason', 'other', '--note', 'batch']);
 
       expect(consoleSpy).toHaveBeenCalledWith(100);
-      expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Experiment 100 stopped'));
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Experiment 100 stopped')
+      );
     });
 
     it('should show success on stdout when stdout is not piped', async () => {

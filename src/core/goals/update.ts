@@ -9,7 +9,7 @@ export interface UpdateGoalParams {
 
 export async function updateGoal(
   client: APIClient,
-  params: UpdateGoalParams,
+  params: UpdateGoalParams
 ): Promise<CommandResult<void>> {
   const data: Record<string, string> = {};
   if (params.description !== undefined) data.description = params.description;

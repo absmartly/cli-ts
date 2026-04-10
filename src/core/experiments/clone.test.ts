@@ -103,7 +103,7 @@ describe('clone', () => {
       await buildClonePayload(mockClient as any, params);
       expect(experimentToMarkdown).toHaveBeenCalledWith(
         expect.anything(),
-        expect.objectContaining({ apiKey: 'secret-key', screenshotsDir: '.screenshots' }),
+        expect.objectContaining({ apiKey: 'secret-key', screenshotsDir: '.screenshots' })
       );
     });
   });

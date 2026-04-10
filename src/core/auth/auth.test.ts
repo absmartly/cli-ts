@@ -88,7 +88,11 @@ describe('auth', () => {
 
     it('should update api key with both name and description', async () => {
       mockClient.updateUserApiKey.mockResolvedValue(undefined);
-      const result = await updateAuthApiKey(mockClient as any, { id: 3, name: 'n', description: 'd' });
+      const result = await updateAuthApiKey(mockClient as any, {
+        id: 3,
+        name: 'n',
+        description: 'd',
+      });
       expect(mockClient.updateUserApiKey).toHaveBeenCalledWith(3, { name: 'n', description: 'd' });
       expect(result.data).toBeUndefined();
     });

@@ -31,7 +31,9 @@ describe('request-update', () => {
     });
 
     it('throws on first invalid in mixed array', () => {
-      expect(() => validateTasks(['preview_metrics', 'bad_task'])).toThrow('Invalid task: "bad_task"');
+      expect(() => validateTasks(['preview_metrics', 'bad_task'])).toThrow(
+        'Invalid task: "bad_task"'
+      );
     });
   });
 
@@ -49,7 +51,7 @@ describe('request-update', () => {
       });
       expect(mockClient.requestExperimentUpdate).toHaveBeenCalledWith(
         id(1),
-        expect.objectContaining({ tasks: ['preview_metrics'] }),
+        expect.objectContaining({ tasks: ['preview_metrics'] })
       );
     });
 
@@ -60,7 +62,7 @@ describe('request-update', () => {
       });
       expect(mockClient.requestExperimentUpdate).toHaveBeenCalledWith(
         id(1),
-        expect.objectContaining({ replaceGroupSequentialAnalysis: true }),
+        expect.objectContaining({ replaceGroupSequentialAnalysis: true })
       );
     });
 
@@ -69,7 +71,7 @@ describe('request-update', () => {
         requestUpdate(mockClient as any, {
           experimentId: id(1),
           tasks: ['invalid'],
-        }),
+        })
       ).rejects.toThrow('Invalid task');
       expect(mockClient.requestExperimentUpdate).not.toHaveBeenCalled();
     });

@@ -9,7 +9,7 @@ export interface FollowExperimentParams {
 
 export async function followExperiment(
   client: APIClient,
-  params: FollowExperimentParams,
+  params: FollowExperimentParams
 ): Promise<CommandResult<{ experimentId: ExperimentId }>> {
   await client.followExperiment(params.experimentId);
   return { data: { experimentId: params.experimentId } };
@@ -22,7 +22,7 @@ export interface UnfollowExperimentParams {
 
 export async function unfollowExperiment(
   client: APIClient,
-  params: UnfollowExperimentParams,
+  params: UnfollowExperimentParams
 ): Promise<CommandResult<{ experimentId: ExperimentId }>> {
   await client.unfollowExperiment(params.experimentId);
   return { data: { experimentId: params.experimentId } };

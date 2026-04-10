@@ -3,7 +3,7 @@ import { ExperimentId, ScheduledActionId } from '../../lib/api/branded-types.js'
 import { getAPIClientFromOptions, resolveEndpoint } from '../../lib/utils/api-helper.js';
 import { fetchLiveMetadata, buildExperimentData } from '../../test/helpers/live-helpers.js';
 
-const profileArg = process.argv.find(a => a.startsWith('--profile='));
+const profileArg = process.argv.find((a) => a.startsWith('--profile='));
 const profileName = profileArg?.split('=')[1] || process.env.LIVE_PROFILE;
 
 const client = await getAPIClientFromOptions({
@@ -44,7 +44,9 @@ async function main() {
 
   console.log('Setup: Fetching metadata...');
   const meta = await fetchLiveMetadata(client);
-  console.log(`  appId=${meta.appId} unitTypeId=${meta.unitTypeId} teamId=${meta.teamId} metricId=${meta.metricId}`);
+  console.log(
+    `  appId=${meta.appId} unitTypeId=${meta.unitTypeId} teamId=${meta.teamId} metricId=${meta.metricId}`
+  );
   if (Object.keys(meta.customFieldValues).length > 0) {
     console.log(`  customFields: ${Object.keys(meta.customFieldValues).length} resolved`);
   }
@@ -118,7 +120,10 @@ async function main() {
     await runTest('Full-on (variant 1)', async () => {
       const exp = await client.fullOnExperiment(experimentId!, 1, 'live test: full-on');
       const fetched = await client.getExperiment(experimentId!);
-      assert(fetched.full_on_variant === 1, `Expected full_on_variant=1, got ${fetched.full_on_variant}`);
+      assert(
+        fetched.full_on_variant === 1,
+        `Expected full_on_variant=1, got ${fetched.full_on_variant}`
+      );
     });
 
     await runTest('Stop (prepare for archive)', async () => {
@@ -150,10 +155,10 @@ async function main() {
         await client.archiveExperiment(experimentId);
         console.log('  Cleanup succeeded.');
       } catch (err) {
+        console.error(`  Cleanup failed: ${err instanceof Error ? err.message : err}`);
         console.error(
-          `  Cleanup failed: ${err instanceof Error ? err.message : err}`
+          `  Manual cleanup needed: experiment id=${experimentId} name=${experimentName}`
         );
-        console.error(`  Manual cleanup needed: experiment id=${experimentId} name=${experimentName}`);
       }
     }
   }

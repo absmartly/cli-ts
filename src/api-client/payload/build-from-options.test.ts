@@ -13,7 +13,11 @@ describe('buildPayloadFromOptions', () => {
   });
 
   it('should not include group_sequential fields for fixed_horizon', async () => {
-    const data = await buildPayloadFromOptions({ name: 'exp', type: 'test', analysisType: 'fixed_horizon' });
+    const data = await buildPayloadFromOptions({
+      name: 'exp',
+      type: 'test',
+      analysisType: 'fixed_horizon',
+    });
     expect(data.analysis_type).toBe('fixed_horizon');
     expect(data.group_sequential_futility_type).toBeUndefined();
     expect(data.group_sequential_min_analysis_interval).toBeUndefined();
@@ -41,7 +45,11 @@ describe('buildPayloadFromOptions', () => {
   });
 
   it('should include minimum_detectable_effect when set', async () => {
-    const data = await buildPayloadFromOptions({ name: 'exp', type: 'test', minimumDetectableEffect: '5.0' });
+    const data = await buildPayloadFromOptions({
+      name: 'exp',
+      type: 'test',
+      minimumDetectableEffect: '5.0',
+    });
     expect(data.minimum_detectable_effect).toBe('5.0');
   });
 

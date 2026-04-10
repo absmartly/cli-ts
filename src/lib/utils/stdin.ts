@@ -27,6 +27,6 @@ export async function readLinesFromStdin(): Promise<string[]> {
   return Buffer.concat(chunks)
     .toString('utf-8')
     .split('\n')
-    .map(line => line.trim())
-    .filter(line => line.length > 0);
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0);
 }

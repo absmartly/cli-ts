@@ -43,7 +43,9 @@ export async function createMetricCategory(
     color: params.color,
   };
   if (params.description !== undefined) payload.description = params.description;
-  const data = await client.createMetricCategory(payload as { name: string; description?: string; color: string });
+  const data = await client.createMetricCategory(
+    payload as { name: string; description?: string; color: string }
+  );
   return { data };
 }
 

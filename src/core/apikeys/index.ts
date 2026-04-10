@@ -1,10 +1,4 @@
-export {
-  listApiKeys,
-  getApiKey,
-  createApiKey,
-  updateApiKey,
-  deleteApiKey,
-} from './apikeys.js';
+export { listApiKeys, getApiKey, createApiKey, updateApiKey, deleteApiKey } from './apikeys.js';
 export type {
   ListApiKeysParams,
   GetApiKeyParams,

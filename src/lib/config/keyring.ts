@@ -29,7 +29,9 @@ async function getKeytar(): Promise<typeof import('keytar') | null> {
   } catch (e) {
     keytarModule = false;
     const reason = e instanceof Error ? e.message : String(e);
-    console.error(`Warning: OS keyring unavailable (${reason}), credentials will be stored in ${CREDENTIALS_FILE}`);
+    console.error(
+      `Warning: OS keyring unavailable (${reason}), credentials will be stored in ${CREDENTIALS_FILE}`
+    );
     return null;
   }
 }
@@ -39,7 +41,9 @@ function readCredentialsFile(): Record<string, string> {
   try {
     return JSON.parse(readFileSync(CREDENTIALS_FILE, 'utf8'));
   } catch {
-    throw new Error(`Credentials file is corrupted: ${CREDENTIALS_FILE}\nBack up this file and run: abs auth login`);
+    throw new Error(
+      `Credentials file is corrupted: ${CREDENTIALS_FILE}\nBack up this file and run: abs auth login`
+    );
   }
 }
 
@@ -47,9 +51,14 @@ function writeCredentialsFile(data: Record<string, string>): void {
   const dir = join(homedir(), '.config', 'absmartly');
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true, mode: 0o700 });
   try {
-    writeFileSync(CREDENTIALS_FILE, JSON.stringify(data, null, 2), { encoding: 'utf8', mode: 0o600 });
+    writeFileSync(CREDENTIALS_FILE, JSON.stringify(data, null, 2), {
+      encoding: 'utf8',
+      mode: 0o600,
+    });
   } catch (e) {
-    throw new Error(`Could not write credentials file ${CREDENTIALS_FILE}: ${e instanceof Error ? e.message : e}`);
+    throw new Error(
+      `Could not write credentials file ${CREDENTIALS_FILE}: ${e instanceof Error ? e.message : e}`
+    );
   }
 }
 
@@ -65,7 +74,9 @@ export async function setPassword(
       await keytar.setPassword(SERVICE_NAME, keyName, value);
       return;
     } catch (e) {
-      console.error(`Warning: could not save to OS keyring (${e instanceof Error ? e.message : e}), falling back to file storage`);
+      console.error(
+        `Warning: could not save to OS keyring (${e instanceof Error ? e.message : e}), falling back to file storage`
+      );
     }
   }
   const creds = readCredentialsFile();
@@ -83,24 +94,25 @@ export async function getPassword(
     try {
       return await keytar.getPassword(SERVICE_NAME, keyName);
     } catch (e) {
-      console.error(`Warning: could not read from OS keyring (${e instanceof Error ? e.message : e}), checking file storage`);
+      console.error(
+        `Warning: could not read from OS keyring (${e instanceof Error ? e.message : e}), checking file storage`
+      );
     }
   }
   const creds = readCredentialsFile();
   return creds[keyName] ?? null;
 }
 
-export async function deletePassword(
-  key: string,
-  options: KeyringOptions = {}
-): Promise<boolean> {
+export async function deletePassword(key: string, options: KeyringOptions = {}): Promise<boolean> {
   const keyName = getKeyName(key, options.profile);
   const keytar = await getKeytar();
   if (keytar) {
     try {
       return await keytar.deletePassword(SERVICE_NAME, keyName);
     } catch (e) {
-      console.error(`Warning: could not delete from OS keyring (${e instanceof Error ? e.message : e}), checking file storage`);
+      console.error(
+        `Warning: could not delete from OS keyring (${e instanceof Error ? e.message : e}), checking file storage`
+      );
     }
   }
   const creds = readCredentialsFile();

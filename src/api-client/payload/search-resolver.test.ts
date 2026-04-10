@@ -3,9 +3,16 @@ import { resolveBySearch } from './search-resolver.js';
 
 describe('resolveBySearch', () => {
   it('deduplicates results by id', async () => {
-    const searchFn = vi.fn()
-      .mockResolvedValueOnce([{ id: 1, name: 'A' }, { id: 2, name: 'B' }])
-      .mockResolvedValueOnce([{ id: 2, name: 'B' }, { id: 3, name: 'C' }]);
+    const searchFn = vi
+      .fn()
+      .mockResolvedValueOnce([
+        { id: 1, name: 'A' },
+        { id: 2, name: 'B' },
+      ])
+      .mockResolvedValueOnce([
+        { id: 2, name: 'B' },
+        { id: 3, name: 'C' },
+      ]);
 
     const result = await resolveBySearch(['foo', 'bar'], searchFn);
 
@@ -62,7 +69,8 @@ describe('resolveBySearch', () => {
   });
 
   it('returns results from multiple batches', async () => {
-    const searchFn = vi.fn()
+    const searchFn = vi
+      .fn()
       .mockResolvedValueOnce([{ id: 1, name: 'A' }])
       .mockResolvedValueOnce([{ id: 2, name: 'B' }]);
 

@@ -1,11 +1,20 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { insightsCommand } from './index.js';
-import { getAPIClientFromOptions, getGlobalOptions, printFormatted } from '../../lib/utils/api-helper.js';
+import {
+  getAPIClientFromOptions,
+  getGlobalOptions,
+  printFormatted,
+} from '../../lib/utils/api-helper.js';
 import { resetCommand } from '../../test/helpers/command-reset.js';
 
 vi.mock('../../lib/utils/api-helper.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../lib/utils/api-helper.js')>();
-  return { ...actual, getAPIClientFromOptions: vi.fn(), getGlobalOptions: vi.fn(), printFormatted: vi.fn() };
+  return {
+    ...actual,
+    getAPIClientFromOptions: vi.fn(),
+    getGlobalOptions: vi.fn(),
+    printFormatted: vi.fn(),
+  };
 });
 
 describe('insights command', () => {
@@ -41,10 +50,15 @@ describe('insights command', () => {
 
   it('should get velocity insights', async () => {
     await insightsCommand.parseAsync([
-      'node', 'test', 'velocity',
-      '--from', '2026-01-01',
-      '--to', '2026-03-01',
-      '--aggregation', 'month',
+      'node',
+      'test',
+      'velocity',
+      '--from',
+      '2026-01-01',
+      '--to',
+      '2026-03-01',
+      '--aggregation',
+      'month',
     ]);
 
     expect(mockClient.getVelocityInsights).toHaveBeenCalledWith(
@@ -59,10 +73,15 @@ describe('insights command', () => {
 
   it('should get decision insights', async () => {
     await insightsCommand.parseAsync([
-      'node', 'test', 'decisions',
-      '--from', '2026-01-01',
-      '--to', '2026-03-01',
-      '--aggregation', 'week',
+      'node',
+      'test',
+      'decisions',
+      '--from',
+      '2026-01-01',
+      '--to',
+      '2026-03-01',
+      '--aggregation',
+      'week',
     ]);
 
     expect(mockClient.getDecisionInsights).toHaveBeenCalledWith(
@@ -75,10 +94,15 @@ describe('insights command', () => {
 
   it('should get velocity detail insights', async () => {
     await insightsCommand.parseAsync([
-      'node', 'test', 'velocity-detail',
-      '--from', '2026-01-01',
-      '--to', '2026-03-01',
-      '--aggregation', 'month',
+      'node',
+      'test',
+      'velocity-detail',
+      '--from',
+      '2026-01-01',
+      '--to',
+      '2026-03-01',
+      '--aggregation',
+      'month',
     ]);
 
     expect(mockClient.getVelocityInsightsDetail).toHaveBeenCalledWith(
@@ -89,10 +113,15 @@ describe('insights command', () => {
 
   it('should get decision insights history', async () => {
     await insightsCommand.parseAsync([
-      'node', 'test', 'decisions-history',
-      '--from', '2026-01-01',
-      '--to', '2026-03-01',
-      '--aggregation', 'week',
+      'node',
+      'test',
+      'decisions-history',
+      '--from',
+      '2026-01-01',
+      '--to',
+      '2026-03-01',
+      '--aggregation',
+      'week',
     ]);
 
     expect(mockClient.getDecisionInsightsHistory).toHaveBeenCalledWith(
@@ -103,13 +132,21 @@ describe('insights command', () => {
 
   it('should pass optional filters to velocity insights', async () => {
     await insightsCommand.parseAsync([
-      'node', 'test', 'velocity',
-      '--from', '2026-01-01',
-      '--to', '2026-03-01',
-      '--aggregation', 'day',
-      '--unit-types', '1,2',
-      '--teams', '3,4',
-      '--owners', '5,6',
+      'node',
+      'test',
+      'velocity',
+      '--from',
+      '2026-01-01',
+      '--to',
+      '2026-03-01',
+      '--aggregation',
+      'day',
+      '--unit-types',
+      '1,2',
+      '--teams',
+      '3,4',
+      '--owners',
+      '5,6',
     ]);
 
     expect(mockClient.getVelocityInsights).toHaveBeenCalledWith(

@@ -2,7 +2,11 @@ import type { APIClient } from '../../api-client/api-client.js';
 import type { CommandResult } from '../types.js';
 import type { CustomSectionFieldId } from '../../lib/api/branded-types.js';
 import type { CustomSectionField } from '../../api-client/types.js';
-import { applyShowExclude, summarizeCustomField, summarizeCustomFieldRow } from '../../api-client/entity-summary.js';
+import {
+  applyShowExclude,
+  summarizeCustomField,
+  summarizeCustomFieldRow,
+} from '../../api-client/entity-summary.js';
 
 // --- List custom fields ---
 export interface ListCustomFieldsParams {
@@ -14,19 +18,17 @@ export interface ListCustomFieldsParams {
 
 export async function listCustomFields(
   client: APIClient,
-  params: ListCustomFieldsParams,
+  params: ListCustomFieldsParams
 ): Promise<CommandResult<Record<string, unknown>[]>> {
   const items = params.items ?? 100;
   const page = params.page ?? 1;
   const allFields = await client.listCustomSectionFields(items, page);
-  const fields = (allFields as unknown as Array<Record<string, unknown>>).filter(f => {
+  const fields = (allFields as unknown as Array<Record<string, unknown>>).filter((f) => {
     const section = f.custom_section as Record<string, unknown> | undefined;
     return section?.type === params.type;
   });
 
-  const rows = params.raw
-    ? fields
-    : fields.map(f => summarizeCustomFieldRow(f));
+  const rows = params.raw ? fields : fields.map((f) => summarizeCustomFieldRow(f));
 
   return {
     data: fields,
@@ -49,12 +51,19 @@ export interface GetCustomFieldParams {
 
 export async function getCustomField(
   client: APIClient,
-  params: GetCustomFieldParams,
+  params: GetCustomFieldParams
 ): Promise<CommandResult<unknown>> {
   const show = params.show ?? [];
   const exclude = params.exclude ?? [];
   const field = await client.getCustomSectionField(params.id);
-  const data = params.raw ? field : applyShowExclude(summarizeCustomField(field as unknown as Record<string, unknown>), field as unknown as Record<string, unknown>, show, exclude);
+  const data = params.raw
+    ? field
+    : applyShowExclude(
+        summarizeCustomField(field as unknown as Record<string, unknown>),
+        field as unknown as Record<string, unknown>,
+        show,
+        exclude
+      );
   return { data };
 }
 
@@ -67,7 +76,7 @@ export interface CreateCustomFieldParams {
 
 export async function createCustomField(
   client: APIClient,
-  params: CreateCustomFieldParams,
+  params: CreateCustomFieldParams
 ): Promise<CommandResult<unknown>> {
   const data: Partial<CustomSectionField> = {
     name: params.name,
@@ -88,7 +97,7 @@ export interface UpdateCustomFieldParams {
 
 export async function updateCustomField(
   client: APIClient,
-  params: UpdateCustomFieldParams,
+  params: UpdateCustomFieldParams
 ): Promise<CommandResult<unknown>> {
   const data: Partial<CustomSectionField> = {};
   if (params.name !== undefined) data.name = params.name;
@@ -109,7 +118,7 @@ export interface ArchiveCustomFieldParams {
 
 export async function archiveCustomField(
   client: APIClient,
-  params: ArchiveCustomFieldParams,
+  params: ArchiveCustomFieldParams
 ): Promise<CommandResult<{ id: CustomSectionFieldId; action: string }>> {
   await client.archiveCustomSectionField(params.id, !!params.unarchive);
   const action = params.unarchive ? 'unarchived' : 'archived';

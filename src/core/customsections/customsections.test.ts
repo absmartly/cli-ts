@@ -59,7 +59,10 @@ describe('customsections', () => {
 
   it('should reorder custom sections', async () => {
     mockClient.reorderCustomSections.mockResolvedValue(undefined);
-    const sections = [{ id: 1, order_index: 0 }, { id: 2, order_index: 1 }];
+    const sections = [
+      { id: 1, order_index: 0 },
+      { id: 2, order_index: 1 },
+    ];
     const result = await reorderCustomSections(mockClient as any, { sections });
     expect(mockClient.reorderCustomSections).toHaveBeenCalledWith(sections);
     expect(result.data).toEqual({ reordered: true });

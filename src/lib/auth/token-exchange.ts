@@ -45,10 +45,15 @@ export async function exchangeCodeForToken(params: TokenExchangeParams): Promise
   } catch (error: unknown) {
     const isAxiosError =
       (axios.isAxiosError && axios.isAxiosError(error)) ||
-      (error !== null && typeof error === 'object' && 'isAxiosError' in error && error.isAxiosError === true);
+      (error !== null &&
+        typeof error === 'object' &&
+        'isAxiosError' in error &&
+        error.isAxiosError === true);
 
     if (isAxiosError) {
-      const axiosError = error as { response?: { data?: { error_description?: string; error?: string } } };
+      const axiosError = error as {
+        response?: { data?: { error_description?: string; error?: string } };
+      };
       const data = axiosError.response?.data;
       if (data) {
         throw new Error(data.error_description || data.error || 'Token exchange failed');

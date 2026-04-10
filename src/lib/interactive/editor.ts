@@ -31,7 +31,7 @@ export class InteractiveEditor {
       analysisStep,
       metadataStep,
       reviewStep,
-    ].filter(step => !step.shouldSkip?.(EMPTY_TEMPLATE, context));
+    ].filter((step) => !step.shouldSkip?.(EMPTY_TEMPLATE, context));
   }
 
   async run(initial: ExperimentTemplate): Promise<ExperimentTemplate | null> {

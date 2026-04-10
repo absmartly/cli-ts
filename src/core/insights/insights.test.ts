@@ -1,9 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import {
-  toEpochSeconds,
-  getVelocityInsights,
-  getDecisionInsights,
-} from './insights.js';
+import { toEpochSeconds, getVelocityInsights, getDecisionInsights } from './insights.js';
 
 describe('insights', () => {
   const mockClient = {

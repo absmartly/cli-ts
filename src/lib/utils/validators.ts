@@ -43,7 +43,7 @@ function parseStringToPositiveInt(value: string, typeName: string): number {
   if (id.toString() !== trimmed) {
     throw new Error(
       `Invalid ${typeName}: "${value}" contains non-numeric characters\n` +
-      `Expected a plain integer like "42", not "${value}"`
+        `Expected a plain integer like "42", not "${value}"`
     );
   }
 
@@ -142,10 +142,7 @@ export function parseRecommendedActionId(value: string): RecommendedActionId {
   return RecommendedActionId(parseStringToPositiveInt(value, 'RecommendedActionId'));
 }
 
-export function requireAtLeastOneField(
-  data: Record<string, unknown>,
-  fieldName = 'field'
-): void {
+export function requireAtLeastOneField(data: Record<string, unknown>, fieldName = 'field'): void {
   const providedFields = Object.keys(data).filter((key) => data[key] !== undefined);
 
   if (providedFields.length === 0) {

@@ -1,7 +1,12 @@
 import type { APIClient } from '../../api-client/api-client.js';
 import type { ExperimentId } from '../../lib/api/branded-types.js';
 import type { CommandResult } from '../types.js';
-import { extractMetricInfos, extractVariantNames, fetchAllMetricResults, formatResultRows } from '../../api-client/metric-results.js';
+import {
+  extractMetricInfos,
+  extractVariantNames,
+  fetchAllMetricResults,
+  formatResultRows,
+} from '../../api-client/metric-results.js';
 
 export interface WatchExperimentParams {
   experimentId: ExperimentId;
@@ -19,7 +24,7 @@ export interface WatchExperimentResult {
 
 export async function watchExperimentTick(
   client: APIClient,
-  params: WatchExperimentParams,
+  params: WatchExperimentParams
 ): Promise<CommandResult<WatchExperimentResult>> {
   const experiment = await client.getExperiment(params.experimentId);
   const exp = experiment as Record<string, unknown>;
@@ -43,7 +48,7 @@ export async function watchExperimentTick(
   if (params.variantIndex !== undefined) formatOpts.variantIndex = params.variantIndex;
 
   const results = await fetchAllMetricResults(client, params.experimentId, metricInfos);
-  const formattedRows = results.flatMap(r => formatResultRows(r, variantNames, formatOpts));
+  const formattedRows = results.flatMap((r) => formatResultRows(r, variantNames, formatOpts));
   const resultsJson = JSON.stringify(results);
 
   return {

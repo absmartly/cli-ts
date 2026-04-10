@@ -22,9 +22,7 @@ describe('buildSecondaryMetrics', () => {
       secondary: [{ id: 10 }],
     });
 
-    expect(result).toEqual([
-      { metric_id: 10, type: 'secondary', order_index: 0 },
-    ]);
+    expect(result).toEqual([{ metric_id: 10, type: 'secondary', order_index: 0 }]);
   });
 
   it('assigns guardrail type correctly', () => {
@@ -32,9 +30,7 @@ describe('buildSecondaryMetrics', () => {
       guardrail: [{ id: 5 }],
     });
 
-    expect(result).toEqual([
-      { metric_id: 5, type: 'guardrail', order_index: 0 },
-    ]);
+    expect(result).toEqual([{ metric_id: 5, type: 'guardrail', order_index: 0 }]);
   });
 
   it('returns empty array when all categories are empty', () => {

@@ -21,7 +21,7 @@ export async function promptNumber(label: string, defaultValue?: number): Promis
 export async function promptSelect<T>(
   label: string,
   choices: Array<{ name: string; value: T }>,
-  defaultValue?: T,
+  defaultValue?: T
 ): Promise<T> {
   return select({ message: label, choices, default: defaultValue });
 }
@@ -29,16 +29,16 @@ export async function promptSelect<T>(
 export async function promptSearchSelect(
   label: string,
   items: Array<{ id: number; name: string }>,
-  currentValue?: string,
+  currentValue?: string
 ): Promise<string> {
   if (items.length === 0) return currentValue ?? '';
   const result = await search({
     message: `${label}${currentValue ? chalk.gray(` (current: ${currentValue})`) : ''}`,
     source: (term) => {
       const filtered = term
-        ? items.filter(i => i.name.toLowerCase().includes(term.toLowerCase()))
+        ? items.filter((i) => i.name.toLowerCase().includes(term.toLowerCase()))
         : items;
-      return filtered.map(i => ({ name: i.name, value: i.name }));
+      return filtered.map((i) => ({ name: i.name, value: i.name }));
     },
   });
   return result;
@@ -47,7 +47,7 @@ export async function promptSearchSelect(
 export async function promptAsyncSearch(
   label: string,
   searchFn: (term: string) => Promise<Array<{ name: string; value: string }>>,
-  currentValue?: string,
+  currentValue?: string
 ): Promise<string> {
   return search({
     message: `${label}${currentValue ? chalk.gray(` (current: ${currentValue})`) : ''}`,
@@ -61,9 +61,9 @@ export async function promptAsyncSearch(
 export async function promptMultiSearch(
   label: string,
   items: Array<{ id: number; name: string }>,
-  current: string[] = [],
+  current: string[] = []
 ): Promise<string[]> {
-  const choices = items.map(i => ({
+  const choices = items.map((i) => ({
     name: i.name,
     value: i.name,
     checked: current.includes(i.name),
@@ -84,7 +84,11 @@ export async function promptJsonEditor(label: string, currentValue?: string): Pr
   return editor({ message: label, default: formatted });
 }
 
-export async function promptNavigation(stepName: string, isFirst: boolean, isLast: boolean): Promise<StepAction> {
+export async function promptNavigation(
+  stepName: string,
+  isFirst: boolean,
+  isLast: boolean
+): Promise<StepAction> {
   const choices: Array<{ name: string; value: StepAction }> = [];
   if (!isLast) choices.push({ name: 'Next', value: 'next' });
   if (!isFirst) choices.push({ name: 'Back', value: 'back' });
@@ -94,10 +98,7 @@ export async function promptNavigation(stepName: string, isFirst: boolean, isLas
   return select({ message: chalk.gray(`[${stepName}]`), choices });
 }
 
-export async function promptMultiAdd(
-  label: string,
-  current: string[] = [],
-): Promise<string[]> {
+export async function promptMultiAdd(label: string, current: string[] = []): Promise<string[]> {
   const result = [...current];
   console.log(chalk.gray(`Current ${label}: ${result.length > 0 ? result.join(', ') : '(none)'}`));
   const action = await select({
@@ -119,9 +120,9 @@ export async function promptMultiAdd(
   if (action === 'remove' && result.length > 0) {
     const toRemove = await checkbox({
       message: 'Select items to remove:',
-      choices: result.map(r => ({ name: r, value: r })),
+      choices: result.map((r) => ({ name: r, value: r })),
     });
-    return result.filter(r => !toRemove.includes(r));
+    return result.filter((r) => !toRemove.includes(r));
   }
   return result;
 }

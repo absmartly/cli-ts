@@ -1,4 +1,10 @@
-export { listSegments, getSegment, createSegment, updateSegment, deleteSegment } from './segments.js';
+export {
+  listSegments,
+  getSegment,
+  createSegment,
+  updateSegment,
+  deleteSegment,
+} from './segments.js';
 export type {
   ListSegmentsParams,
   GetSegmentParams,

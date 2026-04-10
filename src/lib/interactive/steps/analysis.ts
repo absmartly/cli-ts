@@ -19,12 +19,15 @@ export const analysisStep: Step = {
     const analysisType = await promptSelect(
       'Analysis type',
       ANALYSIS_TYPES,
-      template.analysis_type ?? 'group_sequential',
+      template.analysis_type ?? 'group_sequential'
     );
 
     const alpha = await promptText('Required alpha', template.required_alpha ?? '0.05');
     const power = await promptText('Required power', template.required_power ?? '0.8');
-    const baseline = await promptText('Baseline participants', template.baseline_participants ?? '');
+    const baseline = await promptText(
+      'Baseline participants',
+      template.baseline_participants ?? ''
+    );
 
     const updated: ExperimentTemplate = {
       ...template,

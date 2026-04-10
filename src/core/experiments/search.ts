@@ -8,7 +8,7 @@ export interface SearchExperimentsParams {
 
 export async function searchExperiments(
   client: APIClient,
-  params: SearchExperimentsParams,
+  params: SearchExperimentsParams
 ): Promise<CommandResult<unknown[]>> {
   const experiments = await client.searchExperiments(params.query, params.limit);
   return {

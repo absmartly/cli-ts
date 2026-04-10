@@ -2,12 +2,21 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { writeFileSync, unlinkSync, existsSync } from 'fs';
 import { join } from 'path';
 import { createCommand } from './create.js';
-import { getAPIClientFromOptions, getGlobalOptions, resolveAPIKey } from '../../lib/utils/api-helper.js';
+import {
+  getAPIClientFromOptions,
+  getGlobalOptions,
+  resolveAPIKey,
+} from '../../lib/utils/api-helper.js';
 import { resetCommand } from '../../test/helpers/command-reset.js';
 
 vi.mock('../../lib/utils/api-helper.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../lib/utils/api-helper.js')>();
-  return { ...actual, getAPIClientFromOptions: vi.fn(), getGlobalOptions: vi.fn(), resolveAPIKey: vi.fn() };
+  return {
+    ...actual,
+    getAPIClientFromOptions: vi.fn(),
+    getGlobalOptions: vi.fn(),
+    resolveAPIKey: vi.fn(),
+  };
 });
 
 describe('create command', () => {
@@ -53,7 +62,9 @@ describe('create command', () => {
     });
 
     it('should create experiment from template file', async () => {
-      writeFileSync(tmpFile, `---
+      writeFileSync(
+        tmpFile,
+        `---
 name: file-exp
 display_name: File Experiment
 type: test
@@ -72,7 +83,9 @@ config: {"color":"red"}
 
 name: treatment
 config: {"color":"blue"}
-`, 'utf8');
+`,
+        'utf8'
+      );
 
       await createCommand.parseAsync(['node', 'test', '--from-file', tmpFile]);
 
@@ -113,11 +126,19 @@ config: {"color":"blue"}
     });
 
     it('should resolve application and unit_type by name via builder', async () => {
-      mockClient.listApplications.mockResolvedValue([{ id: 10, name: 'web' }, { id: 11, name: 'mobile' }]);
-      mockClient.listUnitTypes.mockResolvedValue([{ id: 20, name: 'user_id' }, { id: 21, name: 'device_id' }]);
+      mockClient.listApplications.mockResolvedValue([
+        { id: 10, name: 'web' },
+        { id: 11, name: 'mobile' },
+      ]);
+      mockClient.listUnitTypes.mockResolvedValue([
+        { id: 20, name: 'user_id' },
+        { id: 21, name: 'device_id' },
+      ]);
       mockClient.listMetrics.mockResolvedValue([{ id: 30, name: 'clicks' }]);
 
-      writeFileSync(tmpFile, `---
+      writeFileSync(
+        tmpFile,
+        `---
 name: resolved-exp
 ---
 
@@ -129,7 +150,9 @@ application: mobile
 ## Metrics
 
 primary_metric: clicks
-`, 'utf8');
+`,
+        'utf8'
+      );
 
       await createCommand.parseAsync(['node', 'test', '--from-file', tmpFile]);
 
@@ -146,21 +169,28 @@ primary_metric: clicks
     it('should resolve archived metrics via search', async () => {
       mockClient.listMetrics.mockImplementation((opts: { search?: string }) => {
         if (opts?.search === 'clicks') return Promise.resolve([{ id: 30, name: 'clicks' }]);
-        if (opts?.search === 'Archived Metric') return Promise.resolve([{ id: 99, name: 'Archived Metric' }]);
+        if (opts?.search === 'Archived Metric')
+          return Promise.resolve([{ id: 99, name: 'Archived Metric' }]);
         return Promise.resolve([]);
       });
 
-      writeFileSync(tmpFile, `---
+      writeFileSync(
+        tmpFile,
+        `---
 name: archived-metric-exp
 primary_metric: clicks
 secondary_metrics:
   - Archived Metric
 ---
-`, 'utf8');
+`,
+        'utf8'
+      );
 
       await createCommand.parseAsync(['node', 'test', '--from-file', tmpFile]);
 
-      expect(mockClient.listMetrics).toHaveBeenCalledWith(expect.objectContaining({ archived: true }));
+      expect(mockClient.listMetrics).toHaveBeenCalledWith(
+        expect.objectContaining({ archived: true })
+      );
       expect(mockClient.createExperiment).toHaveBeenCalledWith(
         expect.objectContaining({
           primary_metric: { metric_id: 30 },
@@ -170,17 +200,19 @@ secondary_metrics:
     });
 
     it('should fail when metric is not found even with archived=true', async () => {
-      mockClient.listMetrics.mockResolvedValue([
-        { id: 30, name: 'clicks' },
-      ]);
+      mockClient.listMetrics.mockResolvedValue([{ id: 30, name: 'clicks' }]);
 
-      writeFileSync(tmpFile, `---
+      writeFileSync(
+        tmpFile,
+        `---
 name: missing-metric-exp
 primary_metric: clicks
 guardrail_metrics:
   - Completely Deleted Metric
 ---
-`, 'utf8');
+`,
+        'utf8'
+      );
 
       try {
         await createCommand.parseAsync(['node', 'test', '--from-file', tmpFile]);
@@ -209,7 +241,9 @@ guardrail_metrics:
         { id: 201, tag: 'homepage' },
       ]);
 
-      writeFileSync(tmpFile, `---
+      writeFileSync(
+        tmpFile,
+        `---
 name: full-template-exp
 owners:
   - jane@example.com
@@ -221,7 +255,9 @@ tags:
   - q1
   - homepage
 ---
-`, 'utf8');
+`,
+        'utf8'
+      );
 
       await createCommand.parseAsync(['node', 'test', '--from-file', tmpFile]);
 
@@ -239,7 +275,9 @@ tags:
 
     it('should parse audience from JSON block in template', async () => {
       const audience = '{"filter":[{"and":[{"eq":[{"var":{"path":"lang"}},{"value":"en"}]}]}]}';
-      writeFileSync(tmpFile, `---
+      writeFileSync(
+        tmpFile,
+        `---
 name: audience-exp
 ---
 
@@ -248,7 +286,9 @@ name: audience-exp
 \`\`\`json
 ${audience}
 \`\`\`
-`, 'utf8');
+`,
+        'utf8'
+      );
 
       await createCommand.parseAsync(['node', 'test', '--from-file', tmpFile]);
 
@@ -261,7 +301,13 @@ ${audience}
 
     it('should include custom section field defaults from builder', async () => {
       mockClient.listCustomSectionFields.mockResolvedValue([
-        { id: 100, name: 'launch_date', type: 'string', default_value: '2026-06-01', custom_section: { type: 'test' } },
+        {
+          id: 100,
+          name: 'launch_date',
+          type: 'string',
+          default_value: '2026-06-01',
+          custom_section: { type: 'test' },
+        },
       ]);
 
       writeFileSync(tmpFile, `---\nname: csf-exp\ntype: test\n---\n`, 'utf8');
@@ -278,7 +324,9 @@ ${audience}
     });
 
     it('should throw on invalid JSON in variant config', async () => {
-      writeFileSync(tmpFile, `---
+      writeFileSync(
+        tmpFile,
+        `---
 name: bad-json
 ---
 
@@ -288,7 +336,9 @@ name: bad-json
 
 name: broken
 config: {invalid json}
-`, 'utf8');
+`,
+        'utf8'
+      );
 
       try {
         await createCommand.parseAsync(['node', 'test', '--from-file', tmpFile]);
@@ -306,7 +356,9 @@ config: {invalid json}
 
     it('should truncate long config snippets in error', async () => {
       const longConfig = '{' + 'x'.repeat(150) + '}';
-      writeFileSync(tmpFile, `---
+      writeFileSync(
+        tmpFile,
+        `---
 name: long-config
 ---
 
@@ -316,7 +368,9 @@ name: long-config
 
 name: long
 config: ${longConfig}
-`, 'utf8');
+`,
+        'utf8'
+      );
 
       try {
         await createCommand.parseAsync(['node', 'test', '--from-file', tmpFile]);

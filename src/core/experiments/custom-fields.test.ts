@@ -10,7 +10,10 @@ import {
 vi.mock('../../api-client/entity-summary.js', () => ({
   summarizeCustomFieldRow: (f: Record<string, unknown>) => ({ id: f.id, name: f.name }),
   summarizeCustomField: (f: Record<string, unknown>) => ({ id: f.id, name: f.name }),
-  applyShowExclude: (_summary: unknown, _raw: unknown, _show: string[], _exclude: string[]) => ({ id: 1, name: 'filtered' }),
+  applyShowExclude: (_summary: unknown, _raw: unknown, _show: string[], _exclude: string[]) => ({
+    id: 1,
+    name: 'filtered',
+  }),
 }));
 
 describe('experiments/custom-fields', () => {
@@ -35,7 +38,11 @@ describe('experiments/custom-fields', () => {
 
   it('should list custom fields with pagination params', async () => {
     mockClient.listCustomSectionFields.mockResolvedValue([]);
-    const result = await listCustomFields(mockClient as any, { type: 'experiment', items: 50, page: 2 });
+    const result = await listCustomFields(mockClient as any, {
+      type: 'experiment',
+      items: 50,
+      page: 2,
+    });
     expect(mockClient.listCustomSectionFields).toHaveBeenCalledWith(50, 2);
     expect(result.pagination).toEqual({ page: 2, items: 50, hasMore: false });
   });
@@ -89,9 +96,9 @@ describe('experiments/custom-fields', () => {
   });
 
   it('should throw when updating with no fields', async () => {
-    await expect(
-      updateCustomField(mockClient as any, { id: 1 as any }),
-    ).rejects.toThrow('At least one update field is required');
+    await expect(updateCustomField(mockClient as any, { id: 1 as any })).rejects.toThrow(
+      'At least one update field is required'
+    );
   });
 
   it('should archive custom field', async () => {

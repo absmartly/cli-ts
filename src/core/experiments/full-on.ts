@@ -10,7 +10,7 @@ export interface FullOnExperimentParams {
 
 export async function fullOnExperiment(
   client: APIClient,
-  params: FullOnExperimentParams,
+  params: FullOnExperimentParams
 ): Promise<CommandResult<{ id: ExperimentId; variant: number }>> {
   await client.fullOnExperiment(params.experimentId, params.variant, params.note);
   return {

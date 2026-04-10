@@ -4,7 +4,7 @@ export function applyShowExclude(
   summary: Record<string, unknown>,
   raw: Record<string, unknown>,
   extraFields: string[] = [],
-  excludeFields: string[] = [],
+  excludeFields: string[] = []
 ): Record<string, unknown> {
   for (const field of extraFields) {
     if (!(field in summary) && field in raw) {
@@ -19,8 +19,8 @@ export function applyShowExclude(
 
 function formatOwner(obj: Record<string, unknown> | undefined): string {
   if (!obj) return '';
-  const first = obj.first_name as string ?? '';
-  const last = obj.last_name as string ?? '';
+  const first = (obj.first_name as string) ?? '';
+  const last = (obj.last_name as string) ?? '';
   return [first, last].filter(Boolean).join(' ') || (obj.email as string) || '';
 }
 
@@ -39,8 +39,12 @@ export function summarizeMetric(m: Record<string, unknown>): Record<string, unkn
     goal: goal?.name ?? m.goal_id ?? '',
     category: category?.name ?? '',
     description: m.description ?? '',
-    owners: owners?.map(o => formatOwner(o.user as Record<string, unknown>)).join(', ') ?? '',
-    tags: tags?.map(t => (t.metric_tag as Record<string, unknown>)?.tag ?? '').filter(Boolean).join(', ') ?? '',
+    owners: owners?.map((o) => formatOwner(o.user as Record<string, unknown>)).join(', ') ?? '',
+    tags:
+      tags
+        ?.map((t) => (t.metric_tag as Record<string, unknown>)?.tag ?? '')
+        .filter(Boolean)
+        .join(', ') ?? '',
     created_at: formatDate(m.created_at),
     updated_at: formatDate(m.updated_at),
   };
@@ -69,7 +73,11 @@ export function summarizeGoal(g: Record<string, unknown>): Record<string, unknow
     id: g.id,
     name: g.name,
     description: g.description ?? '',
-    tags: tags?.map(t => (t.goal_tag as Record<string, unknown>)?.tag ?? '').filter(Boolean).join(', ') ?? '',
+    tags:
+      tags
+        ?.map((t) => (t.goal_tag as Record<string, unknown>)?.tag ?? '')
+        .filter(Boolean)
+        .join(', ') ?? '',
     created_by: formatOwner(createdBy),
     created_at: formatDate(g.created_at),
     updated_at: formatDate(g.updated_at),
@@ -83,7 +91,11 @@ export function summarizeGoalRow(g: Record<string, unknown>): Record<string, unk
   return {
     id: g.id,
     name: g.name,
-    tags: tags?.map(t => (t.goal_tag as Record<string, unknown>)?.tag ?? '').filter(Boolean).join(', ') ?? '',
+    tags:
+      tags
+        ?.map((t) => (t.goal_tag as Record<string, unknown>)?.tag ?? '')
+        .filter(Boolean)
+        .join(', ') ?? '',
     archived: g.archived ?? false,
   };
 }

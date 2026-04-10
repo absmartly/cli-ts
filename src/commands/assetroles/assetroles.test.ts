@@ -1,11 +1,20 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { assetRolesCommand } from './index.js';
-import { getAPIClientFromOptions, getGlobalOptions, printFormatted } from '../../lib/utils/api-helper.js';
+import {
+  getAPIClientFromOptions,
+  getGlobalOptions,
+  printFormatted,
+} from '../../lib/utils/api-helper.js';
 import { resetCommand } from '../../test/helpers/command-reset.js';
 
 vi.mock('../../lib/utils/api-helper.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../lib/utils/api-helper.js')>();
-  return { ...actual, getAPIClientFromOptions: vi.fn(), getGlobalOptions: vi.fn(), printFormatted: vi.fn() };
+  return {
+    ...actual,
+    getAPIClientFromOptions: vi.fn(),
+    getGlobalOptions: vi.fn(),
+    printFormatted: vi.fn(),
+  };
 });
 
 describe('asset-roles command', () => {
@@ -51,7 +60,10 @@ describe('asset-roles command', () => {
     mockClient.getAssetRole.mockResolvedValue({ id: 1, name: 'editor' });
     await assetRolesCommand.parseAsync(['node', 'test', 'get', '1']);
     expect(mockClient.getAssetRole).toHaveBeenCalledWith(1);
-    expect(printFormatted).toHaveBeenCalledWith(expect.objectContaining({ id: 1 }), expect.anything());
+    expect(printFormatted).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 1 }),
+      expect.anything()
+    );
   });
 
   it('should create asset role', async () => {
@@ -74,8 +86,8 @@ describe('asset-roles command', () => {
   });
 
   it('should reject invalid id', async () => {
-    await expect(
-      assetRolesCommand.parseAsync(['node', 'test', 'get', 'abc'])
-    ).rejects.toThrow('is not a valid number');
+    await expect(assetRolesCommand.parseAsync(['node', 'test', 'get', 'abc'])).rejects.toThrow(
+      'is not a valid number'
+    );
   });
 });

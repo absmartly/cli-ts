@@ -9,7 +9,10 @@ export interface LiveMetadata {
   customFieldValues: Record<string, { type: string; value: string }>;
 }
 
-function defaultValueForType(type: string, context: { userId: number; defaultValue?: string }): string {
+function defaultValueForType(
+  type: string,
+  context: { userId: number; defaultValue?: string }
+): string {
   if (context.defaultValue) return context.defaultValue;
 
   switch (type) {

@@ -17,7 +17,10 @@ beforeEach(() => vi.clearAllMocks());
 
 describe('listCustomFields', () => {
   it('should list custom fields with rows', async () => {
-    const fields = [{ id: 1, name: 'Field A' }, { id: 2, name: 'Field B' }];
+    const fields = [
+      { id: 1, name: 'Field A' },
+      { id: 2, name: 'Field B' },
+    ];
     mockClient.listCustomSectionFields.mockResolvedValue(fields);
 
     const result = await listCustomFields(mockClient, { items: 10, page: 1 });

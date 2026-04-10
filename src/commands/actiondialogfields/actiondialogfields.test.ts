@@ -1,11 +1,20 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { actionDialogFieldsCommand } from './index.js';
-import { getAPIClientFromOptions, getGlobalOptions, printFormatted } from '../../lib/utils/api-helper.js';
+import {
+  getAPIClientFromOptions,
+  getGlobalOptions,
+  printFormatted,
+} from '../../lib/utils/api-helper.js';
 import { resetCommand } from '../../test/helpers/command-reset.js';
 
 vi.mock('../../lib/utils/api-helper.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../lib/utils/api-helper.js')>();
-  return { ...actual, getAPIClientFromOptions: vi.fn(), getGlobalOptions: vi.fn(), printFormatted: vi.fn() };
+  return {
+    ...actual,
+    getAPIClientFromOptions: vi.fn(),
+    getGlobalOptions: vi.fn(),
+    printFormatted: vi.fn(),
+  };
 });
 
 describe('actiondialogfields command', () => {
@@ -54,16 +63,31 @@ describe('actiondialogfields command', () => {
   });
 
   it('should create an action dialog field', async () => {
-    await actionDialogFieldsCommand.parseAsync(['node', 'test', 'create', '--config', '{"name":"Reason"}']);
+    await actionDialogFieldsCommand.parseAsync([
+      'node',
+      'test',
+      'create',
+      '--config',
+      '{"name":"Reason"}',
+    ]);
 
     expect(mockClient.createExperimentActionDialogField).toHaveBeenCalledWith({ name: 'Reason' });
     expect(printFormatted).toHaveBeenCalled();
   });
 
   it('should update an action dialog field', async () => {
-    await actionDialogFieldsCommand.parseAsync(['node', 'test', 'update', '1', '--config', '{"required":true}']);
+    await actionDialogFieldsCommand.parseAsync([
+      'node',
+      'test',
+      'update',
+      '1',
+      '--config',
+      '{"required":true}',
+    ]);
 
-    expect(mockClient.updateExperimentActionDialogField).toHaveBeenCalledWith(1, { required: true });
+    expect(mockClient.updateExperimentActionDialogField).toHaveBeenCalledWith(1, {
+      required: true,
+    });
     expect(printFormatted).toHaveBeenCalled();
   });
 });

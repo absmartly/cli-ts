@@ -7,10 +7,20 @@ import { buildPayloadFromTemplate } from '../../api-client/template/build-from-t
 import { resolveCustomFieldValues } from './resolve-custom-fields.js';
 
 export const VALID_RESTART_REASONS = [
-  'hypothesis_rejected', 'hypothesis_iteration', 'user_feedback', 'data_issue',
-  'implementation_issue', 'experiment_setup_issue', 'guardrail_metric_impact',
-  'secondary_metric_impact', 'operational_decision', 'performance_issue',
-  'testing', 'tracking_issue', 'code_cleaned_up', 'other',
+  'hypothesis_rejected',
+  'hypothesis_iteration',
+  'user_feedback',
+  'data_issue',
+  'implementation_issue',
+  'experiment_setup_issue',
+  'guardrail_metric_impact',
+  'secondary_metric_impact',
+  'operational_decision',
+  'performance_issue',
+  'testing',
+  'tracking_issue',
+  'code_cleaned_up',
+  'other',
 ] as const;
 
 export const VALID_RESTART_TYPES = ['feature', 'experiment'] as const;
@@ -35,34 +45,33 @@ export interface RestartExperimentResult {
 export function validateRestartParams(params: RestartExperimentParams): void {
   if (params.reason && !(VALID_RESTART_REASONS as readonly string[]).includes(params.reason)) {
     throw new Error(
-      `Invalid reason: "${params.reason}"\n` +
-      `Valid reasons: ${VALID_RESTART_REASONS.join(', ')}`
+      `Invalid reason: "${params.reason}"\n` + `Valid reasons: ${VALID_RESTART_REASONS.join(', ')}`
     );
   }
   if (params.state && !['running', 'development'].includes(params.state)) {
-    throw new Error(
-      `Invalid state: "${params.state}"\n` +
-      `Valid states: running, development`
-    );
+    throw new Error(`Invalid state: "${params.state}"\n` + `Valid states: running, development`);
   }
   if (params.asType && !(VALID_RESTART_TYPES as readonly string[]).includes(params.asType)) {
     throw new Error(
-      `Invalid type: "${params.asType}"\n` +
-      `Valid types: ${VALID_RESTART_TYPES.join(', ')}`
+      `Invalid type: "${params.asType}"\n` + `Valid types: ${VALID_RESTART_TYPES.join(', ')}`
     );
   }
 }
 
 export async function buildRestartChanges(
   client: APIClient,
-  params: RestartExperimentParams,
+  params: RestartExperimentParams
 ): Promise<{ changes: Partial<ExperimentInput> | undefined; warnings: string[] }> {
   let changes: Partial<ExperimentInput> | undefined;
   const warnings: string[] = [];
 
   if (params.templateContent) {
     const newTemplate = parseExperimentMarkdown(params.templateContent);
-    const result = await buildPayloadFromTemplate(client, newTemplate, params.asType || params.defaultType);
+    const result = await buildPayloadFromTemplate(
+      client,
+      newTemplate,
+      params.asType || params.defaultType
+    );
     warnings.push(...result.warnings);
     changes = result.payload as Partial<ExperimentInput>;
   }
@@ -84,7 +93,7 @@ export async function buildRestartChanges(
 export async function restartExperiment(
   client: APIClient,
   params: RestartExperimentParams,
-  changes?: Partial<ExperimentInput>,
+  changes?: Partial<ExperimentInput>
 ): Promise<CommandResult<RestartExperimentResult>> {
   validateRestartParams(params);
 
@@ -95,7 +104,10 @@ export async function restartExperiment(
   if (params.asType) restartOptions.restart_as_type = params.asType;
   if (changes) restartOptions.changes = changes;
 
-  const newExperiment = await client.restartExperiment(params.experimentId, restartOptions as Parameters<typeof client.restartExperiment>[1]);
+  const newExperiment = await client.restartExperiment(
+    params.experimentId,
+    restartOptions as Parameters<typeof client.restartExperiment>[1]
+  );
   return {
     data: {
       id: params.experimentId,

@@ -45,9 +45,18 @@ describe('events', () => {
 
   describe('columnarToRows', () => {
     it('should convert columnar format to row objects', () => {
-      const input = { columnNames: ['a', 'b'], rows: [[1, 2], [3, 4]] };
+      const input = {
+        columnNames: ['a', 'b'],
+        rows: [
+          [1, 2],
+          [3, 4],
+        ],
+      };
       const result = columnarToRows(input);
-      expect(result).toEqual([{ a: 1, b: 2 }, { a: 3, b: 4 }]);
+      expect(result).toEqual([
+        { a: 1, b: 2 },
+        { a: 3, b: 4 },
+      ]);
     });
 
     it('should pass through array input', () => {

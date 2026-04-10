@@ -1,5 +1,10 @@
 import { Command } from 'commander';
-import { getAPIClientFromOptions, getGlobalOptions, printFormatted, withErrorHandling } from '../../lib/utils/api-helper.js';
+import {
+  getAPIClientFromOptions,
+  getGlobalOptions,
+  printFormatted,
+  withErrorHandling,
+} from '../../lib/utils/api-helper.js';
 import { printPaginationFooter } from '../../lib/utils/pagination.js';
 import { getDefaultType } from './default-type.js';
 import { isStdoutPiped } from '../../lib/utils/stdin.js';
@@ -7,7 +12,10 @@ import { listExperiments } from '../../core/experiments/list.js';
 
 export const listCommand = new Command('list')
   .description('List experiments')
-  .option('--state <state>', 'filter by state (created, ready, running, development, full_on, stopped, archived)')
+  .option(
+    '--state <state>',
+    'filter by state (created, ready, running, development, full_on, stopped, archived)'
+  )
   .option('--type <type>', 'filter by type (test, feature)')
   .option('--app <app>', 'filter by application name')
   .option('--applications <values>', 'filter by application names or IDs (comma-separated)')
@@ -19,7 +27,10 @@ export const listCommand = new Command('list')
   .option('--ids <ids>', 'filter by experiment IDs (comma-separated)')
   .option('--impact <min,max>', 'filter by impact range (e.g. 1,5)')
   .option('--confidence <min,max>', 'filter by confidence range (e.g. 90,100)')
-  .option('--significance <value>', 'filter by significance (positive, negative, neutral, inconclusive)')
+  .option(
+    '--significance <value>',
+    'filter by significance (positive, negative, neutral, inconclusive)'
+  )
   .option('--iterations <n>', 'filter by iteration count', (v) => parseInt(v, 10))
   .option('--iterations-of <id>', 'show all iterations of experiment ID', (v) => parseInt(v, 10))
   .option('--created-after <timestamp>', 'filter experiments created after timestamp')
@@ -43,28 +54,38 @@ export const listCommand = new Command('list')
   .option('--sort <field>', 'sort by field (e.g. created_at, name, state)')
   .option('--asc', 'sort in ascending order')
   .option('--desc', 'sort in descending order')
-  .option('--show <fields...>', 'include additional fields (e.g. --show experiment_report archived)')
+  .option(
+    '--show <fields...>',
+    'include additional fields (e.g. --show experiment_report archived)'
+  )
   .option('--exclude <fields...>', 'hide fields (e.g. --exclude primary_metric owner)')
-  .action(withErrorHandling(async (options) => {
-    const globalOptions = getGlobalOptions(listCommand);
-    const client = await getAPIClientFromOptions(globalOptions);
+  .action(
+    withErrorHandling(async (options) => {
+      const globalOptions = getGlobalOptions(listCommand);
+      const client = await getAPIClientFromOptions(globalOptions);
 
-    const result = await listExperiments(client, {
-      ...options,
-      type: options.type || getDefaultType(),
-      raw: globalOptions.raw,
-    });
+      const result = await listExperiments(client, {
+        ...options,
+        type: options.type || getDefaultType(),
+        raw: globalOptions.raw,
+      });
 
-    if (isStdoutPiped() && globalOptions.output === 'table') {
-      for (const exp of result.data) console.log((exp as Record<string, unknown>).id);
-      return;
-    }
+      if (isStdoutPiped() && globalOptions.output === 'table') {
+        for (const exp of result.data) console.log((exp as Record<string, unknown>).id);
+        return;
+      }
 
-    if (globalOptions.raw) {
-      printFormatted(result.data, globalOptions);
-    } else {
-      printFormatted(result.rows, globalOptions);
-    }
+      if (globalOptions.raw) {
+        printFormatted(result.data, globalOptions);
+      } else {
+        printFormatted(result.rows, globalOptions);
+      }
 
-    printPaginationFooter(result.data.length, options.items, options.page, globalOptions.output as string);
-  }));
+      printPaginationFooter(
+        result.data.length,
+        options.items,
+        options.page,
+        globalOptions.output as string
+      );
+    })
+  );

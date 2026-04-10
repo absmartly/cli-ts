@@ -1,11 +1,20 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { exportConfigsCommand } from './index.js';
-import { getAPIClientFromOptions, getGlobalOptions, printFormatted } from '../../lib/utils/api-helper.js';
+import {
+  getAPIClientFromOptions,
+  getGlobalOptions,
+  printFormatted,
+} from '../../lib/utils/api-helper.js';
 import { resetCommand } from '../../test/helpers/command-reset.js';
 
 vi.mock('../../lib/utils/api-helper.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../lib/utils/api-helper.js')>();
-  return { ...actual, getAPIClientFromOptions: vi.fn(), getGlobalOptions: vi.fn(), printFormatted: vi.fn() };
+  return {
+    ...actual,
+    getAPIClientFromOptions: vi.fn(),
+    getGlobalOptions: vi.fn(),
+    printFormatted: vi.fn(),
+  };
 });
 
 describe('export-configs command', () => {
@@ -58,13 +67,26 @@ describe('export-configs command', () => {
   });
 
   it('should create an export config', async () => {
-    await exportConfigsCommand.parseAsync(['node', 'test', 'create', '--config', '{"name":"test"}']);
+    await exportConfigsCommand.parseAsync([
+      'node',
+      'test',
+      'create',
+      '--config',
+      '{"name":"test"}',
+    ]);
 
     expect(mockClient.createExportConfig).toHaveBeenCalledWith({ name: 'test' });
   });
 
   it('should update an export config', async () => {
-    await exportConfigsCommand.parseAsync(['node', 'test', 'update', '1', '--config', '{"name":"updated"}']);
+    await exportConfigsCommand.parseAsync([
+      'node',
+      'test',
+      'update',
+      '1',
+      '--config',
+      '{"name":"updated"}',
+    ]);
 
     expect(mockClient.updateExportConfig).toHaveBeenCalledWith(1, { name: 'updated' });
   });
@@ -95,7 +117,15 @@ describe('export-configs command', () => {
   });
 
   it('should cancel an export history', async () => {
-    await exportConfigsCommand.parseAsync(['node', 'test', 'cancel-history', '1', '42', '--reason', 'No longer needed']);
+    await exportConfigsCommand.parseAsync([
+      'node',
+      'test',
+      'cancel-history',
+      '1',
+      '42',
+      '--reason',
+      'No longer needed',
+    ]);
 
     expect(mockClient.cancelExportHistory).toHaveBeenCalledWith(1, 42, 'No longer needed');
     const output = consoleSpy.mock.calls.flat().join(' ');

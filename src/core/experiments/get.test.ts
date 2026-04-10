@@ -14,7 +14,9 @@ describe('get', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockClient = {
-      getExperiment: vi.fn().mockResolvedValue({ id: 1, name: 'Test', state: 'running', extra: 'data' }),
+      getExperiment: vi
+        .fn()
+        .mockResolvedValue({ id: 1, name: 'Test', state: 'running', extra: 'data' }),
       listExperimentActivity: vi.fn().mockResolvedValue([{ note: 'started' }]),
     };
   });
@@ -44,11 +46,17 @@ describe('get', () => {
   });
 
   it('returns raw experiment with activity when both raw and activity', async () => {
-    const result = await getExperiment(mockClient as any, { experimentId: id(1), raw: true, activity: true });
-    expect(result.detail).toEqual(expect.objectContaining({
-      id: 1,
-      activity: [{ note: 'started' }],
-    }));
+    const result = await getExperiment(mockClient as any, {
+      experimentId: id(1),
+      raw: true,
+      activity: true,
+    });
+    expect(result.detail).toEqual(
+      expect.objectContaining({
+        id: 1,
+        activity: [{ note: 'started' }],
+      })
+    );
   });
 
   it('returns summary in detail when not raw', async () => {

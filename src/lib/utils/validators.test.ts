@@ -222,21 +222,15 @@ describe('parseStringToPositiveInt (via parseExperimentId)', () => {
 
   describe('rejects non-positive values', () => {
     it('should reject zero', () => {
-      expect(() => parseExperimentId('0')).toThrow(
-        'value must be a positive integer, got 0'
-      );
+      expect(() => parseExperimentId('0')).toThrow('value must be a positive integer, got 0');
     });
 
     it('should reject negative values', () => {
-      expect(() => parseExperimentId('-1')).toThrow(
-        'value must be a positive integer, got -1'
-      );
+      expect(() => parseExperimentId('-1')).toThrow('value must be a positive integer, got -1');
     });
 
     it('should reject large negative values', () => {
-      expect(() => parseExperimentId('-999')).toThrow(
-        'value must be a positive integer, got -999'
-      );
+      expect(() => parseExperimentId('-999')).toThrow('value must be a positive integer, got -999');
     });
   });
 

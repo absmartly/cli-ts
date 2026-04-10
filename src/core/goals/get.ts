@@ -8,7 +8,7 @@ export interface GetGoalParams {
 
 export async function getGoal(
   client: APIClient,
-  params: GetGoalParams,
+  params: GetGoalParams
 ): Promise<CommandResult<unknown>> {
   const data = await client.getGoal(params.id);
   return { data };

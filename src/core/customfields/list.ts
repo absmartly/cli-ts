@@ -12,5 +12,8 @@ export async function listCustomFields(
   params: ListCustomFieldsParams
 ): Promise<CommandResult<unknown[]>> {
   const data = await client.listCustomSectionFields(params.items, params.page);
-  return { data, rows: (data as unknown as Array<Record<string, unknown>>).map(summarizeCustomFieldRow) };
+  return {
+    data,
+    rows: (data as unknown as Array<Record<string, unknown>>).map(summarizeCustomFieldRow),
+  };
 }

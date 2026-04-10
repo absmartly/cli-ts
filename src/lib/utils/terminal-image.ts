@@ -9,12 +9,19 @@ function detectProtocol(): ImageProtocol {
   if (termProgram === 'kitty' || process.env.TERM === 'xterm-kitty') return 'kitty';
 
   const termEnv = process.env.TERM ?? '';
-  if (termEnv.includes('sixel') || ['foot', 'mlterm', 'contour'].includes(termProgram)) return 'sixel';
+  if (termEnv.includes('sixel') || ['foot', 'mlterm', 'contour'].includes(termProgram))
+    return 'sixel';
 
   return null;
 }
 
-function renderIterm(buffer: Buffer, fileName: string, width: number, height?: number, preserveAspectRatio = false): string {
+function renderIterm(
+  buffer: Buffer,
+  fileName: string,
+  width: number,
+  height?: number,
+  preserveAspectRatio = false
+): string {
   const b64 = buffer.toString('base64');
   const nameB64 = Buffer.from(fileName).toString('base64');
   const heightParam = height !== undefined ? `;height=${height}` : '';
@@ -45,12 +52,20 @@ function renderSixel(buffer: Buffer): string | null {
     return result.toString();
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'ENOENT') return null;
-    console.error(`Warning: sixel rendering failed: ${error instanceof Error ? error.message : error}`);
+    console.error(
+      `Warning: sixel rendering failed: ${error instanceof Error ? error.message : error}`
+    );
     return null;
   }
 }
 
-export function renderInlineImage(buffer: Buffer, fileName: string, widthCols = 20, heightRows?: number, preserveAspectRatio = false): string | null {
+export function renderInlineImage(
+  buffer: Buffer,
+  fileName: string,
+  widthCols = 20,
+  heightRows?: number,
+  preserveAspectRatio = false
+): string | null {
   const protocol = detectProtocol();
   if (!protocol) return null;
 
@@ -75,10 +90,14 @@ export function supportsInlineImages(): boolean {
   return detectProtocol() !== null;
 }
 
-export async function fetchAndDisplayImage(url: string, fileName: string, options?: {
-  headers?: Record<string, string>;
-  width?: number;
-}): Promise<boolean> {
+export async function fetchAndDisplayImage(
+  url: string,
+  fileName: string,
+  options?: {
+    headers?: Record<string, string>;
+    width?: number;
+  }
+): Promise<boolean> {
   if (!supportsInlineImages()) return false;
 
   try {
@@ -92,7 +111,9 @@ export async function fetchAndDisplayImage(url: string, fileName: string, option
     const buffer = Buffer.from(await response.arrayBuffer());
     return displayInlineImage(buffer, fileName, options?.width ?? 20);
   } catch (error) {
-    console.error(`Warning: Could not display image: ${error instanceof Error ? error.message : error}`);
+    console.error(
+      `Warning: Could not display image: ${error instanceof Error ? error.message : error}`
+    );
     return false;
   }
 }

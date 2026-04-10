@@ -27,7 +27,10 @@ beforeEach(() => vi.clearAllMocks());
 
 describe('listTeams', () => {
   it('should list teams', async () => {
-    const teams = [{ id: 1, name: 'A' }, { id: 2, name: 'B' }];
+    const teams = [
+      { id: 1, name: 'A' },
+      { id: 2, name: 'B' },
+    ];
     mockClient.listTeams.mockResolvedValue(teams);
 
     const result = await listTeams(mockClient, { items: 10, page: 1 });

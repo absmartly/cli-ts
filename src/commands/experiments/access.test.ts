@@ -1,11 +1,20 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { experimentsCommand } from './index.js';
-import { getAPIClientFromOptions, getGlobalOptions, printFormatted } from '../../lib/utils/api-helper.js';
+import {
+  getAPIClientFromOptions,
+  getGlobalOptions,
+  printFormatted,
+} from '../../lib/utils/api-helper.js';
 import { resetCommand } from '../../test/helpers/command-reset.js';
 
 vi.mock('../../lib/utils/api-helper.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../lib/utils/api-helper.js')>();
-  return { ...actual, getAPIClientFromOptions: vi.fn(), getGlobalOptions: vi.fn(), printFormatted: vi.fn() };
+  return {
+    ...actual,
+    getAPIClientFromOptions: vi.fn(),
+    getGlobalOptions: vi.fn(),
+    printFormatted: vi.fn(),
+  };
 });
 
 describe('experiments access command', () => {
@@ -50,13 +59,33 @@ describe('experiments access command', () => {
 
   it('should grant experiment access user', async () => {
     mockClient.grantExperimentAccessUser.mockResolvedValue(undefined);
-    await experimentsCommand.parseAsync(['node', 'test', 'access', 'grant-user', '42', '--user', '1', '--role', '2']);
+    await experimentsCommand.parseAsync([
+      'node',
+      'test',
+      'access',
+      'grant-user',
+      '42',
+      '--user',
+      '1',
+      '--role',
+      '2',
+    ]);
     expect(mockClient.grantExperimentAccessUser).toHaveBeenCalledWith(42, 1, 2);
   });
 
   it('should revoke experiment access user', async () => {
     mockClient.revokeExperimentAccessUser.mockResolvedValue(undefined);
-    await experimentsCommand.parseAsync(['node', 'test', 'access', 'revoke-user', '42', '--user', '1', '--role', '2']);
+    await experimentsCommand.parseAsync([
+      'node',
+      'test',
+      'access',
+      'revoke-user',
+      '42',
+      '--user',
+      '1',
+      '--role',
+      '2',
+    ]);
     expect(mockClient.revokeExperimentAccessUser).toHaveBeenCalledWith(42, 1, 2);
   });
 
@@ -69,13 +98,33 @@ describe('experiments access command', () => {
 
   it('should grant experiment access team', async () => {
     mockClient.grantExperimentAccessTeam.mockResolvedValue(undefined);
-    await experimentsCommand.parseAsync(['node', 'test', 'access', 'grant-team', '42', '--team', '5', '--role', '2']);
+    await experimentsCommand.parseAsync([
+      'node',
+      'test',
+      'access',
+      'grant-team',
+      '42',
+      '--team',
+      '5',
+      '--role',
+      '2',
+    ]);
     expect(mockClient.grantExperimentAccessTeam).toHaveBeenCalledWith(42, 5, 2);
   });
 
   it('should revoke experiment access team', async () => {
     mockClient.revokeExperimentAccessTeam.mockResolvedValue(undefined);
-    await experimentsCommand.parseAsync(['node', 'test', 'access', 'revoke-team', '42', '--team', '5', '--role', '2']);
+    await experimentsCommand.parseAsync([
+      'node',
+      'test',
+      'access',
+      'revoke-team',
+      '42',
+      '--team',
+      '5',
+      '--role',
+      '2',
+    ]);
     expect(mockClient.revokeExperimentAccessTeam).toHaveBeenCalledWith(42, 5, 2);
   });
 });

@@ -1,11 +1,20 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { datasourcesCommand } from './index.js';
-import { getAPIClientFromOptions, getGlobalOptions, printFormatted } from '../../lib/utils/api-helper.js';
+import {
+  getAPIClientFromOptions,
+  getGlobalOptions,
+  printFormatted,
+} from '../../lib/utils/api-helper.js';
 import { resetCommand } from '../../test/helpers/command-reset.js';
 
 vi.mock('../../lib/utils/api-helper.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../lib/utils/api-helper.js')>();
-  return { ...actual, getAPIClientFromOptions: vi.fn(), getGlobalOptions: vi.fn(), printFormatted: vi.fn() };
+  return {
+    ...actual,
+    getAPIClientFromOptions: vi.fn(),
+    getGlobalOptions: vi.fn(),
+    printFormatted: vi.fn(),
+  };
 });
 
 describe('datasources command', () => {
@@ -61,13 +70,26 @@ describe('datasources command', () => {
   });
 
   it('should create a datasource', async () => {
-    await datasourcesCommand.parseAsync(['node', 'test', 'create', '--config', '{"type":"clickhouse"}']);
+    await datasourcesCommand.parseAsync([
+      'node',
+      'test',
+      'create',
+      '--config',
+      '{"type":"clickhouse"}',
+    ]);
 
     expect(mockClient.createDatasource).toHaveBeenCalledWith({ type: 'clickhouse' });
   });
 
   it('should update a datasource', async () => {
-    await datasourcesCommand.parseAsync(['node', 'test', 'update', '1', '--config', '{"type":"clickhouse"}']);
+    await datasourcesCommand.parseAsync([
+      'node',
+      'test',
+      'update',
+      '1',
+      '--config',
+      '{"type":"clickhouse"}',
+    ]);
 
     expect(mockClient.updateDatasource).toHaveBeenCalledWith(1, { type: 'clickhouse' });
   });
@@ -85,26 +107,50 @@ describe('datasources command', () => {
   });
 
   it('should test a datasource', async () => {
-    await datasourcesCommand.parseAsync(['node', 'test', 'test', '--config', '{"type":"clickhouse"}']);
+    await datasourcesCommand.parseAsync([
+      'node',
+      'test',
+      'test',
+      '--config',
+      '{"type":"clickhouse"}',
+    ]);
 
     expect(mockClient.testDatasource).toHaveBeenCalledWith({ type: 'clickhouse' });
   });
 
   it('should introspect a datasource', async () => {
-    await datasourcesCommand.parseAsync(['node', 'test', 'introspect', '--config', '{"type":"clickhouse"}']);
+    await datasourcesCommand.parseAsync([
+      'node',
+      'test',
+      'introspect',
+      '--config',
+      '{"type":"clickhouse"}',
+    ]);
 
     expect(mockClient.introspectDatasource).toHaveBeenCalledWith({ type: 'clickhouse' });
     expect(printFormatted).toHaveBeenCalled();
   });
 
   it('should validate a datasource query', async () => {
-    await datasourcesCommand.parseAsync(['node', 'test', 'validate-query', '--config', '{"query":"SELECT 1"}']);
+    await datasourcesCommand.parseAsync([
+      'node',
+      'test',
+      'validate-query',
+      '--config',
+      '{"query":"SELECT 1"}',
+    ]);
 
     expect(mockClient.validateDatasourceQuery).toHaveBeenCalledWith({ query: 'SELECT 1' });
   });
 
   it('should preview a datasource query', async () => {
-    await datasourcesCommand.parseAsync(['node', 'test', 'preview-query', '--config', '{"query":"SELECT 1"}']);
+    await datasourcesCommand.parseAsync([
+      'node',
+      'test',
+      'preview-query',
+      '--config',
+      '{"query":"SELECT 1"}',
+    ]);
 
     expect(mockClient.previewDatasourceQuery).toHaveBeenCalledWith({ query: 'SELECT 1' });
     expect(printFormatted).toHaveBeenCalled();

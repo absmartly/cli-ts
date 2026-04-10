@@ -9,7 +9,7 @@ export interface CreateUserParams {
 
 export async function createUser(
   client: APIClient,
-  params: CreateUserParams,
+  params: CreateUserParams
 ): Promise<CommandResult<{ id: number }>> {
   const parts = params.name.split(' ');
   const firstName = parts[0] ?? '';

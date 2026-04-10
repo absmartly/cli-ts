@@ -7,7 +7,9 @@ function getImageDimensions(buffer: Buffer): { width: number; height: number } {
     const result = imageSize(buffer);
     return { width: result.width ?? 0, height: result.height ?? 0 };
   } catch (e) {
-    console.error(`Warning: could not determine image dimensions: ${e instanceof Error ? e.message : e}`);
+    console.error(
+      `Warning: could not determine image dimensions: ${e instanceof Error ? e.message : e}`
+    );
     return { width: 0, height: 0 };
   }
 }
@@ -42,7 +44,10 @@ const MIME_TO_EXTENSION: Record<string, string> = {
   'image/svg+xml': '.svg',
 };
 
-export async function resolveScreenshot(value: string | undefined, variantName: string): Promise<ScreenshotData | null> {
+export async function resolveScreenshot(
+  value: string | undefined,
+  variantName: string
+): Promise<ScreenshotData | null> {
   if (!value || value.trim() === '') {
     return null;
   }
@@ -63,7 +68,7 @@ function resolveDataUri(uri: string, variantName: string): ScreenshotData {
   if (!match || !match[1] || !match[2]) {
     throw new Error(
       `Invalid data URI for screenshot in variant "${variantName}".\n` +
-        `Expected format: data:image/png;base64,<base64data>`,
+        `Expected format: data:image/png;base64,<base64data>`
     );
   }
 
@@ -100,7 +105,7 @@ async function resolveUrl(url: string, variantName: string): Promise<ScreenshotD
   if (!response.ok) {
     throw new Error(
       `Failed to fetch screenshot from ${url}: ${response.status} ${response.statusText}\n` +
-      `Referenced in variant "${variantName}".`,
+        `Referenced in variant "${variantName}".`
     );
   }
 
@@ -134,7 +139,7 @@ function resolveFilePath(filePath: string, variantName: string): ScreenshotData 
   if (!existsSync(filePath)) {
     throw new Error(
       `Screenshot file not found: ${filePath}\n` +
-        `Referenced in variant "${variantName}". Check the path is correct relative to where you run the command.`,
+        `Referenced in variant "${variantName}". Check the path is correct relative to where you run the command.`
     );
   }
 

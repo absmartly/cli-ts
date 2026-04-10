@@ -27,16 +27,13 @@ async function editOwners(current: string[], context: EditorContext): Promise<st
       result.length = 0;
       editing = false;
     } else if (action === 'add') {
-      const owner = await promptAsyncSearch(
-        'Search user (type email or name)',
-        async (term) => {
-          const users = await context.client.listUsers({ search: term });
-          return users.map(u => ({
-            name: `${u.first_name ?? ''} ${u.last_name ?? ''} <${u.email}>`.trim(),
-            value: u.email,
-          }));
-        },
-      );
+      const owner = await promptAsyncSearch('Search user (type email or name)', async (term) => {
+        const users = await context.client.listUsers({ search: term });
+        return users.map((u) => ({
+          name: `${u.first_name ?? ''} ${u.last_name ?? ''} <${u.email}>`.trim(),
+          value: u.email,
+        }));
+      });
       if (owner && !result.includes(owner)) {
         result.push(owner);
       }
@@ -44,7 +41,7 @@ async function editOwners(current: string[], context: EditorContext): Promise<st
     } else if (action === 'remove') {
       const toRemove = await select({
         message: 'Select owner to remove:',
-        choices: result.map(r => ({ name: r, value: r })),
+        choices: result.map((r) => ({ name: r, value: r })),
       });
       const idx = result.indexOf(toRemove);
       if (idx >= 0) result.splice(idx, 1);
@@ -67,7 +64,8 @@ function groupCustomFields(context: EditorContext): Map<string, GroupedField[]> 
   for (const field of context.customSectionFields) {
     if (field.archived) continue;
     if (field.custom_section?.archived) continue;
-    if (field.custom_section?.type && field.custom_section.type !== context.experimentType) continue;
+    if (field.custom_section?.type && field.custom_section.type !== context.experimentType)
+      continue;
 
     const sectionTitle = field.custom_section?.title ?? 'Other';
     const title = field.title ?? `field_${field.id}`;
@@ -89,7 +87,7 @@ export const metadataStep: Step = {
   async run(template, context): Promise<StepResult> {
     const owners = await editOwners(template.owners ?? [], context);
 
-    const tagItems = context.experimentTags.map(t => ({ id: t.id, name: t.tag }));
+    const tagItems = context.experimentTags.map((t) => ({ id: t.id, name: t.tag }));
     const teams = await promptMultiSearch('Teams', context.teams, template.teams ?? []);
     const tags = await promptMultiSearch('Tags', tagItems, template.tags ?? []);
 
@@ -123,12 +121,12 @@ export const metadataStep: Step = {
               `  ${field.title}`,
               async (term) => {
                 const users = await context.client.listUsers({ search: term });
-                return users.map(u => ({
+                return users.map((u) => ({
                   name: `${u.first_name ?? ''} ${u.last_name ?? ''} <${u.email}>`.trim(),
                   value: u.email,
                 }));
               },
-              current,
+              current
             );
           }
         } else {

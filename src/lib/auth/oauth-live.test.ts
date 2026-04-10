@@ -9,7 +9,9 @@ import { stripApiVersionPath } from '../utils/url.js';
 const LIVE_USERNAME = process.env.LIVE_USERNAME;
 const LIVE_PASSWORD = process.env.LIVE_PASSWORD;
 
-async function performOAuthBrowserFlow(endpoint: string): Promise<{ code: string; codeVerifier: string; redirectUri: string }> {
+async function performOAuthBrowserFlow(
+  endpoint: string
+): Promise<{ code: string; codeVerifier: string; redirectUri: string }> {
   const { chromium } = await import('playwright');
   const { codeVerifier, codeChallenge } = generatePKCE();
   const redirectUri = 'http://localhost:8787/oauth/callback';
@@ -102,13 +104,19 @@ describe.runIf(isLiveMode)('OAuth live API tests', () => {
 
     afterAll(async () => {
       if (createdKeyId) {
-        try { await client.deleteUserApiKey(createdKeyId); } catch {}
+        try {
+          await client.deleteUserApiKey(createdKeyId);
+        } catch {}
       }
     });
 
     it('creates, retrieves, lists, and deletes a personal API key', async () => {
       const keyName = `cli-vitest-${Date.now()}`;
-      const created = await client.createUserApiKey(keyName) as { id: number; name: string; key: string };
+      const created = (await client.createUserApiKey(keyName)) as {
+        id: number;
+        name: string;
+        key: string;
+      };
       createdKeyId = created.id;
 
       expect(created.id).toBeDefined();
@@ -116,12 +124,12 @@ describe.runIf(isLiveMode)('OAuth live API tests', () => {
       expect(created.key).toBeDefined();
       expect(typeof created.key).toBe('string');
 
-      const fetched = await client.getUserApiKey(created.id) as { id: number; name: string };
+      const fetched = (await client.getUserApiKey(created.id)) as { id: number; name: string };
       expect(fetched.id).toBe(created.id);
       expect(fetched.name).toBe(keyName);
 
-      const keys = await client.listUserApiKeys() as { id: number }[];
-      expect(keys.some(k => k.id === created.id)).toBe(true);
+      const keys = (await client.listUserApiKeys()) as { id: number }[];
+      expect(keys.some((k) => k.id === created.id)).toBe(true);
 
       await client.deleteUserApiKey(created.id);
       createdKeyId = undefined;
@@ -177,7 +185,7 @@ describe.runIf(isLiveMode)('OAuth live API tests', () => {
       });
 
       const keyName = `cli-vitest-persistent-${Date.now()}`;
-      const created = await jwtClient.createUserApiKey(keyName) as { id: number; key: string };
+      const created = (await jwtClient.createUserApiKey(keyName)) as { id: number; key: string };
 
       try {
         expect(created.key).toBeDefined();
@@ -187,7 +195,9 @@ describe.runIf(isLiveMode)('OAuth live API tests', () => {
         expect(user).toHaveProperty('id');
         expect(user).toHaveProperty('email');
       } finally {
-        try { await client.deleteUserApiKey(created.id); } catch {}
+        try {
+          await client.deleteUserApiKey(created.id);
+        } catch {}
       }
     }, 60000);
   });

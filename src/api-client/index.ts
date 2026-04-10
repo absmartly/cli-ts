@@ -1,8 +1,4 @@
-export type {
-  HttpClient,
-  HttpRequestConfig,
-  HttpResponse,
-} from './http-client.js';
+export type { HttpClient, HttpRequestConfig, HttpResponse } from './http-client.js';
 export { APIError } from './http-client.js';
 
 export { APIClient, createAPIClient } from './api-client.js';
@@ -67,17 +63,11 @@ export type {
   APIKey,
 } from './types.js';
 
-export type {
-  VariantTemplate,
-  ExperimentTemplate,
-} from './template/parser.js';
+export type { VariantTemplate, ExperimentTemplate } from './template/parser.js';
 
 export { parseExperimentMarkdown } from './template/parser.js';
 
-export type {
-  GeneratorContext,
-  GeneratorOptions,
-} from './template/generator.js';
+export type { GeneratorContext, GeneratorOptions } from './template/generator.js';
 
 export { generateTemplate } from './template/generator.js';
 
@@ -103,22 +93,23 @@ export {
   formatPct,
 } from './format-helpers.js';
 
-export {
-  summarizeExperiment,
-  summarizeExperimentRow,
-  stateToDate,
-} from './experiment-summary.js';
+export { summarizeExperiment, summarizeExperimentRow, stateToDate } from './experiment-summary.js';
 
 export type { UserSummary } from './user-summary.js';
 export { summarizeUser } from './user-summary.js';
 
 export {
   applyShowExclude,
-  summarizeMetric, summarizeMetricRow,
-  summarizeGoal, summarizeGoalRow,
-  summarizeTeam, summarizeTeamRow,
-  summarizeUserRow, summarizeUserDetail,
-  summarizeSegment, summarizeSegmentRow,
+  summarizeMetric,
+  summarizeMetricRow,
+  summarizeGoal,
+  summarizeGoalRow,
+  summarizeTeam,
+  summarizeTeamRow,
+  summarizeUserRow,
+  summarizeUserDetail,
+  summarizeSegment,
+  summarizeSegmentRow,
 } from './entity-summary.js';
 
 export type { MetricResult, MetricInfo } from './metric-results.js';

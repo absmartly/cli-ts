@@ -1,11 +1,20 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { eventsCommand } from './index.js';
-import { getAPIClientFromOptions, getGlobalOptions, printFormatted } from '../../lib/utils/api-helper.js';
+import {
+  getAPIClientFromOptions,
+  getGlobalOptions,
+  printFormatted,
+} from '../../lib/utils/api-helper.js';
 import { resetCommand } from '../../test/helpers/command-reset.js';
 
 vi.mock('../../lib/utils/api-helper.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../lib/utils/api-helper.js')>();
-  return { ...actual, getAPIClientFromOptions: vi.fn(), getGlobalOptions: vi.fn(), printFormatted: vi.fn() };
+  return {
+    ...actual,
+    getAPIClientFromOptions: vi.fn(),
+    getGlobalOptions: vi.fn(),
+    printFormatted: vi.fn(),
+  };
 });
 
 describe('events command', () => {
@@ -15,11 +24,17 @@ describe('events command', () => {
 
   const mockClient = {
     listEvents: vi.fn().mockResolvedValue({ items: [{ id: 1, type: 'exposure' }], total: 1 }),
-    listEventsHistory: vi.fn().mockResolvedValue({ history: [{ period: '2024-01-01', count: 100 }] }),
-    getEventUnitData: vi.fn().mockResolvedValue({ units: [{ unit_type_id: 1, uid: 'user123', data: {} }] }),
+    listEventsHistory: vi
+      .fn()
+      .mockResolvedValue({ history: [{ period: '2024-01-01', count: 100 }] }),
+    getEventUnitData: vi
+      .fn()
+      .mockResolvedValue({ units: [{ unit_type_id: 1, uid: 'user123', data: {} }] }),
     deleteEventUnitData: vi.fn().mockResolvedValue({ deleted: 1 }),
     getEventJsonValues: vi.fn().mockResolvedValue({ values: ['control', 'treatment'] }),
-    getEventJsonLayouts: vi.fn().mockResolvedValue({ layouts: [{ path: 'variant', type: 'string' }] }),
+    getEventJsonLayouts: vi
+      .fn()
+      .mockResolvedValue({ layouts: [{ path: 'variant', type: 'string' }] }),
   };
 
   beforeEach(() => {
@@ -49,7 +64,19 @@ describe('events command', () => {
   });
 
   it('should list events with filters', async () => {
-    await eventsCommand.parseAsync(['node', 'test', 'list', '--from', '1000', '--to', '2000', '--app', '1', '--items', '50']);
+    await eventsCommand.parseAsync([
+      'node',
+      'test',
+      'list',
+      '--from',
+      '1000',
+      '--to',
+      '2000',
+      '--app',
+      '1',
+      '--items',
+      '50',
+    ]);
 
     expect(mockClient.listEvents).toHaveBeenCalledWith({
       filters: {
@@ -63,7 +90,17 @@ describe('events command', () => {
   });
 
   it('should list events history with filters', async () => {
-    await eventsCommand.parseAsync(['node', 'test', 'history', '--from', '1000', '--to', '2000', '--period', '1d']);
+    await eventsCommand.parseAsync([
+      'node',
+      'test',
+      'history',
+      '--from',
+      '1000',
+      '--to',
+      '2000',
+      '--period',
+      '1d',
+    ]);
 
     expect(mockClient.listEventsHistory).toHaveBeenCalledWith({
       filters: {
@@ -93,11 +130,21 @@ describe('events command', () => {
     expect(mockClient.deleteEventUnitData).toHaveBeenCalledWith({
       units: [{ unit_type_id: 1, uid: 'user123' }],
     });
-    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Unit data deleted for 1 unit(s)'));
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Unit data deleted for 1 unit(s)')
+    );
   });
 
   it('should get event json values', async () => {
-    await eventsCommand.parseAsync(['node', 'test', 'json-values', '--event-type', 'exposure', '--path', 'variant']);
+    await eventsCommand.parseAsync([
+      'node',
+      'test',
+      'json-values',
+      '--event-type',
+      'exposure',
+      '--path',
+      'variant',
+    ]);
 
     expect(mockClient.getEventJsonValues).toHaveBeenCalledWith({
       event_type: 'exposure',
@@ -107,7 +154,15 @@ describe('events command', () => {
   });
 
   it('should get event json layouts', async () => {
-    await eventsCommand.parseAsync(['node', 'test', 'json-layouts', '--source', 'unit_attribute', '--phase', 'after_enrichment']);
+    await eventsCommand.parseAsync([
+      'node',
+      'test',
+      'json-layouts',
+      '--source',
+      'unit_attribute',
+      '--phase',
+      'after_enrichment',
+    ]);
 
     expect(mockClient.getEventJsonLayouts).toHaveBeenCalledWith({
       source: 'unit_attribute',
@@ -123,7 +178,7 @@ describe('events command', () => {
 
     expect(consoleErrorSpy).toHaveBeenCalledWith(
       expect.anything(),
-      expect.stringContaining('Invalid unit format'),
+      expect.stringContaining('Invalid unit format')
     );
   });
 
@@ -134,7 +189,7 @@ describe('events command', () => {
 
     expect(consoleErrorSpy).toHaveBeenCalledWith(
       expect.anything(),
-      expect.stringContaining('Invalid unit_type_id'),
+      expect.stringContaining('Invalid unit_type_id')
     );
   });
 });

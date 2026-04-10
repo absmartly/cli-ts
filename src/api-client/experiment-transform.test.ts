@@ -188,19 +188,14 @@ describe('experimentToInput', () => {
   describe('experiment_tags', () => {
     it('keeps only experiment_tag_id', () => {
       const input = experimentToInput(FULL_EXPERIMENT);
-      expect(input.experiment_tags).toEqual([
-        { experiment_tag_id: 10 },
-        { experiment_tag_id: 20 },
-      ]);
+      expect(input.experiment_tags).toEqual([{ experiment_tag_id: 10 }, { experiment_tag_id: 20 }]);
     });
   });
 
   describe('applications', () => {
     it('keeps application_id and application_version', () => {
       const input = experimentToInput(FULL_EXPERIMENT);
-      expect(input.applications).toEqual([
-        { application_id: 1, application_version: '0' },
-      ]);
+      expect(input.applications).toEqual([{ application_id: 1, application_version: '0' }]);
     });
   });
 
@@ -263,12 +258,22 @@ describe('experimentToInput', () => {
       const exp = {
         ...FULL_EXPERIMENT,
         custom_section_field_values: {
-          '1': { experiment_id: 42, experiment_custom_section_field_id: 1, type: 'text', value: 'hello' },
+          '1': {
+            experiment_id: 42,
+            experiment_custom_section_field_id: 1,
+            type: 'text',
+            value: 'hello',
+          },
         },
       } as unknown as Experiment;
       const input = experimentToInput(exp);
       expect(input.custom_section_field_values).toEqual({
-        '1': { experiment_id: 42, experiment_custom_section_field_id: 1, type: 'text', value: 'hello' },
+        '1': {
+          experiment_id: 42,
+          experiment_custom_section_field_id: 1,
+          type: 'text',
+          value: 'hello',
+        },
       });
     });
 
@@ -277,8 +282,18 @@ describe('experimentToInput', () => {
         ...FULL_EXPERIMENT,
         custom_section_field_values: [
           { experiment_id: 42, experiment_custom_section_field_id: 1, type: 'text', value: 'Hyp' },
-          { experiment_id: 42, experiment_custom_section_field_id: 5, type: 'text', value: 'Purpose' },
-          { experiment_id: 42, experiment_custom_section_field_id: 12, type: 'richtext', value: '<p>Details</p>' },
+          {
+            experiment_id: 42,
+            experiment_custom_section_field_id: 5,
+            type: 'text',
+            value: 'Purpose',
+          },
+          {
+            experiment_id: 42,
+            experiment_custom_section_field_id: 12,
+            type: 'richtext',
+            value: '<p>Details</p>',
+          },
         ],
       } as unknown as Experiment;
       const input = experimentToInput(exp);
@@ -287,7 +302,10 @@ describe('experimentToInput', () => {
     });
 
     it('defaults to empty object when missing', () => {
-      const exp = { ...FULL_EXPERIMENT, custom_section_field_values: undefined } as unknown as Experiment;
+      const exp = {
+        ...FULL_EXPERIMENT,
+        custom_section_field_values: undefined,
+      } as unknown as Experiment;
       const input = experimentToInput(exp);
       expect(input.custom_section_field_values).toEqual({});
     });

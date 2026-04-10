@@ -18,7 +18,7 @@ export const variantsStep: Step = {
 
     let editing = true;
     while (editing) {
-      console.log(chalk.gray(`\nCurrent variants: ${variants.map(v => v.name).join(', ')}`));
+      console.log(chalk.gray(`\nCurrent variants: ${variants.map((v) => v.name).join(', ')}`));
 
       const action = await select({
         message: 'Variants:',
@@ -39,7 +39,10 @@ export const variantsStep: Step = {
         }
         const idx = await select({
           message: 'Select variant to edit:',
-          choices: variants.map((v, i) => ({ name: `${v.name} (variant_${v.variant ?? i})`, value: i })),
+          choices: variants.map((v, i) => ({
+            name: `${v.name} (variant_${v.variant ?? i})`,
+            value: i,
+          })),
         });
         const v = variants[idx]!;
         v.name = await promptText('Variant name', v.name);

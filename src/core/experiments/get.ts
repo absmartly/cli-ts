@@ -19,7 +19,7 @@ export interface GetExperimentData {
 
 export async function getExperiment(
   client: APIClient,
-  params: GetExperimentParams,
+  params: GetExperimentParams
 ): Promise<CommandResult<GetExperimentData>> {
   const experiment = await client.getExperiment(params.experimentId);
   const exp = experiment as Record<string, unknown>;

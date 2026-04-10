@@ -1,11 +1,20 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { corsCommand } from './index.js';
-import { getAPIClientFromOptions, getGlobalOptions, printFormatted } from '../../lib/utils/api-helper.js';
+import {
+  getAPIClientFromOptions,
+  getGlobalOptions,
+  printFormatted,
+} from '../../lib/utils/api-helper.js';
 import { resetCommand } from '../../test/helpers/command-reset.js';
 
 vi.mock('../../lib/utils/api-helper.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../lib/utils/api-helper.js')>();
-  return { ...actual, getAPIClientFromOptions: vi.fn(), getGlobalOptions: vi.fn(), printFormatted: vi.fn() };
+  return {
+    ...actual,
+    getAPIClientFromOptions: vi.fn(),
+    getGlobalOptions: vi.fn(),
+    printFormatted: vi.fn(),
+  };
 });
 
 describe('cors command', () => {
@@ -61,7 +70,14 @@ describe('cors command', () => {
   });
 
   it('should update a CORS origin', async () => {
-    await corsCommand.parseAsync(['node', 'test', 'update', '1', '--origin', 'https://updated.com']);
+    await corsCommand.parseAsync([
+      'node',
+      'test',
+      'update',
+      '1',
+      '--origin',
+      'https://updated.com',
+    ]);
 
     expect(mockClient.updateCorsOrigin).toHaveBeenCalledWith(1, { origin: 'https://updated.com' });
   });

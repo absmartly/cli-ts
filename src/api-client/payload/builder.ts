@@ -3,11 +3,20 @@ import { resolveByName, type ResolverContext } from './resolver.js';
 import { buildSecondaryMetrics } from './metrics-builder.js';
 import { resolveScreenshot } from '../template/screenshot.js';
 import {
-  DEFAULT_ANALYSIS_TYPE, DEFAULT_PERCENTAGES, DEFAULT_STATE, DEFAULT_TRAFFIC,
-  DEFAULT_REQUIRED_ALPHA, DEFAULT_REQUIRED_POWER, DEFAULT_FUTILITY_TYPE,
-  DEFAULT_MIN_ANALYSIS_INTERVAL, DEFAULT_FIRST_ANALYSIS_INTERVAL,
-  DEFAULT_MAX_DURATION_INTERVAL, DEFAULT_BASELINE_PARTICIPANTS, DEFAULT_AUDIENCE,
-  DEFAULT_CONTROL_NAME, DEFAULT_TREATMENT_NAME,
+  DEFAULT_ANALYSIS_TYPE,
+  DEFAULT_PERCENTAGES,
+  DEFAULT_STATE,
+  DEFAULT_TRAFFIC,
+  DEFAULT_REQUIRED_ALPHA,
+  DEFAULT_REQUIRED_POWER,
+  DEFAULT_FUTILITY_TYPE,
+  DEFAULT_MIN_ANALYSIS_INTERVAL,
+  DEFAULT_FIRST_ANALYSIS_INTERVAL,
+  DEFAULT_MAX_DURATION_INTERVAL,
+  DEFAULT_BASELINE_PARTICIPANTS,
+  DEFAULT_AUDIENCE,
+  DEFAULT_CONTROL_NAME,
+  DEFAULT_TREATMENT_NAME,
 } from './defaults.js';
 
 const CONFIG_PREVIEW_LENGTH = 100;
@@ -25,8 +34,8 @@ function parseVariantConfig(variant: VariantTemplate, index: number): string {
     const suffix = variant.config.length > CONFIG_PREVIEW_LENGTH ? '...' : '';
     throw new Error(
       `Invalid JSON in variant "${variant.name}" (variant ${index}):\n` +
-      `${error instanceof Error ? error.message : 'unknown error'}\n` +
-      `Config: ${preview}${suffix}`,
+        `${error instanceof Error ? error.message : 'unknown error'}\n` +
+        `Config: ${preview}${suffix}`
     );
   }
 }
@@ -55,7 +64,7 @@ function buildCustomSectionFieldValues(
   context: ResolverContext,
   experimentType: string,
   ownerId: number | undefined,
-  templateCustomFields?: Record<string, string>,
+  templateCustomFields?: Record<string, string>
 ): CustomFieldResult {
   const warnings: string[] = [];
 
@@ -69,7 +78,7 @@ function buildCustomSectionFieldValues(
   }
 
   const relevantFields = context.customSectionFields.filter(
-    (f) => !f.archived && f.custom_section?.type === experimentType && !f.custom_section?.archived,
+    (f) => !f.archived && f.custom_section?.type === experimentType && !f.custom_section?.archived
   );
 
   // Build a case-insensitive map from template custom field keys to their values
@@ -109,15 +118,18 @@ function buildCustomSectionFieldValues(
       const templateValue = templateFieldMap.get(titleKey) ?? templateFieldMap.get(nameKey);
       if (templateValue !== undefined) {
         if (field.type === 'user' && templateValue && !templateValue.startsWith('{')) {
-          const userIds = templateValue.split(',').map(ref => {
-            const trimmed = ref.trim();
-            if (trimmed.startsWith('user:')) return parseInt(trimmed.slice(5), 10);
-            const user = context.users?.find(u =>
-              u.email.toLowerCase() === trimmed.toLowerCase()
-            );
-            return user?.id;
-          }).filter((id): id is number => id !== undefined && !isNaN(id));
-          value = JSON.stringify({ selected: userIds.map(userId => ({ userId })) });
+          const userIds = templateValue
+            .split(',')
+            .map((ref) => {
+              const trimmed = ref.trim();
+              if (trimmed.startsWith('user:')) return parseInt(trimmed.slice(5), 10);
+              const user = context.users?.find(
+                (u) => u.email.toLowerCase() === trimmed.toLowerCase()
+              );
+              return user?.id;
+            })
+            .filter((id): id is number => id !== undefined && !isNaN(id));
+          value = JSON.stringify({ selected: userIds.map((userId) => ({ userId })) });
         } else {
           value = templateValue;
         }
@@ -131,7 +143,7 @@ function buildCustomSectionFieldValues(
 
 async function buildVariantScreenshots(
   template: ExperimentTemplate,
-  warnings: string[],
+  warnings: string[]
 ): Promise<Array<Record<string, unknown>>> {
   if (!template.variants) return [];
 
@@ -152,7 +164,9 @@ async function buildVariantScreenshots(
     try {
       resolved = await resolveScreenshot(v.screenshot, v.name);
     } catch (error) {
-      warnings.push(`Screenshot for variant "${v.name}" failed: ${error instanceof Error ? error.message : error}`);
+      warnings.push(
+        `Screenshot for variant "${v.name}" failed: ${error instanceof Error ? error.message : error}`
+      );
       continue;
     }
     if (!resolved) continue;
@@ -168,17 +182,37 @@ async function buildVariantScreenshots(
 }
 
 const KNOWN_TEMPLATE_KEYS = new Set([
-  'name', 'display_name', 'type', 'state',
-  'percentage_of_traffic', 'percentages',
-  'unit_type', 'application',
-  'primary_metric', 'secondary_metrics', 'guardrail_metrics', 'exploratory_metrics',
-  'owner_id', 'owners', 'teams', 'tags', 'audience',
-  'variants', 'custom_fields',
-  'analysis_type', 'required_alpha', 'required_power', 'baseline_participants',
-  'minimum_detectable_effect', 'baseline_primary_metric_mean', 'baseline_primary_metric_stdev',
-  'group_sequential_futility_type', 'group_sequential_analysis_count',
+  'name',
+  'display_name',
+  'type',
+  'state',
+  'percentage_of_traffic',
+  'percentages',
+  'unit_type',
+  'application',
+  'primary_metric',
+  'secondary_metrics',
+  'guardrail_metrics',
+  'exploratory_metrics',
+  'owner_id',
+  'owners',
+  'teams',
+  'tags',
+  'audience',
+  'variants',
+  'custom_fields',
+  'analysis_type',
+  'required_alpha',
+  'required_power',
+  'baseline_participants',
+  'minimum_detectable_effect',
+  'baseline_primary_metric_mean',
+  'baseline_primary_metric_stdev',
+  'group_sequential_futility_type',
+  'group_sequential_analysis_count',
   'group_sequential_min_analysis_interval',
-  'group_sequential_first_analysis_interval', 'group_sequential_max_duration_interval',
+  'group_sequential_first_analysis_interval',
+  'group_sequential_max_duration_interval',
 ]);
 
 export interface BuildPayloadResult {
@@ -189,7 +223,7 @@ export interface BuildPayloadResult {
 export async function buildExperimentPayload(
   template: ExperimentTemplate,
   context: ResolverContext,
-  defaultType = 'test',
+  defaultType = 'test'
 ): Promise<BuildPayloadResult> {
   const warnings: string[] = [];
 
@@ -223,16 +257,24 @@ export async function buildExperimentPayload(
     experiment_tags: [],
   };
 
-  if (template.minimum_detectable_effect) payload.minimum_detectable_effect = template.minimum_detectable_effect;
-  if (template.baseline_primary_metric_mean) payload.baseline_primary_metric_mean = template.baseline_primary_metric_mean;
-  if (template.baseline_primary_metric_stdev) payload.baseline_primary_metric_stdev = template.baseline_primary_metric_stdev;
+  if (template.minimum_detectable_effect)
+    payload.minimum_detectable_effect = template.minimum_detectable_effect;
+  if (template.baseline_primary_metric_mean)
+    payload.baseline_primary_metric_mean = template.baseline_primary_metric_mean;
+  if (template.baseline_primary_metric_stdev)
+    payload.baseline_primary_metric_stdev = template.baseline_primary_metric_stdev;
 
   if (analysisType === 'group_sequential') {
-    payload.group_sequential_futility_type = template.group_sequential_futility_type ?? DEFAULT_FUTILITY_TYPE;
-    if (template.group_sequential_analysis_count) payload.group_sequential_analysis_count = template.group_sequential_analysis_count;
-    payload.group_sequential_min_analysis_interval = template.group_sequential_min_analysis_interval ?? DEFAULT_MIN_ANALYSIS_INTERVAL;
-    payload.group_sequential_first_analysis_interval = template.group_sequential_first_analysis_interval ?? DEFAULT_FIRST_ANALYSIS_INTERVAL;
-    payload.group_sequential_max_duration_interval = template.group_sequential_max_duration_interval ?? DEFAULT_MAX_DURATION_INTERVAL;
+    payload.group_sequential_futility_type =
+      template.group_sequential_futility_type ?? DEFAULT_FUTILITY_TYPE;
+    if (template.group_sequential_analysis_count)
+      payload.group_sequential_analysis_count = template.group_sequential_analysis_count;
+    payload.group_sequential_min_analysis_interval =
+      template.group_sequential_min_analysis_interval ?? DEFAULT_MIN_ANALYSIS_INTERVAL;
+    payload.group_sequential_first_analysis_interval =
+      template.group_sequential_first_analysis_interval ?? DEFAULT_FIRST_ANALYSIS_INTERVAL;
+    payload.group_sequential_max_duration_interval =
+      template.group_sequential_max_duration_interval ?? DEFAULT_MAX_DURATION_INTERVAL;
   }
 
   const builtScreenshots = await buildVariantScreenshots(template, warnings);
@@ -254,7 +296,7 @@ export async function buildExperimentPayload(
   }
 
   const resolveMetricNames = (names: string[] | undefined, label: string) =>
-    (names ?? []).map(name => resolveByName(context.metrics, name, label));
+    (names ?? []).map((name) => resolveByName(context.metrics, name, label));
 
   const allMetrics = buildSecondaryMetrics({
     secondary: resolveMetricNames(template.secondary_metrics, 'Secondary metric'),
@@ -277,15 +319,18 @@ export async function buildExperimentPayload(
         const raw = String(ownerRef).trim();
         const emailInBrackets = /<(.+?)>/.exec(raw);
         const ref = (emailInBrackets ? emailInBrackets[1]! : raw).toLowerCase();
-        const matches = context.users.filter(u =>
-          u.email.toLowerCase() === ref ||
-          `${u.first_name ?? ''} ${u.last_name ?? ''}`.trim().toLowerCase() === ref
+        const matches = context.users.filter(
+          (u) =>
+            u.email.toLowerCase() === ref ||
+            `${u.first_name ?? ''} ${u.last_name ?? ''}`.trim().toLowerCase() === ref
         );
         if (matches.length === 1) {
           resolvedOwners.push({ user_id: matches[0]!.id });
         } else if (matches.length > 1) {
-          const suggestions = matches.map(u => `${u.email} (id: ${u.id})`).join(', ');
-          warnings.push(`Owner "${ownerRef}" matches multiple users: ${suggestions}. Use email to disambiguate.`);
+          const suggestions = matches.map((u) => `${u.email} (id: ${u.id})`).join(', ');
+          warnings.push(
+            `Owner "${ownerRef}" matches multiple users: ${suggestions}. Use email to disambiguate.`
+          );
         } else {
           warnings.push(`Owner "${ownerRef}" not found, skipping`);
         }
@@ -303,7 +348,7 @@ export async function buildExperimentPayload(
   if (template.teams && template.teams.length > 0 && context.teams) {
     const resolvedTeams: Array<{ team_id: number }> = [];
     for (const teamName of template.teams) {
-      const team = context.teams.find(t => t.name.toLowerCase() === teamName.toLowerCase());
+      const team = context.teams.find((t) => t.name.toLowerCase() === teamName.toLowerCase());
       if (team) {
         resolvedTeams.push({ team_id: team.id });
       } else {
@@ -316,7 +361,7 @@ export async function buildExperimentPayload(
   if (template.tags && template.tags.length > 0 && context.experimentTags) {
     const resolvedTags: Array<{ experiment_tag_id: number }> = [];
     for (const tagName of template.tags) {
-      const tag = context.experimentTags.find(t => t.tag.toLowerCase() === tagName.toLowerCase());
+      const tag = context.experimentTags.find((t) => t.tag.toLowerCase() === tagName.toLowerCase());
       if (tag) {
         resolvedTags.push({ experiment_tag_id: tag.id });
       } else {
@@ -330,12 +375,19 @@ export async function buildExperimentPayload(
     try {
       payload.audience = JSON.stringify(JSON.parse(template.audience));
     } catch {
-      warnings.push('Audience value is not valid JSON and will be sent as-is. Verify the syntax in your template.');
+      warnings.push(
+        'Audience value is not valid JSON and will be sent as-is. Verify the syntax in your template.'
+      );
       payload.audience = template.audience;
     }
   }
 
-  const customFieldResult = buildCustomSectionFieldValues(context, experimentType, ownerId, template.custom_fields);
+  const customFieldResult = buildCustomSectionFieldValues(
+    context,
+    experimentType,
+    ownerId,
+    template.custom_fields
+  );
   if (customFieldResult.values) {
     payload.custom_section_field_values = customFieldResult.values;
   }

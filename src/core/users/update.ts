@@ -10,7 +10,7 @@ export interface UpdateUserParams {
 
 export async function updateUser(
   client: APIClient,
-  params: UpdateUserParams,
+  params: UpdateUserParams
 ): Promise<CommandResult<void>> {
   const data: Record<string, string> = {};
   if (params.name) {

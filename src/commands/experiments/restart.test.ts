@@ -75,7 +75,9 @@ describe.skipIf(isLiveMode)('experiments restart API', () => {
   it('should GET experiment then PUT to /experiments/:id/restart with data', async () => {
     let receivedBody: Record<string, unknown> | null = null;
     useGetHandler();
-    useRestartHandler(body => { receivedBody = body; });
+    useRestartHandler((body) => {
+      receivedBody = body;
+    });
 
     await client.restartExperiment(42 as any, { note: 'Restarting experiment' });
 
@@ -91,7 +93,9 @@ describe.skipIf(isLiveMode)('experiments restart API', () => {
   it('should send optional fields when provided', async () => {
     let receivedBody: Record<string, unknown> | null = null;
     useGetHandler();
-    useRestartHandler(body => { receivedBody = body; });
+    useRestartHandler((body) => {
+      receivedBody = body;
+    });
 
     await client.restartExperiment(42 as any, {
       note: 'Restarting',
@@ -147,16 +151,18 @@ describe.skipIf(isLiveMode)('experiments restart API', () => {
       )
     );
 
-    await expect(
-      client.restartExperiment(42 as any)
-    ).rejects.toThrow('A reason for restarting is required');
+    await expect(client.restartExperiment(42 as any)).rejects.toThrow(
+      'A reason for restarting is required'
+    );
   });
 
   describe('restart_as_type: feature (test → feature)', () => {
     it('should set data.type to "feature" and null analysis fields', async () => {
       let receivedBody: Record<string, unknown> | null = null;
       useGetHandler(mockExperiment);
-      useRestartHandler(body => { receivedBody = body; });
+      useRestartHandler((body) => {
+        receivedBody = body;
+      });
 
       await client.restartExperiment(42 as any, { restart_as_type: 'feature' });
 
@@ -180,7 +186,9 @@ describe.skipIf(isLiveMode)('experiments restart API', () => {
     it('should preserve non-analysis fields when converting to feature', async () => {
       let receivedBody: Record<string, unknown> | null = null;
       useGetHandler(mockExperiment);
-      useRestartHandler(body => { receivedBody = body; });
+      useRestartHandler((body) => {
+        receivedBody = body;
+      });
 
       await client.restartExperiment(42 as any, { restart_as_type: 'feature' });
 
@@ -195,7 +203,9 @@ describe.skipIf(isLiveMode)('experiments restart API', () => {
     it('should map "experiment" to "test" in data.type', async () => {
       let receivedBody: Record<string, unknown> | null = null;
       useGetHandler(mockFeatureExperiment);
-      useRestartHandler(body => { receivedBody = body; });
+      useRestartHandler((body) => {
+        receivedBody = body;
+      });
 
       await client.restartExperiment(42 as any, { restart_as_type: 'experiment' });
 
@@ -207,7 +217,9 @@ describe.skipIf(isLiveMode)('experiments restart API', () => {
     it('should set default analysis fields when feature has none', async () => {
       let receivedBody: Record<string, unknown> | null = null;
       useGetHandler(mockFeatureExperiment);
-      useRestartHandler(body => { receivedBody = body; });
+      useRestartHandler((body) => {
+        receivedBody = body;
+      });
 
       await client.restartExperiment(42 as any, { restart_as_type: 'experiment' });
 
@@ -230,7 +242,9 @@ describe.skipIf(isLiveMode)('experiments restart API', () => {
         required_power: '0.9',
       };
       useGetHandler(featureWithAnalysis);
-      useRestartHandler(body => { receivedBody = body; });
+      useRestartHandler((body) => {
+        receivedBody = body;
+      });
 
       await client.restartExperiment(42 as any, { restart_as_type: 'experiment' });
 
@@ -246,7 +260,9 @@ describe.skipIf(isLiveMode)('experiments restart API', () => {
     it('should merge changes into the transformed experiment data', async () => {
       let receivedBody: Record<string, unknown> | null = null;
       useGetHandler();
-      useRestartHandler(body => { receivedBody = body; });
+      useRestartHandler((body) => {
+        receivedBody = body;
+      });
 
       await client.restartExperiment(42 as any, {
         changes: { display_name: 'Updated on restart' } as any,
@@ -403,11 +419,16 @@ describe('restart command', () => {
 
   it('should combine --as-type with other options', async () => {
     await restartCommand.parseAsync([
-      'node', 'test', '42',
-      '--as-type', 'feature',
-      '--state', 'development',
+      'node',
+      'test',
+      '42',
+      '--as-type',
+      'feature',
+      '--state',
+      'development',
       '--reshuffle',
-      '--note', 'Converting to feature flag',
+      '--note',
+      'Converting to feature flag',
     ]);
 
     expect(mockClient.restartExperiment).toHaveBeenCalledWith(

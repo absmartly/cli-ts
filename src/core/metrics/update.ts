@@ -9,7 +9,7 @@ export interface UpdateMetricParams {
 
 export async function updateMetric(
   client: APIClient,
-  params: UpdateMetricParams,
+  params: UpdateMetricParams
 ): Promise<CommandResult<void>> {
   const data: Record<string, string> = {};
   if (params.description !== undefined) data.description = params.description;

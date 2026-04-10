@@ -15,11 +15,15 @@ export const reviewStep: Step = {
     console.log(`  Primary metric:  ${template.primary_metric ?? ''}`);
     console.log(`  Secondary:       ${(template.secondary_metrics ?? []).join(', ') || '(none)'}`);
     console.log(`  Guardrail:       ${(template.guardrail_metrics ?? []).join(', ') || '(none)'}`);
-    console.log(`  Exploratory:     ${(template.exploratory_metrics ?? []).join(', ') || '(none)'}`);
+    console.log(
+      `  Exploratory:     ${(template.exploratory_metrics ?? []).join(', ') || '(none)'}`
+    );
     console.log(`  Owners:          ${(template.owners ?? []).join(', ') || '(none)'}`);
     console.log(`  Teams:           ${(template.teams ?? []).join(', ') || '(none)'}`);
     console.log(`  Tags:            ${(template.tags ?? []).join(', ') || '(none)'}`);
-    console.log(`  Variants:        ${(template.variants ?? []).map(v => v.name).join(', ') || '(none)'}`);
+    console.log(
+      `  Variants:        ${(template.variants ?? []).map((v) => v.name).join(', ') || '(none)'}`
+    );
     console.log(`  Analysis:        ${template.analysis_type ?? 'group_sequential'}`);
     console.log('');
 

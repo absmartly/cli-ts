@@ -1,11 +1,20 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { envsCommand } from './index.js';
-import { getAPIClientFromOptions, getGlobalOptions, printFormatted } from '../../lib/utils/api-helper.js';
+import {
+  getAPIClientFromOptions,
+  getGlobalOptions,
+  printFormatted,
+} from '../../lib/utils/api-helper.js';
 import { resetCommand } from '../../test/helpers/command-reset.js';
 
 vi.mock('../../lib/utils/api-helper.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../lib/utils/api-helper.js')>();
-  return { ...actual, getAPIClientFromOptions: vi.fn(), getGlobalOptions: vi.fn(), printFormatted: vi.fn() };
+  return {
+    ...actual,
+    getAPIClientFromOptions: vi.fn(),
+    getGlobalOptions: vi.fn(),
+    printFormatted: vi.fn(),
+  };
 });
 
 describe('envs command', () => {
@@ -44,10 +53,7 @@ describe('envs command', () => {
     await envsCommand.parseAsync(['node', 'test', 'list']);
 
     expect(mockClient.listEnvironments).toHaveBeenCalled();
-    expect(printFormatted).toHaveBeenCalledWith(
-      [{ id: 1, name: 'production' }],
-      expect.anything()
-    );
+    expect(printFormatted).toHaveBeenCalledWith([{ id: 1, name: 'production' }], expect.anything());
   });
 
   it('should get environment by id', async () => {

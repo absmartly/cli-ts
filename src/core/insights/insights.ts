@@ -1,11 +1,18 @@
 import type { APIClient } from '../../api-client/api-client.js';
 import type { CommandResult } from '../types.js';
-import { resolveTeamIds, resolveOwnerIds, resolveUnitTypeIds, resolveApplicationIds } from '../resolve.js';
+import {
+  resolveTeamIds,
+  resolveOwnerIds,
+  resolveUnitTypeIds,
+  resolveApplicationIds,
+} from '../resolve.js';
 
 export function toEpochSeconds(dateStr: string): number {
   const ms = new Date(dateStr).getTime();
   if (isNaN(ms)) {
-    throw new Error(`Invalid date: "${dateStr}". Expected a valid date string (e.g. "2026-01-01" or "2026-01-01T00:00:00Z").`);
+    throw new Error(
+      `Invalid date: "${dateStr}". Expected a valid date string (e.g. "2026-01-01" or "2026-01-01T00:00:00Z").`
+    );
   }
   return Math.floor(ms / 1000);
 }
@@ -28,7 +35,10 @@ interface InsightsFilterBody {
   owner_ids?: number[];
 }
 
-async function buildInsightsFilterBody(client: APIClient, params: InsightsFilterParams): Promise<InsightsFilterBody> {
+async function buildInsightsFilterBody(
+  client: APIClient,
+  params: InsightsFilterParams
+): Promise<InsightsFilterBody> {
   const body: InsightsFilterBody = {
     from: toEpochSeconds(params.from),
     to: toEpochSeconds(params.to),
@@ -51,7 +61,7 @@ async function buildInsightsFilterBody(client: APIClient, params: InsightsFilter
 
 export async function getVelocityInsights(
   client: APIClient,
-  params: InsightsFilterParams,
+  params: InsightsFilterParams
 ): Promise<CommandResult<unknown>> {
   const data = await client.getVelocityInsights(await buildInsightsFilterBody(client, params));
   return { data };
@@ -59,7 +69,7 @@ export async function getVelocityInsights(
 
 export async function getDecisionInsights(
   client: APIClient,
-  params: InsightsFilterParams,
+  params: InsightsFilterParams
 ): Promise<CommandResult<unknown>> {
   const data = await client.getDecisionInsights(await buildInsightsFilterBody(client, params));
   return { data };
@@ -81,7 +91,10 @@ interface InsightsDetailBody {
   applications?: string;
 }
 
-async function buildInsightsDetailBody(client: APIClient, params: InsightsDetailParams): Promise<InsightsDetailBody> {
+async function buildInsightsDetailBody(
+  client: APIClient,
+  params: InsightsDetailParams
+): Promise<InsightsDetailBody> {
   const body: InsightsDetailBody = {
     from: toEpochSeconds(params.from),
     to: toEpochSeconds(params.to),
@@ -98,16 +111,20 @@ async function buildInsightsDetailBody(client: APIClient, params: InsightsDetail
 
 export async function getVelocityInsightsDetail(
   client: APIClient,
-  params: InsightsDetailParams,
+  params: InsightsDetailParams
 ): Promise<CommandResult<unknown>> {
-  const data = await client.getVelocityInsightsDetail(await buildInsightsDetailBody(client, params));
+  const data = await client.getVelocityInsightsDetail(
+    await buildInsightsDetailBody(client, params)
+  );
   return { data };
 }
 
 export async function getDecisionInsightsHistory(
   client: APIClient,
-  params: InsightsDetailParams,
+  params: InsightsDetailParams
 ): Promise<CommandResult<unknown>> {
-  const data = await client.getDecisionInsightsHistory(await buildInsightsDetailBody(client, params));
+  const data = await client.getDecisionInsightsHistory(
+    await buildInsightsDetailBody(client, params)
+  );
   return { data };
 }

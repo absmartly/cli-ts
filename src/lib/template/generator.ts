@@ -13,8 +13,5 @@ export async function generateTemplateFromClient(
   const units = await client.listUnitTypes();
   const metrics = await client.listMetrics();
 
-  return generateTemplate(
-    { applications: apps, unitTypes: units, metrics },
-    opts
-  );
+  return generateTemplate({ applications: apps, unitTypes: units, metrics }, opts);
 }

@@ -8,7 +8,7 @@ export interface GetParentExperimentParams {
 
 export async function getParentExperiment(
   client: APIClient,
-  params: GetParentExperimentParams,
+  params: GetParentExperimentParams
 ): Promise<CommandResult<unknown>> {
   const experiment = await client.getParentExperiment(params.experimentId);
   return { data: experiment };

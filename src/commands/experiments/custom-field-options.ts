@@ -15,7 +15,7 @@ export function registerCustomFieldOptions(command: Command, type: string): void
   const fields = loadCachedFields(profile, type);
 
   const relevantFields = fields.filter(
-    f => !f.archived && f.custom_section?.type === type && !f.custom_section?.archived
+    (f) => !f.archived && f.custom_section?.type === type && !f.custom_section?.archived
   );
 
   for (const field of relevantFields) {
@@ -32,7 +32,7 @@ export function registerCustomFieldOptions(command: Command, type: string): void
 export function extractCustomFieldValues(
   options: Record<string, unknown>,
   type: string,
-  profile?: string,
+  profile?: string
 ): Record<string, string> {
   const config = loadConfig();
   const defaultProfile = config['default-profile'] || 'default';
@@ -44,7 +44,7 @@ export function extractCustomFieldValues(
   const result: Record<string, string> = {};
 
   const relevantFields = fields.filter(
-    f => !f.archived && f.custom_section?.type === type && !f.custom_section?.archived
+    (f) => !f.archived && f.custom_section?.type === type && !f.custom_section?.archived
   );
 
   for (const field of relevantFields) {

@@ -3,11 +3,19 @@ import { parseCSV } from './parse-csv.js';
 import { parseScreenshotEntries } from './screenshot-parser.js';
 import type { APIClient } from '../api-client.js';
 import {
-  DEFAULT_ANALYSIS_TYPE, DEFAULT_STATE, DEFAULT_TRAFFIC,
-  DEFAULT_REQUIRED_ALPHA, DEFAULT_REQUIRED_POWER, DEFAULT_FUTILITY_TYPE,
-  DEFAULT_MIN_ANALYSIS_INTERVAL, DEFAULT_FIRST_ANALYSIS_INTERVAL,
-  DEFAULT_MAX_DURATION_INTERVAL, DEFAULT_BASELINE_PARTICIPANTS, DEFAULT_AUDIENCE,
-  DEFAULT_CONTROL_NAME, DEFAULT_TREATMENT_NAME,
+  DEFAULT_ANALYSIS_TYPE,
+  DEFAULT_STATE,
+  DEFAULT_TRAFFIC,
+  DEFAULT_REQUIRED_ALPHA,
+  DEFAULT_REQUIRED_POWER,
+  DEFAULT_FUTILITY_TYPE,
+  DEFAULT_MIN_ANALYSIS_INTERVAL,
+  DEFAULT_FIRST_ANALYSIS_INTERVAL,
+  DEFAULT_MAX_DURATION_INTERVAL,
+  DEFAULT_BASELINE_PARTICIPANTS,
+  DEFAULT_AUDIENCE,
+  DEFAULT_CONTROL_NAME,
+  DEFAULT_TREATMENT_NAME,
 } from './defaults.js';
 
 export interface CreateFromOptionsInput {
@@ -45,8 +53,13 @@ export interface CreateFromOptionsInput {
   customFields?: Record<string, string>;
 }
 
-export async function buildPayloadFromOptions(input: CreateFromOptionsInput, client?: APIClient): Promise<Record<string, unknown>> {
-  const variantNames = input.variants ? input.variants.split(',').map(n => n.trim()) : [DEFAULT_CONTROL_NAME, DEFAULT_TREATMENT_NAME];
+export async function buildPayloadFromOptions(
+  input: CreateFromOptionsInput,
+  client?: APIClient
+): Promise<Record<string, unknown>> {
+  const variantNames = input.variants
+    ? input.variants.split(',').map((n) => n.trim())
+    : [DEFAULT_CONTROL_NAME, DEFAULT_TREATMENT_NAME];
   const variantConfigs: string[] = input.variantConfig || [];
   const variants = variantNames.map((name, index) => ({
     name,
@@ -55,7 +68,7 @@ export async function buildPayloadFromOptions(input: CreateFromOptionsInput, cli
   }));
 
   const percentages = input.percentages
-    ? input.percentages.split(',').map(p => parseInt(p.trim(), 10))
+    ? input.percentages.split(',').map((p) => parseInt(p.trim(), 10))
     : variantNames.map(() => Math.floor(100 / variantNames.length));
 
   const data: Record<string, unknown> = {
@@ -81,15 +94,22 @@ export async function buildPayloadFromOptions(input: CreateFromOptionsInput, cli
 
   const analysisType = data.analysis_type as string;
   if (input.minimumDetectableEffect) data.minimum_detectable_effect = input.minimumDetectableEffect;
-  if (input.baselinePrimaryMetricMean) data.baseline_primary_metric_mean = input.baselinePrimaryMetricMean;
-  if (input.baselinePrimaryMetricStdev) data.baseline_primary_metric_stdev = input.baselinePrimaryMetricStdev;
+  if (input.baselinePrimaryMetricMean)
+    data.baseline_primary_metric_mean = input.baselinePrimaryMetricMean;
+  if (input.baselinePrimaryMetricStdev)
+    data.baseline_primary_metric_stdev = input.baselinePrimaryMetricStdev;
 
   if (analysisType === 'group_sequential') {
-    data.group_sequential_futility_type = input.groupSequentialFutilityType || DEFAULT_FUTILITY_TYPE;
-    if (input.groupSequentialAnalysisCount) data.group_sequential_analysis_count = input.groupSequentialAnalysisCount;
-    data.group_sequential_min_analysis_interval = input.groupSequentialMinAnalysisInterval || DEFAULT_MIN_ANALYSIS_INTERVAL;
-    data.group_sequential_first_analysis_interval = input.groupSequentialFirstAnalysisInterval || DEFAULT_FIRST_ANALYSIS_INTERVAL;
-    data.group_sequential_max_duration_interval = input.groupSequentialMaxDurationInterval || DEFAULT_MAX_DURATION_INTERVAL;
+    data.group_sequential_futility_type =
+      input.groupSequentialFutilityType || DEFAULT_FUTILITY_TYPE;
+    if (input.groupSequentialAnalysisCount)
+      data.group_sequential_analysis_count = input.groupSequentialAnalysisCount;
+    data.group_sequential_min_analysis_interval =
+      input.groupSequentialMinAnalysisInterval || DEFAULT_MIN_ANALYSIS_INTERVAL;
+    data.group_sequential_first_analysis_interval =
+      input.groupSequentialFirstAnalysisInterval || DEFAULT_FIRST_ANALYSIS_INTERVAL;
+    data.group_sequential_max_duration_interval =
+      input.groupSequentialMaxDurationInterval || DEFAULT_MAX_DURATION_INTERVAL;
   }
 
   if (input.unitType) {
@@ -106,7 +126,7 @@ export async function buildPayloadFromOptions(input: CreateFromOptionsInput, cli
   }
 
   if (input.ownerIds && input.ownerIds.length > 0) {
-    data.owners = input.ownerIds.map(id => ({ user_id: id }));
+    data.owners = input.ownerIds.map((id) => ({ user_id: id }));
   }
 
   if (client) {
@@ -120,26 +140,26 @@ export async function buildPayloadFromOptions(input: CreateFromOptionsInput, cli
       const byName = new Map(allNames.map((name, i) => [name, resolved[i]!]));
 
       data.secondary_metrics = buildSecondaryMetrics({
-        secondary: parseCSV(input.secondaryMetrics).map(n => byName.get(n)!),
-        guardrail: parseCSV(input.guardrailMetrics).map(n => byName.get(n)!),
-        exploratory: parseCSV(input.exploratoryMetrics).map(n => byName.get(n)!),
+        secondary: parseCSV(input.secondaryMetrics).map((n) => byName.get(n)!),
+        guardrail: parseCSV(input.guardrailMetrics).map((n) => byName.get(n)!),
+        exploratory: parseCSV(input.exploratoryMetrics).map((n) => byName.get(n)!),
       });
     }
 
     if (input.teams) {
       const resolved = await client.resolveTeams(parseCSV(input.teams));
-      data.teams = resolved.map(t => ({ team_id: t.id }));
+      data.teams = resolved.map((t) => ({ team_id: t.id }));
     }
 
     if (input.tags) {
       const resolved = await client.resolveTags(parseCSV(input.tags));
-      data.experiment_tags = resolved.map(t => ({ experiment_tag_id: t.id }));
+      data.experiment_tags = resolved.map((t) => ({ experiment_tag_id: t.id }));
     }
 
     const customFields = await client.listCustomSectionFields();
     const expType = (input.type || 'test') as string;
     const relevantFields = customFields.filter(
-      f => !f.archived && f.custom_section?.type === expType && !f.custom_section?.archived
+      (f) => !f.archived && f.custom_section?.type === expType && !f.custom_section?.archived
     );
     if (relevantFields.length > 0) {
       const ownerId = input.ownerIds?.[0];

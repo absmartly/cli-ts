@@ -5,9 +5,7 @@ import type { ExperimentInput } from './experiment-transform.js';
 import { resolveBySearch } from './payload/search-resolver.js';
 import { resolveByName } from './payload/resolver.js';
 import { stripApiVersionPath } from '../lib/utils/url.js';
-import {
-  ExperimentId,
-} from './types.js';
+import { ExperimentId } from './types.js';
 import type {
   Experiment,
   ListMetricsOptions,
@@ -61,13 +59,8 @@ import type {
 } from './types.js';
 
 function createAPIError(message: string, response?: HttpResponse): APIError {
-  return new APIError(
-    message,
-    response?.status,
-    response?.data,
-  );
+  return new APIError(message, response?.status, response?.data);
 }
-
 
 export class APIClient {
   private httpClient: HttpClient;
@@ -107,7 +100,7 @@ export class APIClient {
     if (!data || typeof data !== 'object') {
       throw new Error(
         `Invalid API response for ${operation}: Expected object, got ${typeof data}\n` +
-        `This may indicate an API error or network proxy issue.`
+          `This may indicate an API error or network proxy issue.`
       );
     }
 
@@ -116,8 +109,8 @@ export class APIClient {
     if (items === undefined) {
       throw new Error(
         `Invalid API response for ${operation}: Missing "${expectedKey}" field\n` +
-        `Response keys: ${Object.keys(data).join(', ')}\n` +
-        `This may indicate an API version mismatch.`
+          `Response keys: ${Object.keys(data).join(', ')}\n` +
+          `This may indicate an API version mismatch.`
       );
     }
 
@@ -133,7 +126,7 @@ export class APIClient {
   private validateOkResponse(response: HttpResponse, operation: string): void {
     const data = response.data as Record<string, unknown> | null;
     if (data && typeof data === 'object' && 'ok' in data && data.ok === false) {
-      const errors: string[] = Array.isArray(data.errors) ? data.errors as string[] : [];
+      const errors: string[] = Array.isArray(data.errors) ? (data.errors as string[]) : [];
       throw createAPIError(
         `${operation} failed: ${errors.join(', ') || 'unknown error'}`,
         response
@@ -149,9 +142,7 @@ export class APIClient {
     const data = response.data;
 
     if (!data || typeof data !== 'object') {
-      throw new Error(
-        `Invalid API response for ${operation}: Expected object, got ${typeof data}`
-      );
+      throw new Error(`Invalid API response for ${operation}: Expected object, got ${typeof data}`);
     }
 
     const entity = (data as Record<string, unknown>)[expectedKey];
@@ -159,7 +150,7 @@ export class APIClient {
     if (entity === undefined) {
       throw new Error(
         `Invalid API response for ${operation}: Missing "${expectedKey}" field\n` +
-        `Response keys: ${Object.keys(data).join(', ')}`
+          `Response keys: ${Object.keys(data).join(', ')}`
       );
     }
 
@@ -212,7 +203,8 @@ export class APIClient {
     if (options.search) params.search = options.search;
 
     if (options.alert_srm !== undefined) params.sample_ratio_mismatch = String(options.alert_srm);
-    if (options.alert_cleanup_needed !== undefined) params.cleanup_needed = String(options.alert_cleanup_needed);
+    if (options.alert_cleanup_needed !== undefined)
+      params.cleanup_needed = String(options.alert_cleanup_needed);
     if (options.alert_audience_mismatch !== undefined)
       params.audience_mismatch = String(options.alert_audience_mismatch);
     if (options.alert_sample_size_reached !== undefined)
@@ -256,7 +248,8 @@ export class APIClient {
       data: merged,
     };
     if (options?.note !== undefined) payload.note = options.note;
-    if (options?.update_metric_versions !== undefined) payload.update_metric_versions = options.update_metric_versions;
+    if (options?.update_metric_versions !== undefined)
+      payload.update_metric_versions = options.update_metric_versions;
     const response = await this.request('PUT', `/experiments/${id}`, { data: payload });
     this.validateOkResponse(response, 'updateExperiment');
     return this.validateEntityResponse<Experiment>(response, 'experiment', 'updateExperiment');
@@ -286,11 +279,17 @@ export class APIClient {
 
   async getParentExperiment(id: ExperimentId): Promise<Experiment> {
     const response = await this.request('GET', `/experiments/${id}/parent`);
-    return this.validateEntityResponse<Experiment>(response, 'parent_experiment', 'getParentExperiment');
+    return this.validateEntityResponse<Experiment>(
+      response,
+      'parent_experiment',
+      'getParentExperiment'
+    );
   }
 
   async developmentExperiment(id: ExperimentId, note?: string): Promise<Experiment> {
-    const response = await this.request('PUT', `/experiments/${id}/development`, { data: { ...(note !== undefined && { note }) } });
+    const response = await this.request('PUT', `/experiments/${id}/development`, {
+      data: { ...(note !== undefined && { note }) },
+    });
     this.validateOkResponse(response, 'developmentExperiment');
     return this.validateEntityResponse<Experiment>(response, 'experiment', 'developmentExperiment');
   }
@@ -308,7 +307,9 @@ export class APIClient {
   ): Promise<Experiment> {
     const current = await this.getExperiment(id);
     const input = experimentToInput(current);
-    const data: Record<string, unknown> = options.changes ? { ...input, ...options.changes } : { ...input };
+    const data: Record<string, unknown> = options.changes
+      ? { ...input, ...options.changes }
+      : { ...input };
 
     if (options.restart_as_type) {
       const dbType = options.restart_as_type === 'experiment' ? 'test' : options.restart_as_type;
@@ -347,20 +348,28 @@ export class APIClient {
     if (options.reason !== undefined) payload.reason = options.reason;
     if (options.restart_as_type !== undefined) payload.restart_as_type = options.restart_as_type;
 
-    const response = await this.request<Record<string, unknown>>('PUT', `/experiments/${id}/restart`, { data: payload });
+    const response = await this.request<Record<string, unknown>>(
+      'PUT',
+      `/experiments/${id}/restart`,
+      { data: payload }
+    );
     this.validateOkResponse(response, 'restartExperiment');
     const responseData = response.data;
     const experiment = responseData.new_experiment ?? responseData.experiment;
     if (!experiment) {
       throw new Error(
         `Invalid API response for restartExperiment: Missing "new_experiment" or "experiment" field\n` +
-        `Response keys: ${Object.keys(responseData).join(', ')}`
+          `Response keys: ${Object.keys(responseData).join(', ')}`
       );
     }
     return experiment as Experiment;
   }
 
-  async fullOnExperiment(id: ExperimentId, fullOnVariant: number, note?: string): Promise<Experiment> {
+  async fullOnExperiment(
+    id: ExperimentId,
+    fullOnVariant: number,
+    note?: string
+  ): Promise<Experiment> {
     const response = await this.request('PUT', `/experiments/${id}/full_on`, {
       data: { full_on_variant: fullOnVariant, ...(note !== undefined && { note }) },
     });
@@ -377,8 +386,14 @@ export class APIClient {
   ): Promise<ScheduledAction> {
     const body: Record<string, unknown> = { action, scheduled_at: scheduledAt, note };
     if (reason) body.reason = reason;
-    const response = await this.request('POST', `/experiments/${id}/scheduled_action`, { data: body });
-    return this.validateEntityResponse<ScheduledAction>(response, 'scheduled_action', 'createScheduledAction');
+    const response = await this.request('POST', `/experiments/${id}/scheduled_action`, {
+      data: body,
+    });
+    return this.validateEntityResponse<ScheduledAction>(
+      response,
+      'scheduled_action',
+      'createScheduledAction'
+    );
   }
 
   async deleteScheduledAction(id: ExperimentId, actionId: ScheduledActionId): Promise<void> {
@@ -387,7 +402,11 @@ export class APIClient {
 
   async listExperimentMetrics(id: ExperimentId): Promise<unknown[]> {
     const response = await this.request('GET', `/experiments/${id}/metrics`);
-    return this.validateListResponse<unknown>(response, 'experiment_metrics', 'listExperimentMetrics');
+    return this.validateListResponse<unknown>(
+      response,
+      'experiment_metrics',
+      'listExperimentMetrics'
+    );
   }
 
   async getExperimentMetricData(
@@ -401,14 +420,20 @@ export class APIClient {
         from?: number;
         to?: number;
       };
-    },
+    }
   ): Promise<{ columnNames: string[]; rows: unknown[][] }> {
-    const response = await this.request<Record<string, unknown>>('POST', `/experiments/${experimentId}/metrics/${metricId}`, {
-      ...(body && { data: body }),
-    });
+    const response = await this.request<Record<string, unknown>>(
+      'POST',
+      `/experiments/${experimentId}/metrics/${metricId}`,
+      {
+        ...(body && { data: body }),
+      }
+    );
     const data = response.data;
     if (!data || !Array.isArray(data.columnNames) || !Array.isArray(data.rows)) {
-      throw new Error(`Invalid metric data response for experiment ${experimentId}, metric ${metricId}`);
+      throw new Error(
+        `Invalid metric data response for experiment ${experimentId}, metric ${metricId}`
+      );
     }
     return data as { columnNames: string[]; rows: unknown[][] };
   }
@@ -419,10 +444,17 @@ export class APIClient {
     applications?: number[];
     audience?: string;
   }): Promise<{ columnNames: string[]; columnTypes: string[]; rows: unknown[][] }> {
-    const response = await this.request<Record<string, unknown>>('POST', '/experiments/estimate/max_participants', { data: params });
+    const response = await this.request<Record<string, unknown>>(
+      'POST',
+      '/experiments/estimate/max_participants',
+      { data: params }
+    );
     const data = response.data;
     if (!data || typeof data !== 'object') {
-      throw createAPIError(`estimateMaxParticipants: expected object response, got ${typeof data}`, response);
+      throw createAPIError(
+        `estimateMaxParticipants: expected object response, got ${typeof data}`,
+        response
+      );
     }
     if (!Array.isArray(data.columnNames)) {
       throw createAPIError(
@@ -440,40 +472,70 @@ export class APIClient {
   }
 
   async getExperimentMetricsCached(
-    experimentId: ExperimentId,
-  ): Promise<{ columnNames: string[]; rows: unknown[][]; snapshot_data?: Record<string, unknown>; pending_update_request?: Record<string, unknown> }> {
-    const response = await this.request<Record<string, unknown>>('GET', `/experiments/${experimentId}/metrics/main`, {
-      params: { use_cache: '1' },
-    });
+    experimentId: ExperimentId
+  ): Promise<{
+    columnNames: string[];
+    rows: unknown[][];
+    snapshot_data?: Record<string, unknown>;
+    pending_update_request?: Record<string, unknown>;
+  }> {
+    const response = await this.request<Record<string, unknown>>(
+      'GET',
+      `/experiments/${experimentId}/metrics/main`,
+      {
+        params: { use_cache: '1' },
+      }
+    );
     const data = response.data;
     if (!data || !Array.isArray(data.columnNames) || !Array.isArray(data.rows)) {
-      throw new Error(`No cached metric data available for experiment ${experimentId}. The previewer may not have processed this experiment yet.`);
+      throw new Error(
+        `No cached metric data available for experiment ${experimentId}. The previewer may not have processed this experiment yet.`
+      );
     }
-    return data as { columnNames: string[]; rows: unknown[][]; snapshot_data?: Record<string, unknown>; pending_update_request?: Record<string, unknown> };
+    return data as {
+      columnNames: string[];
+      rows: unknown[][];
+      snapshot_data?: Record<string, unknown>;
+      pending_update_request?: Record<string, unknown>;
+    };
   }
 
   async addExperimentMetrics(id: ExperimentId, metricIds: MetricId[]): Promise<void> {
-    const response = await this.request('POST', `/experiments/${id}/metrics`, { data: { metric_ids: metricIds } });
+    const response = await this.request('POST', `/experiments/${id}/metrics`, {
+      data: { metric_ids: metricIds },
+    });
     this.validateOkResponse(response, 'addExperimentMetrics');
   }
 
   async confirmMetricImpact(experimentId: ExperimentId, metricId: MetricId): Promise<void> {
-    const response = await this.request('POST', `/experiments/${experimentId}/metrics/${metricId}/confirm_impact`);
+    const response = await this.request(
+      'POST',
+      `/experiments/${experimentId}/metrics/${metricId}/confirm_impact`
+    );
     this.validateOkResponse(response, 'confirmMetricImpact');
   }
 
   async excludeExperimentMetric(experimentId: ExperimentId, metricId: MetricId): Promise<void> {
-    const response = await this.request('POST', `/experiments/${experimentId}/metrics/${metricId}/exclude`);
+    const response = await this.request(
+      'POST',
+      `/experiments/${experimentId}/metrics/${metricId}/exclude`
+    );
     this.validateOkResponse(response, 'excludeExperimentMetric');
   }
 
   async includeExperimentMetric(experimentId: ExperimentId, metricId: MetricId): Promise<void> {
-    const response = await this.request('POST', `/experiments/${experimentId}/metrics/${metricId}/include`);
+    const response = await this.request(
+      'POST',
+      `/experiments/${experimentId}/metrics/${metricId}/include`
+    );
     this.validateOkResponse(response, 'includeExperimentMetric');
   }
 
   async removeMetricImpact(experimentId: ExperimentId, metricId: MetricId): Promise<void> {
-    const response = await this.request('POST', `/experiments/${experimentId}/metrics/${metricId}/remove_impact`);
+    const response = await this.request(
+      'POST',
+      `/experiments/${experimentId}/metrics/${metricId}/remove_impact`
+    );
     this.validateOkResponse(response, 'removeMetricImpact');
   }
 
@@ -488,13 +550,17 @@ export class APIClient {
   }
 
   async editExperimentNote(id: ExperimentId, noteId: NoteId, note: string): Promise<Note> {
-    const response = await this.request('PUT', `/experiments/${id}/activity/${noteId}`, { data: { note } });
+    const response = await this.request('PUT', `/experiments/${id}/activity/${noteId}`, {
+      data: { note },
+    });
     this.validateOkResponse(response, 'editExperimentNote');
     return this.validateEntityResponse<Note>(response, 'experiment_note', 'editExperimentNote');
   }
 
   async replyToExperimentNote(id: ExperimentId, noteId: NoteId, note: string): Promise<Note> {
-    const response = await this.request('POST', `/experiments/${id}/activity/${noteId}/reply`, { data: { note } });
+    const response = await this.request('POST', `/experiments/${id}/activity/${noteId}/reply`, {
+      data: { note },
+    });
     this.validateOkResponse(response, 'replyToExperimentNote');
     return this.validateEntityResponse<Note>(response, 'experiment_note', 'replyToExperimentNote');
   }
@@ -504,7 +570,10 @@ export class APIClient {
     this.validateOkResponse(response, 'exportExperimentData');
   }
 
-  async requestExperimentUpdate(id: ExperimentId, params?: { replaceGroupSequentialAnalysis?: boolean; tasks?: string[] }): Promise<void> {
+  async requestExperimentUpdate(
+    id: ExperimentId,
+    params?: { replaceGroupSequentialAnalysis?: boolean; tasks?: string[] }
+  ): Promise<void> {
     const data: Record<string, unknown> = {};
     if (params) data.params = params;
     const response = await this.request('POST', `/experiments/${id}/request_update`, { data });
@@ -521,21 +590,24 @@ export class APIClient {
       return ExperimentId(asInt);
     }
     const results = await this.searchExperiments(nameOrId);
-    const exact = results.filter(e => e.name === nameOrId);
+    const exact = results.filter((e) => e.name === nameOrId);
     if (exact.length >= 1) {
       exact.sort((a, b) => b.id - a.id);
       if (exact.length > 1) {
-        const matches = exact.map(e => `  ${e.id} (${e.state ?? 'unknown'})`).join('\n');
+        const matches = exact.map((e) => `  ${e.id} (${e.state ?? 'unknown'})`).join('\n');
         console.error(
           `Warning: ${exact.length} experiments match name "${nameOrId}":\n${matches}\n` +
-          `Using most recent: id ${exact[0]!.id}. Use a numeric ID to avoid ambiguity.`
+            `Using most recent: id ${exact[0]!.id}. Use a numeric ID to avoid ambiguity.`
         );
       }
       return exact[0]!.id;
     }
     if (results.length === 1) return results[0]!.id;
     if (results.length > 1) {
-      const suggestions = results.slice(0, 5).map(e => `  ${e.id} ${e.name} (${e.state})`).join('\n');
+      const suggestions = results
+        .slice(0, 5)
+        .map((e) => `  ${e.id} ${e.name} (${e.state})`)
+        .join('\n');
       throw new Error(`No exact match for "${nameOrId}". Did you mean:\n${suggestions}`);
     }
     throw new Error(`Experiment "${nameOrId}" not found`);
@@ -557,7 +629,11 @@ export class APIClient {
     const params: Record<string, string> = {};
     if (experimentId !== undefined) params.experiment_id = String(experimentId);
     const response = await this.request('GET', '/experiment_recommended_actions', { params });
-    return this.validateListResponse<unknown>(response, 'experiment_recommended_actions', 'listRecommendedActions');
+    return this.validateListResponse<unknown>(
+      response,
+      'experiment_recommended_actions',
+      'listRecommendedActions'
+    );
   }
 
   async dismissRecommendedAction(id: RecommendedActionId): Promise<void> {
@@ -615,7 +691,11 @@ export class APIClient {
 
   async listTeams(includeArchived = false, items = 100, page = 1): Promise<Team[]> {
     const response = await this.request('GET', '/teams', {
-      params: { include_archived: includeArchived ? '1' : '0', items: String(items), page: String(page) },
+      params: {
+        include_archived: includeArchived ? '1' : '0',
+        items: String(items),
+        page: String(page),
+      },
     });
     return this.validateListResponse<Team>(response, 'teams', 'listTeams');
   }
@@ -639,7 +719,9 @@ export class APIClient {
     await this.request('PUT', `/teams/${id}/archive`, { data: { archive: !unarchive } });
   }
 
-  async listUsers(options: { includeArchived?: boolean; search?: string; items?: number; page?: number } = {}): Promise<User[]> {
+  async listUsers(
+    options: { includeArchived?: boolean; search?: string; items?: number; page?: number } = {}
+  ): Promise<User[]> {
     const params: Record<string, string> = {
       items: String(options.items ?? 100),
       page: String(options.page ?? 1),
@@ -688,16 +770,37 @@ export class APIClient {
     return this.validateEntityResponse<unknown>(response, 'user_api_key', 'getUserApiKeyByUserId');
   }
 
-  async createUserApiKeyByUserId(userId: UserId, data: { name: string; description?: string }): Promise<{ id: number; name: string; key: string }> {
-    const response = await this.request<Record<string, unknown>>('POST', `/users/${userId}/api_keys`, {
-      data: { name: data.name, description: data.description || '' },
-    });
-    return this.validateEntityResponse<{ id: number; name: string; key: string }>(response, 'user_api_key', 'createUserApiKeyByUserId');
+  async createUserApiKeyByUserId(
+    userId: UserId,
+    data: { name: string; description?: string }
+  ): Promise<{ id: number; name: string; key: string }> {
+    const response = await this.request<Record<string, unknown>>(
+      'POST',
+      `/users/${userId}/api_keys`,
+      {
+        data: { name: data.name, description: data.description || '' },
+      }
+    );
+    return this.validateEntityResponse<{ id: number; name: string; key: string }>(
+      response,
+      'user_api_key',
+      'createUserApiKeyByUserId'
+    );
   }
 
-  async updateUserApiKeyByUserId(userId: UserId, keyId: number, data: { name?: string; description?: string }): Promise<unknown> {
-    const response = await this.request('PUT', `/users/${userId}/api_keys/${keyId}`, { data: { data } });
-    return this.validateEntityResponse<unknown>(response, 'user_api_key', 'updateUserApiKeyByUserId');
+  async updateUserApiKeyByUserId(
+    userId: UserId,
+    keyId: number,
+    data: { name?: string; description?: string }
+  ): Promise<unknown> {
+    const response = await this.request('PUT', `/users/${userId}/api_keys/${keyId}`, {
+      data: { data },
+    });
+    return this.validateEntityResponse<unknown>(
+      response,
+      'user_api_key',
+      'updateUserApiKeyByUserId'
+    );
   }
 
   async deleteUserApiKeyByUserId(userId: UserId, keyId: number): Promise<void> {
@@ -751,12 +854,23 @@ export class APIClient {
     return user;
   }
 
-  async createUserApiKey(name: string, description?: string): Promise<{ id: number; name: string; key: string }> {
+  async createUserApiKey(
+    name: string,
+    description?: string
+  ): Promise<{ id: number; name: string; key: string }> {
     const rootUrl = this.getRootUrl();
-    const response = await this.request<Record<string, unknown>>('POST', `${rootUrl}/auth/current-user/api_keys`, {
-      data: { name, description: description || '' },
-    });
-    return this.validateEntityResponse<{ id: number; name: string; key: string }>(response, 'user_api_key', 'createUserApiKey');
+    const response = await this.request<Record<string, unknown>>(
+      'POST',
+      `${rootUrl}/auth/current-user/api_keys`,
+      {
+        data: { name, description: description || '' },
+      }
+    );
+    return this.validateEntityResponse<{ id: number; name: string; key: string }>(
+      response,
+      'user_api_key',
+      'createUserApiKey'
+    );
   }
 
   async activateMetric(id: MetricId, reason: string): Promise<Metric> {
@@ -769,50 +883,91 @@ export class APIClient {
   }
 
   async listCustomSectionFields(items = 100, page = 1): Promise<CustomSectionField[]> {
-    const response = await this.request<Record<string, unknown>>('GET', '/experiment_custom_section_fields', {
-      params: { items: String(items), page: String(page) },
-    });
-    return this.validateListResponse<CustomSectionField>(response, 'experiment_custom_section_fields', 'listCustomSectionFields');
+    const response = await this.request<Record<string, unknown>>(
+      'GET',
+      '/experiment_custom_section_fields',
+      {
+        params: { items: String(items), page: String(page) },
+      }
+    );
+    return this.validateListResponse<CustomSectionField>(
+      response,
+      'experiment_custom_section_fields',
+      'listCustomSectionFields'
+    );
   }
 
   async getCustomSectionField(id: CustomSectionFieldId): Promise<CustomSectionField> {
     const response = await this.request('GET', `/experiment_custom_section_fields/${id}`);
-    return this.validateEntityResponse<CustomSectionField>(response, 'experiment_custom_section_field', 'getCustomSectionField');
+    return this.validateEntityResponse<CustomSectionField>(
+      response,
+      'experiment_custom_section_field',
+      'getCustomSectionField'
+    );
   }
 
   async createCustomSectionField(data: Partial<CustomSectionField>): Promise<CustomSectionField> {
     const response = await this.request('POST', '/experiment_custom_section_fields', { data });
-    return this.validateEntityResponse<CustomSectionField>(response, 'experiment_custom_section_field', 'createCustomSectionField');
+    return this.validateEntityResponse<CustomSectionField>(
+      response,
+      'experiment_custom_section_field',
+      'createCustomSectionField'
+    );
   }
 
-  async updateCustomSectionField(id: CustomSectionFieldId, data: Partial<CustomSectionField>): Promise<CustomSectionField> {
+  async updateCustomSectionField(
+    id: CustomSectionFieldId,
+    data: Partial<CustomSectionField>
+  ): Promise<CustomSectionField> {
     const response = await this.request('PUT', `/experiment_custom_section_fields/${id}`, { data });
-    return this.validateEntityResponse<CustomSectionField>(response, 'experiment_custom_section_field', 'updateCustomSectionField');
+    return this.validateEntityResponse<CustomSectionField>(
+      response,
+      'experiment_custom_section_field',
+      'updateCustomSectionField'
+    );
   }
 
   async archiveCustomSectionField(id: CustomSectionFieldId, unarchive = false): Promise<void> {
-    await this.request('PUT', `/experiment_custom_section_fields/${id}/archive`, { data: { archive: !unarchive } });
+    await this.request('PUT', `/experiment_custom_section_fields/${id}/archive`, {
+      data: { archive: !unarchive },
+    });
   }
 
   async listCustomSections(type?: string): Promise<unknown[]> {
     const params: Record<string, string> = {};
     if (type) params.type = type;
     const response = await this.request('GET', '/experiment_custom_sections', { params });
-    return this.validateListResponse<unknown>(response, 'experiment_custom_sections', 'listCustomSections');
+    return this.validateListResponse<unknown>(
+      response,
+      'experiment_custom_sections',
+      'listCustomSections'
+    );
   }
 
   async createCustomSection(data: { name: string; type: string }): Promise<unknown> {
     const response = await this.request('POST', '/experiment_custom_sections', { data });
-    return this.validateEntityResponse<unknown>(response, 'experiment_custom_section', 'createCustomSection');
+    return this.validateEntityResponse<unknown>(
+      response,
+      'experiment_custom_section',
+      'createCustomSection'
+    );
   }
 
   async updateCustomSection(id: CustomSectionId, data: Record<string, unknown>): Promise<unknown> {
-    const response = await this.request('PUT', `/experiment_custom_sections/${id}`, { data: { data } });
-    return this.validateEntityResponse<unknown>(response, 'experiment_custom_section', 'updateCustomSection');
+    const response = await this.request('PUT', `/experiment_custom_sections/${id}`, {
+      data: { data },
+    });
+    return this.validateEntityResponse<unknown>(
+      response,
+      'experiment_custom_section',
+      'updateCustomSection'
+    );
   }
 
   async archiveCustomSection(id: CustomSectionId, unarchive = false): Promise<void> {
-    await this.request('PUT', `/experiment_custom_sections/${id}/archive`, { data: { archive: !unarchive } });
+    await this.request('PUT', `/experiment_custom_sections/${id}/archive`, {
+      data: { archive: !unarchive },
+    });
   }
 
   async reorderCustomSections(sections: Array<{ id: number; order_index: number }>): Promise<void> {
@@ -862,22 +1017,38 @@ export class APIClient {
     const response = await this.request('GET', '/experiment_tags', {
       params: { items: String(items), page: String(page) },
     });
-    return this.validateListResponse<ExperimentTag>(response, 'experiment_tags', 'listExperimentTags');
+    return this.validateListResponse<ExperimentTag>(
+      response,
+      'experiment_tags',
+      'listExperimentTags'
+    );
   }
 
   async getExperimentTag(id: TagId): Promise<ExperimentTag> {
     const response = await this.request('GET', `/experiment_tags/${id}`);
-    return this.validateEntityResponse<ExperimentTag>(response, 'experiment_tag', 'getExperimentTag');
+    return this.validateEntityResponse<ExperimentTag>(
+      response,
+      'experiment_tag',
+      'getExperimentTag'
+    );
   }
 
   async createExperimentTag(data: { tag: string }): Promise<ExperimentTag> {
     const response = await this.request('POST', '/experiment_tags', { data });
-    return this.validateEntityResponse<ExperimentTag>(response, 'experiment_tag', 'createExperimentTag');
+    return this.validateEntityResponse<ExperimentTag>(
+      response,
+      'experiment_tag',
+      'createExperimentTag'
+    );
   }
 
   async updateExperimentTag(id: TagId, data: { tag: string }): Promise<ExperimentTag> {
     const response = await this.request('PUT', `/experiment_tags/${id}`, { data: { data } });
-    return this.validateEntityResponse<ExperimentTag>(response, 'experiment_tag', 'updateExperimentTag');
+    return this.validateEntityResponse<ExperimentTag>(
+      response,
+      'experiment_tag',
+      'updateExperimentTag'
+    );
   }
 
   async deleteExperimentTag(id: TagId): Promise<void> {
@@ -940,12 +1111,20 @@ export class APIClient {
     const response = await this.request('GET', '/metric_categories', {
       params: { items: String(items), page: String(page) },
     });
-    return this.validateListResponse<MetricCategory>(response, 'metric_categories', 'listMetricCategories');
+    return this.validateListResponse<MetricCategory>(
+      response,
+      'metric_categories',
+      'listMetricCategories'
+    );
   }
 
   async getMetricCategory(id: TagId): Promise<MetricCategory> {
     const response = await this.request('GET', `/metric_categories/${id}`);
-    return this.validateEntityResponse<MetricCategory>(response, 'metric_category', 'getMetricCategory');
+    return this.validateEntityResponse<MetricCategory>(
+      response,
+      'metric_category',
+      'getMetricCategory'
+    );
   }
 
   async createMetricCategory(data: {
@@ -954,7 +1133,11 @@ export class APIClient {
     color: string;
   }): Promise<MetricCategory> {
     const response = await this.request('POST', '/metric_categories', { data });
-    return this.validateEntityResponse<MetricCategory>(response, 'metric_category', 'createMetricCategory');
+    return this.validateEntityResponse<MetricCategory>(
+      response,
+      'metric_category',
+      'createMetricCategory'
+    );
   }
 
   async updateMetricCategory(
@@ -962,7 +1145,11 @@ export class APIClient {
     data: { name?: string; description?: string; color?: string }
   ): Promise<MetricCategory> {
     const response = await this.request('PUT', `/metric_categories/${id}`, { data: { data } });
-    return this.validateEntityResponse<MetricCategory>(response, 'metric_category', 'updateMetricCategory');
+    return this.validateEntityResponse<MetricCategory>(
+      response,
+      'metric_category',
+      'updateMetricCategory'
+    );
   }
 
   async archiveMetricCategory(id: TagId, archive = true): Promise<void> {
@@ -1002,7 +1189,11 @@ export class APIClient {
 
   async listPermissionCategories(): Promise<PermissionCategory[]> {
     const response = await this.request('GET', '/permission_categories');
-    return this.validateListResponse<PermissionCategory>(response, 'permission_categories', 'listPermissionCategories');
+    return this.validateListResponse<PermissionCategory>(
+      response,
+      'permission_categories',
+      'listPermissionCategories'
+    );
   }
 
   async listApiKeys(items = 20, page = 1): Promise<ApiKey[]> {
@@ -1128,7 +1319,9 @@ export class APIClient {
   async getNotifications(cursor?: number): Promise<unknown[]> {
     const params: Record<string, string | number> = {};
     if (cursor !== undefined) params.cursor = cursor;
-    const response = await this.request<Record<string, unknown>>('GET', '/notifications/summary', { params });
+    const response = await this.request<Record<string, unknown>>('GET', '/notifications/summary', {
+      params,
+    });
     const data = response.data;
     if (!data || typeof data !== 'object') {
       throw new Error('Invalid API response for getNotifications: Expected object');
@@ -1155,7 +1348,9 @@ export class APIClient {
   async hasNewNotifications(lastNotificationId?: number): Promise<boolean> {
     const params: Record<string, string | number> = {};
     if (lastNotificationId !== undefined) params.last_notification_id = lastNotificationId;
-    const response = await this.request<Record<string, unknown>>('GET', '/notifications/has-new', { params });
+    const response = await this.request<Record<string, unknown>>('GET', '/notifications/has-new', {
+      params,
+    });
     const data = response.data;
     if (!data || typeof data !== 'object') {
       throw new Error('Invalid API response for hasNewNotifications: Expected object');
@@ -1165,63 +1360,125 @@ export class APIClient {
 
   async listExperimentAccessUsers(id: ExperimentId): Promise<unknown[]> {
     const response = await this.request('GET', `/experiments/${id}/asset_role_users`);
-    return this.validateListResponse<unknown>(response, 'asset_role_experiment_users', 'listExperimentAccessUsers');
+    return this.validateListResponse<unknown>(
+      response,
+      'asset_role_experiment_users',
+      'listExperimentAccessUsers'
+    );
   }
 
-  async grantExperimentAccessUser(id: ExperimentId, userId: UserId, assetRoleId: AssetRoleId): Promise<void> {
-    await this.request('POST', `/experiments/${id}/asset_role_users`, { data: { user_id: userId, asset_role_id: assetRoleId } });
+  async grantExperimentAccessUser(
+    id: ExperimentId,
+    userId: UserId,
+    assetRoleId: AssetRoleId
+  ): Promise<void> {
+    await this.request('POST', `/experiments/${id}/asset_role_users`, {
+      data: { user_id: userId, asset_role_id: assetRoleId },
+    });
   }
 
-  async revokeExperimentAccessUser(id: ExperimentId, userId: UserId, assetRoleId: AssetRoleId): Promise<void> {
+  async revokeExperimentAccessUser(
+    id: ExperimentId,
+    userId: UserId,
+    assetRoleId: AssetRoleId
+  ): Promise<void> {
     await this.request('DELETE', `/experiments/${id}/asset_role_users/${userId}/${assetRoleId}`);
   }
 
   async listExperimentAccessTeams(id: ExperimentId): Promise<unknown[]> {
     const response = await this.request('GET', `/experiments/${id}/asset_role_teams`);
-    return this.validateListResponse<unknown>(response, 'asset_role_experiment_teams', 'listExperimentAccessTeams');
+    return this.validateListResponse<unknown>(
+      response,
+      'asset_role_experiment_teams',
+      'listExperimentAccessTeams'
+    );
   }
 
-  async grantExperimentAccessTeam(id: ExperimentId, teamId: TeamId, assetRoleId: AssetRoleId): Promise<void> {
-    await this.request('POST', `/experiments/${id}/asset_role_teams`, { data: { team_id: teamId, asset_role_id: assetRoleId } });
+  async grantExperimentAccessTeam(
+    id: ExperimentId,
+    teamId: TeamId,
+    assetRoleId: AssetRoleId
+  ): Promise<void> {
+    await this.request('POST', `/experiments/${id}/asset_role_teams`, {
+      data: { team_id: teamId, asset_role_id: assetRoleId },
+    });
   }
 
-  async revokeExperimentAccessTeam(id: ExperimentId, teamId: TeamId, assetRoleId: AssetRoleId): Promise<void> {
+  async revokeExperimentAccessTeam(
+    id: ExperimentId,
+    teamId: TeamId,
+    assetRoleId: AssetRoleId
+  ): Promise<void> {
     await this.request('DELETE', `/experiments/${id}/asset_role_teams/${teamId}/${assetRoleId}`);
   }
 
   async listMetricAccessUsers(id: MetricId): Promise<unknown[]> {
     const response = await this.request('GET', `/metrics/${id}/asset_role_users`);
-    return this.validateListResponse<unknown>(response, 'asset_role_metric_users', 'listMetricAccessUsers');
+    return this.validateListResponse<unknown>(
+      response,
+      'asset_role_metric_users',
+      'listMetricAccessUsers'
+    );
   }
 
-  async grantMetricAccessUser(id: MetricId, userId: UserId, assetRoleId: AssetRoleId): Promise<void> {
-    await this.request('POST', `/metrics/${id}/asset_role_users`, { data: { user_id: userId, asset_role_id: assetRoleId } });
+  async grantMetricAccessUser(
+    id: MetricId,
+    userId: UserId,
+    assetRoleId: AssetRoleId
+  ): Promise<void> {
+    await this.request('POST', `/metrics/${id}/asset_role_users`, {
+      data: { user_id: userId, asset_role_id: assetRoleId },
+    });
   }
 
-  async revokeMetricAccessUser(id: MetricId, userId: UserId, assetRoleId: AssetRoleId): Promise<void> {
+  async revokeMetricAccessUser(
+    id: MetricId,
+    userId: UserId,
+    assetRoleId: AssetRoleId
+  ): Promise<void> {
     await this.request('DELETE', `/metrics/${id}/asset_role_users/${userId}/${assetRoleId}`);
   }
 
   async listMetricAccessTeams(id: MetricId): Promise<unknown[]> {
     const response = await this.request('GET', `/metrics/${id}/asset_role_teams`);
-    return this.validateListResponse<unknown>(response, 'asset_role_metric_teams', 'listMetricAccessTeams');
+    return this.validateListResponse<unknown>(
+      response,
+      'asset_role_metric_teams',
+      'listMetricAccessTeams'
+    );
   }
 
-  async grantMetricAccessTeam(id: MetricId, teamId: TeamId, assetRoleId: AssetRoleId): Promise<void> {
-    await this.request('POST', `/metrics/${id}/asset_role_teams`, { data: { team_id: teamId, asset_role_id: assetRoleId } });
+  async grantMetricAccessTeam(
+    id: MetricId,
+    teamId: TeamId,
+    assetRoleId: AssetRoleId
+  ): Promise<void> {
+    await this.request('POST', `/metrics/${id}/asset_role_teams`, {
+      data: { team_id: teamId, asset_role_id: assetRoleId },
+    });
   }
 
-  async revokeMetricAccessTeam(id: MetricId, teamId: TeamId, assetRoleId: AssetRoleId): Promise<void> {
+  async revokeMetricAccessTeam(
+    id: MetricId,
+    teamId: TeamId,
+    assetRoleId: AssetRoleId
+  ): Promise<void> {
     await this.request('DELETE', `/metrics/${id}/asset_role_teams/${teamId}/${assetRoleId}`);
   }
 
   async listGoalAccessUsers(id: GoalId): Promise<unknown[]> {
     const response = await this.request('GET', `/goals/${id}/asset_role_users`);
-    return this.validateListResponse<unknown>(response, 'asset_role_goal_users', 'listGoalAccessUsers');
+    return this.validateListResponse<unknown>(
+      response,
+      'asset_role_goal_users',
+      'listGoalAccessUsers'
+    );
   }
 
   async grantGoalAccessUser(id: GoalId, userId: UserId, assetRoleId: AssetRoleId): Promise<void> {
-    await this.request('POST', `/goals/${id}/asset_role_users`, { data: { user_id: userId, asset_role_id: assetRoleId } });
+    await this.request('POST', `/goals/${id}/asset_role_users`, {
+      data: { user_id: userId, asset_role_id: assetRoleId },
+    });
   }
 
   async revokeGoalAccessUser(id: GoalId, userId: UserId, assetRoleId: AssetRoleId): Promise<void> {
@@ -1230,11 +1487,17 @@ export class APIClient {
 
   async listGoalAccessTeams(id: GoalId): Promise<unknown[]> {
     const response = await this.request('GET', `/goals/${id}/asset_role_teams`);
-    return this.validateListResponse<unknown>(response, 'asset_role_goal_teams', 'listGoalAccessTeams');
+    return this.validateListResponse<unknown>(
+      response,
+      'asset_role_goal_teams',
+      'listGoalAccessTeams'
+    );
   }
 
   async grantGoalAccessTeam(id: GoalId, teamId: TeamId, assetRoleId: AssetRoleId): Promise<void> {
-    await this.request('POST', `/goals/${id}/asset_role_teams`, { data: { team_id: teamId, asset_role_id: assetRoleId } });
+    await this.request('POST', `/goals/${id}/asset_role_teams`, {
+      data: { team_id: teamId, asset_role_id: assetRoleId },
+    });
   }
 
   async revokeGoalAccessTeam(id: GoalId, teamId: TeamId, assetRoleId: AssetRoleId): Promise<void> {
@@ -1288,12 +1551,22 @@ export class APIClient {
   }
 
   async addMetricReviewComment(id: MetricId, message: string): Promise<unknown> {
-    const response = await this.request('POST', `/metrics/${id}/review/comments`, { data: { message } });
+    const response = await this.request('POST', `/metrics/${id}/review/comments`, {
+      data: { message },
+    });
     return response.data;
   }
 
-  async replyToMetricReviewComment(id: MetricId, commentId: number, message: string): Promise<unknown> {
-    const response = await this.request('POST', `/metrics/${id}/review/comments/${commentId}/reply`, { data: { message } });
+  async replyToMetricReviewComment(
+    id: MetricId,
+    commentId: number,
+    message: string
+  ): Promise<unknown> {
+    const response = await this.request(
+      'POST',
+      `/metrics/${id}/review/comments/${commentId}/reply`,
+      { data: { message } }
+    );
     return response.data;
   }
 
@@ -1343,30 +1616,55 @@ export class APIClient {
     const params: Record<string, string | number> = {};
     if (experimentId !== undefined) params.experiment_id = experimentId;
     const response = await this.request('GET', '/experiment_annotations', { params });
-    return this.validateListResponse<unknown>(response, 'experiment_annotations', 'listAnnotations');
+    return this.validateListResponse<unknown>(
+      response,
+      'experiment_annotations',
+      'listAnnotations'
+    );
   }
 
-  async createAnnotation(data: { experiment_id: number; type?: string; [key: string]: unknown }): Promise<unknown> {
+  async createAnnotation(data: {
+    experiment_id: number;
+    type?: string;
+    [key: string]: unknown;
+  }): Promise<unknown> {
     const response = await this.request('POST', '/experiment_annotations', { data });
-    return this.validateEntityResponse<unknown>(response, 'experiment_annotation', 'createAnnotation');
+    return this.validateEntityResponse<unknown>(
+      response,
+      'experiment_annotation',
+      'createAnnotation'
+    );
   }
 
   async updateAnnotation(id: AnnotationId, data: Record<string, unknown>): Promise<unknown> {
     const response = await this.request('PUT', `/experiment_annotations/${id}`, { data: { data } });
-    return this.validateEntityResponse<unknown>(response, 'experiment_annotation', 'updateAnnotation');
+    return this.validateEntityResponse<unknown>(
+      response,
+      'experiment_annotation',
+      'updateAnnotation'
+    );
   }
 
   async archiveAnnotation(id: AnnotationId, unarchive = false): Promise<void> {
-    await this.request('PUT', `/experiment_annotations/${id}/archive`, { data: { archive: !unarchive } });
+    await this.request('PUT', `/experiment_annotations/${id}/archive`, {
+      data: { archive: !unarchive },
+    });
   }
 
   private buildInsightParams(params: {
-    from: number; to: number; aggregation: string;
-    unit_type_ids?: number[]; team_ids?: number[]; owner_ids?: number[];
-    teams?: string; applications?: string;
+    from: number;
+    to: number;
+    aggregation: string;
+    unit_type_ids?: number[];
+    team_ids?: number[];
+    owner_ids?: number[];
+    teams?: string;
+    applications?: string;
   }): Record<string, string> {
     const q: Record<string, string> = {
-      from: String(params.from), to: String(params.to), aggregation: params.aggregation,
+      from: String(params.from),
+      to: String(params.to),
+      aggregation: params.aggregation,
     };
     if (params.unit_type_ids) q.unit_type_ids = params.unit_type_ids.join(',');
     if (params.team_ids) q.team_ids = params.team_ids.join(',');
@@ -1377,18 +1675,30 @@ export class APIClient {
   }
 
   async getVelocityInsights(params: {
-    from: number; to: number; aggregation: string;
-    unit_type_ids?: number[]; team_ids?: number[]; owner_ids?: number[];
+    from: number;
+    to: number;
+    aggregation: string;
+    unit_type_ids?: number[];
+    team_ids?: number[];
+    owner_ids?: number[];
   }): Promise<unknown> {
-    const response = await this.request('GET', '/insights/velocity/summary', { params: this.buildInsightParams(params) });
+    const response = await this.request('GET', '/insights/velocity/summary', {
+      params: this.buildInsightParams(params),
+    });
     return response.data;
   }
 
   async getDecisionInsights(params: {
-    from: number; to: number; aggregation: string;
-    unit_type_ids?: number[]; team_ids?: number[]; owner_ids?: number[];
+    from: number;
+    to: number;
+    aggregation: string;
+    unit_type_ids?: number[];
+    team_ids?: number[];
+    owner_ids?: number[];
   }): Promise<unknown> {
-    const response = await this.request('GET', '/insights/decisions/widgets', { params: this.buildInsightParams(params) });
+    const response = await this.request('GET', '/insights/decisions/widgets', {
+      params: this.buildInsightParams(params),
+    });
     return response.data;
   }
 
@@ -1399,7 +1709,11 @@ export class APIClient {
 
   async listAccessControlPolicies(): Promise<unknown[]> {
     const response = await this.request('GET', '/access_control_policies');
-    return this.validateListResponse<unknown>(response, 'access_control_policies', 'listAccessControlPolicies');
+    return this.validateListResponse<unknown>(
+      response,
+      'access_control_policies',
+      'listAccessControlPolicies'
+    );
   }
 
   async listPlatformConfigs(): Promise<unknown[]> {
@@ -1429,12 +1743,20 @@ export class APIClient {
 
   async createCorsOrigin(data: { origin: string }): Promise<unknown> {
     const response = await this.request('POST', '/cors', { data });
-    return this.validateEntityResponse<unknown>(response, 'cors_allowed_origin', 'createCorsOrigin');
+    return this.validateEntityResponse<unknown>(
+      response,
+      'cors_allowed_origin',
+      'createCorsOrigin'
+    );
   }
 
   async updateCorsOrigin(id: CorsOriginId, data: Record<string, unknown>): Promise<unknown> {
     const response = await this.request('PUT', `/cors/${id}`, { data: { data } });
-    return this.validateEntityResponse<unknown>(response, 'cors_allowed_origin', 'updateCorsOrigin');
+    return this.validateEntityResponse<unknown>(
+      response,
+      'cors_allowed_origin',
+      'updateCorsOrigin'
+    );
   }
 
   async deleteCorsOrigin(id: CorsOriginId): Promise<void> {
@@ -1444,22 +1766,38 @@ export class APIClient {
 
   async listDatasources(): Promise<unknown[]> {
     const response = await this.request('GET', '/datasources');
-    return this.validateListResponse<unknown>(response, 'event_datasource_configs', 'listDatasources');
+    return this.validateListResponse<unknown>(
+      response,
+      'event_datasource_configs',
+      'listDatasources'
+    );
   }
 
   async getDatasource(id: DatasourceId): Promise<unknown> {
     const response = await this.request('GET', `/datasources/${id}`);
-    return this.validateEntityResponse<unknown>(response, 'event_datasource_config', 'getDatasource');
+    return this.validateEntityResponse<unknown>(
+      response,
+      'event_datasource_config',
+      'getDatasource'
+    );
   }
 
   async createDatasource(data: Record<string, unknown>): Promise<unknown> {
     const response = await this.request('POST', '/datasources', { data });
-    return this.validateEntityResponse<unknown>(response, 'event_datasource_config', 'createDatasource');
+    return this.validateEntityResponse<unknown>(
+      response,
+      'event_datasource_config',
+      'createDatasource'
+    );
   }
 
   async updateDatasource(id: DatasourceId, data: Record<string, unknown>): Promise<unknown> {
     const response = await this.request('PUT', `/datasources/${id}`, { data: { data } });
-    return this.validateEntityResponse<unknown>(response, 'event_datasource_config', 'updateDatasource');
+    return this.validateEntityResponse<unknown>(
+      response,
+      'event_datasource_config',
+      'updateDatasource'
+    );
   }
 
   async archiveDatasource(id: DatasourceId, unarchive = false): Promise<void> {
@@ -1517,22 +1855,43 @@ export class APIClient {
 
   async listUpdateSchedules(): Promise<unknown[]> {
     const response = await this.request('GET', '/experiment_update_schedules');
-    return this.validateListResponse<unknown>(response, 'experiment_update_schedules', 'listUpdateSchedules');
+    return this.validateListResponse<unknown>(
+      response,
+      'experiment_update_schedules',
+      'listUpdateSchedules'
+    );
   }
 
   async getUpdateSchedule(id: UpdateScheduleId): Promise<unknown> {
     const response = await this.request('GET', `/experiment_update_schedules/${id}`);
-    return this.validateEntityResponse<unknown>(response, 'experiment_update_schedule', 'getUpdateSchedule');
+    return this.validateEntityResponse<unknown>(
+      response,
+      'experiment_update_schedule',
+      'getUpdateSchedule'
+    );
   }
 
   async createUpdateSchedule(data: Record<string, unknown>): Promise<unknown> {
     const response = await this.request('POST', '/experiment_update_schedules', { data });
-    return this.validateEntityResponse<unknown>(response, 'experiment_update_schedule', 'createUpdateSchedule');
+    return this.validateEntityResponse<unknown>(
+      response,
+      'experiment_update_schedule',
+      'createUpdateSchedule'
+    );
   }
 
-  async updateUpdateSchedule(id: UpdateScheduleId, data: Record<string, unknown>): Promise<unknown> {
-    const response = await this.request('PUT', `/experiment_update_schedules/${id}`, { data: { data } });
-    return this.validateEntityResponse<unknown>(response, 'experiment_update_schedule', 'updateUpdateSchedule');
+  async updateUpdateSchedule(
+    id: UpdateScheduleId,
+    data: Record<string, unknown>
+  ): Promise<unknown> {
+    const response = await this.request('PUT', `/experiment_update_schedules/${id}`, {
+      data: { data },
+    });
+    return this.validateEntityResponse<unknown>(
+      response,
+      'experiment_update_schedule',
+      'updateUpdateSchedule'
+    );
   }
 
   async deleteUpdateSchedule(id: UpdateScheduleId): Promise<void> {
@@ -1574,74 +1933,88 @@ export class APIClient {
   }
 
   async resolveMetrics(namesOrIds: string[]): Promise<Array<{ id: number; name: string }>> {
-    const results = await resolveBySearch(namesOrIds, name => this.listMetrics({ search: name, archived: true }));
-    return namesOrIds.map(ref => resolveByName(results, ref, 'Metric'));
+    const results = await resolveBySearch(namesOrIds, (name) =>
+      this.listMetrics({ search: name, archived: true })
+    );
+    return namesOrIds.map((ref) => resolveByName(results, ref, 'Metric'));
   }
 
   async resolveTeams(namesOrIds: string[]): Promise<Array<{ id: number; name: string }>> {
     const teams = await this.listTeams();
-    return namesOrIds.map(ref => resolveByName(teams, ref, 'Team'));
+    return namesOrIds.map((ref) => resolveByName(teams, ref, 'Team'));
   }
 
   async resolveApplications(namesOrIds: string[]): Promise<Array<{ id: number; name: string }>> {
     const apps = await this.listApplications();
-    return namesOrIds.map(ref => resolveByName(apps, ref, 'Application'));
+    return namesOrIds.map((ref) => resolveByName(apps, ref, 'Application'));
   }
 
   async resolveUnitTypes(namesOrIds: string[]): Promise<Array<{ id: number; name: string }>> {
     const unitTypes = await this.listUnitTypes();
-    return namesOrIds.map(ref => resolveByName(unitTypes, ref, 'Unit type'));
+    return namesOrIds.map((ref) => resolveByName(unitTypes, ref, 'Unit type'));
   }
 
   async resolveTags(namesOrIds: string[]): Promise<Array<{ id: number; tag: string }>> {
     const tags = await this.listExperimentTags();
-    return namesOrIds.map(ref => {
+    return namesOrIds.map((ref) => {
       const trimmed = ref.trim();
       const asInt = parseInt(trimmed, 10);
       if (!isNaN(asInt) && String(asInt) === trimmed) {
-        const byId = tags.find(t => t.id === asInt);
+        const byId = tags.find((t) => t.id === asInt);
         if (byId) return byId;
         throw new Error(`Tag with ID ${asInt} not found`);
       }
-      const match = tags.filter(t => (t.tag ?? '').toLowerCase() === trimmed.toLowerCase());
+      const match = tags.filter((t) => (t.tag ?? '').toLowerCase() === trimmed.toLowerCase());
       if (match.length === 1) return match[0]!;
-      if (match.length > 1) throw new Error(`Multiple tags match "${trimmed}": ${match.map(t => `"${t.tag}" (id: ${t.id})`).join(', ')}`);
+      if (match.length > 1)
+        throw new Error(
+          `Multiple tags match "${trimmed}": ${match.map((t) => `"${t.tag}" (id: ${t.id})`).join(', ')}`
+        );
       throw new Error(`Tag "${trimmed}" not found`);
     });
   }
 
   async resolveUsers(namesOrEmails: string[]): Promise<Array<{ id: number; email: string }>> {
-    const results = await resolveBySearch(namesOrEmails, ref => this.listUsers({ search: ref }));
-    return namesOrEmails.map(ref => {
+    const results = await resolveBySearch(namesOrEmails, (ref) => this.listUsers({ search: ref }));
+    return namesOrEmails.map((ref) => {
       const trimmed = ref.trim();
       const asInt = parseInt(trimmed, 10);
       if (!isNaN(asInt) && String(asInt) === trimmed) {
-        const byId = results.find(u => u.id === asInt);
+        const byId = results.find((u) => u.id === asInt);
         if (byId) return byId;
         throw new Error(`User with ID ${asInt} not found`);
       }
       const emailInBrackets = /<(.+?)>/.exec(trimmed);
       const searchRef = (emailInBrackets ? emailInBrackets[1]! : trimmed).toLowerCase();
-      const match = results.filter(u =>
-        u.email.toLowerCase() === searchRef ||
-        `${u.first_name ?? ''} ${u.last_name ?? ''}`.trim().toLowerCase() === searchRef
+      const match = results.filter(
+        (u) =>
+          u.email.toLowerCase() === searchRef ||
+          `${u.first_name ?? ''} ${u.last_name ?? ''}`.trim().toLowerCase() === searchRef
       );
       if (match.length === 1) return match[0]!;
-      if (match.length > 1) throw new Error(`Multiple users match "${trimmed}": ${match.map(u => `${u.email} (id: ${u.id})`).join(', ')}`);
+      if (match.length > 1)
+        throw new Error(
+          `Multiple users match "${trimmed}": ${match.map((u) => `${u.email} (id: ${u.id})`).join(', ')}`
+        );
       throw new Error(`User "${trimmed}" not found`);
     });
   }
 
-
   async listEvents(body: {
     filters?: {
-      from?: number; to?: number;
-      applications?: number[]; unit_types?: number[];
-      event_types?: string[]; unit_uids?: string[];
-      environment_types?: string[]; event_names?: string[];
+      from?: number;
+      to?: number;
+      applications?: number[];
+      unit_types?: number[];
+      event_types?: string[];
+      unit_uids?: string[];
+      environment_types?: string[];
+      event_names?: string[];
       effective_exposures?: boolean;
     };
-    take?: number; skip?: number; unit_hex?: boolean;
+    take?: number;
+    skip?: number;
+    unit_hex?: boolean;
   }): Promise<unknown> {
     const response = await this.request('POST', '/events', { data: body });
     return response.data;
@@ -1649,12 +2022,17 @@ export class APIClient {
 
   async listEventsHistory(body: {
     filters?: {
-      from?: number; to?: number;
-      applications?: number[]; unit_types?: number[];
-      event_types?: string[]; unit_uids?: string[];
-      environment_types?: string[]; event_names?: string[];
+      from?: number;
+      to?: number;
+      applications?: number[];
+      unit_types?: number[];
+      event_types?: string[];
+      unit_uids?: string[];
+      environment_types?: string[];
+      event_names?: string[];
     };
-    period?: string; tz_offset?: number;
+    period?: string;
+    tz_offset?: number;
   }): Promise<unknown> {
     const response = await this.request('POST', '/events/history', { data: body });
     return response.data;
@@ -1677,9 +2055,13 @@ export class APIClient {
   async getEventJsonValues(body: {
     event_type: 'exposure' | 'goal' | 'attribute';
     path: string;
-    from?: number; to?: number;
-    experiment_id?: number; goal_id?: number;
-    take?: number; skip?: number; sort?: string;
+    from?: number;
+    to?: number;
+    experiment_id?: number;
+    goal_id?: number;
+    take?: number;
+    skip?: number;
+    sort?: string;
   }): Promise<unknown> {
     const response = await this.request('POST', '/events/json_values', { data: body });
     return response.data;
@@ -1688,49 +2070,70 @@ export class APIClient {
   async getEventJsonLayouts(body: {
     source: 'unit_attribute' | 'unit_goal_property';
     phase: 'before_enrichment' | 'after_enrichment';
-    prefix?: string; source_id?: number;
-    from?: number; to?: number;
-    take?: number; skip?: number; sort?: string;
+    prefix?: string;
+    source_id?: number;
+    from?: number;
+    to?: number;
+    take?: number;
+    skip?: number;
+    sort?: string;
   }): Promise<unknown> {
     const response = await this.request('POST', '/events/json_layouts', { data: body });
     return response.data;
   }
 
-
   async getVelocityInsightsDetail(params: {
-    from: number; to: number; aggregation: string;
-    teams?: string; applications?: string;
+    from: number;
+    to: number;
+    aggregation: string;
+    teams?: string;
+    applications?: string;
   }): Promise<unknown> {
-    const response = await this.request('GET', '/insights/velocity/summary/detail', { params: this.buildInsightParams(params) });
+    const response = await this.request('GET', '/insights/velocity/summary/detail', {
+      params: this.buildInsightParams(params),
+    });
     return response.data;
   }
 
   async getDecisionInsightsHistory(params: {
-    from: number; to: number; aggregation: string;
-    teams?: string; applications?: string;
+    from: number;
+    to: number;
+    aggregation: string;
+    teams?: string;
+    applications?: string;
   }): Promise<unknown> {
-    const response = await this.request('GET', '/insights/decisions/history', { params: this.buildInsightParams(params) });
+    const response = await this.request('GET', '/insights/decisions/history', {
+      params: this.buildInsightParams(params),
+    });
     return response.data;
   }
 
-
   async getPowerAnalysisMatrix(body: {
     split: number[];
-    metric_mean: number; metric_variance: number; metric_type: string;
+    metric_mean: number;
+    metric_variance: number;
+    metric_type: string;
     metric_custom_statistics_type?: string;
-    analysis_type?: string; two_sided?: boolean;
-    sample_sizes?: number[]; minimum_detectable_effects?: number[];
-    powers?: number[]; alphas?: number[];
-    power?: number; alpha?: number;
+    analysis_type?: string;
+    two_sided?: boolean;
+    sample_sizes?: number[];
+    minimum_detectable_effects?: number[];
+    powers?: number[];
+    alphas?: number[];
+    power?: number;
+    alpha?: number;
     participants_per_week?: number;
     group_sequential_futility_type?: string;
     group_sequential_first_analysis_interval?: string;
     group_sequential_min_analysis_interval?: string;
   }): Promise<{ matrix: number[][] }> {
-    const response = await this.request<{ matrix: number[][] }>('POST', '/statistics/power/plan/matrix', { data: body });
+    const response = await this.request<{ matrix: number[][] }>(
+      'POST',
+      '/statistics/power/plan/matrix',
+      { data: body }
+    );
     return response.data as { matrix: number[][] };
   }
-
 
   async listStorageConfigs(): Promise<unknown[]> {
     const response = await this.request('GET', '/storage_configs');
@@ -1757,7 +2160,6 @@ export class APIClient {
     this.validateOkResponse(response, 'testStorageConfig');
   }
 
-
   async previewDatasourceQuery(data: Record<string, unknown>): Promise<unknown> {
     const response = await this.request('POST', '/datasources/preview_query', { data });
     return response.data;
@@ -1773,15 +2175,18 @@ export class APIClient {
     return response.data;
   }
 
-
-  async cancelExportHistory(exportConfigId: ExportConfigId, historyId: number, reason?: string): Promise<unknown> {
-    const response = await this.request('PUT',
+  async cancelExportHistory(
+    exportConfigId: ExportConfigId,
+    historyId: number,
+    reason?: string
+  ): Promise<unknown> {
+    const response = await this.request(
+      'PUT',
       `/export_configs/${exportConfigId}/export_histories/${historyId}/cancel`,
       { data: { reason: reason ?? '' } }
     );
     return response.data;
   }
-
 
   async listUserApiKeys(): Promise<unknown[]> {
     const rootUrl = this.getRootUrl();
@@ -1795,9 +2200,14 @@ export class APIClient {
     return this.validateEntityResponse<unknown>(response, 'user_api_key', 'getUserApiKey');
   }
 
-  async updateUserApiKey(id: number, data: { name?: string; description?: string }): Promise<unknown> {
+  async updateUserApiKey(
+    id: number,
+    data: { name?: string; description?: string }
+  ): Promise<unknown> {
     const rootUrl = this.getRootUrl();
-    const response = await this.request('PUT', `${rootUrl}/auth/current-user/api_keys/${id}`, { data: { data } });
+    const response = await this.request('PUT', `${rootUrl}/auth/current-user/api_keys/${id}`, {
+      data: { data },
+    });
     return this.validateEntityResponse<unknown>(response, 'user_api_key', 'updateUserApiKey');
   }
 
@@ -1806,37 +2216,59 @@ export class APIClient {
     await this.request('DELETE', `${rootUrl}/auth/current-user/api_keys/${id}`);
   }
 
-
   async updateCurrentUser(data: {
-    first_name?: string; last_name?: string;
-    department?: string; job_title?: string;
+    first_name?: string;
+    last_name?: string;
+    department?: string;
+    job_title?: string;
     date_format_locale?: string;
-    old_password?: string; new_password?: string;
+    old_password?: string;
+    new_password?: string;
   }): Promise<User> {
     const rootUrl = this.getRootUrl();
     const response = await this.request('PUT', `${rootUrl}/auth/current-user`, { data: { data } });
     return this.validateEntityResponse<User>(response, 'user', 'updateCurrentUser');
   }
 
-
   async listExperimentActionDialogFields(): Promise<unknown[]> {
     const response = await this.request('GET', '/experiment_action_dialog_fields');
-    return this.validateListResponse<unknown>(response, 'experiment_action_dialog_fields', 'listExperimentActionDialogFields');
+    return this.validateListResponse<unknown>(
+      response,
+      'experiment_action_dialog_fields',
+      'listExperimentActionDialogFields'
+    );
   }
 
   async getExperimentActionDialogField(id: number): Promise<unknown> {
     const response = await this.request('GET', `/experiment_action_dialog_fields/${id}`);
-    return this.validateEntityResponse<unknown>(response, 'experiment_action_dialog_field', 'getExperimentActionDialogField');
+    return this.validateEntityResponse<unknown>(
+      response,
+      'experiment_action_dialog_field',
+      'getExperimentActionDialogField'
+    );
   }
 
   async createExperimentActionDialogField(data: Record<string, unknown>): Promise<unknown> {
     const response = await this.request('POST', '/experiment_action_dialog_fields', { data });
-    return this.validateEntityResponse<unknown>(response, 'experiment_action_dialog_field', 'createExperimentActionDialogField');
+    return this.validateEntityResponse<unknown>(
+      response,
+      'experiment_action_dialog_field',
+      'createExperimentActionDialogField'
+    );
   }
 
-  async updateExperimentActionDialogField(id: number, data: Record<string, unknown>): Promise<unknown> {
-    const response = await this.request('PUT', `/experiment_action_dialog_fields/${id}`, { data: { data } });
-    return this.validateEntityResponse<unknown>(response, 'experiment_action_dialog_field', 'updateExperimentActionDialogField');
+  async updateExperimentActionDialogField(
+    id: number,
+    data: Record<string, unknown>
+  ): Promise<unknown> {
+    const response = await this.request('PUT', `/experiment_action_dialog_fields/${id}`, {
+      data: { data },
+    });
+    return this.validateEntityResponse<unknown>(
+      response,
+      'experiment_action_dialog_field',
+      'updateExperimentActionDialogField'
+    );
   }
 
   async rawRequest(
@@ -1856,7 +2288,7 @@ export class APIClient {
       if (p.includes('://') || p.startsWith('//')) {
         throw new Error(
           'Invalid API path: Absolute or protocol-relative URLs are not allowed.\n' +
-          'Paths must be relative to the API endpoint (e.g., /experiments, /goals).'
+            'Paths must be relative to the API endpoint (e.g., /experiments, /goals).'
         );
       }
 
@@ -1869,7 +2301,7 @@ export class APIClient {
       if (p.includes('/../') || p.endsWith('/..') || p.includes('/./') || p === '/..') {
         throw new Error(
           'Invalid API path: Path traversal sequences (../, ./) are not allowed.\n' +
-          'Use absolute paths from API root (e.g., /experiments, /goals).'
+            'Use absolute paths from API root (e.g., /experiments, /goals).'
         );
       }
     }
@@ -1879,10 +2311,14 @@ export class APIClient {
     if (!ALLOWED_METHODS.includes(normalizedMethod as (typeof ALLOWED_METHODS)[number])) {
       throw new Error(`Unsupported HTTP method: ${method}. Allowed: ${ALLOWED_METHODS.join(', ')}`);
     }
-    const response = await this.request(normalizedMethod as (typeof ALLOWED_METHODS)[number], decodedPath, {
-      ...(data !== undefined && { data }),
-      ...(headers && { headers }),
-    });
+    const response = await this.request(
+      normalizedMethod as (typeof ALLOWED_METHODS)[number],
+      decodedPath,
+      {
+        ...(data !== undefined && { data }),
+        ...(headers && { headers }),
+      }
+    );
     return response.data;
   }
 }

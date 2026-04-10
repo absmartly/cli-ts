@@ -68,8 +68,16 @@ describe('activity', () => {
       const exp = { id: 1, name: 'TestExp' };
       mockClient.listExperiments.mockResolvedValue([exp]);
       mockClient.listExperimentActivity.mockResolvedValue([
-        { created_at: '2025-01-01T00:00:00Z', action: 'created', created_by: { first_name: 'John', last_name: 'Doe' } },
-        { created_at: '2025-01-02T00:00:00Z', action: 'started', created_by: { first_name: 'Jane' } },
+        {
+          created_at: '2025-01-01T00:00:00Z',
+          action: 'created',
+          created_by: { first_name: 'John', last_name: 'Doe' },
+        },
+        {
+          created_at: '2025-01-02T00:00:00Z',
+          action: 'started',
+          created_by: { first_name: 'Jane' },
+        },
         { created_at: '2025-01-03T00:00:00Z', action: 'stopped', created_by: null },
       ]);
 
@@ -81,9 +89,7 @@ describe('activity', () => {
       expect(result.data[0].user).toBe('System');
       expect(result.data[1].action).toBe('started');
       expect(result.data[1].user).toBe('Jane');
-      expect(result.warnings).toEqual([
-        'Showing 2 of 3 entries. Use --limit to show more.',
-      ]);
+      expect(result.warnings).toEqual(['Showing 2 of 3 entries. Use --limit to show more.']);
     });
 
     it('should not include warnings when all entries fit within limit', async () => {

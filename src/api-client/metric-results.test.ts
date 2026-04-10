@@ -12,10 +12,18 @@ describe('parseMetricData', () => {
   it('should parse columns correctly', () => {
     const data = {
       columnNames: [
-        'variant', 'unit_count',
-        'metric_5_impact', 'metric_5_impact_ci_lower', 'metric_5_impact_ci_upper',
-        'metric_5_pvalue', 'metric_5_mean', 'metric_5', 'metric_5_var',
-        'metric_5_abs_impact', 'metric_5_abs_impact_ci_lower', 'metric_5_abs_impact_ci_upper',
+        'variant',
+        'unit_count',
+        'metric_5_impact',
+        'metric_5_impact_ci_lower',
+        'metric_5_impact_ci_upper',
+        'metric_5_pvalue',
+        'metric_5_mean',
+        'metric_5',
+        'metric_5_var',
+        'metric_5_abs_impact',
+        'metric_5_abs_impact_ci_lower',
+        'metric_5_abs_impact_ci_upper',
       ],
       rows: [
         [0, 500, null, null, null, null, 1.5, 100, 0.5, null, null, null],
@@ -90,8 +98,34 @@ describe('formatResultRows', () => {
       name: 'conversion',
       type: 'primary',
       variants: [
-        { variant: 0, unit_count: 500, impact: null, impact_lower: null, impact_upper: null, pvalue: null, mean: 1.5, count: 100, variance: 0.5, abs_impact: null, abs_impact_lower: null, abs_impact_upper: null },
-        { variant: 1, unit_count: 500, impact: 0.05, impact_lower: 0.01, impact_upper: 0.09, pvalue: 0.02, mean: 1.6, count: 110, variance: 0.6, abs_impact: 0.1, abs_impact_lower: null, abs_impact_upper: null },
+        {
+          variant: 0,
+          unit_count: 500,
+          impact: null,
+          impact_lower: null,
+          impact_upper: null,
+          pvalue: null,
+          mean: 1.5,
+          count: 100,
+          variance: 0.5,
+          abs_impact: null,
+          abs_impact_lower: null,
+          abs_impact_upper: null,
+        },
+        {
+          variant: 1,
+          unit_count: 500,
+          impact: 0.05,
+          impact_lower: 0.01,
+          impact_upper: 0.09,
+          pvalue: 0.02,
+          mean: 1.6,
+          count: 110,
+          variance: 0.6,
+          abs_impact: 0.1,
+          abs_impact_lower: null,
+          abs_impact_upper: null,
+        },
       ],
     };
     const rows = formatResultRows(result, variantNames);
@@ -107,15 +141,58 @@ describe('formatResultRows', () => {
   });
 
   it('should format multiple treatments', () => {
-    const names = new Map<number, string>([[0, 'control'], [1, 'A'], [2, 'B']]);
+    const names = new Map<number, string>([
+      [0, 'control'],
+      [1, 'A'],
+      [2, 'B'],
+    ]);
     const result: MetricResult = {
       metric_id: 1,
       name: 'metric',
       type: 'secondary',
       variants: [
-        { variant: 0, unit_count: 500, impact: null, impact_lower: null, impact_upper: null, pvalue: null, mean: 1.0, count: 50, variance: 0.1, abs_impact: null, abs_impact_lower: null, abs_impact_upper: null },
-        { variant: 1, unit_count: 500, impact: 0.03, impact_lower: 0.01, impact_upper: 0.05, pvalue: 0.04, mean: 1.1, count: 55, variance: 0.2, abs_impact: null, abs_impact_lower: null, abs_impact_upper: null },
-        { variant: 2, unit_count: 500, impact: -0.01, impact_lower: -0.03, impact_upper: 0.01, pvalue: 0.5, mean: 0.99, count: 48, variance: 0.15, abs_impact: null, abs_impact_lower: null, abs_impact_upper: null },
+        {
+          variant: 0,
+          unit_count: 500,
+          impact: null,
+          impact_lower: null,
+          impact_upper: null,
+          pvalue: null,
+          mean: 1.0,
+          count: 50,
+          variance: 0.1,
+          abs_impact: null,
+          abs_impact_lower: null,
+          abs_impact_upper: null,
+        },
+        {
+          variant: 1,
+          unit_count: 500,
+          impact: 0.03,
+          impact_lower: 0.01,
+          impact_upper: 0.05,
+          pvalue: 0.04,
+          mean: 1.1,
+          count: 55,
+          variance: 0.2,
+          abs_impact: null,
+          abs_impact_lower: null,
+          abs_impact_upper: null,
+        },
+        {
+          variant: 2,
+          unit_count: 500,
+          impact: -0.01,
+          impact_lower: -0.03,
+          impact_upper: 0.01,
+          pvalue: 0.5,
+          mean: 0.99,
+          count: 48,
+          variance: 0.15,
+          abs_impact: null,
+          abs_impact_lower: null,
+          abs_impact_upper: null,
+        },
       ],
     };
     const rows = formatResultRows(result, names);
@@ -130,7 +207,20 @@ describe('formatResultRows', () => {
       name: 'empty-metric',
       type: 'primary',
       variants: [
-        { variant: 0, unit_count: 500, impact: null, impact_lower: null, impact_upper: null, pvalue: null, mean: 1.0, count: 50, variance: 0.1, abs_impact: null, abs_impact_lower: null, abs_impact_upper: null },
+        {
+          variant: 0,
+          unit_count: 500,
+          impact: null,
+          impact_lower: null,
+          impact_upper: null,
+          pvalue: null,
+          mean: 1.0,
+          count: 50,
+          variance: 0.1,
+          abs_impact: null,
+          abs_impact_lower: null,
+          abs_impact_upper: null,
+        },
       ],
     };
     const rows = formatResultRows(result, variantNames);
@@ -147,8 +237,34 @@ describe('formatResultRows', () => {
       name: 'metric',
       type: 'primary',
       variants: [
-        { variant: 0, unit_count: 100, impact: null, impact_lower: null, impact_upper: null, pvalue: null, mean: null, count: null, variance: null, abs_impact: null, abs_impact_lower: null, abs_impact_upper: null },
-        { variant: 1, unit_count: 100, impact: null, impact_lower: null, impact_upper: null, pvalue: null, mean: null, count: null, variance: null, abs_impact: null, abs_impact_lower: null, abs_impact_upper: null },
+        {
+          variant: 0,
+          unit_count: 100,
+          impact: null,
+          impact_lower: null,
+          impact_upper: null,
+          pvalue: null,
+          mean: null,
+          count: null,
+          variance: null,
+          abs_impact: null,
+          abs_impact_lower: null,
+          abs_impact_upper: null,
+        },
+        {
+          variant: 1,
+          unit_count: 100,
+          impact: null,
+          impact_lower: null,
+          impact_upper: null,
+          pvalue: null,
+          mean: null,
+          count: null,
+          variance: null,
+          abs_impact: null,
+          abs_impact_lower: null,
+          abs_impact_upper: null,
+        },
       ],
     };
     const rows = formatResultRows(result, variantNames);
@@ -163,8 +279,34 @@ describe('formatResultRows', () => {
       name: 'metric',
       type: 'primary',
       variants: [
-        { variant: 0, unit_count: 100, impact: null, impact_lower: null, impact_upper: null, pvalue: null, mean: 1.0, count: 50, variance: 0.1, abs_impact: null, abs_impact_lower: null, abs_impact_upper: null },
-        { variant: 1, unit_count: 100, impact: 0.01, impact_lower: -0.01, impact_upper: 0.03, pvalue: 0.3, mean: 1.1, count: 55, variance: 0.2, abs_impact: null, abs_impact_lower: null, abs_impact_upper: null },
+        {
+          variant: 0,
+          unit_count: 100,
+          impact: null,
+          impact_lower: null,
+          impact_upper: null,
+          pvalue: null,
+          mean: 1.0,
+          count: 50,
+          variance: 0.1,
+          abs_impact: null,
+          abs_impact_lower: null,
+          abs_impact_upper: null,
+        },
+        {
+          variant: 1,
+          unit_count: 100,
+          impact: 0.01,
+          impact_lower: -0.01,
+          impact_upper: 0.03,
+          pvalue: 0.3,
+          mean: 1.1,
+          count: 55,
+          variance: 0.2,
+          abs_impact: null,
+          abs_impact_lower: null,
+          abs_impact_upper: null,
+        },
       ],
     };
     const rows = formatResultRows(result, emptyNames);
@@ -174,15 +316,58 @@ describe('formatResultRows', () => {
   });
 
   it('should use variant index when variantIndex option is true', () => {
-    const names = new Map<number, string>([[0, 'control'], [1, 'A'], [2, 'B']]);
+    const names = new Map<number, string>([
+      [0, 'control'],
+      [1, 'A'],
+      [2, 'B'],
+    ]);
     const result: MetricResult = {
       metric_id: 1,
       name: 'metric',
       type: 'secondary',
       variants: [
-        { variant: 0, unit_count: 500, impact: null, impact_lower: null, impact_upper: null, pvalue: null, mean: 1.0, count: 50, variance: 0.1, abs_impact: null, abs_impact_lower: null, abs_impact_upper: null },
-        { variant: 1, unit_count: 500, impact: 0.03, impact_lower: 0.01, impact_upper: 0.05, pvalue: 0.04, mean: 1.1, count: 55, variance: 0.2, abs_impact: null, abs_impact_lower: null, abs_impact_upper: null },
-        { variant: 2, unit_count: 500, impact: -0.01, impact_lower: -0.03, impact_upper: 0.01, pvalue: 0.5, mean: 0.99, count: 48, variance: 0.15, abs_impact: null, abs_impact_lower: null, abs_impact_upper: null },
+        {
+          variant: 0,
+          unit_count: 500,
+          impact: null,
+          impact_lower: null,
+          impact_upper: null,
+          pvalue: null,
+          mean: 1.0,
+          count: 50,
+          variance: 0.1,
+          abs_impact: null,
+          abs_impact_lower: null,
+          abs_impact_upper: null,
+        },
+        {
+          variant: 1,
+          unit_count: 500,
+          impact: 0.03,
+          impact_lower: 0.01,
+          impact_upper: 0.05,
+          pvalue: 0.04,
+          mean: 1.1,
+          count: 55,
+          variance: 0.2,
+          abs_impact: null,
+          abs_impact_lower: null,
+          abs_impact_upper: null,
+        },
+        {
+          variant: 2,
+          unit_count: 500,
+          impact: -0.01,
+          impact_lower: -0.03,
+          impact_upper: 0.01,
+          pvalue: 0.5,
+          mean: 0.99,
+          count: 48,
+          variance: 0.15,
+          abs_impact: null,
+          abs_impact_lower: null,
+          abs_impact_upper: null,
+        },
       ],
     };
     const rows = formatResultRows(result, names, { variantIndex: true });
@@ -196,7 +381,10 @@ describe('formatResultRows', () => {
 });
 
 describe('formatResultRow', () => {
-  const variantNames = new Map<number, string>([[0, 'control'], [1, 'treatment']]);
+  const variantNames = new Map<number, string>([
+    [0, 'control'],
+    [1, 'treatment'],
+  ]);
 
   it('should return the first row from formatResultRows', () => {
     const result: MetricResult = {
@@ -204,8 +392,34 @@ describe('formatResultRow', () => {
       name: 'conversion',
       type: 'primary',
       variants: [
-        { variant: 0, unit_count: 500, impact: null, impact_lower: null, impact_upper: null, pvalue: null, mean: 1.0, count: 50, variance: 0.1, abs_impact: null, abs_impact_lower: null, abs_impact_upper: null },
-        { variant: 1, unit_count: 500, impact: 0.05, impact_lower: 0.01, impact_upper: 0.09, pvalue: 0.02, mean: 1.1, count: 55, variance: 0.2, abs_impact: null, abs_impact_lower: null, abs_impact_upper: null },
+        {
+          variant: 0,
+          unit_count: 500,
+          impact: null,
+          impact_lower: null,
+          impact_upper: null,
+          pvalue: null,
+          mean: 1.0,
+          count: 50,
+          variance: 0.1,
+          abs_impact: null,
+          abs_impact_lower: null,
+          abs_impact_upper: null,
+        },
+        {
+          variant: 1,
+          unit_count: 500,
+          impact: 0.05,
+          impact_lower: 0.01,
+          impact_upper: 0.09,
+          pvalue: 0.02,
+          mean: 1.1,
+          count: 55,
+          variance: 0.2,
+          abs_impact: null,
+          abs_impact_lower: null,
+          abs_impact_upper: null,
+        },
       ],
     };
     const row = formatResultRow(result, variantNames);
@@ -246,9 +460,7 @@ describe('extractMetricInfos', () => {
 
   it('should handle missing primary metric', () => {
     const experiment = {
-      secondary_metrics: [
-        { metric_id: 10, metric: { name: 'revenue' }, type: 'secondary' },
-      ],
+      secondary_metrics: [{ metric_id: 10, metric: { name: 'revenue' }, type: 'secondary' }],
     };
     const infos = extractMetricInfos(experiment);
     expect(infos).toHaveLength(1);
@@ -257,9 +469,7 @@ describe('extractMetricInfos', () => {
 
   it('should fallback to metric_id as name when metric object is missing', () => {
     const experiment = {
-      secondary_metrics: [
-        { metric_id: 99, type: 'secondary' },
-      ],
+      secondary_metrics: [{ metric_id: 99, type: 'secondary' }],
     };
     const infos = extractMetricInfos(experiment);
     expect(infos[0]!.name).toBe('99');
@@ -267,9 +477,7 @@ describe('extractMetricInfos', () => {
 
   it('should default type to secondary when not specified', () => {
     const experiment = {
-      secondary_metrics: [
-        { metric_id: 10, metric: { name: 'clicks' } },
-      ],
+      secondary_metrics: [{ metric_id: 10, metric: { name: 'clicks' } }],
     };
     const infos = extractMetricInfos(experiment);
     expect(infos[0]!.type).toBe('secondary');

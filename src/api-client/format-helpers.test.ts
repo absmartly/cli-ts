@@ -55,16 +55,20 @@ describe('formatImpact', () => {
   });
 
   it('should return empty string when confidence_variant not found', () => {
-    expect(formatImpact({
-      preview_variants: [{ variant: 2, impact: 0.05, impact_lower: 0.01, impact_upper: 0.09 }],
-      confidence_variant: 3,
-    })).toBe('');
+    expect(
+      formatImpact({
+        preview_variants: [{ variant: 2, impact: 0.05, impact_lower: 0.01, impact_upper: 0.09 }],
+        confidence_variant: 3,
+      })
+    ).toBe('');
   });
 
   it('should return empty string when impact is null', () => {
-    expect(formatImpact({
-      preview_variants: [{ variant: 1, impact: null, impact_lower: null, impact_upper: null }],
-    })).toBe('');
+    expect(
+      formatImpact({
+        preview_variants: [{ variant: 1, impact: null, impact_lower: null, impact_upper: null }],
+      })
+    ).toBe('');
   });
 
   it('should format positive impact with text CI by default', () => {
@@ -76,9 +80,12 @@ describe('formatImpact', () => {
   });
 
   it('should format with CI bar when ciBar=true', () => {
-    const result = formatImpact({
-      preview_variants: [{ variant: 1, impact: 0.05, impact_lower: 0.01, impact_upper: 0.09 }],
-    }, true);
+    const result = formatImpact(
+      {
+        preview_variants: [{ variant: 1, impact: 0.05, impact_lower: 0.01, impact_upper: 0.09 }],
+      },
+      true
+    );
     expect(result).toContain('+5.00%');
     expect(result).toContain('●');
   });
@@ -96,7 +103,7 @@ describe('formatImpact', () => {
       confidence_variant: 2,
       preview_variants: [
         { variant: 1, impact: 0.01, impact_lower: 0.0, impact_upper: 0.02 },
-        { variant: 2, impact: 0.10, impact_lower: 0.05, impact_upper: 0.15 },
+        { variant: 2, impact: 0.1, impact_lower: 0.05, impact_upper: 0.15 },
       ],
     });
     expect(result).toContain('+10.00%');
@@ -113,22 +120,28 @@ describe('formatConfidence', () => {
   });
 
   it('should return empty string when variant not found', () => {
-    expect(formatConfidence({
-      preview_variants: [{ variant: 2, pvalue: 0.01 }],
-      confidence_variant: 3,
-    })).toBe('');
+    expect(
+      formatConfidence({
+        preview_variants: [{ variant: 2, pvalue: 0.01 }],
+        confidence_variant: 3,
+      })
+    ).toBe('');
   });
 
   it('should return empty string when pvalue is null', () => {
-    expect(formatConfidence({
-      preview_variants: [{ variant: 1, pvalue: null }],
-    })).toBe('');
+    expect(
+      formatConfidence({
+        preview_variants: [{ variant: 1, pvalue: null }],
+      })
+    ).toBe('');
   });
 
   it('should format confidence from pvalue', () => {
-    expect(formatConfidence({
-      preview_variants: [{ variant: 1, pvalue: 0.05 }],
-    })).toBe('95.0%');
+    expect(
+      formatConfidence({
+        preview_variants: [{ variant: 1, pvalue: 0.05 }],
+      })
+    ).toBe('95.0%');
   });
 });
 
@@ -138,42 +151,54 @@ describe('formatProgress', () => {
   });
 
   it('should format GSA progress', () => {
-    expect(formatProgress({
-      group_sequential_analyses: [1, 2, 3],
-      group_sequential_analysis_count: 5,
-    })).toBe('3/5');
+    expect(
+      formatProgress({
+        group_sequential_analyses: [1, 2, 3],
+        group_sequential_analysis_count: 5,
+      })
+    ).toBe('3/5');
   });
 
   it('should use gsa length as total when count not provided', () => {
-    expect(formatProgress({
-      group_sequential_analyses: [1, 2],
-    })).toBe('2/2');
+    expect(
+      formatProgress({
+        group_sequential_analyses: [1, 2],
+      })
+    ).toBe('2/2');
   });
 
   it('should format power estimate when no GSA', () => {
-    expect(formatProgress({
-      power: { power_estimate: 0.85 },
-    })).toBe('85%');
+    expect(
+      formatProgress({
+        power: { power_estimate: 0.85 },
+      })
+    ).toBe('85%');
   });
 
   it('should prefer GSA over power', () => {
-    expect(formatProgress({
-      group_sequential_analyses: [1],
-      group_sequential_analysis_count: 3,
-      power: { power_estimate: 0.9 },
-    })).toBe('1/3');
+    expect(
+      formatProgress({
+        group_sequential_analyses: [1],
+        group_sequential_analysis_count: 3,
+        power: { power_estimate: 0.9 },
+      })
+    ).toBe('1/3');
   });
 
   it('should return empty string when power_estimate is null', () => {
-    expect(formatProgress({
-      power: { power_estimate: null },
-    })).toBe('');
+    expect(
+      formatProgress({
+        power: { power_estimate: null },
+      })
+    ).toBe('');
   });
 
   it('should return empty string when GSA array is empty', () => {
-    expect(formatProgress({
-      group_sequential_analyses: [],
-    })).toBe('');
+    expect(
+      formatProgress({
+        group_sequential_analyses: [],
+      })
+    ).toBe('');
   });
 });
 
@@ -231,17 +256,21 @@ describe('formatConfidenceValue', () => {
 
 describe('formatOwnerName', () => {
   it('should format with first and last name from user', () => {
-    expect(formatOwnerName({
-      user_id: 1,
-      user: { first_name: 'John', last_name: 'Doe' },
-    })).toBe('John Doe');
+    expect(
+      formatOwnerName({
+        user_id: 1,
+        user: { first_name: 'John', last_name: 'Doe' },
+      })
+    ).toBe('John Doe');
   });
 
   it('should format with first name only', () => {
-    expect(formatOwnerName({
-      user_id: 1,
-      user: { first_name: 'John' },
-    })).toBe('John');
+    expect(
+      formatOwnerName({
+        user_id: 1,
+        user: { first_name: 'John' },
+      })
+    ).toBe('John');
   });
 
   it('should fallback to user_id when user is missing', () => {
@@ -249,33 +278,41 @@ describe('formatOwnerName', () => {
   });
 
   it('should fallback to user_id when user has no names', () => {
-    expect(formatOwnerName({
-      user_id: 5,
-      user: {},
-    })).toBe('user 5');
+    expect(
+      formatOwnerName({
+        user_id: 5,
+        user: {},
+      })
+    ).toBe('user 5');
   });
 
   it('should handle null name fields', () => {
-    expect(formatOwnerName({
-      user_id: 7,
-      user: { first_name: null, last_name: null },
-    })).toBe('user 7');
+    expect(
+      formatOwnerName({
+        user_id: 7,
+        user: { first_name: null, last_name: null },
+      })
+    ).toBe('user 7');
   });
 });
 
 describe('formatOwnerLabel', () => {
   it('should format with name and email', () => {
-    expect(formatOwnerLabel({
-      user_id: 1,
-      user: { first_name: 'Jane', last_name: 'Smith', email: 'jane@example.com' },
-    })).toBe('Jane Smith <jane@example.com>');
+    expect(
+      formatOwnerLabel({
+        user_id: 1,
+        user: { first_name: 'Jane', last_name: 'Smith', email: 'jane@example.com' },
+      })
+    ).toBe('Jane Smith <jane@example.com>');
   });
 
   it('should format with first name and email, no last name', () => {
-    expect(formatOwnerLabel({
-      user_id: 1,
-      user: { first_name: 'Jane', email: 'jane@example.com' },
-    })).toBe('Jane <jane@example.com>');
+    expect(
+      formatOwnerLabel({
+        user_id: 1,
+        user: { first_name: 'Jane', email: 'jane@example.com' },
+      })
+    ).toBe('Jane <jane@example.com>');
   });
 
   it('should fallback to user_id when user is missing', () => {
@@ -283,17 +320,21 @@ describe('formatOwnerLabel', () => {
   });
 
   it('should fallback to user_id when first_name is missing', () => {
-    expect(formatOwnerLabel({
-      user_id: 3,
-      user: { email: 'test@example.com' },
-    })).toBe('user 3');
+    expect(
+      formatOwnerLabel({
+        user_id: 3,
+        user: { email: 'test@example.com' },
+      })
+    ).toBe('user 3');
   });
 
   it('should fallback to user_id when email is missing', () => {
-    expect(formatOwnerLabel({
-      user_id: 3,
-      user: { first_name: 'Bob' },
-    })).toBe('user 3');
+    expect(
+      formatOwnerLabel({
+        user_id: 3,
+        user: { first_name: 'Bob' },
+      })
+    ).toBe('user 3');
   });
 });
 
@@ -329,25 +370,31 @@ describe('formatExtraField', () => {
   });
 
   it('should format experiment_report with type and stop_reason', () => {
-    expect(formatExtraField('experiment_report', {
-      type: 'conclusive',
-      stop_reason: 'winner found',
-    })).toBe('conclusive / winner found');
+    expect(
+      formatExtraField('experiment_report', {
+        type: 'conclusive',
+        stop_reason: 'winner found',
+      })
+    ).toBe('conclusive / winner found');
   });
 
   it('should format experiment_report with full_on_variant', () => {
-    expect(formatExtraField('experiment_report', {
-      type: 'conclusive',
-      full_on_variant: 1,
-    })).toBe('conclusive / variant 1');
+    expect(
+      formatExtraField('experiment_report', {
+        type: 'conclusive',
+        full_on_variant: 1,
+      })
+    ).toBe('conclusive / variant 1');
   });
 
   it('should format experiment_report with all fields', () => {
-    expect(formatExtraField('experiment_report', {
-      type: 'conclusive',
-      stop_reason: 'winner',
-      full_on_variant: 2,
-    })).toBe('conclusive / winner / variant 2');
+    expect(
+      formatExtraField('experiment_report', {
+        type: 'conclusive',
+        stop_reason: 'winner',
+        full_on_variant: 2,
+      })
+    ).toBe('conclusive / winner / variant 2');
   });
 
   it('should return empty string for experiment_report with no fields', () => {
@@ -355,10 +402,12 @@ describe('formatExtraField', () => {
   });
 
   it('should skip null full_on_variant in experiment_report', () => {
-    expect(formatExtraField('experiment_report', {
-      type: 'inconclusive',
-      full_on_variant: null,
-    })).toBe('inconclusive');
+    expect(
+      formatExtraField('experiment_report', {
+        type: 'inconclusive',
+        full_on_variant: null,
+      })
+    ).toBe('inconclusive');
   });
 
   it('should handle experiment_report key with null value as non-object', () => {

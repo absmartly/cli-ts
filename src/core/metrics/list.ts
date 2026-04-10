@@ -20,7 +20,7 @@ export interface ListMetricsParams {
 
 export async function listMetrics(
   client: APIClient,
-  params: ListMetricsParams,
+  params: ListMetricsParams
 ): Promise<CommandResult<unknown[]>> {
   const ownerIds = params.owners ? await resolveOwnerIds(client, params.owners) : undefined;
   const teamIds = params.teams ? await resolveTeamIds(client, params.teams) : undefined;

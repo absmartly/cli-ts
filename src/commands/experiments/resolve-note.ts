@@ -1,5 +1,8 @@
 import { input } from '@inquirer/prompts';
-import { getActionDialogField, type ActionDialogField } from '../../lib/config/action-dialog-cache.js';
+import {
+  getActionDialogField,
+  type ActionDialogField,
+} from '../../lib/config/action-dialog-cache.js';
 
 export interface NoteOptions {
   note?: string;
@@ -10,7 +13,7 @@ export async function resolveNote(
   options: NoteOptions,
   actionType: string,
   experimentType: string,
-  profile?: string,
+  profile?: string
 ): Promise<string | undefined> {
   const field = getActionDialogField(profile ?? 'default', actionType, experimentType);
 
@@ -26,11 +29,16 @@ export async function resolveNote(
   }
 
   if (field?.default_value) return field.default_value;
-  if (field?.required) throw new Error(`--note is required for this action (configured in dashboard)`);
+  if (field?.required)
+    throw new Error(`--note is required for this action (configured in dashboard)`);
 
   return undefined;
 }
 
-export function getFieldConfig(actionType: string, experimentType: string, profile?: string): ActionDialogField | undefined {
+export function getFieldConfig(
+  actionType: string,
+  experimentType: string,
+  profile?: string
+): ActionDialogField | undefined {
   return getActionDialogField(profile ?? 'default', actionType, experimentType);
 }

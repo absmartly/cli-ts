@@ -38,7 +38,7 @@ describe('experiments/diff', () => {
       expect.arrayContaining([
         expect.objectContaining({ field: 'name' }),
         expect.objectContaining({ field: 'status' }),
-      ]),
+      ])
     );
   });
 
@@ -60,14 +60,14 @@ describe('experiments/diff', () => {
     mockClient.getExperiment.mockResolvedValueOnce({ name: 'exp1' });
     mockClient.listExperiments.mockResolvedValueOnce([{ iteration: 1 }]);
     await expect(
-      diffExperimentsCore(mockClient as any, { experimentId1: 1 as any, iteration: 99 }),
+      diffExperimentsCore(mockClient as any, { experimentId1: 1 as any, iteration: 99 })
     ).rejects.toThrow('Iteration 99 not found');
   });
 
   it('should throw if no second experiment or iteration', async () => {
     mockClient.getExperiment.mockResolvedValueOnce({ name: 'exp1' });
     await expect(
-      diffExperimentsCore(mockClient as any, { experimentId1: 1 as any }),
+      diffExperimentsCore(mockClient as any, { experimentId1: 1 as any })
     ).rejects.toThrow('Provide a second experiment ID or use --iteration <n>');
   });
 
@@ -79,7 +79,7 @@ describe('experiments/diff', () => {
       experimentId1: 1 as any,
       experimentId2: 2 as any,
     });
-    const configDiff = result.data.find(d => d.field === 'config');
+    const configDiff = result.data.find((d) => d.field === 'config');
     expect(configDiff?.left).toBe('{"a":1}');
     expect(configDiff?.right).toBe('{"a":2}');
   });

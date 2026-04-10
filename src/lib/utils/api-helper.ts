@@ -13,8 +13,8 @@ export async function resolveAPIKey(options: GlobalOptions): Promise<string> {
   if (!apiKey) {
     throw new Error(
       `No API key found for profile "${profileName}".\n` +
-      `Run: abs setup\n` +
-      `Or:  abs --endpoint https://your-api.example.com/v1 --api-key YOUR_KEY <command>`
+        `Run: abs setup\n` +
+        `Or:  abs --endpoint https://your-api.example.com/v1 --api-key YOUR_KEY <command>`
     );
   }
 
@@ -47,8 +47,7 @@ export async function resolveAuth(options: GlobalOptions): Promise<AuthConfig> {
     const token = await getOAuthToken(profileName);
     if (!token) {
       throw new Error(
-        `No OAuth token found for profile "${profileName}".\n` +
-        `Run: abs auth login`
+        `No OAuth token found for profile "${profileName}".\n` + `Run: abs auth login`
       );
     }
     return { method: 'oauth-jwt', token };
@@ -58,8 +57,8 @@ export async function resolveAuth(options: GlobalOptions): Promise<AuthConfig> {
   if (!apiKey) {
     throw new Error(
       `No API key found for profile "${profileName}".\n` +
-      `Run: abs auth login\n` +
-      `Or:  abs --endpoint https://your-api.example.com/v1 --api-key YOUR_KEY <command>`
+        `Run: abs auth login\n` +
+        `Or:  abs --endpoint https://your-api.example.com/v1 --api-key YOUR_KEY <command>`
     );
   }
   return { method: 'api-key', apiKey };
@@ -74,8 +73,8 @@ export async function getAPIClientFromOptions(options: GlobalOptions): Promise<A
   if (!endpoint) {
     throw new Error(
       `No API endpoint configured for profile "${profileName}".\n` +
-      `Run: abs auth login\n` +
-      `Or:  abs --endpoint https://your-api.example.com/v1 --api-key YOUR_KEY <command>`
+        `Run: abs auth login\n` +
+        `Or:  abs --endpoint https://your-api.example.com/v1 --api-key YOUR_KEY <command>`
     );
   }
 
@@ -102,7 +101,16 @@ export interface GlobalOptions {
   raw?: boolean;
 }
 
-const VALID_FORMATS: OutputFormat[] = ['table', 'json', 'yaml', 'plain', 'markdown', 'rendered', 'template', 'vertical'];
+const VALID_FORMATS: OutputFormat[] = [
+  'table',
+  'json',
+  'yaml',
+  'plain',
+  'markdown',
+  'rendered',
+  'template',
+  'vertical',
+];
 
 export function getGlobalOptions(cmd: Command): GlobalOptions {
   const opts = cmd.optsWithGlobals();

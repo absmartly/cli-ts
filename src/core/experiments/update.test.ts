@@ -7,7 +7,9 @@ vi.mock('../../api-client/template/parser.js', () => ({
 }));
 
 vi.mock('../../api-client/template/build-from-template.js', () => ({
-  buildPayloadFromTemplate: vi.fn().mockResolvedValue({ payload: { name: 'built' }, warnings: ['warn'] }),
+  buildPayloadFromTemplate: vi
+    .fn()
+    .mockResolvedValue({ payload: { name: 'built' }, warnings: ['warn'] }),
 }));
 
 vi.mock('../../api-client/payload/metrics-builder.js', () => ({
@@ -15,7 +17,9 @@ vi.mock('../../api-client/payload/metrics-builder.js', () => ({
 }));
 
 vi.mock('../../api-client/payload/parse-csv.js', () => ({
-  parseCSV: vi.fn().mockImplementation((v?: string) => (v ? v.split(',').map((s: string) => s.trim()) : [])),
+  parseCSV: vi
+    .fn()
+    .mockImplementation((v?: string) => (v ? v.split(',').map((s: string) => s.trim()) : [])),
 }));
 
 vi.mock('../../api-client/payload/screenshot-parser.js', () => ({
@@ -48,7 +52,11 @@ describe('update', () => {
         experimentId: id(42),
         changes: { name: 'new-name' },
       });
-      expect(mockClient.updateExperiment).toHaveBeenCalledWith(id(42), { name: 'new-name' }, undefined);
+      expect(mockClient.updateExperiment).toHaveBeenCalledWith(
+        id(42),
+        { name: 'new-name' },
+        undefined
+      );
       expect(result.data).toEqual({ id: id(42) });
     });
 
@@ -58,7 +66,11 @@ describe('update', () => {
         changes: { name: 'x' },
         note: 'updated',
       });
-      expect(mockClient.updateExperiment).toHaveBeenCalledWith(id(1), { name: 'x' }, { note: 'updated' });
+      expect(mockClient.updateExperiment).toHaveBeenCalledWith(
+        id(1),
+        { name: 'x' },
+        { note: 'updated' }
+      );
     });
   });
 
@@ -163,9 +175,7 @@ describe('update', () => {
         ...baseParams,
         screenshotId: ['0:123'],
       });
-      expect(changes.variant_screenshots).toEqual([
-        { variant: 0, screenshot_file_upload_id: 123 },
-      ]);
+      expect(changes.variant_screenshots).toEqual([{ variant: 0, screenshot_file_upload_id: 123 }]);
     });
 
     it('throws on invalid screenshot-id format', async () => {
@@ -173,7 +183,7 @@ describe('update', () => {
         buildUpdateChanges(mockClient as any, {
           ...baseParams,
           screenshotId: ['bad'],
-        }),
+        })
       ).rejects.toThrow('Invalid --screenshot-id format');
     });
   });

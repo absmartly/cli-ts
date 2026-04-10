@@ -13,7 +13,7 @@ export interface GenerateTemplateData {
 
 export async function generateTemplate(
   client: APIClient,
-  params: GenerateTemplateParams,
+  params: GenerateTemplateParams
 ): Promise<CommandResult<GenerateTemplateData>> {
   const content = await generateTemplateFromClient(client, {
     name: params.name,

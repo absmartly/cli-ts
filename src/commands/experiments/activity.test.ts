@@ -5,7 +5,12 @@ import { resetCommand } from '../../test/helpers/command-reset.js';
 
 vi.mock('../../lib/utils/api-helper.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../lib/utils/api-helper.js')>();
-  return { ...actual, getAPIClientFromOptions: vi.fn(), getGlobalOptions: vi.fn(), printFormatted: vi.fn() };
+  return {
+    ...actual,
+    getAPIClientFromOptions: vi.fn(),
+    getGlobalOptions: vi.fn(),
+    printFormatted: vi.fn(),
+  };
 });
 
 describe('activity command', () => {
@@ -44,7 +49,12 @@ describe('activity command', () => {
 
   it('should list activity with formatted output', async () => {
     mockClient.listExperimentActivity.mockResolvedValue([
-      { id: 1, created_at: '2026-03-22T14:30:00Z', action: 'start', created_by: { first_name: 'Alice', last_name: 'Smith' } },
+      {
+        id: 1,
+        created_at: '2026-03-22T14:30:00Z',
+        action: 'start',
+        created_by: { first_name: 'Alice', last_name: 'Smith' },
+      },
     ]);
 
     await activityCommand.parseAsync(['node', 'test', 'list', '42']);

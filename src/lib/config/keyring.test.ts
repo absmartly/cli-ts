@@ -15,14 +15,18 @@ describe('Keyring (file fallback)', () => {
   beforeEach(() => {
     try {
       savedContent = existsSync(CREDENTIALS_FILE) ? readFileSync(CREDENTIALS_FILE, 'utf8') : null;
-    } catch { savedContent = null; }
+    } catch {
+      savedContent = null;
+    }
   });
 
   afterEach(() => {
     if (savedContent !== null) {
       writeFileSync(CREDENTIALS_FILE, savedContent, 'utf8');
     } else {
-      try { unlinkSync(CREDENTIALS_FILE); } catch {}
+      try {
+        unlinkSync(CREDENTIALS_FILE);
+      } catch {}
     }
   });
 
@@ -85,14 +89,18 @@ describe('OAuth token keyring', () => {
   beforeEach(() => {
     try {
       savedContent = existsSync(CREDENTIALS_FILE) ? readFileSync(CREDENTIALS_FILE, 'utf8') : null;
-    } catch { savedContent = null; }
+    } catch {
+      savedContent = null;
+    }
   });
 
   afterEach(() => {
     if (savedContent !== null) {
       writeFileSync(CREDENTIALS_FILE, savedContent, 'utf8');
     } else {
-      try { unlinkSync(CREDENTIALS_FILE); } catch {}
+      try {
+        unlinkSync(CREDENTIALS_FILE);
+      } catch {}
     }
   });
 

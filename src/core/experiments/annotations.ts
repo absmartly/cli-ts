@@ -9,7 +9,7 @@ export interface ListAnnotationsParams {
 
 export async function listAnnotations(
   client: APIClient,
-  params: ListAnnotationsParams,
+  params: ListAnnotationsParams
 ): Promise<CommandResult<unknown[]>> {
   const annotations = await client.listAnnotations(params.experimentId);
   return { data: annotations as unknown[] };
@@ -23,7 +23,7 @@ export interface CreateAnnotationParams {
 
 export async function createAnnotation(
   client: APIClient,
-  params: CreateAnnotationParams,
+  params: CreateAnnotationParams
 ): Promise<CommandResult<unknown>> {
   const data: { experiment_id: number; type?: string } = { experiment_id: params.experimentId };
   if (params.type !== undefined) data.type = params.type;
@@ -39,7 +39,7 @@ export interface UpdateAnnotationParams {
 
 export async function updateAnnotation(
   client: APIClient,
-  params: UpdateAnnotationParams,
+  params: UpdateAnnotationParams
 ): Promise<CommandResult<unknown>> {
   const data: Record<string, unknown> = {};
   if (params.type !== undefined) data.type = params.type;
@@ -58,7 +58,7 @@ export interface ArchiveAnnotationParams {
 
 export async function archiveAnnotation(
   client: APIClient,
-  params: ArchiveAnnotationParams,
+  params: ArchiveAnnotationParams
 ): Promise<CommandResult<{ annotationId: AnnotationId; action: string }>> {
   await client.archiveAnnotation(params.annotationId, !!params.unarchive);
   const action = params.unarchive ? 'unarchived' : 'archived';

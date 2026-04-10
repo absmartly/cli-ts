@@ -5,23 +5,20 @@ import type { ExperimentTemplate } from '../../../api-client/template/parser.js'
 export const audiencesStep: Step = {
   name: 'Audiences',
   async run(template, context): Promise<StepResult> {
-    const unitType = await promptSearchSelect(
-      'Unit type',
-      context.unitTypes,
-      template.unit_type,
-    );
+    const unitType = await promptSearchSelect('Unit type', context.unitTypes, template.unit_type);
 
     const application = await promptSearchSelect(
       'Application',
       context.applications,
-      template.application,
+      template.application
     );
 
     let audience = template.audience ?? '';
     try {
       audience = await promptJsonEditor('Audience filter (JSON)', audience);
     } catch (error) {
-      if (error && typeof error === 'object' && 'name' in error && error.name === 'ExitPromptError') throw error;
+      if (error && typeof error === 'object' && 'name' in error && error.name === 'ExitPromptError')
+        throw error;
       console.log('Keeping current audience value.');
     }
 

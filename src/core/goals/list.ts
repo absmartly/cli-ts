@@ -8,7 +8,7 @@ export interface ListGoalsParams {
 
 export async function listGoals(
   client: APIClient,
-  params: ListGoalsParams,
+  params: ListGoalsParams
 ): Promise<CommandResult<unknown[]>> {
   const data = await client.listGoals(params.items, params.page);
   return {
