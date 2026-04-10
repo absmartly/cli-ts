@@ -43,15 +43,20 @@ export const exportCommand = new Command('export')
 
         process.stdout.write('\r\x1b[K');
 
-        if (status.status === 'COMPLETED') {
+        if (status.status === 'COMPLETED' && status.downloadUrl) {
           console.log(chalk.green('✓ Export completed!'));
           if (status.exportedRows > 0) {
             console.log(chalk.gray(`  Exported rows: ${status.exportedRows}`));
           }
-          if (status.downloadUrl) {
-            console.log(chalk.bold(`\n  Download URL: ${status.downloadUrl}\n`));
-          }
+          console.log(chalk.bold(`\n  Download URL: ${status.downloadUrl}\n`));
           poller?.stop();
+          return;
+        }
+
+        if (status.status === 'COMPLETED') {
+          process.stdout.write(
+            `${chalk.gray('COMPLETED')} — waiting for download link...`
+          );
           return;
         }
 

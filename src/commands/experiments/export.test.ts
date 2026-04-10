@@ -111,6 +111,33 @@ describe('experiments export', () => {
       );
     });
 
+    it('should keep polling when COMPLETED but no download link yet', async () => {
+      vi.mocked(fetchExportStatus).mockResolvedValue({
+        exportConfig: { id: 99, experiment_id: 42 },
+        latestHistory: {
+          id: 1,
+          status: 'COMPLETED',
+          progress: 100,
+          exported_rows: 5000,
+          total_rows: 5000,
+          remaining_seconds: 0,
+        },
+        status: 'COMPLETED',
+        progress: 100,
+        exportedRows: 5000,
+        totalRows: 5000,
+        remainingSeconds: 0,
+        isTerminal: false,
+        downloadUrl: null,
+      });
+
+      await exportCommand.parseAsync(['node', 'test', '42', '--wait']);
+
+      expect(vi.mocked(startPolling)).toHaveBeenCalled();
+      const writeOutput = stdoutWriteSpy.mock.calls.flat().join('');
+      expect(writeOutput).toContain('waiting for download link');
+    });
+
     it('should exit with error on FAILED', async () => {
       vi.mocked(fetchExportStatus).mockResolvedValue({
         exportConfig: { id: 99, experiment_id: 42 },

@@ -36,7 +36,7 @@ describe('fetchExportStatus', () => {
     expect(result.downloadUrl).toBe('https://api.example.com/v1/experiments/exports/99/export.zip');
   });
 
-  it('should return COMPLETED with no download URL when file key is missing', async () => {
+  it('should return isTerminal false when COMPLETED but no download_file_key yet', async () => {
     mockClient.getExportConfig.mockResolvedValue({
       id: 99,
       experiment_id: 42,
@@ -48,7 +48,7 @@ describe('fetchExportStatus', () => {
     const result = await fetchExportStatus(mockClient as any, configId);
 
     expect(result.status).toBe('COMPLETED');
-    expect(result.isTerminal).toBe(true);
+    expect(result.isTerminal).toBe(false);
     expect(result.downloadUrl).toBeNull();
   });
 

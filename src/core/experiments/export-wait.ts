@@ -32,7 +32,9 @@ export async function fetchExportStatus(
   const latestHistory: ExportHistoryShape | null =
     histories.length > 0 ? histories[histories.length - 1]! : null;
   const status: ExportHistoryStatus | 'UNKNOWN' = latestHistory?.status ?? 'UNKNOWN';
-  const isTerminal = TERMINAL_STATUSES.includes(status as ExportHistoryStatus);
+  const isTerminal =
+    TERMINAL_STATUSES.includes(status as ExportHistoryStatus) &&
+    !(status === 'COMPLETED' && !exportConfig.download_file_key);
 
   let downloadUrl: string | null = null;
   if (status === 'COMPLETED' && exportConfig.download_file_key) {
