@@ -71,7 +71,7 @@ export const exportCommand = new Command('export')
       let spinnerFrame = 0;
       const spinnerFrames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
       let spinnerTimer: ReturnType<typeof setInterval> | null = null;
-      const startedAt = Date.now();
+      let completedAt: number | null = null;
 
       const startSpinner = (label: string) => {
         stopSpinner();
@@ -105,7 +105,8 @@ export const exportCommand = new Command('export')
         }
 
         if (status.status === 'COMPLETED') {
-          const elapsed = Math.round((Date.now() - startedAt) / 1000);
+          if (!completedAt) completedAt = Date.now();
+          const elapsed = Math.round((Date.now() - completedAt) / 1000);
           startSpinner(`Export completed — waiting for download link... (${formatEta(elapsed)} elapsed)`);
           return;
         }
