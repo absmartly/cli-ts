@@ -96,7 +96,7 @@ describe.skipIf(isLiveMode)('APIClient core', () => {
           HttpResponse.json({
             ok: true,
             errors: [],
-            export_config: { id: 99, experiment_id: 1 },
+            exportConfig: { id: 99, experiment_id: 1 },
           })
         )
       );
@@ -505,7 +505,7 @@ describe.skipIf(isLiveMode)('APIClient core', () => {
           HttpResponse.json({
             ok: true,
             errors: [],
-            export_config: { id: 99, experiment_id: 1 },
+            exportConfig: { id: 99, experiment_id: 1 },
           })
         )
       );

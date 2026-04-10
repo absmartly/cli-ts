@@ -574,7 +574,7 @@ export class APIClient {
     this.validateOkResponse(response, 'exportExperimentData');
     return this.validateEntityResponse<ExportConfigShape>(
       response,
-      'export_config',
+      'exportConfig',
       'exportExperimentData'
     );
   }
