@@ -51,7 +51,10 @@ export const listCommand = new Command('list')
   .option('--alert-metric-threshold-reached [0|1]', 'filter by metric threshold reached alert')
   .option('--items <number>', 'number of results per page', (v) => parseInt(v, 10), 20)
   .option('--page <number>', 'page number (default: 1)', (v) => parseInt(v, 10), 1)
-  .option('--sort <field>', 'sort by field (e.g. created_at, name, state)')
+  .option(
+    '--sort <field>',
+    'sort by field: id, name, display_name, created_at, state, iteration, unit_count, owners, confidence, impact, duration, progress'
+  )
   .option('--asc', 'sort in ascending order')
   .option('--desc', 'sort in descending order')
   .option(
