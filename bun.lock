@@ -27,7 +27,7 @@
         "@typescript-eslint/eslint-plugin": "^8.21.0",
         "@typescript-eslint/parser": "^8.21.0",
         "@vitest/ui": "^4.0.18",
-        "absmartly-api-mocks": "link:absmartly-api-mocks",
+        "absmartly-api-mocks": "npm:@absmartly/api-mocks@^1.0.0-beta.1",
         "dotenv": "^16.4.7",
         "eslint": "^9.19.0",
         "jsdom": "^28.0.0",
@@ -41,6 +41,8 @@
   },
   "packages": {
     "@acemir/cssom": ["@acemir/cssom@0.9.31", "", {}, "sha512-ZnR3GSaH+/vJ0YlHau21FjfLYjMpYVIzTD8M8vIEQvIGxeOXyXdzCI140rrCY862p/C/BbzWsjc1dgnM9mkoTA=="],
+
+    "@apidevtools/json-schema-ref-parser": ["@apidevtools/json-schema-ref-parser@15.3.5", "", { "dependencies": { "js-yaml": "^4.1.1" }, "peerDependencies": { "@types/json-schema": "^7.0.15" } }, "sha512-orNOYXw3hYXxxisXMldjzjBzqqTLBPbwOtHg7ovBPvfBHDue1qM9YJENZ3W2BQuS+7z4ThogMbEzEsov57Itkg=="],
 
     "@asamuzakjp/css-color": ["@asamuzakjp/css-color@5.1.5", "", { "dependencies": { "@csstools/css-calc": "^3.1.1", "@csstools/css-color-parser": "^4.0.2", "@csstools/css-parser-algorithms": "^4.0.0", "@csstools/css-tokenizer": "^4.0.0", "lru-cache": "^11.2.7" } }, "sha512-8cMAA1bE66Mb/tfmkhcfJLjEPgyT7SSy6lW6id5XL113ai1ky76d/1L27sGnXCMsLfq66DInAU3OzuahB4lu9Q=="],
 
@@ -288,7 +290,7 @@
 
     "@vitest/utils": ["@vitest/utils@4.1.2", "", { "dependencies": { "@vitest/pretty-format": "4.1.2", "convert-source-map": "^2.0.0", "tinyrainbow": "^3.1.0" } }, "sha512-xw2/TiX82lQHA06cgbqRKFb5lCAy3axQ4H4SoUFhUsg+wztiet+co86IAMDtF6Vm1hc7J6j09oh/rgDn+JdKIQ=="],
 
-    "absmartly-api-mocks": ["absmartly-api-mocks@link:absmartly-api-mocks", {}],
+    "absmartly-api-mocks": ["@absmartly/api-mocks@1.0.0-beta.1", "", { "dependencies": { "@apidevtools/json-schema-ref-parser": "^15.2.2" } }, "sha512-qk07ZIAmdzlOP+I0PhXIWt7PJxIc1wk+R7KBj7RmYc//kYztYnimSpSbeSINVzNsbBt12jHZJVhCIaqcClDc3A=="],
 
     "acorn": ["acorn@8.16.0", "", { "bin": { "acorn": "bin/acorn" } }, "sha512-UVJyE9MttOsBQIDKw1skb9nAwQuR5wuGD3+82K6JgJlm/Y+KI92oNsMNGZCYdDsVtRHSak0pcV5Dno5+4jh9sw=="],
 
