@@ -168,7 +168,12 @@ export class AxiosHttpClient implements HttpClient {
   }
 
   getAuthHeader(): string {
-    return (this.client.defaults.headers.common['Authorization'] as string) ?? '';
+    const headers = this.client.defaults.headers;
+    return (
+      (headers.common?.['Authorization'] as string) ??
+      (headers['Authorization'] as string) ??
+      ''
+    );
   }
 
   private handleError(error: AxiosError): APIError {
