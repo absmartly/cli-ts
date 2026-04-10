@@ -1,4 +1,4 @@
-import { createWriteStream, statSync } from 'fs';
+import { createWriteStream, readFileSync, statSync, unlinkSync, writeFileSync } from 'fs';
 import { pipeline } from 'stream/promises';
 import { Transform } from 'stream';
 import https from 'https';
@@ -23,6 +23,30 @@ function getExistingSize(path: string): number {
     return statSync(path).size;
   } catch {
     return 0;
+  }
+}
+
+function metaPath(outputPath: string): string {
+  return `${outputPath}.download`;
+}
+
+function saveMeta(outputPath: string, finalUrl: string): void {
+  writeFileSync(metaPath(outputPath), finalUrl, 'utf-8');
+}
+
+function loadMeta(outputPath: string): string | null {
+  try {
+    return readFileSync(metaPath(outputPath), 'utf-8').trim() || null;
+  } catch {
+    return null;
+  }
+}
+
+function cleanupMeta(outputPath: string): void {
+  try {
+    unlinkSync(metaPath(outputPath));
+  } catch {
+    // ignore
   }
 }
 
@@ -78,10 +102,34 @@ export async function downloadFile(options: DownloadOptions): Promise<DownloadRe
   const { url, outputPath, onProgress } = options;
 
   const existingSize = options.resume ? getExistingSize(outputPath) : 0;
-  const headers: Record<string, string> = { ...options.headers };
 
-  // Resolve redirects first (API → S3) without Range header.
-  // Range is only sent on the final (S3) URL.
+  // On resume, try the saved S3 URL directly (avoids hitting the API which triggers cleanup)
+  if (existingSize > 0) {
+    const savedUrl = loadMeta(outputPath);
+    if (savedUrl) {
+      const rangeHeaders: Record<string, string> = { Range: `bytes=${existingSize}-` };
+      const rangeResponse = await httpGet(savedUrl, rangeHeaders);
+      const rangeStatus = rangeResponse.statusCode ?? 0;
+
+      if (rangeStatus === 416) {
+        rangeResponse.resume();
+        cleanupMeta(outputPath);
+        return { outputPath, bytes: existingSize, resumed: false };
+      }
+
+      if (rangeStatus === 206) {
+        const result = await finishDownload(rangeResponse, outputPath, existingSize, true, onProgress);
+        cleanupMeta(outputPath);
+        return result;
+      }
+
+      // Saved URL no longer works — fall through to full resolve
+      rangeResponse.resume();
+    }
+  }
+
+  // Resolve redirects (API → S3) to get the final URL
+  const headers: Record<string, string> = { ...options.headers };
   const { response, finalUrl, finalHeaders } = await resolveRedirects(url, headers);
   const status = response.statusCode ?? 0;
 
@@ -90,7 +138,10 @@ export async function downloadFile(options: DownloadOptions): Promise<DownloadRe
     throw new Error(`Download failed with status ${status}`);
   }
 
-  // If resuming, discard the initial response and make a Range request to the final URL
+  // Save the final URL for resume
+  saveMeta(outputPath, finalUrl);
+
+  // If resuming but no saved URL worked, try Range on the newly resolved URL
   if (existingSize > 0) {
     response.resume();
     const rangeHeaders = { ...finalHeaders, Range: `bytes=${existingSize}-` };
@@ -99,18 +150,23 @@ export async function downloadFile(options: DownloadOptions): Promise<DownloadRe
 
     if (rangeStatus === 416) {
       rangeResponse.resume();
+      cleanupMeta(outputPath);
       return { outputPath, bytes: existingSize, resumed: false };
     }
 
     if (rangeStatus === 206) {
-      return finishDownload(rangeResponse, outputPath, existingSize, true, onProgress);
+      const result = await finishDownload(rangeResponse, outputPath, existingSize, true, onProgress);
+      cleanupMeta(outputPath);
+      return result;
     }
 
     // Server doesn't support Range — restart from scratch
     rangeResponse.resume();
   }
 
-  return finishDownload(response, outputPath, 0, false, onProgress);
+  const result = await finishDownload(response, outputPath, 0, false, onProgress);
+  cleanupMeta(outputPath);
+  return result;
 }
 
 async function finishDownload(
