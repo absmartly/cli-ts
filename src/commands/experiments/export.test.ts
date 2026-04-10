@@ -209,10 +209,10 @@ describe('experiments export', () => {
 
     it('should attach to existing export when already in progress', async () => {
       mockClient.exportExperimentData.mockRejectedValue(
-        new APIError(
-          'exportExperimentData failed: Export already in progress for this experiment',
-          400
-        )
+        new APIError('API error: Request failed with status code 400', 400, {
+          ok: false,
+          errors: ['Export already in progress for this experiment'],
+        })
       );
       vi.mocked(findActiveExportConfig).mockResolvedValue({
         id: 55,
@@ -247,10 +247,10 @@ describe('experiments export', () => {
 
     it('should rethrow if already in progress but no active config found', async () => {
       mockClient.exportExperimentData.mockRejectedValue(
-        new APIError(
-          'exportExperimentData failed: Export already in progress for this experiment',
-          400
-        )
+        new APIError('API error: Request failed with status code 400', 400, {
+          ok: false,
+          errors: ['Export already in progress for this experiment'],
+        })
       );
       vi.mocked(findActiveExportConfig).mockResolvedValue(null);
 
@@ -261,10 +261,10 @@ describe('experiments export', () => {
 
     it('should not catch the error without --wait', async () => {
       mockClient.exportExperimentData.mockRejectedValue(
-        new APIError(
-          'exportExperimentData failed: Export already in progress for this experiment',
-          400
-        )
+        new APIError('API error: Request failed with status code 400', 400, {
+          ok: false,
+          errors: ['Export already in progress for this experiment'],
+        })
       );
 
       await expect(

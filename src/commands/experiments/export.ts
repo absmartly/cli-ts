@@ -13,12 +13,14 @@ import { fetchExportStatus, findActiveExportConfig } from '../../core/experiment
 import { startPolling } from '../../lib/utils/polling.js';
 
 function isExportInProgressError(error: unknown): boolean {
+  if (!(error instanceof APIError) || error.statusCode !== 400) return false;
+
+  const response = error.response as Record<string, unknown> | undefined;
+  const errors = Array.isArray(response?.errors) ? (response.errors as string[]) : [];
+  const errorText = errors.join(' ');
+
   return (
-    error instanceof APIError &&
-    error.statusCode === 400 &&
-    typeof error.message === 'string' &&
-    (error.message.includes('already in progress') ||
-      error.message.includes('recently created'))
+    errorText.includes('already in progress') || errorText.includes('recently created')
   );
 }
 
