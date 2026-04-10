@@ -49,11 +49,11 @@ export async function fetchLiveMetadata(client: APIClient): Promise<LiveMetadata
     client.listCustomSectionFields(),
   ]);
 
-  if (!apps.length) throw new Error('No applications found in live API');
-  if (!unitTypes.length) throw new Error('No unit types found in live API');
-  if (!teams.length) throw new Error('No teams found in live API');
-  if (!metrics.length) throw new Error('No metrics found in live API');
-  if (!users.length) throw new Error('No users found in live API');
+  if (!apps.length) throw new Error('No applications found (check API connection or mock data)');
+  if (!unitTypes.length) throw new Error('No unit types found (check API connection or mock data)');
+  if (!teams.length) throw new Error('No teams found (check API connection or mock data)');
+  if (!metrics.length) throw new Error('No metrics found (check API connection or mock data)');
+  if (!users.length) throw new Error('No users found (check API connection or mock data)');
 
   const userId = users[0].id;
 

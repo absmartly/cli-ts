@@ -12,11 +12,7 @@ if (isLiveMode) {
     server.listen({
       onUnhandledRequest(request, print) {
         const url = new URL(request.url);
-        if (
-          url.hostname === 'localhost' ||
-          url.hostname === '127.0.0.1' ||
-          !url.hostname.includes('absmartly.com')
-        ) {
+        if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
           return;
         }
         print.error();

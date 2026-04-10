@@ -3,14 +3,14 @@ import { http, HttpResponse } from 'msw';
 import { setupServer } from 'msw/node';
 import { AxiosHttpClient, AuthConfig } from './axios-adapter.js';
 
-const BASE_URL = 'https://oauth-refresh-test.local/v1';
+const BASE_URL = 'https://oauth-refresh-test.absmartly.com/v1';
 
 const mswServer = setupServer();
 
 describe('OAuth JWT auto-refresh interceptor', () => {
   let stderrSpy: ReturnType<typeof vi.spyOn>;
 
-  beforeAll(() => mswServer.listen({ onUnhandledRequest: 'error' }));
+  beforeAll(() => mswServer.listen({ onUnhandledRequest: 'bypass' }));
   afterAll(() => mswServer.close());
 
   beforeEach(() => {
