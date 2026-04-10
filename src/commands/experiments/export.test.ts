@@ -16,14 +16,20 @@ vi.mock('../../lib/utils/api-helper.js', async (importOriginal) => {
 vi.mock('../../core/experiments/export-wait.js', () => ({
   fetchExportStatus: vi.fn(),
   findActiveExportConfig: vi.fn(),
+  findRecentDownload: vi.fn(),
 }));
 
 vi.mock('../../lib/utils/polling.js', () => ({
   startPolling: vi.fn().mockReturnValue({ stop: vi.fn() }),
 }));
 
-import { fetchExportStatus, findActiveExportConfig } from '../../core/experiments/export-wait.js';
+vi.mock('@inquirer/prompts', () => ({
+  confirm: vi.fn(),
+}));
+
+import { fetchExportStatus, findActiveExportConfig, findRecentDownload } from '../../core/experiments/export-wait.js';
 import { startPolling } from '../../lib/utils/polling.js';
+import { confirm } from '@inquirer/prompts';
 import { APIError } from '../../api-client/http-client.js';
 
 describe('experiments export', () => {
@@ -45,6 +51,7 @@ describe('experiments export', () => {
     vi.mocked(getGlobalOptions).mockReturnValue({ output: 'table' } as any);
     mockClient.resolveExperimentId.mockResolvedValue(42);
     mockClient.exportExperimentData.mockResolvedValue({ id: 99, experiment_id: 42 });
+    vi.mocked(findRecentDownload).mockResolvedValue(null);
     consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     stdoutWriteSpy = vi.spyOn(process.stdout, 'write').mockImplementation(() => true);
@@ -297,6 +304,50 @@ describe('experiments export', () => {
       await expect(
         exportCommand.parseAsync(['node', 'test', '42'])
       ).rejects.toThrow('process.exit: 1');
+    });
+  });
+
+  describe('recent download check', () => {
+    it('should show recent download and skip export when user declines', async () => {
+      vi.mocked(findRecentDownload).mockResolvedValue({
+        exportConfigId: 50,
+        downloadUrl: 'https://api.example.com/v1/experiments/exports/50/export.zip',
+        downloadCreatedAt: new Date().toISOString(),
+      });
+      vi.mocked(confirm).mockResolvedValue(false);
+
+      await exportCommand.parseAsync(['node', 'test', '42']);
+
+      const output = consoleSpy.mock.calls.flat().join(' ');
+      expect(output).toContain('recent export is already available');
+      expect(output).toContain('https://api.example.com/v1/experiments/exports/50/export.zip');
+      expect(mockClient.exportExperimentData).not.toHaveBeenCalled();
+    });
+
+    it('should proceed with new export when user confirms', async () => {
+      vi.mocked(findRecentDownload).mockResolvedValue({
+        exportConfigId: 50,
+        downloadUrl: 'https://api.example.com/v1/experiments/exports/50/export.zip',
+        downloadCreatedAt: new Date().toISOString(),
+      });
+      vi.mocked(confirm).mockResolvedValue(true);
+
+      await exportCommand.parseAsync(['node', 'test', '42']);
+
+      expect(mockClient.exportExperimentData).toHaveBeenCalledWith(42);
+    });
+
+    it('should skip recent download check with --new', async () => {
+      vi.mocked(findRecentDownload).mockResolvedValue({
+        exportConfigId: 50,
+        downloadUrl: 'https://api.example.com/v1/experiments/exports/50/export.zip',
+        downloadCreatedAt: new Date().toISOString(),
+      });
+
+      await exportCommand.parseAsync(['node', 'test', '42', '--new']);
+
+      expect(findRecentDownload).not.toHaveBeenCalled();
+      expect(mockClient.exportExperimentData).toHaveBeenCalledWith(42);
     });
   });
 });

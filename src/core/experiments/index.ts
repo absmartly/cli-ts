@@ -51,8 +51,8 @@ export type { DiffExperimentsParams, DiffEntry } from './diff.js';
 export { exportExperiment } from './export.js';
 export type { ExportExperimentParams, ExportExperimentData } from './export.js';
 
-export { fetchExportStatus, findActiveExportConfig } from './export-wait.js';
-export type { ExportStatus } from './export-wait.js';
+export { fetchExportStatus, findActiveExportConfig, findRecentDownload } from './export-wait.js';
+export type { ExportStatus, RecentExport } from './export-wait.js';
 
 export { searchExperiments } from './search.js';
 export type { SearchExperimentsParams } from './search.js';

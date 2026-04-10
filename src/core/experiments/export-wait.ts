@@ -23,6 +23,42 @@ const TERMINAL_STATUSES: ExportHistoryStatus[] = ['COMPLETED', 'FAILED', 'CANCEL
 
 const ATTACHABLE_STATUSES = 'WAITING,IN_PROGRESS,RETRYING,COMPLETED';
 
+export interface RecentExport {
+  exportConfigId: number;
+  downloadUrl: string;
+  downloadCreatedAt: string;
+}
+
+export async function findRecentDownload(
+  client: APIClient,
+  experimentId: ExperimentId
+): Promise<RecentExport | null> {
+  const configs = await client.listExportConfigs({ statuses: 'COMPLETED' });
+  const matches = configs
+    .filter(
+      (c) =>
+        c.experiment_id === (experimentId as number) &&
+        c.download_file_key &&
+        c.download_created_at &&
+        !c.download_deleted_at
+    )
+    .sort((a, b) => {
+      const ta = new Date(a.download_created_at!).getTime();
+      const tb = new Date(b.download_created_at!).getTime();
+      return tb - ta;
+    });
+
+  if (matches.length === 0) return null;
+
+  const config = matches[0]!;
+  const baseUrl = client.getApiBaseUrl();
+  return {
+    exportConfigId: config.id,
+    downloadUrl: `${baseUrl}/experiments/exports/${config.id}/${config.download_file_key}`,
+    downloadCreatedAt: config.download_created_at!,
+  };
+}
+
 export async function findActiveExportConfig(
   client: APIClient,
   experimentId: ExperimentId

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { fetchExportStatus, findActiveExportConfig } from './export-wait.js';
+import { fetchExportStatus, findActiveExportConfig, findRecentDownload } from './export-wait.js';
 import type { ExportConfigId, ExperimentId } from '../../lib/api/branded-types.js';
 
 const configId = 99 as unknown as ExportConfigId;
@@ -207,6 +207,82 @@ describe('findActiveExportConfig', () => {
     mockClient.listExportConfigs.mockResolvedValue([]);
 
     const result = await findActiveExportConfig(mockClient as any, experimentId);
+
+    expect(result).toBeNull();
+  });
+});
+
+describe('findRecentDownload', () => {
+  let mockClient: Record<string, ReturnType<typeof vi.fn>>;
+
+  beforeEach(() => {
+    mockClient = {
+      listExportConfigs: vi.fn(),
+      getApiBaseUrl: vi.fn().mockReturnValue('https://api.example.com/v1'),
+    };
+  });
+
+  it('should return the most recent completed download', async () => {
+    mockClient.listExportConfigs.mockResolvedValue([
+      {
+        id: 10,
+        experiment_id: 42,
+        download_file_key: 'old.zip',
+        download_created_at: '2026-01-01T00:00:00Z',
+      },
+      {
+        id: 20,
+        experiment_id: 42,
+        download_file_key: 'new.zip',
+        download_created_at: '2026-01-02T00:00:00Z',
+      },
+    ]);
+
+    const result = await findRecentDownload(mockClient as any, experimentId);
+
+    expect(result).toEqual({
+      exportConfigId: 20,
+      downloadUrl: 'https://api.example.com/v1/experiments/exports/20/new.zip',
+      downloadCreatedAt: '2026-01-02T00:00:00Z',
+    });
+  });
+
+  it('should skip configs with download_deleted_at', async () => {
+    mockClient.listExportConfigs.mockResolvedValue([
+      {
+        id: 10,
+        experiment_id: 42,
+        download_file_key: 'expired.zip',
+        download_created_at: '2026-01-02T00:00:00Z',
+        download_deleted_at: '2026-01-03T00:00:00Z',
+      },
+      {
+        id: 20,
+        experiment_id: 42,
+        download_file_key: 'valid.zip',
+        download_created_at: '2026-01-01T00:00:00Z',
+      },
+    ]);
+
+    const result = await findRecentDownload(mockClient as any, experimentId);
+
+    expect(result!.exportConfigId).toBe(20);
+  });
+
+  it('should return null when no downloads match', async () => {
+    mockClient.listExportConfigs.mockResolvedValue([
+      { id: 10, experiment_id: 99, download_file_key: 'other.zip', download_created_at: '2026-01-01T00:00:00Z' },
+    ]);
+
+    const result = await findRecentDownload(mockClient as any, experimentId);
+
+    expect(result).toBeNull();
+  });
+
+  it('should return null for empty list', async () => {
+    mockClient.listExportConfigs.mockResolvedValue([]);
+
+    const result = await findRecentDownload(mockClient as any, experimentId);
 
     expect(result).toBeNull();
   });

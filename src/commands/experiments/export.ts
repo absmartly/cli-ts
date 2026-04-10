@@ -1,5 +1,6 @@
 import { Command } from 'commander';
 import chalk from 'chalk';
+import { confirm } from '@inquirer/prompts';
 import {
   getAPIClientFromOptions,
   getGlobalOptions,
@@ -9,7 +10,11 @@ import { parseExperimentIdOrName } from './resolve-id.js';
 import { ExportConfigId } from '../../api-client/types.js';
 import { APIError } from '../../api-client/http-client.js';
 import { exportExperiment } from '../../core/experiments/export.js';
-import { fetchExportStatus, findActiveExportConfig } from '../../core/experiments/export-wait.js';
+import {
+  fetchExportStatus,
+  findActiveExportConfig,
+  findRecentDownload,
+} from '../../core/experiments/export-wait.js';
 import { startPolling } from '../../lib/utils/polling.js';
 
 function isExportInProgressError(error: unknown): boolean {
@@ -24,16 +29,45 @@ function isExportInProgressError(error: unknown): boolean {
   );
 }
 
+function formatAge(isoDate: string): string {
+  const seconds = Math.round((Date.now() - new Date(isoDate).getTime()) / 1000);
+  if (seconds < 60) return `${seconds}s ago`;
+  const mins = Math.floor(seconds / 60);
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  return `${hours}h ${mins % 60}m ago`;
+}
+
 export const exportCommand = new Command('export')
   .description('Export experiment data')
   .argument('<id>', 'experiment ID or name', parseExperimentIdOrName)
   .option('--wait', 'wait for export to complete and show download URL')
+  .option('--new', 'skip checking for recent exports and start a new one')
   .option('--interval <seconds>', 'poll interval in seconds', '2')
   .action(
     withErrorHandling(async (nameOrId: string, options) => {
       const globalOptions = getGlobalOptions(exportCommand);
       const client = await getAPIClientFromOptions(globalOptions);
       const id = await client.resolveExperimentId(nameOrId);
+
+      // Check for a recent completed export with a download link
+      if (!options.new) {
+        const recent = await findRecentDownload(client, id);
+        if (recent) {
+          console.log(
+            chalk.green(`✓ A recent export is already available (${formatAge(recent.downloadCreatedAt)})`)
+          );
+          console.log(chalk.bold(`\n  Download URL: ${recent.downloadUrl}\n`));
+
+          const startNew = await confirm({
+            message: 'Start a new export anyway?',
+            default: false,
+          });
+
+          if (!startNew) return;
+          console.log('');
+        }
+      }
 
       let exportConfigId: ReturnType<typeof ExportConfigId>;
 

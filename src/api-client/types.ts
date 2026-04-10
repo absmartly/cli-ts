@@ -349,6 +349,7 @@ export interface ExportConfigShape {
   experiment_id: number;
   download_file_key?: string;
   download_created_at?: string;
+  download_deleted_at?: string;
   downloadable?: boolean;
 }
 
