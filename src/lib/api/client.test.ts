@@ -181,6 +181,11 @@ describe('APIClient', () => {
     it('should retry PUT requests on 5xx errors', async () => {
       let attemptCount = 0;
       server.use(
+        http.get(`${BASE_URL}/experiments/:id`, () => {
+          return HttpResponse.json({
+            experiment: { id: 123, name: 'test', state: 'running', display_name: 'Test' },
+          });
+        }),
         http.put(`${BASE_URL}/experiments/:id`, () => {
           attemptCount++;
           if (attemptCount < 3) {
@@ -226,6 +231,11 @@ describe('APIClient', () => {
 
     it('should NOT retry PUT to /restart on 5xx errors', async () => {
       server.use(
+        http.get(`${BASE_URL}/experiments/:id`, () => {
+          return HttpResponse.json({
+            experiment: { id: 123, name: 'test', state: 'stopped', display_name: 'Test' },
+          });
+        }),
         http.put(`${BASE_URL}/experiments/:id/restart`, () => {
           requestCount++;
           return new HttpResponse(null, { status: 500 });
