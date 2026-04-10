@@ -112,28 +112,28 @@ export const exportCommand = new Command('export')
       // --resume: find recent export and resume download immediately
       if (options.resume) {
         const recent = await findRecentDownload(client, id, { includeExpired: true });
-        if (!recent) {
-          throw new Error(
-            'No recent export found to resume. Run with --download to start a new export.'
-          );
-        }
-        const fileKey = recent.downloadUrl.split('/').pop()!;
-        console.log(chalk.gray(`Resuming download of ${fileKey}...`));
-        try {
-          await performDownload(recent.downloadUrl, fileKey, client.getAuthHeader(), true);
-        } catch (err) {
-          const msg = err instanceof Error ? err.message : String(err);
-          if (msg.includes('404')) {
-            console.error(
-              chalk.red(`✗ File has expired and is no longer available on the server.`)
-            );
-            console.log(chalk.gray(`  Run without --resume to start a new export:\n`));
-            console.log(chalk.gray(`    abs experiments export ${nameOrId} --download\n`));
-            process.exit(1);
+        if (recent) {
+          const fileKey = recent.downloadUrl.split('/').pop()!;
+          console.log(chalk.gray(`Resuming download of ${fileKey}...`));
+          try {
+            await performDownload(recent.downloadUrl, fileKey, client.getAuthHeader(), true);
+            return;
+          } catch (err) {
+            const msg = err instanceof Error ? err.message : String(err);
+            if (msg.includes('404')) {
+              console.log(
+                chalk.yellow(`⚠ File has expired. Starting a new export...\n`)
+              );
+              // Fall through to normal export + download flow
+              options.download = true;
+            } else {
+              throw err;
+            }
           }
-          throw err;
+        } else {
+          console.log(chalk.yellow(`⚠ No recent export found. Starting a new export...\n`));
+          options.download = true;
         }
-        return;
       }
 
       // Check for a recent completed export with a download link
