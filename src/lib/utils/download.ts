@@ -8,6 +8,7 @@ export interface DownloadOptions {
   url: string;
   outputPath: string;
   headers?: Record<string, string>;
+  resume?: boolean;
   onProgress?: (downloaded: number, total: number | null) => void;
 }
 
@@ -36,36 +37,41 @@ function httpGet(
   });
 }
 
+interface ResolvedResponse {
+  response: http.IncomingMessage;
+  finalUrl: string;
+  finalHeaders: Record<string, string>;
+}
+
 async function resolveRedirects(
   url: string,
   headers: Record<string, string>,
   maxRedirects = 10
-): Promise<http.IncomingMessage> {
+): Promise<ResolvedResponse> {
   let currentUrl = url;
+  const reqHeaders = { ...headers };
   let redirectCount = 0;
 
   while (redirectCount < maxRedirects) {
-    const response = await httpGet(currentUrl, headers);
+    const response = await httpGet(currentUrl, reqHeaders);
     const status = response.statusCode ?? 0;
 
     if (status >= 300 && status < 400 && response.headers.location) {
-      response.resume(); // drain the response body
-      // Resolve relative redirects against the current URL
+      response.resume();
       const redirectLocation = response.headers.location;
       const resolvedUrl = new URL(redirectLocation, currentUrl).href;
-      // Strip auth headers on cross-origin redirects (e.g., to S3)
       const originalHost = new URL(currentUrl).host;
       const redirectHost = new URL(resolvedUrl).host;
       if (originalHost !== redirectHost) {
-        delete headers['Authorization'];
-        delete headers['authorization'];
+        delete reqHeaders['Authorization'];
+        delete reqHeaders['authorization'];
       }
       currentUrl = resolvedUrl;
       redirectCount++;
       continue;
     }
 
-    return response;
+    return { response, finalUrl: currentUrl, finalHeaders: reqHeaders };
   }
 
   throw new Error(`Too many redirects (${maxRedirects})`);
@@ -74,23 +80,49 @@ async function resolveRedirects(
 export async function downloadFile(options: DownloadOptions): Promise<DownloadResult> {
   const { url, outputPath, onProgress } = options;
 
-  const existingSize = getExistingSize(outputPath);
+  const existingSize = options.resume ? getExistingSize(outputPath) : 0;
   const headers: Record<string, string> = { ...options.headers };
 
-  if (existingSize > 0) {
-    headers['Range'] = `bytes=${existingSize}-`;
-  }
-
-  const response = await resolveRedirects(url, headers);
+  // Resolve redirects first (API → S3) without Range header.
+  // Range is only sent on the final (S3) URL.
+  const { response, finalUrl, finalHeaders } = await resolveRedirects(url, headers);
   const status = response.statusCode ?? 0;
 
-  // 416 = Range Not Satisfiable — file is already complete
-  if (status === 416) {
+  if (status < 200 || status >= 300) {
     response.resume();
-    return { outputPath, bytes: existingSize, resumed: false };
+    throw new Error(`Download failed with status ${status}`);
   }
 
-  const resumed = status === 206;
+  // If resuming, discard the initial response and make a Range request to the final URL
+  if (existingSize > 0) {
+    response.resume();
+    const rangeHeaders = { ...finalHeaders, Range: `bytes=${existingSize}-` };
+    const rangeResponse = await httpGet(finalUrl, rangeHeaders);
+    const rangeStatus = rangeResponse.statusCode ?? 0;
+
+    if (rangeStatus === 416) {
+      rangeResponse.resume();
+      return { outputPath, bytes: existingSize, resumed: false };
+    }
+
+    if (rangeStatus === 206) {
+      return finishDownload(rangeResponse, outputPath, existingSize, true, onProgress);
+    }
+
+    // Server doesn't support Range — restart from scratch
+    rangeResponse.resume();
+  }
+
+  return finishDownload(response, outputPath, 0, false, onProgress);
+}
+
+async function finishDownload(
+  response: http.IncomingMessage,
+  outputPath: string,
+  existingSize: number,
+  resumed: boolean,
+  onProgress?: (downloaded: number, total: number | null) => void
+): Promise<DownloadResult> {
   const contentLength = response.headers['content-length']
     ? parseInt(response.headers['content-length'], 10)
     : null;
@@ -98,12 +130,6 @@ export async function downloadFile(options: DownloadOptions): Promise<DownloadRe
     ? (resumed ? existingSize + contentLength : contentLength)
     : null;
 
-  if (status !== 200 && status !== 206) {
-    response.resume();
-    throw new Error(`Download failed with status ${status}`);
-  }
-
-  // If server ignores Range and sends 200, start from scratch
   const writeFlags = resumed ? 'a' : 'w';
   let downloaded = resumed ? existingSize : 0;
 

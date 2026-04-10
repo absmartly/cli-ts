@@ -54,7 +54,8 @@ function formatBytes(bytes: number): string {
 async function performDownload(
   downloadUrl: string,
   fileKey: string,
-  authHeader: string
+  authHeader: string,
+  resume: boolean
 ): Promise<void> {
   const outputPath = path.resolve(fileKey);
 
@@ -64,6 +65,7 @@ async function performDownload(
   const result = await downloadFile({
     url: downloadUrl,
     outputPath,
+    resume,
     headers: { Authorization: authHeader },
     onProgress: (downloaded, total) => {
       const frame = spinnerFrames[spinnerFrame++ % spinnerFrames.length];
@@ -95,6 +97,7 @@ export const exportCommand = new Command('export')
   .argument('<id>', 'experiment ID or name', parseExperimentIdOrName)
   .option('--wait', 'wait for export to complete and show download URL')
   .option('--download', 'download the export file to the current directory (implies --wait)')
+  .option('--resume', 'resume a partial download of the most recent export')
   .option('--new', 'skip checking for recent exports and start a new one')
   .option('--interval <seconds>', 'poll interval in seconds', '2')
   .action(
@@ -103,8 +106,20 @@ export const exportCommand = new Command('export')
       const client = await getAPIClientFromOptions(globalOptions);
       const id = await client.resolveExperimentId(nameOrId);
 
-      // --download implies --wait
-      if (options.download) options.wait = true;
+      // --download and --resume imply --wait
+      if (options.download || options.resume) options.wait = true;
+
+      // --resume: find recent export and resume download immediately
+      if (options.resume) {
+        const recent = await findRecentDownload(client, id);
+        if (!recent) {
+          throw new Error('No recent export found to resume. Run with --download to start a new export.');
+        }
+        const fileKey = recent.downloadUrl.split('/').pop()!;
+        console.log(chalk.gray(`Resuming download of ${fileKey}...`));
+        await performDownload(recent.downloadUrl, fileKey, client.getAuthHeader(), true);
+        return;
+      }
 
       // Check for a recent completed export with a download link
       if (!options.new) {
@@ -124,7 +139,7 @@ export const exportCommand = new Command('export')
 
             if (startNew) {
               const fileKey = recent.downloadUrl.split('/').pop()!;
-              await performDownload(recent.downloadUrl, fileKey, client.getAuthHeader());
+              await performDownload(recent.downloadUrl, fileKey, client.getAuthHeader(), false);
               return;
             }
             console.log('');
@@ -270,7 +285,7 @@ export const exportCommand = new Command('export')
       if (options.download) {
         const downloadUrl = await pollingDone;
         const fileKey = downloadUrl.split('/').pop()!;
-        await performDownload(downloadUrl, fileKey, client.getAuthHeader());
+        await performDownload(downloadUrl, fileKey, client.getAuthHeader(), false);
       }
     })
   );
