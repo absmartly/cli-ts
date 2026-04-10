@@ -21,15 +21,22 @@ export interface ExportStatus {
 
 const TERMINAL_STATUSES: ExportHistoryStatus[] = ['COMPLETED', 'FAILED', 'CANCELLED'];
 
-const ACTIVE_STATUSES = 'WAITING,IN_PROGRESS,RETRYING';
+const ATTACHABLE_STATUSES = 'WAITING,IN_PROGRESS,RETRYING,COMPLETED';
 
 export async function findActiveExportConfig(
   client: APIClient,
   experimentId: ExperimentId
 ): Promise<ExportConfigShape | null> {
-  const configs = await client.listExportConfigs({ statuses: ACTIVE_STATUSES });
-  const match = configs.find((c) => c.experiment_id === (experimentId as number));
-  return match ?? null;
+  // Try active exports first, then include completed (for "recently created" case
+  // where the export finished but download_file_key isn't set yet)
+  const configs = await client.listExportConfigs({ statuses: ATTACHABLE_STATUSES });
+  const matches = configs.filter((c) => c.experiment_id === (experimentId as number));
+  if (matches.length === 0) return null;
+  // Prefer active over completed, and most recent within each group
+  return (
+    matches.find((c) => !c.download_file_key) ??
+    matches[matches.length - 1]!
+  );
 }
 
 export async function fetchExportStatus(

@@ -166,9 +166,31 @@ describe('findActiveExportConfig', () => {
     const result = await findActiveExportConfig(mockClient as any, experimentId);
 
     expect(mockClient.listExportConfigs).toHaveBeenCalledWith({
-      statuses: 'WAITING,IN_PROGRESS,RETRYING',
+      statuses: 'WAITING,IN_PROGRESS,RETRYING,COMPLETED',
     });
     expect(result).toEqual({ id: 20, experiment_id: 42 });
+  });
+
+  it('should prefer config without download_file_key', async () => {
+    mockClient.listExportConfigs.mockResolvedValue([
+      { id: 10, experiment_id: 42, download_file_key: 'old.zip' },
+      { id: 20, experiment_id: 42 },
+    ]);
+
+    const result = await findActiveExportConfig(mockClient as any, experimentId);
+
+    expect(result).toEqual({ id: 20, experiment_id: 42 });
+  });
+
+  it('should fall back to latest config if all have download_file_key', async () => {
+    mockClient.listExportConfigs.mockResolvedValue([
+      { id: 10, experiment_id: 42, download_file_key: 'old.zip' },
+      { id: 20, experiment_id: 42, download_file_key: 'new.zip' },
+    ]);
+
+    const result = await findActiveExportConfig(mockClient as any, experimentId);
+
+    expect(result).toEqual({ id: 20, experiment_id: 42, download_file_key: 'new.zip' });
   });
 
   it('should return null when no config matches the experiment', async () => {
