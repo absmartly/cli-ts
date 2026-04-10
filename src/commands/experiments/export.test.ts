@@ -137,8 +137,35 @@ describe('experiments export', () => {
       await exportCommand.parseAsync(['node', 'test', '42', '--wait']);
 
       expect(vi.mocked(startPolling)).toHaveBeenCalled();
+      // Spinner starts for "waiting for download link" — let it tick once
+      await new Promise((r) => setTimeout(r, 100));
       const writeOutput = stdoutWriteSpy.mock.calls.flat().join('');
       expect(writeOutput).toContain('waiting for download link');
+    });
+
+    it('should show spinner when no progress data yet', async () => {
+      vi.mocked(fetchExportStatus).mockResolvedValue({
+        exportConfig: { id: 99, experiment_id: 42 },
+        latestHistory: {
+          id: 1,
+          status: 'WAITING',
+          progress: 0,
+          exported_rows: 0,
+          total_rows: 0,
+          remaining_seconds: 0,
+        },
+        status: 'WAITING',
+        progress: 0,
+        exportedRows: 0,
+        totalRows: 0,
+        remainingSeconds: 0,
+        isTerminal: false,
+        downloadUrl: null,
+      });
+
+      await exportCommand.parseAsync(['node', 'test', '42', '--wait']);
+
+      expect(vi.mocked(startPolling)).toHaveBeenCalled();
     });
 
     it('should exit with error on FAILED', async () => {
