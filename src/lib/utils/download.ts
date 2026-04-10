@@ -50,14 +50,17 @@ async function resolveRedirects(
 
     if (status >= 300 && status < 400 && response.headers.location) {
       response.resume(); // drain the response body
-      currentUrl = response.headers.location;
+      // Resolve relative redirects against the current URL
+      const redirectLocation = response.headers.location;
+      const resolvedUrl = new URL(redirectLocation, currentUrl).href;
       // Strip auth headers on cross-origin redirects (e.g., to S3)
-      const originalHost = new URL(url).host;
-      const redirectHost = new URL(currentUrl).host;
+      const originalHost = new URL(currentUrl).host;
+      const redirectHost = new URL(resolvedUrl).host;
       if (originalHost !== redirectHost) {
         delete headers['Authorization'];
         delete headers['authorization'];
       }
+      currentUrl = resolvedUrl;
       redirectCount++;
       continue;
     }
