@@ -71,8 +71,7 @@ export const exportCommand = new Command('export')
       let spinnerFrame = 0;
       const spinnerFrames = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
       let spinnerTimer: ReturnType<typeof setInterval> | null = null;
-      let completedWithoutLinkCount = 0;
-      const MAX_COMPLETED_WITHOUT_LINK_POLLS = 30;
+      const startedAt = Date.now();
 
       const startSpinner = (label: string) => {
         stopSpinner();
@@ -106,28 +105,8 @@ export const exportCommand = new Command('export')
         }
 
         if (status.status === 'COMPLETED') {
-          completedWithoutLinkCount++;
-          if (completedWithoutLinkCount >= MAX_COMPLETED_WITHOUT_LINK_POLLS) {
-            stopSpinner();
-            process.stdout.write('\r\x1b[K');
-            console.log(chalk.green('✓ Export completed!'));
-            if (status.exportedRows > 0) {
-              console.log(chalk.gray(`  Exported rows: ${status.exportedRows}`));
-            }
-            console.log(
-              chalk.yellow(
-                `\n  Download link not available. The file may have expired or is still being prepared.`
-              )
-            );
-            console.log(
-              chalk.gray(
-                `  Check the experiment's Activity feed in the web UI for the download link.\n`
-              )
-            );
-            poller?.stop();
-            return;
-          }
-          startSpinner('Export completed — waiting for download link...');
+          const elapsed = Math.round((Date.now() - startedAt) / 1000);
+          startSpinner(`Export completed — waiting for download link... (${formatEta(elapsed)} elapsed)`);
           return;
         }
 
