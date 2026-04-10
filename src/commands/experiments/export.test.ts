@@ -32,6 +32,7 @@ describe('experiments export', () => {
 
   const mockClient = {
     exportExperimentData: vi.fn(),
+    resolveExperimentId: vi.fn(),
   };
 
   beforeEach(() => {
@@ -39,6 +40,7 @@ describe('experiments export', () => {
     resetCommand(exportCommand);
     vi.mocked(getAPIClientFromOptions).mockResolvedValue(mockClient as any);
     vi.mocked(getGlobalOptions).mockReturnValue({ output: 'table' } as any);
+    mockClient.resolveExperimentId.mockResolvedValue(42);
     mockClient.exportExperimentData.mockResolvedValue({ id: 99, experiment_id: 42 });
     consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -63,8 +65,13 @@ describe('experiments export', () => {
     expect(output).toContain('Experiment 42 data export initiated');
   });
 
-  it('should reject invalid experiment ID', async () => {
-    await expect(exportCommand.parseAsync(['node', 'test', 'abc'])).rejects.toThrow();
+  it('should accept experiment name and resolve to ID', async () => {
+    mockClient.resolveExperimentId.mockResolvedValue(42);
+
+    await exportCommand.parseAsync(['node', 'test', 'my-experiment']);
+
+    expect(mockClient.resolveExperimentId).toHaveBeenCalledWith('my-experiment');
+    expect(mockClient.exportExperimentData).toHaveBeenCalledWith(42);
   });
 
   it('should handle API errors', async () => {

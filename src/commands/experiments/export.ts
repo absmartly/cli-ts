@@ -5,8 +5,7 @@ import {
   getGlobalOptions,
   withErrorHandling,
 } from '../../lib/utils/api-helper.js';
-import { parseExperimentId } from '../../lib/utils/validators.js';
-import type { ExperimentId } from '../../lib/api/branded-types.js';
+import { parseExperimentIdOrName } from './resolve-id.js';
 import { ExportConfigId } from '../../api-client/types.js';
 import { exportExperiment } from '../../core/experiments/export.js';
 import { fetchExportStatus } from '../../core/experiments/export-wait.js';
@@ -14,13 +13,14 @@ import { startPolling } from '../../lib/utils/polling.js';
 
 export const exportCommand = new Command('export')
   .description('Export experiment data')
-  .argument('<id>', 'experiment ID', parseExperimentId)
+  .argument('<id>', 'experiment ID or name', parseExperimentIdOrName)
   .option('--wait', 'wait for export to complete and show download URL')
   .option('--interval <seconds>', 'poll interval in seconds', '5')
   .action(
-    withErrorHandling(async (id: ExperimentId, options) => {
+    withErrorHandling(async (nameOrId: string, options) => {
       const globalOptions = getGlobalOptions(exportCommand);
       const client = await getAPIClientFromOptions(globalOptions);
+      const id = await client.resolveExperimentId(nameOrId);
       const result = await exportExperiment(client, { experimentId: id });
 
       console.log(chalk.green(`✓ Experiment ${id} data export initiated`));
