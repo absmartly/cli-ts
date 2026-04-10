@@ -327,6 +327,31 @@ export interface ListMetricsOptions {
   review_status?: string | undefined;
 }
 
+export type ExportHistoryStatus =
+  | 'WAITING'
+  | 'IN_PROGRESS'
+  | 'RETRYING'
+  | 'COMPLETED'
+  | 'FAILED'
+  | 'CANCELLED';
+
+export interface ExportHistoryShape {
+  id: number;
+  status: ExportHistoryStatus;
+  progress: number;
+  exported_rows: number;
+  total_rows: number;
+  remaining_seconds: number;
+}
+
+export interface ExportConfigShape {
+  id: number;
+  experiment_id: number;
+  download_file_key?: string;
+  download_created_at?: string;
+  downloadable?: boolean;
+}
+
 export interface ListOptions {
   page?: number;
   items?: number;

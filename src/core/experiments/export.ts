@@ -6,12 +6,20 @@ export interface ExportExperimentParams {
   experimentId: ExperimentId;
 }
 
+export interface ExportExperimentData {
+  experimentId: ExperimentId;
+  exportConfigId: number;
+}
+
 export async function exportExperiment(
   client: APIClient,
   params: ExportExperimentParams
-): Promise<CommandResult<{ id: ExperimentId }>> {
-  await client.exportExperimentData(params.experimentId);
+): Promise<CommandResult<ExportExperimentData>> {
+  const exportConfig = await client.exportExperimentData(params.experimentId);
   return {
-    data: { id: params.experimentId },
+    data: {
+      experimentId: params.experimentId,
+      exportConfigId: exportConfig.id,
+    },
   };
 }

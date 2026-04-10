@@ -31,4 +31,9 @@ export {
   UpdateScheduleId,
 } from '../../api-client/types.js';
 
-export type { APIKey } from '../../api-client/types.js';
+export type {
+  APIKey,
+  ExportConfigShape,
+  ExportHistoryShape,
+  ExportHistoryStatus,
+} from '../../api-client/types.js';

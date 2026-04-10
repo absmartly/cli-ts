@@ -53,6 +53,8 @@ import type {
   CorsOriginId,
   DatasourceId,
   ExportConfigId,
+  ExportConfigShape,
+  ExportHistoryShape,
   UpdateScheduleId,
   Alert,
   RecommendedActionId,
@@ -67,6 +69,10 @@ export class APIClient {
 
   constructor(httpClient: HttpClient) {
     this.httpClient = httpClient;
+  }
+
+  getApiBaseUrl(): string {
+    return this.httpClient.getBaseUrl?.() ?? '';
   }
 
   private getRootUrl(): string {
@@ -563,9 +569,14 @@ export class APIClient {
     return this.validateEntityResponse<Note>(response, 'experiment_note', 'replyToExperimentNote');
   }
 
-  async exportExperimentData(id: ExperimentId): Promise<void> {
+  async exportExperimentData(id: ExperimentId): Promise<ExportConfigShape> {
     const response = await this.request('POST', `/experiments/${id}/export_data`, { data: {} });
     this.validateOkResponse(response, 'exportExperimentData');
+    return this.validateEntityResponse<ExportConfigShape>(
+      response,
+      'export_config',
+      'exportExperimentData'
+    );
   }
 
   async requestExperimentUpdate(
@@ -1822,9 +1833,9 @@ export class APIClient {
     return this.validateListResponse<unknown>(response, 'export_configs', 'listExportConfigs');
   }
 
-  async getExportConfig(id: ExportConfigId): Promise<unknown> {
+  async getExportConfig(id: ExportConfigId): Promise<ExportConfigShape> {
     const response = await this.request('GET', `/export_configs/${id}`);
-    return this.validateEntityResponse<unknown>(response, 'export_config', 'getExportConfig');
+    return this.validateEntityResponse<ExportConfigShape>(response, 'export_config', 'getExportConfig');
   }
 
   async createExportConfig(data: Record<string, unknown>): Promise<unknown> {
@@ -1846,9 +1857,9 @@ export class APIClient {
     this.validateOkResponse(response, 'pauseExportConfig');
   }
 
-  async listExportHistories(id: ExportConfigId): Promise<unknown[]> {
+  async listExportHistories(id: ExportConfigId): Promise<ExportHistoryShape[]> {
     const response = await this.request('GET', `/export_configs/${id}/export_histories`);
-    return this.validateListResponse<unknown>(response, 'export_histories', 'listExportHistories');
+    return this.validateListResponse<ExportHistoryShape>(response, 'export_histories', 'listExportHistories');
   }
 
   async listUpdateSchedules(): Promise<unknown[]> {

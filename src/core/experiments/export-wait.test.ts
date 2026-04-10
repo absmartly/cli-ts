@@ -1,0 +1,147 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { fetchExportStatus } from './export-wait.js';
+import type { ExportConfigId } from '../../lib/api/branded-types.js';
+
+const configId = 99 as unknown as ExportConfigId;
+
+describe('fetchExportStatus', () => {
+  let mockClient: Record<string, ReturnType<typeof vi.fn>>;
+
+  beforeEach(() => {
+    mockClient = {
+      getExportConfig: vi.fn(),
+      listExportHistories: vi.fn(),
+      getApiBaseUrl: vi.fn().mockReturnValue('https://api.example.com/v1'),
+    };
+  });
+
+  it('should return COMPLETED with download URL when file key is present', async () => {
+    mockClient.getExportConfig.mockResolvedValue({
+      id: 99,
+      experiment_id: 42,
+      download_file_key: 'export.zip',
+      download_created_at: '2026-01-01T00:00:00Z',
+      downloadable: true,
+    });
+    mockClient.listExportHistories.mockResolvedValue([
+      { id: 1, status: 'COMPLETED', progress: 100, exported_rows: 5000, total_rows: 5000, remaining_seconds: 0 },
+    ]);
+
+    const result = await fetchExportStatus(mockClient as any, configId);
+
+    expect(result.status).toBe('COMPLETED');
+    expect(result.isTerminal).toBe(true);
+    expect(result.progress).toBe(100);
+    expect(result.exportedRows).toBe(5000);
+    expect(result.downloadUrl).toBe('https://api.example.com/v1/experiments/exports/99/export.zip');
+  });
+
+  it('should return COMPLETED with no download URL when file key is missing', async () => {
+    mockClient.getExportConfig.mockResolvedValue({
+      id: 99,
+      experiment_id: 42,
+    });
+    mockClient.listExportHistories.mockResolvedValue([
+      { id: 1, status: 'COMPLETED', progress: 100, exported_rows: 0, total_rows: 0, remaining_seconds: 0 },
+    ]);
+
+    const result = await fetchExportStatus(mockClient as any, configId);
+
+    expect(result.status).toBe('COMPLETED');
+    expect(result.isTerminal).toBe(true);
+    expect(result.downloadUrl).toBeNull();
+  });
+
+  it('should return isTerminal true for FAILED', async () => {
+    mockClient.getExportConfig.mockResolvedValue({ id: 99, experiment_id: 42 });
+    mockClient.listExportHistories.mockResolvedValue([
+      { id: 1, status: 'FAILED', progress: 0, exported_rows: 0, total_rows: 0, remaining_seconds: 0 },
+    ]);
+
+    const result = await fetchExportStatus(mockClient as any, configId);
+
+    expect(result.status).toBe('FAILED');
+    expect(result.isTerminal).toBe(true);
+    expect(result.downloadUrl).toBeNull();
+  });
+
+  it('should return isTerminal true for CANCELLED', async () => {
+    mockClient.getExportConfig.mockResolvedValue({ id: 99, experiment_id: 42 });
+    mockClient.listExportHistories.mockResolvedValue([
+      { id: 1, status: 'CANCELLED', progress: 0, exported_rows: 0, total_rows: 0, remaining_seconds: 0 },
+    ]);
+
+    const result = await fetchExportStatus(mockClient as any, configId);
+
+    expect(result.status).toBe('CANCELLED');
+    expect(result.isTerminal).toBe(true);
+  });
+
+  it('should return isTerminal false for IN_PROGRESS', async () => {
+    mockClient.getExportConfig.mockResolvedValue({ id: 99, experiment_id: 42 });
+    mockClient.listExportHistories.mockResolvedValue([
+      { id: 1, status: 'IN_PROGRESS', progress: 45, exported_rows: 2250, total_rows: 5000, remaining_seconds: 30 },
+    ]);
+
+    const result = await fetchExportStatus(mockClient as any, configId);
+
+    expect(result.status).toBe('IN_PROGRESS');
+    expect(result.isTerminal).toBe(false);
+    expect(result.progress).toBe(45);
+    expect(result.exportedRows).toBe(2250);
+    expect(result.totalRows).toBe(5000);
+    expect(result.remainingSeconds).toBe(30);
+    expect(result.downloadUrl).toBeNull();
+  });
+
+  it('should return isTerminal false for WAITING', async () => {
+    mockClient.getExportConfig.mockResolvedValue({ id: 99, experiment_id: 42 });
+    mockClient.listExportHistories.mockResolvedValue([
+      { id: 1, status: 'WAITING', progress: 0, exported_rows: 0, total_rows: 0, remaining_seconds: 0 },
+    ]);
+
+    const result = await fetchExportStatus(mockClient as any, configId);
+
+    expect(result.status).toBe('WAITING');
+    expect(result.isTerminal).toBe(false);
+  });
+
+  it('should return isTerminal false for RETRYING', async () => {
+    mockClient.getExportConfig.mockResolvedValue({ id: 99, experiment_id: 42 });
+    mockClient.listExportHistories.mockResolvedValue([
+      { id: 1, status: 'RETRYING', progress: 0, exported_rows: 0, total_rows: 0, remaining_seconds: 0 },
+    ]);
+
+    const result = await fetchExportStatus(mockClient as any, configId);
+
+    expect(result.status).toBe('RETRYING');
+    expect(result.isTerminal).toBe(false);
+  });
+
+  it('should handle empty export histories', async () => {
+    mockClient.getExportConfig.mockResolvedValue({ id: 99, experiment_id: 42 });
+    mockClient.listExportHistories.mockResolvedValue([]);
+
+    const result = await fetchExportStatus(mockClient as any, configId);
+
+    expect(result.status).toBe('UNKNOWN');
+    expect(result.isTerminal).toBe(false);
+    expect(result.latestHistory).toBeNull();
+    expect(result.progress).toBe(0);
+    expect(result.downloadUrl).toBeNull();
+  });
+
+  it('should use the last history entry as the latest', async () => {
+    mockClient.getExportConfig.mockResolvedValue({ id: 99, experiment_id: 42 });
+    mockClient.listExportHistories.mockResolvedValue([
+      { id: 1, status: 'FAILED', progress: 0, exported_rows: 0, total_rows: 0, remaining_seconds: 0 },
+      { id: 2, status: 'IN_PROGRESS', progress: 50, exported_rows: 2500, total_rows: 5000, remaining_seconds: 15 },
+    ]);
+
+    const result = await fetchExportStatus(mockClient as any, configId);
+
+    expect(result.status).toBe('IN_PROGRESS');
+    expect(result.latestHistory?.id).toBe(2);
+    expect(result.progress).toBe(50);
+  });
+});

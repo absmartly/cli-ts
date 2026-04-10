@@ -90,13 +90,18 @@ describe.skipIf(isLiveMode)('APIClient core', () => {
       await expect(client.exportExperimentData(1)).rejects.toThrow(/denied/);
     });
 
-    it('should succeed when ok is true', async () => {
+    it('should succeed and return export_config when ok is true', async () => {
       server.use(
         http.post(`${BASE_URL}/experiments/1/export_data`, () =>
-          HttpResponse.json({ ok: true, errors: [] })
+          HttpResponse.json({
+            ok: true,
+            errors: [],
+            export_config: { id: 99, experiment_id: 1 },
+          })
         )
       );
-      await expect(client.exportExperimentData(1)).resolves.toBeUndefined();
+      const result = await client.exportExperimentData(1);
+      expect(result).toEqual({ id: 99, experiment_id: 1 });
     });
   });
 
@@ -497,10 +502,15 @@ describe.skipIf(isLiveMode)('APIClient core', () => {
     it('should export experiment data', async () => {
       server.use(
         http.post(`${BASE_URL}/experiments/1/export_data`, () =>
-          HttpResponse.json({ ok: true, errors: [] })
+          HttpResponse.json({
+            ok: true,
+            errors: [],
+            export_config: { id: 99, experiment_id: 1 },
+          })
         )
       );
-      await client.exportExperimentData(1);
+      const result = await client.exportExperimentData(1);
+      expect(result).toEqual({ id: 99, experiment_id: 1 });
     });
 
     it('should request experiment update', async () => {
