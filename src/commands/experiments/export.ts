@@ -111,7 +111,7 @@ export const exportCommand = new Command('export')
 
       // --resume: find recent export and resume download immediately
       if (options.resume) {
-        const recent = await findRecentDownload(client, id);
+        const recent = await findRecentDownload(client, id, { includeExpired: true });
         if (!recent) {
           throw new Error('No recent export found to resume. Run with --download to start a new export.');
         }

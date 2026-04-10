@@ -31,7 +31,8 @@ export interface RecentExport {
 
 export async function findRecentDownload(
   client: APIClient,
-  experimentId: ExperimentId
+  experimentId: ExperimentId,
+  options?: { includeExpired?: boolean }
 ): Promise<RecentExport | null> {
   const configs = await client.listExportConfigs({ statuses: 'COMPLETED' });
   const matches = configs
@@ -40,7 +41,7 @@ export async function findRecentDownload(
         c.experiment_id === (experimentId as number) &&
         c.download_file_key &&
         c.download_created_at &&
-        !c.download_deleted_at
+        (options?.includeExpired || !c.download_deleted_at)
     )
     .sort((a, b) => {
       const ta = new Date(a.download_created_at!).getTime();
