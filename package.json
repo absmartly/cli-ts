@@ -109,6 +109,7 @@
     "@types/node": "^25.2.1",
     "@typescript-eslint/eslint-plugin": "^8.21.0",
     "@typescript-eslint/parser": "^8.21.0",
+    "@vitest/coverage-v8": "^4.1.4",
     "@vitest/ui": "^4.0.18",
     "absmartly-api-mocks": "npm:@absmartly/api-mocks@^1.0.0-beta.1",
     "dotenv": "^16.4.7",
