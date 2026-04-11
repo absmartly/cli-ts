@@ -1,0 +1,25 @@
+export {
+  listDatasources,
+  getDatasource,
+  createDatasource,
+  updateDatasource,
+  archiveDatasource,
+  testDatasource,
+  introspectDatasource,
+  validateDatasourceQuery,
+  previewDatasourceQuery,
+  setDefaultDatasource,
+  getDatasourceSchema,
+} from './datasources.js';
+export type {
+  GetDatasourceParams,
+  CreateDatasourceParams,
+  UpdateDatasourceParams,
+  ArchiveDatasourceParams,
+  TestDatasourceParams,
+  IntrospectDatasourceParams,
+  ValidateDatasourceQueryParams,
+  PreviewDatasourceQueryParams,
+  SetDefaultDatasourceParams,
+  GetDatasourceSchemaParams,
+} from './datasources.js';

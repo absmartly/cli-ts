@@ -1,0 +1,292 @@
+import { Command } from 'commander';
+import Table from 'cli-table3';
+import chalk from 'chalk';
+import {
+  getAPIClientFromOptions,
+  getGlobalOptions,
+  printFormatted,
+  resolveAPIKey,
+  resolveEndpoint,
+  withErrorHandling,
+  type GlobalOptions,
+} from '../../lib/utils/api-helper.js';
+import { parseUserId } from '../../lib/utils/validators.js';
+import { addPaginationOptions, printPaginationFooter } from '../../lib/utils/pagination.js';
+import { renderInlineImage, supportsInlineImages } from '../../lib/utils/terminal-image.js';
+import type { UserId } from '../../lib/api/branded-types.js';
+import {
+  applyShowExclude,
+  summarizeUserRow,
+  summarizeUserDetail,
+} from '../../api-client/entity-summary.js';
+import type { User } from '../../api-client/types.js';
+import { stripApiVersionPath } from '../../lib/utils/url.js';
+import {
+  listUsers as coreListUsers,
+  getUser as coreGetUser,
+  createUser as coreCreateUser,
+  updateUser as coreUpdateUser,
+  archiveUser as coreArchiveUser,
+} from '../../core/users/index.js';
+import { resetPasswordCommand } from './reset-password.js';
+import { userApiKeysCommand } from './api-keys.js';
+
+export const usersCommand = new Command('users').alias('user').description('User commands');
+
+async function displayUserAvatar(
+  user: User,
+  globalOptions: GlobalOptions,
+  width: number
+): Promise<void> {
+  if (!supportsInlineImages() || !user.avatar?.base_url) return;
+  const endpoint = resolveEndpoint(globalOptions);
+  const baseUrl = stripApiVersionPath(endpoint);
+  const apiKey = await resolveAPIKey(globalOptions);
+  const thumbSize = Math.min(width * 16, 128);
+  const thumbUrl = `${baseUrl}${user.avatar.base_url}/crop/${thumbSize}x${thumbSize}.webp`;
+  try {
+    const response = await fetch(thumbUrl, {
+      headers: { Authorization: `Api-Key ${apiKey}` },
+      redirect: 'follow',
+    });
+    if (!response.ok) {
+      if (response.status === 401 || response.status === 403) {
+        console.error('Warning: avatar fetch unauthorized -- check API key');
+      }
+      return;
+    }
+    const buffer = Buffer.from(await response.arrayBuffer());
+    const img = renderInlineImage(buffer, 'avatar.webp', width);
+    if (img) process.stdout.write(`\n${img}\n`);
+  } catch (e) {
+    if (e instanceof Error && process.env.DEBUG) {
+      console.error(`Warning: avatar fetch failed: ${e.message}`);
+    }
+  }
+}
+
+const listCommand = addPaginationOptions(
+  new Command('list')
+    .description('List all users')
+    .option('--include-archived', 'include archived users')
+    .option('--show <fields...>', 'include additional fields from API response')
+    .option('--exclude <fields...>', 'hide fields from summary')
+    .option(
+      '--show-avatars [cols]',
+      'display avatars inline, optional width in columns (default: 3)',
+      parseInt
+    )
+).action(
+  withErrorHandling(async (options) => {
+    const globalOptions = getGlobalOptions(listCommand);
+    const client = await getAPIClientFromOptions(globalOptions);
+    const show = (options.show as string[] | undefined) ?? [];
+    const exclude = (options.exclude as string[] | undefined) ?? [];
+
+    const result = await coreListUsers(client, {
+      includeArchived: options.includeArchived,
+      items: options.items,
+      page: options.page,
+    });
+    const users = result.data;
+
+    const wantAvatars =
+      options.showAvatars !== undefined &&
+      supportsInlineImages() &&
+      !globalOptions.raw &&
+      globalOptions.output !== 'json' &&
+      globalOptions.output !== 'yaml';
+
+    if (wantAvatars) {
+      const avatarWidth = typeof options.showAvatars === 'number' ? options.showAvatars : 3;
+      const endpoint = resolveEndpoint(globalOptions);
+      const baseUrl = stripApiVersionPath(endpoint);
+      const apiKey = await resolveAPIKey(globalOptions);
+      const headers = { Authorization: `Api-Key ${apiKey}` };
+
+      const avatarMap = new Map<number, string>();
+      await Promise.all(
+        (users as User[]).map(async (user) => {
+          if (!user.avatar?.base_url) return;
+          try {
+            const thumbSize = Math.min(avatarWidth * 16, 256);
+            const thumbUrl = `${baseUrl}${user.avatar.base_url}/crop/${thumbSize}x${thumbSize}.webp`;
+            const response = await fetch(thumbUrl, { headers, redirect: 'follow' });
+            if (!response.ok) {
+              if (response.status === 401 || response.status === 403) {
+                console.error('Warning: avatar fetch unauthorized -- check API key');
+              }
+              return;
+            }
+            const buffer = Buffer.from(await response.arrayBuffer());
+            const img = renderInlineImage(buffer, 'avatar.webp', avatarWidth);
+            if (img) avatarMap.set(user.id, img);
+          } catch (e) {
+            if (e instanceof Error && process.env.DEBUG) {
+              console.error(`Warning: avatar fetch failed: ${e.message}`);
+            }
+          }
+        })
+      );
+
+      const rows = (users as Array<Record<string, unknown>>).map((u) =>
+        applyShowExclude(summarizeUserRow(u), u, show, exclude)
+      );
+      const keys = rows.length > 0 ? Object.keys(rows[0]!) : [];
+
+      const imageHeight = Math.max(1, Math.floor(avatarWidth / 2));
+
+      const table = new Table({
+        head: [' ', ...keys.map((k) => chalk.bold.cyan(k))],
+        colWidths: [avatarWidth + 2],
+        style: { head: [], border: ['gray'] },
+      });
+
+      for (const row of rows) {
+        table.push([' ', ...keys.map((k) => String(row[k] ?? ''))]);
+      }
+
+      const tableLines = table.toString().split('\n');
+      const stripAnsi = (s: string) => s.replace(/\x1b\[[0-9;]*m/g, '');
+      let dataIdx = -1;
+
+      for (const line of tableLines) {
+        const stripped = stripAnsi(line);
+        const isBorder = /^[├┌└]/.test(stripped);
+        if (isBorder) {
+          if (!stripped.startsWith('┌')) dataIdx++;
+          process.stdout.write(line + '\n');
+          continue;
+        }
+
+        if (/^│/.test(stripped) && dataIdx >= 0 && dataIdx < rows.length) {
+          const img = avatarMap.get(rows[dataIdx]!.id as number);
+          if (img) {
+            process.stdout.write(line + '\n');
+            const emptyBorder = stripped.replace(/[^│]/g, ' ').replace(/│/g, '\x1b[90m│\x1b[0m');
+            for (let i = 1; i < imageHeight; i++) {
+              process.stdout.write(emptyBorder + '\n');
+            }
+            process.stdout.write(`\x1b[${imageHeight}A\r\x1b[90m│\x1b[0m ` + img + '\r');
+          } else {
+            process.stdout.write(line + '\n');
+          }
+        } else {
+          process.stdout.write(line + '\n');
+        }
+      }
+    } else {
+      const data = globalOptions.raw
+        ? users
+        : (users as Array<Record<string, unknown>>).map((u) =>
+            applyShowExclude(summarizeUserRow(u), u, show, exclude)
+          );
+      printFormatted(data, globalOptions);
+    }
+
+    printPaginationFooter(
+      users.length,
+      options.items,
+      options.page,
+      globalOptions.output as string
+    );
+  })
+);
+
+const getCommand = new Command('get')
+  .description('Get user details')
+  .argument('<id>', 'user ID', parseUserId)
+  .option('--show <fields...>', 'include additional fields from API response')
+  .option('--exclude <fields...>', 'hide fields from summary')
+  .option(
+    '--show-avatars [cols]',
+    'display avatar inline, optional width in columns (default: 15)',
+    parseInt
+  )
+  .action(
+    withErrorHandling(async (id: UserId, options) => {
+      const globalOptions = getGlobalOptions(getCommand);
+      const client = await getAPIClientFromOptions(globalOptions);
+      const show = (options.show as string[] | undefined) ?? [];
+      const exclude = (options.exclude as string[] | undefined) ?? [];
+
+      const result = await coreGetUser(client, { id });
+      const user = result.data;
+      const data = globalOptions.raw
+        ? user
+        : applyShowExclude(
+            summarizeUserDetail(user as Record<string, unknown>),
+            user as Record<string, unknown>,
+            show,
+            exclude
+          );
+      printFormatted(data, globalOptions);
+
+      if (options.showAvatars !== undefined) {
+        const width = typeof options.showAvatars === 'number' ? options.showAvatars : 15;
+        await displayUserAvatar(user as User, globalOptions, width);
+      }
+    })
+  );
+
+const createCommand = new Command('create')
+  .description('Create a new user')
+  .requiredOption('--email <email>', 'user email')
+  .requiredOption('--name <name>', 'user full name')
+  .option('--role <role>', 'user role')
+  .action(
+    withErrorHandling(async (options) => {
+      const globalOptions = getGlobalOptions(createCommand);
+      const client = await getAPIClientFromOptions(globalOptions);
+
+      const result = await coreCreateUser(client, {
+        email: options.email,
+        name: options.name,
+        role: options.role,
+      });
+
+      console.log(chalk.green(`✓ User created with ID: ${result.data.id}`));
+    })
+  );
+
+const updateCommand = new Command('update')
+  .description('Update a user')
+  .argument('<id>', 'user ID', parseUserId)
+  .option('--name <name>', 'new full name')
+  .option('--role <role>', 'new role')
+  .action(
+    withErrorHandling(async (id: UserId, options) => {
+      const globalOptions = getGlobalOptions(updateCommand);
+      const client = await getAPIClientFromOptions(globalOptions);
+
+      await coreUpdateUser(client, {
+        id,
+        name: options.name,
+        role: options.role,
+      });
+      console.log(chalk.green(`✓ User ${id} updated`));
+    })
+  );
+
+const archiveCommand = new Command('archive')
+  .description('Archive or unarchive a user')
+  .argument('<id>', 'user ID', parseUserId)
+  .option('--unarchive', 'unarchive the user')
+  .action(
+    withErrorHandling(async (id: UserId, options) => {
+      const globalOptions = getGlobalOptions(archiveCommand);
+      const client = await getAPIClientFromOptions(globalOptions);
+
+      await coreArchiveUser(client, { id, unarchive: options.unarchive });
+      const action = options.unarchive ? 'unarchived' : 'archived';
+      console.log(chalk.green(`✓ User ${id} ${action}`));
+    })
+  );
+
+usersCommand.addCommand(listCommand);
+usersCommand.addCommand(getCommand);
+usersCommand.addCommand(createCommand);
+usersCommand.addCommand(updateCommand);
+usersCommand.addCommand(archiveCommand);
+usersCommand.addCommand(resetPasswordCommand);
+usersCommand.addCommand(userApiKeysCommand);
