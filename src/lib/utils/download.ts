@@ -118,7 +118,13 @@ export async function downloadFile(options: DownloadOptions): Promise<DownloadRe
       }
 
       if (rangeStatus === 206) {
-        const result = await finishDownload(rangeResponse, outputPath, existingSize, true, onProgress);
+        const result = await finishDownload(
+          rangeResponse,
+          outputPath,
+          existingSize,
+          true,
+          onProgress
+        );
         cleanupMeta(outputPath);
         return result;
       }
@@ -155,7 +161,13 @@ export async function downloadFile(options: DownloadOptions): Promise<DownloadRe
     }
 
     if (rangeStatus === 206) {
-      const result = await finishDownload(rangeResponse, outputPath, existingSize, true, onProgress);
+      const result = await finishDownload(
+        rangeResponse,
+        outputPath,
+        existingSize,
+        true,
+        onProgress
+      );
       cleanupMeta(outputPath);
       return result;
     }

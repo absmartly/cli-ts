@@ -121,9 +121,7 @@ export const exportCommand = new Command('export')
           } catch (err) {
             const msg = err instanceof Error ? err.message : String(err);
             if (msg.includes('404')) {
-              console.log(
-                chalk.yellow(`⚠ File has expired. Starting a new export...\n`)
-              );
+              console.log(chalk.yellow(`⚠ File has expired. Starting a new export...\n`));
               // Fall through to normal export + download flow
               options.download = true;
             } else {

@@ -73,7 +73,8 @@
     "format": "prettier --write 'src/**/*.ts'",
     "typecheck": "tsc --noEmit",
     "test:live": "bun src/test/live/run-live-vitest.ts --profile test-1",
-    "test:live-quick": "bun src/test/live/run-live-tests.ts --profile test-1"
+    "test:live-quick": "bun src/test/live/run-live-tests.ts --profile test-1",
+    "prepare": "git config core.hooksPath .githooks"
   },
   "keywords": [
     "absmartly",
