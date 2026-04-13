@@ -49,4 +49,4 @@ jobs:
 
       - run: bun tsc
 
-      - run: npm publish --provenance --access public
+      - run: npm publish --access public
