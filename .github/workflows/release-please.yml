@@ -21,4 +21,4 @@ jobs:
         if: steps.release.outputs.prs_created == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh pr merge ${{ fromJson(steps.release.outputs.prs)[0].number }} --squash --admin --repo ${{ github.repository }}
+        run: gh pr merge ${{ fromJson(steps.release.outputs.prs)[0].number }} --auto --squash --repo ${{ github.repository }}
