@@ -7,6 +7,7 @@ on:
 permissions:
   contents: write
   pull-requests: write
+  id-token: write
 
 jobs:
   release-please:
@@ -22,3 +23,30 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh pr merge ${{ fromJson(steps.release.outputs.prs)[0].number }} --auto --squash --repo ${{ github.repository }}
+
+      - name: Checkout
+        if: steps.release.outputs.releases_created == 'true'
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        if: steps.release.outputs.releases_created == 'true'
+        uses: oven-sh/setup-bun@v2
+
+      - name: Setup Node
+        if: steps.release.outputs.releases_created == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Install dependencies
+        if: steps.release.outputs.releases_created == 'true'
+        run: bun install --frozen-lockfile
+
+      - name: Build
+        if: steps.release.outputs.releases_created == 'true'
+        run: bun tsc
+
+      - name: Publish to npm
+        if: steps.release.outputs.releases_created == 'true'
+        run: npm publish --provenance --access public
