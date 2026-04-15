@@ -256,7 +256,7 @@ describe.skipIf(isLiveMode)('APIClient core', () => {
       server.use(
         http.get(`${BASE_URL}/goals`, () => HttpResponse.json({ goals: [{ id: 1, name: 'g1' }] }))
       );
-      const result = await client.listGoals(50, 10);
+      const result = await client.listGoals({ items: 50, page: 10 });
       expect(result).toHaveLength(1);
     });
 
@@ -316,7 +316,7 @@ describe.skipIf(isLiveMode)('APIClient core', () => {
           return HttpResponse.json({ teams: [] });
         })
       );
-      await client.listTeams(true);
+      await client.listTeams({ includeArchived: true });
     });
 
     it('should create team', async () => {

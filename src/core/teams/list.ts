@@ -12,6 +12,6 @@ export async function listTeams(
   client: APIClient,
   params: ListTeamsParams
 ): Promise<CommandResult<unknown[]>> {
-  const data = await client.listTeams(!!params.includeArchived, params.items, params.page);
+  const data = await client.listTeams({ includeArchived: !!params.includeArchived, items: params.items, page: params.page });
   return { data, rows: (data as Array<Record<string, unknown>>).map(summarizeTeamRow) };
 }

@@ -13,7 +13,7 @@ describe('units', () => {
   it('should list units with pagination', async () => {
     mockClient.listUnitTypes.mockResolvedValue([{ id: 1 }]);
     const result = await listUnits(mockClient as any, { items: 25, page: 1 });
-    expect(mockClient.listUnitTypes).toHaveBeenCalledWith(25, 1);
+    expect(mockClient.listUnitTypes).toHaveBeenCalledWith({ items: 25, page: 1 });
     expect(result.data).toEqual([{ id: 1 }]);
   });
 

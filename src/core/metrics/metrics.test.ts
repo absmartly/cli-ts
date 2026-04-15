@@ -22,6 +22,7 @@ import {
   addMetricReviewComment,
   replyToMetricReviewComment,
 } from './review.js';
+import { resolveGoalId } from '../resolve.js';
 
 const mockClient = {
   listMetrics: vi.fn(),
@@ -46,6 +47,7 @@ const mockClient = {
   replyToMetricReviewComment: vi.fn(),
   resolveUsers: vi.fn(),
   resolveTeams: vi.fn(),
+  resolveGoals: vi.fn(),
 } as any;
 
 beforeEach(() => vi.clearAllMocks());
@@ -81,6 +83,23 @@ describe('resolveTeamIds', () => {
 
     expect(mockClient.resolveTeams).toHaveBeenCalledWith(['team-alpha']);
     expect(result).toBe('100');
+  });
+});
+
+describe('resolveGoalId', () => {
+  it('should return numeric id as-is', async () => {
+    const result = await resolveGoalId(mockClient, '42');
+    expect(result).toBe(42);
+    expect(mockClient.resolveGoals).not.toHaveBeenCalled();
+  });
+
+  it('should resolve goal name via API', async () => {
+    mockClient.resolveGoals.mockResolvedValue([{ id: 7, name: 'purchase' }]);
+
+    const result = await resolveGoalId(mockClient, 'purchase');
+
+    expect(mockClient.resolveGoals).toHaveBeenCalledWith(['purchase']);
+    expect(result).toBe(7);
   });
 });
 

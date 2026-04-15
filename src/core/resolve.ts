@@ -39,3 +39,11 @@ export async function resolveUnitTypeIds(client: APIClient, raw: string): Promis
   const resolved = await client.resolveUnitTypes(refs);
   return resolved.map((u) => u.id).join(',');
 }
+
+export async function resolveGoalId(client: APIClient, raw: string): Promise<number> {
+  const trimmed = raw.trim();
+  const asInt = parseInt(trimmed, 10);
+  if (!isNaN(asInt) && String(asInt) === trimmed) return asInt;
+  const resolved = await client.resolveGoals([trimmed]);
+  return resolved[0]!.id;
+}

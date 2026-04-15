@@ -16,7 +16,7 @@ export const unitsCommand = new Command('units').alias('unit').description('Unit
 const listCommand = createListCommand({
   description: 'List all unit types',
   defaultItems: 100,
-  fetch: (client, options) => client.listUnitTypes(options.items as number, options.page as number),
+  fetch: (client, options) => client.listUnitTypes({ items: options.items as number, page: options.page as number }),
 });
 
 const getCommand = new Command('get')

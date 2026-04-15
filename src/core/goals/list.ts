@@ -10,7 +10,7 @@ export async function listGoals(
   client: APIClient,
   params: ListGoalsParams
 ): Promise<CommandResult<unknown[]>> {
-  const data = await client.listGoals(params.items, params.page);
+  const data = await client.listGoals({ items: params.items, page: params.page });
   return {
     data,
     pagination: { page: params.page, items: params.items, hasMore: data.length >= params.items },

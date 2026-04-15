@@ -65,7 +65,7 @@ const listActivityCommand = new Command('list')
       if (options.notes) {
         const [users, teams] = await Promise.all([
           client.listUsers({ items: 500 }),
-          client.listTeams(false, 500),
+          client.listTeams({ items: 500 }),
         ]);
         const userMap = new Map<number, string>();
         for (const u of users)

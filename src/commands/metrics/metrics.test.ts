@@ -45,6 +45,14 @@ describe('metrics command', () => {
         })
       )
     ),
+    resolveGoals: vi.fn().mockImplementation((refs: string[]) =>
+      Promise.resolve(
+        refs.map((ref) => {
+          if (ref === 'purchase') return { id: 42, name: 'purchase' };
+          return { id: parseInt(ref, 10), name: `Goal ${ref}` };
+        })
+      )
+    ),
   };
 
   beforeEach(() => {
@@ -233,7 +241,7 @@ describe('metrics command', () => {
       'Net Revenue',
       '--type',
       'goal_property',
-      '--goal-id',
+      '--goal',
       '1',
       '--description',
       'Net revenue',
@@ -247,6 +255,54 @@ describe('metrics command', () => {
         type: 'goal_property',
         goal_id: 1,
         value_source_property: 'amount',
+      })
+    );
+  });
+
+  it('should create a metric with goal name resolved to ID', async () => {
+    await metricsCommand.parseAsync([
+      'node',
+      'test',
+      'create',
+      '--name',
+      'Purchase Rate',
+      '--type',
+      'goal_count',
+      '--goal',
+      'purchase',
+      '--description',
+      'Purchase rate',
+    ]);
+
+    expect(mockClient.resolveGoals).toHaveBeenCalledWith(['purchase']);
+    expect(mockClient.createMetric).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'Purchase Rate',
+        type: 'goal_count',
+        goal_id: 42,
+      })
+    );
+  });
+
+  it('should create a metric with --goal-id (deprecated) for backwards compatibility', async () => {
+    await metricsCommand.parseAsync([
+      'node',
+      'test',
+      'create',
+      '--name',
+      'Legacy Metric',
+      '--type',
+      'goal_count',
+      '--goal-id',
+      '7',
+      '--description',
+      'Legacy metric',
+    ]);
+
+    expect(mockClient.resolveGoals).not.toHaveBeenCalled();
+    expect(mockClient.createMetric).toHaveBeenCalledWith(
+      expect.objectContaining({
+        goal_id: 7,
       })
     );
   });

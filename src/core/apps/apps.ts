@@ -12,7 +12,7 @@ export async function listApps(
   client: APIClient,
   params: ListAppsParams
 ): Promise<CommandResult<unknown[]>> {
-  const data = await client.listApplications(params.items, params.page);
+  const data = await client.listApplications({ items: params.items, page: params.page });
   return { data };
 }
 

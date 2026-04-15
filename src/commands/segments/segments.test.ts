@@ -52,7 +52,7 @@ describe('segments command', () => {
   it('should list segments', async () => {
     await segmentsCommand.parseAsync(['node', 'test', 'list']);
 
-    expect(mockClient.listSegments).toHaveBeenCalledWith(100, 1);
+    expect(mockClient.listSegments).toHaveBeenCalledWith({ items: 100, page: 1 });
     expect(printFormatted).toHaveBeenCalled();
   });
 

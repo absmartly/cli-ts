@@ -28,7 +28,7 @@ describe('segments', () => {
   it('should list segments with pagination and rows', async () => {
     mockClient.listSegments.mockResolvedValue([{ id: 1, name: 'seg1' }]);
     const result = await listSegments(mockClient as any, { items: 25, page: 1 });
-    expect(mockClient.listSegments).toHaveBeenCalledWith(25, 1);
+    expect(mockClient.listSegments).toHaveBeenCalledWith({ items: 25, page: 1 });
     expect(result.data).toEqual([{ id: 1, name: 'seg1' }]);
     expect(result.rows).toEqual([{ id: 1, name: 'seg1' }]);
   });

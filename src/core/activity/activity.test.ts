@@ -110,7 +110,7 @@ describe('activity', () => {
       await listActivity(mockClient as any, { includeNotes: true });
 
       expect(mockClient.listUsers).toHaveBeenCalledWith({ items: 500 });
-      expect(mockClient.listTeams).toHaveBeenCalledWith(false, 500);
+      expect(mockClient.listTeams).toHaveBeenCalledWith({ items: 500 });
     });
   });
 });

@@ -20,6 +20,7 @@ import { createMetric } from '../../core/metrics/create.js';
 import { updateMetric } from '../../core/metrics/update.js';
 import { archiveMetric } from '../../core/metrics/archive.js';
 import { activateMetric } from '../../core/metrics/activate.js';
+import { resolveGoalId } from '../../core/resolve.js';
 import { accessCommand } from './access.js';
 import { reviewCommand } from './review.js';
 import { followCommand, unfollowCommand } from './follow.js';
@@ -94,7 +95,8 @@ const createCommand = new Command('create')
   )
   .requiredOption('--description <text>', 'metric description')
   .option('--effect <effect>', 'expected effect direction (positive, negative)', 'positive')
-  .option('--goal-id <id>', 'goal ID (required for goal_* types)', parseInt)
+  .option('--goal <name-or-id>', 'goal name or ID (required for goal_* types)')
+  .option('--goal-id <id>', 'goal ID (deprecated, use --goal instead)', parseInt)
   .option('--owner <user_id>', 'owner user ID', parseInt)
   .option('--format-str <str>', 'display format string', '{}')
   .option('--scale <n>', 'display scale', parseInt, 1)
@@ -116,12 +118,15 @@ const createCommand = new Command('create')
       const globalOptions = getGlobalOptions(createCommand);
       const client = await getAPIClientFromOptions(globalOptions);
 
+      const goalRef = (options.goal as string | undefined) ?? options.goalId;
+      const goalId = goalRef != null ? await resolveGoalId(client, String(goalRef)) : undefined;
+
       const result = await createMetric(client, {
         name: options.name,
         type: options.type,
         description: options.description,
         effect: options.effect,
-        goalId: options.goalId,
+        goalId,
         owner: options.owner,
         formatStr: options.formatStr,
         scale: options.scale,

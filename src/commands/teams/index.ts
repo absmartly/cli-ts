@@ -20,11 +20,11 @@ export const teamsCommand = new Command('teams').alias('team').description('Team
 const listCommand = createListCommand({
   description: 'List all teams',
   fetch: (client, options) =>
-    client.listTeams(
-      options.includeArchived as boolean,
-      options.items as number,
-      options.page as number
-    ),
+    client.listTeams({
+      includeArchived: options.includeArchived as boolean,
+      items: options.items as number,
+      page: options.page as number,
+    }),
   summarizeRow: summarizeTeamRow,
   extraOptions: (cmd) => cmd.option('--include-archived', 'include archived teams'),
 });

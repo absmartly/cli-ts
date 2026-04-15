@@ -24,7 +24,7 @@ export const segmentsCommand = new Command('segments')
 const listCommand = createListCommand({
   description: 'List all segments',
   defaultItems: 100,
-  fetch: (client, options) => client.listSegments(options.items as number, options.page as number),
+  fetch: (client, options) => client.listSegments({ items: options.items as number, page: options.page as number }),
   summarizeRow: summarizeSegmentRow,
 });
 

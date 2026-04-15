@@ -12,7 +12,7 @@ export async function listUnits(
   client: APIClient,
   params: ListUnitsParams
 ): Promise<CommandResult<unknown[]>> {
-  const data = await client.listUnitTypes(params.items, params.page);
+  const data = await client.listUnitTypes({ items: params.items, page: params.page });
   return { data };
 }
 

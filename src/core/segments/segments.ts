@@ -17,7 +17,7 @@ export async function listSegments(
   client: APIClient,
   params: ListSegmentsParams
 ): Promise<CommandResult<unknown[]>> {
-  const data = await client.listSegments(params.items, params.page);
+  const data = await client.listSegments({ items: params.items, page: params.page });
   return { data, rows: (data as Array<Record<string, unknown>>).map(summarizeSegmentRow) };
 }
 

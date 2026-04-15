@@ -51,7 +51,7 @@ describe('goals command', () => {
   it('should list goals', async () => {
     await goalsCommand.parseAsync(['node', 'test', 'list']);
 
-    expect(mockClient.listGoals).toHaveBeenCalledWith(20, 1);
+    expect(mockClient.listGoals).toHaveBeenCalledWith({ items: 20, page: 1 });
     expect(printFormatted).toHaveBeenCalled();
   });
 

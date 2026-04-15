@@ -25,7 +25,7 @@ describe('APIClient - Resources', () => {
     });
 
     it('should list goals with expected fields', async () => {
-      const goals = await client.listGoals(10);
+      const goals = await client.listGoals({ items: 10 });
       expect(Array.isArray(goals)).toBe(true);
       expect(goals.length).toBeGreaterThan(0);
       expect(goals[0]).toHaveProperty('id');
@@ -60,7 +60,7 @@ describe('APIClient - Resources', () => {
     });
 
     it('should list segments with expected fields', async () => {
-      const segments = await client.listSegments(10);
+      const segments = await client.listSegments({ items: 10 });
       expect(Array.isArray(segments)).toBe(true);
       expect(segments.length).toBeGreaterThan(0);
       expect(segments[0]).toHaveProperty('id');
@@ -98,7 +98,7 @@ describe('APIClient - Resources', () => {
         })
       );
 
-      await client.listTeams(true);
+      await client.listTeams({ includeArchived: true });
 
       expect(receivedParams!.get('include_archived')).toBe('1');
     });

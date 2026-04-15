@@ -35,7 +35,7 @@ describe('listTeams', () => {
 
     const result = await listTeams(mockClient, { items: 10, page: 1 });
 
-    expect(mockClient.listTeams).toHaveBeenCalledWith(false, 10, 1);
+    expect(mockClient.listTeams).toHaveBeenCalledWith({ includeArchived: false, items: 10, page: 1 });
     expect(result.data).toEqual(teams);
     expect(result.rows).toBeDefined();
   });
@@ -45,7 +45,7 @@ describe('listTeams', () => {
 
     await listTeams(mockClient, { items: 10, page: 1, includeArchived: true });
 
-    expect(mockClient.listTeams).toHaveBeenCalledWith(true, 10, 1);
+    expect(mockClient.listTeams).toHaveBeenCalledWith({ includeArchived: true, items: 10, page: 1 });
   });
 });
 

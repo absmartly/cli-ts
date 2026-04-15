@@ -18,7 +18,7 @@ describe('listApps', () => {
 
     const result = await listApps(mockClient, { items: 20, page: 2 });
 
-    expect(mockClient.listApplications).toHaveBeenCalledWith(20, 2);
+    expect(mockClient.listApplications).toHaveBeenCalledWith({ items: 20, page: 2 });
     expect(result).toEqual({ data: mockData });
   });
 });

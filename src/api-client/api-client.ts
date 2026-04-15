@@ -654,10 +654,14 @@ export class APIClient {
     this.validateOkResponse(response, 'dismissRecommendedAction');
   }
 
-  async listGoals(items = 100, page = 1): Promise<Goal[]> {
-    const response = await this.request('GET', '/goals', {
-      params: { items: String(items), page: String(page) },
-    });
+  async listGoals(
+    options: { items?: number; page?: number; search?: string } = {}
+  ): Promise<Goal[]> {
+    const params: Record<string, string> = {};
+    if (options.items !== undefined) params.items = String(options.items);
+    if (options.page !== undefined) params.page = String(options.page);
+    if (options.search) params.search = options.search;
+    const response = await this.request('GET', '/goals', { params });
     return this.validateListResponse<Goal>(response, 'goals', 'listGoals');
   }
 
@@ -676,10 +680,14 @@ export class APIClient {
     return this.validateEntityResponse<Goal>(response, 'goal', 'updateGoal');
   }
 
-  async listSegments(items = 100, page = 1): Promise<Segment[]> {
-    const response = await this.request('GET', '/segments', {
-      params: { items: String(items), page: String(page) },
-    });
+  async listSegments(
+    options: { items?: number; page?: number; search?: string } = {}
+  ): Promise<Segment[]> {
+    const params: Record<string, string> = {};
+    if (options.items !== undefined) params.items = String(options.items);
+    if (options.page !== undefined) params.page = String(options.page);
+    if (options.search) params.search = options.search;
+    const response = await this.request('GET', '/segments', { params });
     return this.validateListResponse<Segment>(response, 'segments', 'listSegments');
   }
 
@@ -702,14 +710,20 @@ export class APIClient {
     await this.request('DELETE', `/segments/${id}`);
   }
 
-  async listTeams(includeArchived = false, items = 100, page = 1): Promise<Team[]> {
-    const response = await this.request('GET', '/teams', {
-      params: {
-        include_archived: includeArchived ? '1' : '0',
-        items: String(items),
-        page: String(page),
-      },
-    });
+  async listTeams(
+    options: {
+      includeArchived?: boolean;
+      items?: number;
+      page?: number;
+      search?: string;
+    } = {}
+  ): Promise<Team[]> {
+    const params: Record<string, string> = {};
+    if (options.includeArchived) params.include_archived = '1';
+    if (options.items !== undefined) params.items = String(options.items);
+    if (options.page !== undefined) params.page = String(options.page);
+    if (options.search) params.search = options.search;
+    const response = await this.request('GET', '/teams', { params });
     return this.validateListResponse<Team>(response, 'teams', 'listTeams');
   }
 
@@ -990,10 +1004,14 @@ export class APIClient {
     this.validateOkResponse(response, 'reorderCustomSections');
   }
 
-  async listApplications(items = 100, page = 1): Promise<Application[]> {
-    const response = await this.request('GET', '/applications', {
-      params: { items: String(items), page: String(page) },
-    });
+  async listApplications(
+    options: { items?: number; page?: number; search?: string } = {}
+  ): Promise<Application[]> {
+    const params: Record<string, string> = {};
+    if (options.items !== undefined) params.items = String(options.items);
+    if (options.page !== undefined) params.page = String(options.page);
+    if (options.search) params.search = options.search;
+    const response = await this.request('GET', '/applications', { params });
     return this.validateListResponse<Application>(response, 'applications', 'listApplications');
   }
 
@@ -1014,10 +1032,14 @@ export class APIClient {
     return this.validateEntityResponse<Environment>(response, 'environment', 'getEnvironment');
   }
 
-  async listUnitTypes(items = 100, page = 1): Promise<UnitType[]> {
-    const response = await this.request('GET', '/unit_types', {
-      params: { items: String(items), page: String(page) },
-    });
+  async listUnitTypes(
+    options: { items?: number; page?: number; search?: string } = {}
+  ): Promise<UnitType[]> {
+    const params: Record<string, string> = {};
+    if (options.items !== undefined) params.items = String(options.items);
+    if (options.page !== undefined) params.page = String(options.page);
+    if (options.search) params.search = options.search;
+    const response = await this.request('GET', '/unit_types', { params });
     return this.validateListResponse<UnitType>(response, 'unit_types', 'listUnitTypes');
   }
 
@@ -1966,19 +1988,32 @@ export class APIClient {
     return namesOrIds.map((ref) => resolveByName(results, ref, 'Metric'));
   }
 
+  async resolveGoals(namesOrIds: string[]): Promise<Array<{ id: number; name: string }>> {
+    const results = await resolveBySearch(namesOrIds, (name) =>
+      this.listGoals({ search: name })
+    );
+    return namesOrIds.map((ref) => resolveByName(results, ref, 'Goal'));
+  }
+
   async resolveTeams(namesOrIds: string[]): Promise<Array<{ id: number; name: string }>> {
-    const teams = await this.listTeams();
-    return namesOrIds.map((ref) => resolveByName(teams, ref, 'Team'));
+    const results = await resolveBySearch(namesOrIds, (name) =>
+      this.listTeams({ search: name })
+    );
+    return namesOrIds.map((ref) => resolveByName(results, ref, 'Team'));
   }
 
   async resolveApplications(namesOrIds: string[]): Promise<Array<{ id: number; name: string }>> {
-    const apps = await this.listApplications();
-    return namesOrIds.map((ref) => resolveByName(apps, ref, 'Application'));
+    const results = await resolveBySearch(namesOrIds, (name) =>
+      this.listApplications({ search: name })
+    );
+    return namesOrIds.map((ref) => resolveByName(results, ref, 'Application'));
   }
 
   async resolveUnitTypes(namesOrIds: string[]): Promise<Array<{ id: number; name: string }>> {
-    const unitTypes = await this.listUnitTypes();
-    return namesOrIds.map((ref) => resolveByName(unitTypes, ref, 'Unit type'));
+    const results = await resolveBySearch(namesOrIds, (name) =>
+      this.listUnitTypes({ search: name })
+    );
+    return namesOrIds.map((ref) => resolveByName(results, ref, 'Unit type'));
   }
 
   async resolveTags(namesOrIds: string[]): Promise<Array<{ id: number; tag: string }>> {

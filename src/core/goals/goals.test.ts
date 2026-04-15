@@ -37,7 +37,7 @@ describe('listGoals', () => {
 
     const result = await listGoals(mockClient, { items: 10, page: 1 });
 
-    expect(mockClient.listGoals).toHaveBeenCalledWith(10, 1);
+    expect(mockClient.listGoals).toHaveBeenCalledWith({ items: 10, page: 1 });
     expect(result.data).toEqual(goals);
     expect(result.pagination).toEqual({ page: 1, items: 10, hasMore: false });
   });

@@ -216,7 +216,7 @@ export async function getMetricResults(
   let segmentIds: number[] = [];
   if (params.segment) {
     const segRefs = params.segment;
-    const allSegments = await client.listSegments(200, 1);
+    const allSegments = await client.listSegments({ items: 200, page: 1 });
     for (const ref of segRefs) {
       const asInt = parseInt(ref, 10);
       if (!isNaN(asInt) && String(asInt) === ref.trim()) {
