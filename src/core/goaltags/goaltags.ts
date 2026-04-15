@@ -12,7 +12,7 @@ export async function listGoalTags(
   client: APIClient,
   params: ListGoalTagsParams
 ): Promise<CommandResult<unknown[]>> {
-  const data = await client.listGoalTags(params.items, params.page);
+  const data = await client.listGoalTags({ items: params.items, page: params.page });
   return { data };
 }
 

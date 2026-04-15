@@ -52,7 +52,9 @@ describe('goal-tags command', () => {
   it('should list goal tags', async () => {
     await goalTagsCommand.parseAsync(['node', 'test', 'list']);
 
-    expect(mockClient.listGoalTags).toHaveBeenCalledWith(20, 1);
+    expect(mockClient.listGoalTags).toHaveBeenCalledWith(
+      expect.objectContaining({ items: 20, page: 1 })
+    );
     expect(printFormatted).toHaveBeenCalled();
   });
 

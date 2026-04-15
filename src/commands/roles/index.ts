@@ -15,7 +15,16 @@ export const rolesCommand = new Command('roles').alias('role').description('Role
 
 const listCommand = createListCommand({
   description: 'List all roles',
-  fetch: (client, options) => client.listRoles(options.items as number, options.page as number),
+  fetch: (client, options) =>
+    client.listRoles({
+      items: options.items as number,
+      page: options.page as number,
+      search: options.search as string | undefined,
+      sort: options.sort as string | undefined,
+      sort_asc: options.asc ? true : options.desc ? false : undefined,
+      archived: options.archived as boolean,
+      ids: options.ids as string | undefined,
+    }),
 });
 
 const getCommand = new Command('get')

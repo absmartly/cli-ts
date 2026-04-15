@@ -12,7 +12,7 @@ export async function listEnvs(
   client: APIClient,
   params: ListEnvsParams
 ): Promise<CommandResult<unknown[]>> {
-  const data = await client.listEnvironments(params.items, params.page);
+  const data = await client.listEnvironments({ items: params.items, page: params.page });
   return { data };
 }
 

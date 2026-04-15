@@ -13,7 +13,7 @@ describe('envs', () => {
   it('should list environments with pagination', async () => {
     mockClient.listEnvironments.mockResolvedValue([{ id: 1 }]);
     const result = await listEnvs(mockClient as any, { items: 25, page: 1 });
-    expect(mockClient.listEnvironments).toHaveBeenCalledWith(25, 1);
+    expect(mockClient.listEnvironments).toHaveBeenCalledWith({ items: 25, page: 1 });
     expect(result.data).toEqual([{ id: 1 }]);
   });
 

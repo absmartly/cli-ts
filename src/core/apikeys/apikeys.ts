@@ -12,7 +12,7 @@ export async function listApiKeys(
   client: APIClient,
   params: ListApiKeysParams
 ): Promise<CommandResult<unknown[]>> {
-  const data = await client.listApiKeys(params.items, params.page);
+  const data = await client.listApiKeys({ items: params.items, page: params.page });
   return { data };
 }
 

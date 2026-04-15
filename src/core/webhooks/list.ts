@@ -10,6 +10,6 @@ export async function listWebhooks(
   client: APIClient,
   params: ListWebhooksParams
 ): Promise<CommandResult<unknown[]>> {
-  const data = await client.listWebhooks(params.items, params.page);
+  const data = await client.listWebhooks({ items: params.items, page: params.page });
   return { data };
 }

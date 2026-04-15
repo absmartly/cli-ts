@@ -12,7 +12,7 @@ export async function listTags(
   client: APIClient,
   params: ListTagsParams
 ): Promise<CommandResult<unknown[]>> {
-  const data = await client.listExperimentTags(params.items, params.page);
+  const data = await client.listExperimentTags({ items: params.items, page: params.page });
   return { data };
 }
 

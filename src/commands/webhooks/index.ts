@@ -21,7 +21,16 @@ export const webhooksCommand = new Command('webhooks')
 
 const listCommand = createListCommand({
   description: 'List all webhooks',
-  fetch: (client, options) => client.listWebhooks(options.items as number, options.page as number),
+  fetch: (client, options) =>
+    client.listWebhooks({
+      items: options.items as number,
+      page: options.page as number,
+      search: options.search as string | undefined,
+      sort: options.sort as string | undefined,
+      sort_asc: options.asc ? true : options.desc ? false : undefined,
+      archived: options.archived as boolean,
+      ids: options.ids as string | undefined,
+    }),
 });
 
 const getCommand = new Command('get')

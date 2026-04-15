@@ -22,7 +22,7 @@ export async function listCustomFields(
 ): Promise<CommandResult<Record<string, unknown>[]>> {
   const items = params.items ?? 100;
   const page = params.page ?? 1;
-  const allFields = await client.listCustomSectionFields(items, page);
+  const allFields = await client.listCustomSectionFields({ items, page });
   const fields = (allFields as unknown as Array<Record<string, unknown>>).filter((f) => {
     const section = f.custom_section as Record<string, unknown> | undefined;
     return section?.type === params.type;

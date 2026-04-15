@@ -20,7 +20,15 @@ const listCommand = createListCommand({
   description: 'List all applications',
   defaultItems: 100,
   fetch: (client, options) =>
-    client.listApplications({ items: options.items as number, page: options.page as number }),
+    client.listApplications({
+      items: options.items as number,
+      page: options.page as number,
+      search: options.search as string | undefined,
+      sort: options.sort as string | undefined,
+      sort_asc: options.asc ? true : options.desc ? false : undefined,
+      archived: options.archived as boolean,
+      ids: options.ids as string | undefined,
+    }),
   summarizeRow: (item) => ({
     id: item.id,
     name: item.name,

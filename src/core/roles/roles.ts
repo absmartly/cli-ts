@@ -12,7 +12,7 @@ export async function listRoles(
   client: APIClient,
   params: ListRolesParams
 ): Promise<CommandResult<unknown[]>> {
-  const data = await client.listRoles(params.items, params.page);
+  const data = await client.listRoles({ items: params.items, page: params.page });
   return { data };
 }
 

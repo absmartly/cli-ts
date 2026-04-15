@@ -22,8 +22,13 @@ const listCommand = createListCommand({
   fetch: (client, options) =>
     client.listTeams({
       includeArchived: options.includeArchived as boolean,
+      archived: options.archived as boolean,
       items: options.items as number,
       page: options.page as number,
+      search: options.search as string | undefined,
+      sort: options.sort as string | undefined,
+      sort_asc: options.asc ? true : options.desc ? false : undefined,
+      ids: options.ids as string | undefined,
     }),
   summarizeRow: summarizeTeamRow,
   extraOptions: (cmd) => cmd.option('--include-archived', 'include archived teams'),

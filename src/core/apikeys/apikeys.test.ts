@@ -18,7 +18,7 @@ describe('listApiKeys', () => {
 
     const result = await listApiKeys(mockClient, { items: 10, page: 1 });
 
-    expect(mockClient.listApiKeys).toHaveBeenCalledWith(10, 1);
+    expect(mockClient.listApiKeys).toHaveBeenCalledWith({ items: 10, page: 1 });
     expect(result).toEqual({ data: mockData });
   });
 });

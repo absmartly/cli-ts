@@ -19,7 +19,7 @@ describe('goaltags', () => {
   it('should list goal tags with pagination', async () => {
     mockClient.listGoalTags.mockResolvedValue([{ id: 1 }]);
     const result = await listGoalTags(mockClient as any, { items: 25, page: 1 });
-    expect(mockClient.listGoalTags).toHaveBeenCalledWith(25, 1);
+    expect(mockClient.listGoalTags).toHaveBeenCalledWith({ items: 25, page: 1 });
     expect(result.data).toEqual([{ id: 1 }]);
   });
 

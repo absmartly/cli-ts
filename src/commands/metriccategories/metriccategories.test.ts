@@ -52,7 +52,9 @@ describe('metric-categories command', () => {
   it('should list metric categories', async () => {
     await metricCategoriesCommand.parseAsync(['node', 'test', 'list']);
 
-    expect(mockClient.listMetricCategories).toHaveBeenCalledWith(20, 1);
+    expect(mockClient.listMetricCategories).toHaveBeenCalledWith(
+      expect.objectContaining({ items: 20, page: 1 })
+    );
     expect(printFormatted).toHaveBeenCalled();
   });
 

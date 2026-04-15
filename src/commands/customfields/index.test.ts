@@ -52,7 +52,9 @@ describe('custom fields command', () => {
   it('should list custom section fields', async () => {
     mockClient.listCustomSectionFields.mockResolvedValue([{ id: 1, name: 'field1' }]);
     await customFieldsCommand.parseAsync(['node', 'test', 'list']);
-    expect(mockClient.listCustomSectionFields).toHaveBeenCalledWith(100, 1);
+    expect(mockClient.listCustomSectionFields).toHaveBeenCalledWith(
+      expect.objectContaining({ items: 100, page: 1 })
+    );
     expect(printFormatted).toHaveBeenCalled();
   });
 

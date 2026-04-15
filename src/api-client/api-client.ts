@@ -655,12 +655,24 @@ export class APIClient {
   }
 
   async listGoals(
-    options: { items?: number; page?: number; search?: string } = {}
+    options: {
+      items?: number;
+      page?: number;
+      search?: string | undefined;
+      sort?: string | undefined;
+      sort_asc?: boolean | undefined;
+      archived?: boolean;
+      ids?: string | undefined;
+    } = {}
   ): Promise<Goal[]> {
     const params: Record<string, string> = {};
     if (options.items !== undefined) params.items = String(options.items);
     if (options.page !== undefined) params.page = String(options.page);
     if (options.search) params.search = options.search;
+    if (options.sort) params.sort = options.sort;
+    if (options.sort_asc !== undefined) params.sort_asc = String(options.sort_asc);
+    if (options.archived) params.archived = 'true';
+    if (options.ids) params.ids = options.ids;
     const response = await this.request('GET', '/goals', { params });
     return this.validateListResponse<Goal>(response, 'goals', 'listGoals');
   }
@@ -681,12 +693,24 @@ export class APIClient {
   }
 
   async listSegments(
-    options: { items?: number; page?: number; search?: string } = {}
+    options: {
+      items?: number;
+      page?: number;
+      search?: string | undefined;
+      sort?: string | undefined;
+      sort_asc?: boolean | undefined;
+      archived?: boolean;
+      ids?: string | undefined;
+    } = {}
   ): Promise<Segment[]> {
     const params: Record<string, string> = {};
     if (options.items !== undefined) params.items = String(options.items);
     if (options.page !== undefined) params.page = String(options.page);
     if (options.search) params.search = options.search;
+    if (options.sort) params.sort = options.sort;
+    if (options.sort_asc !== undefined) params.sort_asc = String(options.sort_asc);
+    if (options.archived) params.archived = 'true';
+    if (options.ids) params.ids = options.ids;
     const response = await this.request('GET', '/segments', { params });
     return this.validateListResponse<Segment>(response, 'segments', 'listSegments');
   }
@@ -715,14 +739,21 @@ export class APIClient {
       includeArchived?: boolean;
       items?: number;
       page?: number;
-      search?: string;
+      search?: string | undefined;
+      sort?: string | undefined;
+      sort_asc?: boolean | undefined;
+      archived?: boolean;
+      ids?: string | undefined;
     } = {}
   ): Promise<Team[]> {
     const params: Record<string, string> = {};
-    if (options.includeArchived) params.include_archived = '1';
+    if (options.includeArchived || options.archived) params.include_archived = '1';
     if (options.items !== undefined) params.items = String(options.items);
     if (options.page !== undefined) params.page = String(options.page);
     if (options.search) params.search = options.search;
+    if (options.sort) params.sort = options.sort;
+    if (options.sort_asc !== undefined) params.sort_asc = String(options.sort_asc);
+    if (options.ids) params.ids = options.ids;
     const response = await this.request('GET', '/teams', { params });
     return this.validateListResponse<Team>(response, 'teams', 'listTeams');
   }
@@ -909,13 +940,29 @@ export class APIClient {
     await this.request('PUT', `/metrics/${id}/archive`, { data: { archive: !unarchive } });
   }
 
-  async listCustomSectionFields(items = 100, page = 1): Promise<CustomSectionField[]> {
+  async listCustomSectionFields(
+    options: {
+      items?: number;
+      page?: number;
+      search?: string | undefined;
+      sort?: string | undefined;
+      sort_asc?: boolean | undefined;
+      archived?: boolean;
+      ids?: string | undefined;
+    } = {}
+  ): Promise<CustomSectionField[]> {
+    const params: Record<string, string> = {};
+    if (options.items !== undefined) params.items = String(options.items);
+    if (options.page !== undefined) params.page = String(options.page);
+    if (options.search) params.search = options.search;
+    if (options.sort) params.sort = options.sort;
+    if (options.sort_asc !== undefined) params.sort_asc = String(options.sort_asc);
+    if (options.archived) params.archived = 'true';
+    if (options.ids) params.ids = options.ids;
     const response = await this.request<Record<string, unknown>>(
       'GET',
       '/experiment_custom_section_fields',
-      {
-        params: { items: String(items), page: String(page) },
-      }
+      { params }
     );
     return this.validateListResponse<CustomSectionField>(
       response,
@@ -1005,12 +1052,24 @@ export class APIClient {
   }
 
   async listApplications(
-    options: { items?: number; page?: number; search?: string } = {}
+    options: {
+      items?: number;
+      page?: number;
+      search?: string | undefined;
+      sort?: string | undefined;
+      sort_asc?: boolean | undefined;
+      archived?: boolean;
+      ids?: string | undefined;
+    } = {}
   ): Promise<Application[]> {
     const params: Record<string, string> = {};
     if (options.items !== undefined) params.items = String(options.items);
     if (options.page !== undefined) params.page = String(options.page);
     if (options.search) params.search = options.search;
+    if (options.sort) params.sort = options.sort;
+    if (options.sort_asc !== undefined) params.sort_asc = String(options.sort_asc);
+    if (options.archived) params.archived = 'true';
+    if (options.ids) params.ids = options.ids;
     const response = await this.request('GET', '/applications', { params });
     return this.validateListResponse<Application>(response, 'applications', 'listApplications');
   }
@@ -1020,10 +1079,26 @@ export class APIClient {
     return this.validateEntityResponse<Application>(response, 'application', 'getApplication');
   }
 
-  async listEnvironments(items = 100, page = 1): Promise<Environment[]> {
-    const response = await this.request('GET', '/environments', {
-      params: { items: String(items), page: String(page) },
-    });
+  async listEnvironments(
+    options: {
+      items?: number;
+      page?: number;
+      search?: string | undefined;
+      sort?: string | undefined;
+      sort_asc?: boolean | undefined;
+      archived?: boolean;
+      ids?: string | undefined;
+    } = {}
+  ): Promise<Environment[]> {
+    const params: Record<string, string> = {};
+    if (options.items !== undefined) params.items = String(options.items);
+    if (options.page !== undefined) params.page = String(options.page);
+    if (options.search) params.search = options.search;
+    if (options.sort) params.sort = options.sort;
+    if (options.sort_asc !== undefined) params.sort_asc = String(options.sort_asc);
+    if (options.archived) params.archived = 'true';
+    if (options.ids) params.ids = options.ids;
+    const response = await this.request('GET', '/environments', { params });
     return this.validateListResponse<Environment>(response, 'environments', 'listEnvironments');
   }
 
@@ -1033,12 +1108,24 @@ export class APIClient {
   }
 
   async listUnitTypes(
-    options: { items?: number; page?: number; search?: string } = {}
+    options: {
+      items?: number;
+      page?: number;
+      search?: string | undefined;
+      sort?: string | undefined;
+      sort_asc?: boolean | undefined;
+      archived?: boolean;
+      ids?: string | undefined;
+    } = {}
   ): Promise<UnitType[]> {
     const params: Record<string, string> = {};
     if (options.items !== undefined) params.items = String(options.items);
     if (options.page !== undefined) params.page = String(options.page);
     if (options.search) params.search = options.search;
+    if (options.sort) params.sort = options.sort;
+    if (options.sort_asc !== undefined) params.sort_asc = String(options.sort_asc);
+    if (options.archived) params.archived = 'true';
+    if (options.ids) params.ids = options.ids;
     const response = await this.request('GET', '/unit_types', { params });
     return this.validateListResponse<UnitType>(response, 'unit_types', 'listUnitTypes');
   }
@@ -1048,10 +1135,26 @@ export class APIClient {
     return this.validateEntityResponse<UnitType>(response, 'unit_type', 'getUnitType');
   }
 
-  async listExperimentTags(items = 100, page = 1): Promise<ExperimentTag[]> {
-    const response = await this.request('GET', '/experiment_tags', {
-      params: { items: String(items), page: String(page) },
-    });
+  async listExperimentTags(
+    options: {
+      items?: number;
+      page?: number;
+      search?: string | undefined;
+      sort?: string | undefined;
+      sort_asc?: boolean | undefined;
+      archived?: boolean;
+      ids?: string | undefined;
+    } = {}
+  ): Promise<ExperimentTag[]> {
+    const params: Record<string, string> = {};
+    if (options.items !== undefined) params.items = String(options.items);
+    if (options.page !== undefined) params.page = String(options.page);
+    if (options.search) params.search = options.search;
+    if (options.sort) params.sort = options.sort;
+    if (options.sort_asc !== undefined) params.sort_asc = String(options.sort_asc);
+    if (options.archived) params.archived = 'true';
+    if (options.ids) params.ids = options.ids;
+    const response = await this.request('GET', '/experiment_tags', { params });
     return this.validateListResponse<ExperimentTag>(
       response,
       'experiment_tags',
@@ -1090,10 +1193,26 @@ export class APIClient {
     await this.request('DELETE', `/experiment_tags/${id}`);
   }
 
-  async listGoalTags(items = 100, page = 1): Promise<GoalTag[]> {
-    const response = await this.request('GET', '/goal_tags', {
-      params: { items: String(items), page: String(page) },
-    });
+  async listGoalTags(
+    options: {
+      items?: number;
+      page?: number;
+      search?: string | undefined;
+      sort?: string | undefined;
+      sort_asc?: boolean | undefined;
+      archived?: boolean;
+      ids?: string | undefined;
+    } = {}
+  ): Promise<GoalTag[]> {
+    const params: Record<string, string> = {};
+    if (options.items !== undefined) params.items = String(options.items);
+    if (options.page !== undefined) params.page = String(options.page);
+    if (options.search) params.search = options.search;
+    if (options.sort) params.sort = options.sort;
+    if (options.sort_asc !== undefined) params.sort_asc = String(options.sort_asc);
+    if (options.archived) params.archived = 'true';
+    if (options.ids) params.ids = options.ids;
+    const response = await this.request('GET', '/goal_tags', { params });
     return this.validateListResponse<GoalTag>(response, 'goal_tags', 'listGoalTags');
   }
 
@@ -1116,10 +1235,26 @@ export class APIClient {
     await this.request('DELETE', `/goal_tags/${id}`);
   }
 
-  async listMetricTags(items = 100, page = 1): Promise<MetricTag[]> {
-    const response = await this.request('GET', '/metric_tags', {
-      params: { items: String(items), page: String(page) },
-    });
+  async listMetricTags(
+    options: {
+      items?: number;
+      page?: number;
+      search?: string | undefined;
+      sort?: string | undefined;
+      sort_asc?: boolean | undefined;
+      archived?: boolean;
+      ids?: string | undefined;
+    } = {}
+  ): Promise<MetricTag[]> {
+    const params: Record<string, string> = {};
+    if (options.items !== undefined) params.items = String(options.items);
+    if (options.page !== undefined) params.page = String(options.page);
+    if (options.search) params.search = options.search;
+    if (options.sort) params.sort = options.sort;
+    if (options.sort_asc !== undefined) params.sort_asc = String(options.sort_asc);
+    if (options.archived) params.archived = 'true';
+    if (options.ids) params.ids = options.ids;
+    const response = await this.request('GET', '/metric_tags', { params });
     return this.validateListResponse<MetricTag>(response, 'metric_tags', 'listMetricTags');
   }
 
@@ -1142,10 +1277,26 @@ export class APIClient {
     await this.request('DELETE', `/metric_tags/${id}`);
   }
 
-  async listMetricCategories(items = 100, page = 1): Promise<MetricCategory[]> {
-    const response = await this.request('GET', '/metric_categories', {
-      params: { items: String(items), page: String(page) },
-    });
+  async listMetricCategories(
+    options: {
+      items?: number;
+      page?: number;
+      search?: string | undefined;
+      sort?: string | undefined;
+      sort_asc?: boolean | undefined;
+      archived?: boolean;
+      ids?: string | undefined;
+    } = {}
+  ): Promise<MetricCategory[]> {
+    const params: Record<string, string> = {};
+    if (options.items !== undefined) params.items = String(options.items);
+    if (options.page !== undefined) params.page = String(options.page);
+    if (options.search) params.search = options.search;
+    if (options.sort) params.sort = options.sort;
+    if (options.sort_asc !== undefined) params.sort_asc = String(options.sort_asc);
+    if (options.archived) params.archived = 'true';
+    if (options.ids) params.ids = options.ids;
+    const response = await this.request('GET', '/metric_categories', { params });
     return this.validateListResponse<MetricCategory>(
       response,
       'metric_categories',
@@ -1191,10 +1342,26 @@ export class APIClient {
     await this.request('PUT', `/metric_categories/${id}/archive`, { data: { archive } });
   }
 
-  async listRoles(items = 20, page = 1): Promise<Role[]> {
-    const response = await this.request('GET', '/roles', {
-      params: { items: String(items), page: String(page) },
-    });
+  async listRoles(
+    options: {
+      items?: number;
+      page?: number;
+      search?: string | undefined;
+      sort?: string | undefined;
+      sort_asc?: boolean | undefined;
+      archived?: boolean;
+      ids?: string | undefined;
+    } = {}
+  ): Promise<Role[]> {
+    const params: Record<string, string> = {};
+    if (options.items !== undefined) params.items = String(options.items);
+    if (options.page !== undefined) params.page = String(options.page);
+    if (options.search) params.search = options.search;
+    if (options.sort) params.sort = options.sort;
+    if (options.sort_asc !== undefined) params.sort_asc = String(options.sort_asc);
+    if (options.archived) params.archived = 'true';
+    if (options.ids) params.ids = options.ids;
+    const response = await this.request('GET', '/roles', { params });
     return this.validateListResponse<Role>(response, 'roles', 'listRoles');
   }
 
@@ -1231,10 +1398,26 @@ export class APIClient {
     );
   }
 
-  async listApiKeys(items = 20, page = 1): Promise<ApiKey[]> {
-    const response = await this.request('GET', '/api_keys', {
-      params: { items: String(items), page: String(page) },
-    });
+  async listApiKeys(
+    options: {
+      items?: number;
+      page?: number;
+      search?: string | undefined;
+      sort?: string | undefined;
+      sort_asc?: boolean | undefined;
+      archived?: boolean;
+      ids?: string | undefined;
+    } = {}
+  ): Promise<ApiKey[]> {
+    const params: Record<string, string> = {};
+    if (options.items !== undefined) params.items = String(options.items);
+    if (options.page !== undefined) params.page = String(options.page);
+    if (options.search) params.search = options.search;
+    if (options.sort) params.sort = options.sort;
+    if (options.sort_asc !== undefined) params.sort_asc = String(options.sort_asc);
+    if (options.archived) params.archived = 'true';
+    if (options.ids) params.ids = options.ids;
+    const response = await this.request('GET', '/api_keys', { params });
     return this.validateListResponse<ApiKey>(response, 'api_keys', 'listApiKeys');
   }
 
@@ -1257,10 +1440,26 @@ export class APIClient {
     await this.request('DELETE', `/api_keys/${id}`);
   }
 
-  async listWebhooks(items = 20, page = 1): Promise<Webhook[]> {
-    const response = await this.request('GET', '/webhooks', {
-      params: { items: String(items), page: String(page) },
-    });
+  async listWebhooks(
+    options: {
+      items?: number;
+      page?: number;
+      search?: string | undefined;
+      sort?: string | undefined;
+      sort_asc?: boolean | undefined;
+      archived?: boolean;
+      ids?: string | undefined;
+    } = {}
+  ): Promise<Webhook[]> {
+    const params: Record<string, string> = {};
+    if (options.items !== undefined) params.items = String(options.items);
+    if (options.page !== undefined) params.page = String(options.page);
+    if (options.search) params.search = options.search;
+    if (options.sort) params.sort = options.sort;
+    if (options.sort_asc !== undefined) params.sort_asc = String(options.sort_asc);
+    if (options.archived) params.archived = 'true';
+    if (options.ids) params.ids = options.ids;
+    const response = await this.request('GET', '/webhooks', { params });
     return this.validateListResponse<Webhook>(response, 'webhooks', 'listWebhooks');
   }
 

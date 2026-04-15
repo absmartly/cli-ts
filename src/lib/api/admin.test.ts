@@ -86,14 +86,14 @@ describe('APIClient - Admin Resources', () => {
 
   describe('API Keys', () => {
     it('should list API keys with expected fields', async () => {
-      const keys = await client.listApiKeys(10);
+      const keys = await client.listApiKeys({ items: 10 });
       expect(Array.isArray(keys)).toBe(true);
       expect(keys.length).toBeGreaterThan(0);
       expect(keys[0]).toHaveProperty('id');
     });
 
     it('should get API key and extract from wrapped response', async () => {
-      const keys = await client.listApiKeys(1);
+      const keys = await client.listApiKeys({ items: 1 });
       const keyId = keys[0].id;
       const key = await client.getApiKey(keyId);
       expect(key.id).toBe(keyId);
@@ -155,7 +155,7 @@ describe('APIClient - Admin Resources', () => {
     });
 
     it('should list webhooks with expected fields', async () => {
-      const webhooks = await client.listWebhooks(10);
+      const webhooks = await client.listWebhooks({ items: 10 });
       expect(Array.isArray(webhooks)).toBe(true);
       expect(webhooks.length).toBeGreaterThan(0);
       expect(webhooks[0]).toHaveProperty('id');

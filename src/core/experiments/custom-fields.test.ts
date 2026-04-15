@@ -32,7 +32,7 @@ describe('experiments/custom-fields', () => {
     ];
     mockClient.listCustomSectionFields.mockResolvedValue(fields);
     const result = await listCustomFields(mockClient as any, { type: 'experiment' });
-    expect(mockClient.listCustomSectionFields).toHaveBeenCalledWith(100, 1);
+    expect(mockClient.listCustomSectionFields).toHaveBeenCalledWith({ items: 100, page: 1 });
     expect(result.data).toEqual([fields[0]]);
   });
 
@@ -43,7 +43,7 @@ describe('experiments/custom-fields', () => {
       items: 50,
       page: 2,
     });
-    expect(mockClient.listCustomSectionFields).toHaveBeenCalledWith(50, 2);
+    expect(mockClient.listCustomSectionFields).toHaveBeenCalledWith({ items: 50, page: 2 });
     expect(result.pagination).toEqual({ page: 2, items: 50, hasMore: false });
   });
 

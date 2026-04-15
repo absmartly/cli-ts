@@ -19,7 +19,7 @@ describe('metriccategories', () => {
   it('should list metric categories with pagination', async () => {
     mockClient.listMetricCategories.mockResolvedValue([{ id: 1 }]);
     const result = await listMetricCategories(mockClient as any, { items: 25, page: 1 });
-    expect(mockClient.listMetricCategories).toHaveBeenCalledWith(25, 1);
+    expect(mockClient.listMetricCategories).toHaveBeenCalledWith({ items: 25, page: 1 });
     expect(result.data).toEqual([{ id: 1 }]);
   });
 

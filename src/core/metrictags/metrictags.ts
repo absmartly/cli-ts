@@ -12,7 +12,7 @@ export async function listMetricTags(
   client: APIClient,
   params: ListMetricTagsParams
 ): Promise<CommandResult<unknown[]>> {
-  const data = await client.listMetricTags(params.items, params.page);
+  const data = await client.listMetricTags({ items: params.items, page: params.page });
   return { data };
 }
 

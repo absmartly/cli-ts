@@ -26,7 +26,15 @@ export const metricCategoriesCommand = new Command('metric-categories')
 const listCommand = createListCommand({
   description: 'List all metric categories',
   fetch: (client, options) =>
-    client.listMetricCategories(options.items as number, options.page as number),
+    client.listMetricCategories({
+      items: options.items as number,
+      page: options.page as number,
+      search: options.search as string | undefined,
+      sort: options.sort as string | undefined,
+      sort_asc: options.asc ? true : options.desc ? false : undefined,
+      archived: options.archived as boolean,
+      ids: options.ids as string | undefined,
+    }),
 });
 
 const getCommand = new Command('get')

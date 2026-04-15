@@ -14,14 +14,14 @@ describe('APIClient - Tags', () => {
 
   describe('Experiment Tags', () => {
     it('should list experiment tags', async () => {
-      const tags = await client.listExperimentTags(10);
+      const tags = await client.listExperimentTags({ items: 10 });
       expect(tags).toBeDefined();
       expect(Array.isArray(tags)).toBe(true);
       expect(tags.length).toBeGreaterThan(0);
     });
 
     it('should get experiment tag by id', async () => {
-      const tags = await client.listExperimentTags(1);
+      const tags = await client.listExperimentTags({ items: 1 });
       const tagId = tags[0].id;
       const tag = await client.getExperimentTag(tagId);
       expect(tag).toBeDefined();
@@ -39,14 +39,14 @@ describe('APIClient - Tags', () => {
 
   describe('Goal Tags', () => {
     it('should list goal tags', async () => {
-      const tags = await client.listGoalTags(10);
+      const tags = await client.listGoalTags({ items: 10 });
       expect(tags).toBeDefined();
       expect(Array.isArray(tags)).toBe(true);
       expect(tags.length).toBeGreaterThan(0);
     });
 
     it('should get goal tag by id', async () => {
-      const tags = await client.listGoalTags(1);
+      const tags = await client.listGoalTags({ items: 1 });
       const tagId = tags[0].id;
       const tag = await client.getGoalTag(tagId);
       expect(tag).toBeDefined();
@@ -70,7 +70,7 @@ describe('APIClient - Tags', () => {
     });
 
     it('should list metric tags', async () => {
-      const tags = await client.listMetricTags(10);
+      const tags = await client.listMetricTags({ items: 10 });
       expect(tags).toBeDefined();
       expect(Array.isArray(tags)).toBe(true);
       expect(tags.length).toBeGreaterThan(0);
@@ -95,7 +95,7 @@ describe('APIClient - Tags', () => {
     });
 
     it('should list metric categories', async () => {
-      const categories = await client.listMetricCategories(10);
+      const categories = await client.listMetricCategories({ items: 10 });
       expect(categories).toBeDefined();
       expect(Array.isArray(categories)).toBe(true);
       expect(categories.length).toBeGreaterThan(0);

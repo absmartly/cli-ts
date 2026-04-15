@@ -19,7 +19,7 @@ describe('metrictags', () => {
   it('should list metric tags with pagination', async () => {
     mockClient.listMetricTags.mockResolvedValue([{ id: 1 }]);
     const result = await listMetricTags(mockClient as any, { items: 25, page: 1 });
-    expect(mockClient.listMetricTags).toHaveBeenCalledWith(25, 1);
+    expect(mockClient.listMetricTags).toHaveBeenCalledWith({ items: 25, page: 1 });
     expect(result.data).toEqual([{ id: 1 }]);
   });
 

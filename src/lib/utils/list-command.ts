@@ -24,6 +24,12 @@ export function createListCommand(opts: ListCommandOptions): Command {
   if (opts.extraOptions) cmd = opts.extraOptions(cmd);
 
   cmd = addPaginationOptions(cmd, opts.defaultItems ?? 20)
+    .option('--search <query>', 'search by name or description')
+    .option('--sort <field>', 'sort by field (e.g. name, created_at)')
+    .option('--asc', 'sort in ascending order')
+    .option('--desc', 'sort in descending order')
+    .option('--archived', 'include archived items')
+    .option('--ids <ids>', 'filter by IDs (comma-separated)')
     .option('--show <fields...>', 'include additional fields from API response')
     .option('--exclude <fields...>', 'hide fields from summary');
 

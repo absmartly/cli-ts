@@ -17,7 +17,16 @@ export const apiKeysCommand = new Command('api-keys')
 
 const listCommand = createListCommand({
   description: 'List all API keys',
-  fetch: (client, options) => client.listApiKeys(options.items as number, options.page as number),
+  fetch: (client, options) =>
+    client.listApiKeys({
+      items: options.items as number,
+      page: options.page as number,
+      search: options.search as string | undefined,
+      sort: options.sort as string | undefined,
+      sort_asc: options.asc ? true : options.desc ? false : undefined,
+      archived: options.archived as boolean,
+      ids: options.ids as string | undefined,
+    }),
 });
 
 const getCommand = new Command('get')

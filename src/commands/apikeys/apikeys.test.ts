@@ -52,14 +52,18 @@ describe('apikeys command', () => {
   it('should list api keys', async () => {
     await apiKeysCommand.parseAsync(['node', 'test', 'list']);
 
-    expect(mockClient.listApiKeys).toHaveBeenCalledWith(20, 1);
+    expect(mockClient.listApiKeys).toHaveBeenCalledWith(
+      expect.objectContaining({ items: 20, page: 1 })
+    );
     expect(printFormatted).toHaveBeenCalled();
   });
 
   it('should list api keys with custom offset', async () => {
     await apiKeysCommand.parseAsync(['node', 'test', 'list', '--page', '2']);
 
-    expect(mockClient.listApiKeys).toHaveBeenCalledWith(20, 2);
+    expect(mockClient.listApiKeys).toHaveBeenCalledWith(
+      expect.objectContaining({ items: 20, page: 2 })
+    );
   });
 
   it('should get api key by id', async () => {

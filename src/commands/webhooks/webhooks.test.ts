@@ -55,7 +55,9 @@ describe('webhooks command', () => {
   it('should list webhooks', async () => {
     await webhooksCommand.parseAsync(['node', 'test', 'list']);
 
-    expect(mockClient.listWebhooks).toHaveBeenCalledWith(20, 1);
+    expect(mockClient.listWebhooks).toHaveBeenCalledWith(
+      expect.objectContaining({ items: 20, page: 1 })
+    );
     expect(printFormatted).toHaveBeenCalled();
   });
 

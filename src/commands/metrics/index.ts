@@ -49,13 +49,7 @@ const listCommand = createListCommand({
   summarizeRow: summarizeMetricRow,
   extraOptions: (cmd) =>
     cmd
-      .option('--archived', 'include archived metrics')
       .option('--include-drafts', 'include draft (non-activated) metrics')
-      .option('--search <query>', 'search by name, tag, goal, or owner')
-      .option('--sort <field>', 'sort by field (e.g. name, created_at, updated_at)')
-      .option('--asc', 'sort in ascending order')
-      .option('--desc', 'sort in descending order')
-      .option('--ids <ids>', 'filter by metric IDs (comma-separated)')
       .option('--owners <values>', 'filter by owners (comma-separated IDs, names, or emails)')
       .option('--teams <values>', 'filter by teams (comma-separated IDs or names)')
       .option('--review-status <status>', 'filter by review status (pending, approved, none)'),

@@ -25,7 +25,7 @@ describe('listCustomFields', () => {
 
     const result = await listCustomFields(mockClient, { items: 10, page: 1 });
 
-    expect(mockClient.listCustomSectionFields).toHaveBeenCalledWith(10, 1);
+    expect(mockClient.listCustomSectionFields).toHaveBeenCalledWith({ items: 10, page: 1 });
     expect(result.data).toEqual(fields);
     expect(result.rows).toBeDefined();
   });

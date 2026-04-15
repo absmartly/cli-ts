@@ -13,7 +13,7 @@ describe('roles', () => {
   it('should list roles with pagination', async () => {
     mockClient.listRoles.mockResolvedValue([{ id: 1 }]);
     const result = await listRoles(mockClient as any, { items: 25, page: 1 });
-    expect(mockClient.listRoles).toHaveBeenCalledWith(25, 1);
+    expect(mockClient.listRoles).toHaveBeenCalledWith({ items: 25, page: 1 });
     expect(result.data).toEqual([{ id: 1 }]);
   });
 

@@ -24,7 +24,16 @@ export const goalsCommand = new Command('goals').alias('goal').description('Goal
 
 const listCommand = createListCommand({
   description: 'List all goals',
-  fetch: (client, options) => client.listGoals({ items: options.items as number, page: options.page as number }),
+  fetch: (client, options) =>
+    client.listGoals({
+      items: options.items as number,
+      page: options.page as number,
+      search: options.search as string | undefined,
+      sort: options.sort as string | undefined,
+      sort_asc: options.asc ? true : options.desc ? false : undefined,
+      archived: options.archived as boolean,
+      ids: options.ids as string | undefined,
+    }),
   summarizeRow: summarizeGoalRow,
 });
 

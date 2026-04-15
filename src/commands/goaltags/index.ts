@@ -24,7 +24,16 @@ export const goalTagsCommand = new Command('goal-tags')
 
 const listCommand = createListCommand({
   description: 'List all goal tags',
-  fetch: (client, options) => client.listGoalTags(options.items as number, options.page as number),
+  fetch: (client, options) =>
+    client.listGoalTags({
+      items: options.items as number,
+      page: options.page as number,
+      search: options.search as string | undefined,
+      sort: options.sort as string | undefined,
+      sort_asc: options.asc ? true : options.desc ? false : undefined,
+      archived: options.archived as boolean,
+      ids: options.ids as string | undefined,
+    }),
 });
 
 const getCommand = new Command('get')

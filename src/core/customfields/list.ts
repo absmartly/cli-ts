@@ -11,7 +11,7 @@ export async function listCustomFields(
   client: APIClient,
   params: ListCustomFieldsParams
 ): Promise<CommandResult<unknown[]>> {
-  const data = await client.listCustomSectionFields(params.items, params.page);
+  const data = await client.listCustomSectionFields({ items: params.items, page: params.page });
   return {
     data,
     rows: (data as unknown as Array<Record<string, unknown>>).map(summarizeCustomFieldRow),

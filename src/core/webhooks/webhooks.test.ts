@@ -24,7 +24,7 @@ describe('listWebhooks', () => {
 
     const result = await listWebhooks(mockClient, { items: 10, page: 1 });
 
-    expect(mockClient.listWebhooks).toHaveBeenCalledWith(10, 1);
+    expect(mockClient.listWebhooks).toHaveBeenCalledWith({ items: 10, page: 1 });
     expect(result).toEqual({ data: hooks });
   });
 });

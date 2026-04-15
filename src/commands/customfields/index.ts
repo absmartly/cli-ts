@@ -25,7 +25,15 @@ const listCommand = createListCommand({
   description: 'List all experiment custom section fields',
   defaultItems: 100,
   fetch: (client, options) =>
-    client.listCustomSectionFields(options.items as number, options.page as number),
+    client.listCustomSectionFields({
+      items: options.items as number,
+      page: options.page as number,
+      search: options.search as string | undefined,
+      sort: options.sort as string | undefined,
+      sort_asc: options.asc ? true : options.desc ? false : undefined,
+      archived: options.archived as boolean,
+      ids: options.ids as string | undefined,
+    }),
   summarizeRow: summarizeCustomFieldRow,
 });
 
