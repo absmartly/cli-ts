@@ -83,6 +83,7 @@ const loginCommand = new Command('login')
   .option('--no-browser', 'do not open browser (print URL instead)')
   .option('--session', 'use session-based JWT tokens (skip API key creation)')
   .option('--persistent', 'create persistent API key (skip prompt)')
+  .option('--oauth', 'force OAuth flow even if a valid API key exists')
   .option('-k, --insecure', 'allow insecure TLS connections (self-signed certificates)')
   .action(
     withErrorHandling(async (endpointArg, options, command) => {
@@ -107,6 +108,34 @@ const loginCommand = new Command('login')
         if (options.app) console.log(`  Application: ${options.app}`);
         if (options.env) console.log(`  Environment: ${options.env}`);
         return;
+      }
+
+      // Check if we already have a valid API key for this profile
+      if (!options.oauth) {
+        try {
+          let existingEndpoint = rawEndpoint ? ensureApiVersionPath(rawEndpoint) : undefined;
+          if (!existingEndpoint) {
+            try {
+              existingEndpoint = getProfile(profileName).api.endpoint;
+            } catch {
+              // no profile yet
+            }
+          }
+          const existingKey = await getAPIKey(profileName);
+          if (existingKey && existingEndpoint) {
+            const client = createAPIClient(existingEndpoint, existingKey, {
+              insecure: options.insecure,
+            });
+            await client.getCurrentUser();
+            setProfile(profileName, buildProfile(existingEndpoint, 'api-key', options, profileName));
+            console.log(`✓ Already authenticated (profile: ${profileName})`);
+            console.log(`  Endpoint: ${existingEndpoint}`);
+            console.log('  Use --oauth to force re-authentication.');
+            return;
+          }
+        } catch {
+          // Key missing or invalid — proceed to OAuth
+        }
       }
 
       let resolvedEndpoint = rawEndpoint;
