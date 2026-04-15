@@ -1,6 +1,36 @@
-import axios from 'axios';
+import axios, { type AxiosRequestConfig, type AxiosResponse } from 'axios';
 import https from 'https';
 import { stripApiVersionPath } from '../utils/url.js';
+
+// Axios converts POST to GET on 301/302 redirects, dropping the body.
+// This helper catches the redirect and re-POSTs to the new location.
+async function postFollowingRedirects(
+  url: string,
+  data: URLSearchParams,
+  config: AxiosRequestConfig,
+  maxHops = 3
+): Promise<AxiosResponse> {
+  let currentUrl = url;
+  for (let i = 0; i <= maxHops; i++) {
+    try {
+      return await axios.post(currentUrl, data, config);
+    } catch (error) {
+      if (
+        axios.isAxiosError(error) &&
+        error.response &&
+        [301, 302, 307, 308].includes(error.response.status)
+      ) {
+        const location = error.response.headers['location'];
+        if (location && i < maxHops) {
+          currentUrl = location;
+          continue;
+        }
+      }
+      throw error;
+    }
+  }
+  throw new Error('Too many redirects');
+}
 
 export interface TokenExchangeParams {
   endpoint: string;
@@ -30,11 +60,15 @@ export async function exchangeCodeForToken(params: TokenExchangeParams): Promise
     client_id: params.clientId,
   });
 
+  const httpsAgent = params.insecure ? new https.Agent({ rejectUnauthorized: false }) : undefined;
+  const requestConfig = {
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    maxRedirects: 0,
+    ...(httpsAgent && { httpsAgent }),
+  };
+
   try {
-    const response = await axios.post(tokenUrl, body, {
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      ...(params.insecure && { httpsAgent: new https.Agent({ rejectUnauthorized: false }) }),
-    });
+    const response = await postFollowingRedirects(tokenUrl, body, requestConfig);
 
     return {
       accessToken: response.data.access_token,
