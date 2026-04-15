@@ -28,6 +28,7 @@ describe('metrics command', () => {
     createMetric: vi.fn().mockResolvedValue({ id: 99 }),
     updateMetric: vi.fn().mockResolvedValue({}),
     archiveMetric: vi.fn().mockResolvedValue({}),
+    activateMetric: vi.fn().mockResolvedValue({}),
     resolveUsers: vi.fn().mockImplementation((refs: string[]) =>
       Promise.resolve(
         refs.map((ref) => {
@@ -305,6 +306,43 @@ describe('metrics command', () => {
         goal_id: 7,
       })
     );
+  });
+
+  it('should create and activate a metric with --activate', async () => {
+    await metricsCommand.parseAsync([
+      'node',
+      'test',
+      'create',
+      '--name',
+      'Active Metric',
+      '--type',
+      'goal_count',
+      '--description',
+      'Activated on creation',
+      '--activate',
+    ]);
+
+    expect(mockClient.createMetric).toHaveBeenCalled();
+    expect(mockClient.activateMetric).toHaveBeenCalledWith(99, 'Initial activation');
+    const output = consoleSpy.mock.calls.flat().join(' ');
+    expect(output).toContain('activated');
+  });
+
+  it('should not activate when --activate is not passed', async () => {
+    await metricsCommand.parseAsync([
+      'node',
+      'test',
+      'create',
+      '--name',
+      'Draft Metric',
+      '--type',
+      'goal_count',
+      '--description',
+      'Not activated',
+    ]);
+
+    expect(mockClient.createMetric).toHaveBeenCalled();
+    expect(mockClient.activateMetric).not.toHaveBeenCalled();
   });
 
   it('should update a metric', async () => {

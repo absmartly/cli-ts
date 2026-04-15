@@ -107,6 +107,7 @@ const createCommand = new Command('create')
     '--value-source-property <property>',
     'value source property (required for goal_property type)'
   )
+  .option('--activate', 'activate the metric immediately after creation')
   .action(
     withErrorHandling(async (options) => {
       const globalOptions = getGlobalOptions(createCommand);
@@ -131,7 +132,13 @@ const createCommand = new Command('create')
         outlierLimitMethod: options.outlierLimitMethod,
         valueSourceProperty: options.valueSourceProperty,
       });
-      console.log(chalk.green(`✓ Metric created with ID: ${result.data.id}`));
+
+      if (options.activate) {
+        await client.activateMetric(result.data.id as MetricId, 'Initial activation');
+        console.log(chalk.green(`✓ Metric created and activated with ID: ${result.data.id}`));
+      } else {
+        console.log(chalk.green(`✓ Metric created with ID: ${result.data.id}`));
+      }
     })
   );
 
