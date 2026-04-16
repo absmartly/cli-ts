@@ -33,7 +33,8 @@ export type OutputFormat =
   | 'markdown'
   | 'rendered'
   | 'template'
-  | 'vertical';
+  | 'vertical'
+  | 'ids';
 
 export interface OutputOptions {
   format?: OutputFormat;
@@ -73,6 +74,11 @@ export function formatOutput(
         .trim();
     case 'vertical':
       return formatVertical(data, options);
+    case 'ids':
+      if (Array.isArray(data)) {
+        return data.map((item) => (item as Record<string, unknown>).id).join('\n');
+      }
+      return String((data as Record<string, unknown>).id);
     case 'table':
     default:
       return formatTable(data, options);

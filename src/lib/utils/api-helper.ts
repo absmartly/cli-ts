@@ -110,6 +110,7 @@ const VALID_FORMATS: OutputFormat[] = [
   'rendered',
   'template',
   'vertical',
+  'ids',
 ];
 
 export function getGlobalOptions(cmd: Command): GlobalOptions {

@@ -73,7 +73,7 @@ export const listCommand = new Command('list')
         raw: globalOptions.raw,
       });
 
-      if (isStdoutPiped() && globalOptions.output === 'table') {
+      if (globalOptions.output === 'ids' || (isStdoutPiped() && !options.output)) {
         for (const exp of result.data) console.log((exp as Record<string, unknown>).id);
         return;
       }

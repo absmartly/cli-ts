@@ -57,8 +57,7 @@ program
   .option('--env <name>', 'override default environment')
   .option(
     '-o, --output <format>',
-    'output format (table, json, yaml, plain, markdown, rendered, vertical, template)',
-    'table'
+    'output format (table, json, yaml, plain, markdown, rendered, vertical, template, ids)'
   )
   .option('--no-color', 'disable colored output')
   .option('-v, --verbose', 'verbose output')

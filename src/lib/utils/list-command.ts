@@ -42,7 +42,7 @@ export function createListCommand(opts: ListCommandOptions): Command {
 
       const items = await opts.fetch(client, options);
 
-      if (isStdoutPiped() && globalOptions.output === 'table') {
+      if (globalOptions.output === 'ids' || (isStdoutPiped() && !options.output)) {
         for (const item of items) console.log((item as Record<string, unknown>).id);
         return;
       }
