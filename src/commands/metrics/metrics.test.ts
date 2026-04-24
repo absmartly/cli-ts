@@ -29,6 +29,7 @@ describe('metrics command', () => {
     updateMetric: vi.fn().mockResolvedValue({}),
     archiveMetric: vi.fn().mockResolvedValue({}),
     activateMetric: vi.fn().mockResolvedValue({}),
+    createMetricVersion: vi.fn().mockResolvedValue({ id: 123, version: 2 }),
     resolveUsers: vi.fn().mockImplementation((refs: string[]) =>
       Promise.resolve(
         refs.map((ref) => {
@@ -351,6 +352,18 @@ describe('metrics command', () => {
     expect(mockClient.updateMetric).toHaveBeenCalledWith(1, { description: 'x' });
   });
 
+  it('should update a metric name', async () => {
+    await metricsCommand.parseAsync(['node', 'test', 'update', '1', '--name', 'new-name']);
+
+    expect(mockClient.updateMetric).toHaveBeenCalledWith(1, { name: 'new-name' });
+  });
+
+  it('should update a metric owner', async () => {
+    await metricsCommand.parseAsync(['node', 'test', 'update', '1', '--owner', '42']);
+
+    expect(mockClient.updateMetric).toHaveBeenCalledWith(1, { owners: [{ user_id: 42 }] });
+  });
+
   it('should reject update with no fields', async () => {
     try {
       await metricsCommand.parseAsync(['node', 'test', 'update', '1']);
@@ -360,6 +373,119 @@ describe('metrics command', () => {
       const errorOutput = consoleErrorSpy.mock.calls.flat().join(' ');
       expect(errorOutput).toContain('update field');
     }
+  });
+
+  it('should create a new metric version with `version` subcommand', async () => {
+    await metricsCommand.parseAsync([
+      'node',
+      'test',
+      'version',
+      '1',
+      '--reason',
+      'Switch to tukey outlier',
+      '--outlier-limit-method',
+      'tukey',
+    ]);
+
+    expect(mockClient.createMetricVersion).toHaveBeenCalledWith(
+      1,
+      { outlier_limit_method: 'tukey' },
+      'Switch to tukey outlier'
+    );
+    expect(mockClient.activateMetric).not.toHaveBeenCalled();
+  });
+
+  it('should support `new-version` alias', async () => {
+    await metricsCommand.parseAsync([
+      'node',
+      'test',
+      'new-version',
+      '1',
+      '--reason',
+      'rename',
+      '--name',
+      'ctr v2',
+    ]);
+
+    expect(mockClient.createMetricVersion).toHaveBeenCalledWith(
+      1,
+      { name: 'ctr v2' },
+      'rename'
+    );
+  });
+
+  it('should create and activate a new version with --activate', async () => {
+    await metricsCommand.parseAsync([
+      'node',
+      'test',
+      'version',
+      '1',
+      '--reason',
+      'bump',
+      '--type',
+      'goal_unique_count',
+      '--activate',
+    ]);
+
+    expect(mockClient.createMetricVersion).toHaveBeenCalledWith(
+      1,
+      { type: 'goal_unique_count' },
+      'bump'
+    );
+    expect(mockClient.activateMetric).toHaveBeenCalledWith(123, 'bump');
+  });
+
+  it('should route `create --new-version` to createMetricVersion', async () => {
+    await metricsCommand.parseAsync([
+      'node',
+      'test',
+      'create',
+      '--new-version',
+      '1',
+      '--reason',
+      'change format',
+      '--format-str',
+      '{}%',
+    ]);
+
+    expect(mockClient.createMetricVersion).toHaveBeenCalledWith(
+      1,
+      { format_str: '{}%' },
+      'change format'
+    );
+    expect(mockClient.createMetric).not.toHaveBeenCalled();
+  });
+
+  it('should error when `create --new-version` is given without --reason', async () => {
+    try {
+      await metricsCommand.parseAsync([
+        'node',
+        'test',
+        'create',
+        '--new-version',
+        '1',
+        '--format-str',
+        '{}%',
+      ]);
+      throw new Error('Should have thrown');
+    } catch (error) {
+      if (!(error as Error).message.startsWith('process.exit')) throw error;
+      const errorOutput = consoleErrorSpy.mock.calls.flat().join(' ');
+      expect(errorOutput).toContain('reason');
+    }
+    expect(mockClient.createMetricVersion).not.toHaveBeenCalled();
+  });
+
+  it('should still require --name/--type/--description when --new-version is absent', async () => {
+    try {
+      await metricsCommand.parseAsync(['node', 'test', 'create', '--name', 'only-name']);
+      throw new Error('Should have thrown');
+    } catch (error) {
+      if (!(error as Error).message.startsWith('process.exit')) throw error;
+      const errorOutput = consoleErrorSpy.mock.calls.flat().join(' ');
+      expect(errorOutput.toLowerCase()).toContain('required');
+    }
+    expect(mockClient.createMetric).not.toHaveBeenCalled();
   });
 
   it('should archive a metric', async () => {

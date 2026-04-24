@@ -5,6 +5,7 @@ import { createMetric } from './create.js';
 import { updateMetric } from './update.js';
 import { archiveMetric } from './archive.js';
 import { activateMetric } from './activate.js';
+import { createMetricVersion } from './new-version.js';
 import { followMetric, unfollowMetric } from './follow.js';
 import {
   listMetricAccessUsers,
@@ -31,6 +32,7 @@ const mockClient = {
   updateMetric: vi.fn(),
   archiveMetric: vi.fn(),
   activateMetric: vi.fn(),
+  createMetricVersion: vi.fn(),
   followMetric: vi.fn(),
   unfollowMetric: vi.fn(),
   listMetricAccessUsers: vi.fn(),
@@ -213,10 +215,134 @@ describe('updateMetric', () => {
     expect(result).toEqual({ data: undefined });
   });
 
+  it('should update name', async () => {
+    mockClient.updateMetric.mockResolvedValue(undefined);
+
+    await updateMetric(mockClient, { id: 5 as any, name: 'new-name' });
+
+    expect(mockClient.updateMetric).toHaveBeenCalledWith(5, { name: 'new-name' });
+  });
+
+  it('should update owner as a single-element owners array', async () => {
+    mockClient.updateMetric.mockResolvedValue(undefined);
+
+    await updateMetric(mockClient, { id: 5 as any, owner: 42 });
+
+    expect(mockClient.updateMetric).toHaveBeenCalledWith(5, { owners: [{ user_id: 42 }] });
+  });
+
+  it('should combine name, description, and owner in one payload', async () => {
+    mockClient.updateMetric.mockResolvedValue(undefined);
+
+    await updateMetric(mockClient, {
+      id: 5 as any,
+      name: 'n',
+      description: 'd',
+      owner: 7,
+    });
+
+    expect(mockClient.updateMetric).toHaveBeenCalledWith(5, {
+      name: 'n',
+      description: 'd',
+      owners: [{ user_id: 7 }],
+    });
+  });
+
   it('should throw when no fields', async () => {
     await expect(updateMetric(mockClient, { id: 5 as any })).rejects.toThrow(
       'At least one update field is required'
     );
+  });
+});
+
+describe('createMetricVersion', () => {
+  it('should POST only the fields the caller provides', async () => {
+    mockClient.createMetricVersion.mockResolvedValue({ id: 200, version: 3 });
+
+    const result = await createMetricVersion(mockClient, {
+      id: 5 as any,
+      reason: 'switch outlier method',
+      outlierLimitMethod: 'tukey',
+    });
+
+    expect(mockClient.createMetricVersion).toHaveBeenCalledWith(
+      5,
+      { outlier_limit_method: 'tukey' },
+      'switch outlier method'
+    );
+    expect(result).toEqual({ data: { id: 200, version: 3 } });
+  });
+
+  it('should omit undefined fields from the payload', async () => {
+    mockClient.createMetricVersion.mockResolvedValue({ id: 201 });
+
+    await createMetricVersion(mockClient, {
+      id: 5 as any,
+      reason: 'rename',
+      name: 'ctr v2',
+    });
+
+    expect(mockClient.createMetricVersion).toHaveBeenCalledWith(
+      5,
+      { name: 'ctr v2' },
+      'rename'
+    );
+  });
+
+  it('should map camelCase params to snake_case API fields', async () => {
+    mockClient.createMetricVersion.mockResolvedValue({ id: 202 });
+
+    await createMetricVersion(mockClient, {
+      id: 5 as any,
+      reason: 'reshape',
+      type: 'goal_property',
+      effect: 'negative',
+      goalId: 9,
+      owner: 11,
+      formatStr: '{}',
+      scale: 1,
+      precision: 2,
+      meanFormatStr: '{}%',
+      meanScale: 100,
+      meanPrecision: 2,
+      outlierLimitMethod: 'percentile',
+      valueSourceProperty: 'amount',
+    });
+
+    expect(mockClient.createMetricVersion).toHaveBeenCalledWith(
+      5,
+      {
+        type: 'goal_property',
+        effect: 'negative',
+        goal_id: 9,
+        owners: [{ user_id: 11 }],
+        format_str: '{}',
+        scale: 1,
+        precision: 2,
+        mean_format_str: '{}%',
+        mean_scale: 100,
+        mean_precision: 2,
+        outlier_limit_method: 'percentile',
+        value_source_property: 'amount',
+      },
+      'reshape'
+    );
+  });
+
+  it('should allow an empty-data new version (all fields inherited)', async () => {
+    mockClient.createMetricVersion.mockResolvedValue({ id: 203 });
+
+    await createMetricVersion(mockClient, { id: 5 as any, reason: 'bump' });
+
+    expect(mockClient.createMetricVersion).toHaveBeenCalledWith(5, {}, 'bump');
+  });
+
+  it('should forward undefined reason when caller omits it', async () => {
+    mockClient.createMetricVersion.mockResolvedValue({ id: 204 });
+
+    await createMetricVersion(mockClient, { id: 5 as any, name: 'n' });
+
+    expect(mockClient.createMetricVersion).toHaveBeenCalledWith(5, { name: 'n' }, undefined);
   });
 });
 

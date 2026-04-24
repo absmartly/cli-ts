@@ -415,6 +415,38 @@ describe.skipIf(isLiveMode)('APIClient core', () => {
       server.use(http.put(`${BASE_URL}/metrics/1/archive`, () => HttpResponse.json({ ok: true })));
       await client.archiveMetric(1);
     });
+
+    it('should create metric version with reason in body', async () => {
+      let capturedBody: unknown;
+      server.use(
+        http.post(`${BASE_URL}/metrics/1/version`, async ({ request }) => {
+          capturedBody = await request.json();
+          return HttpResponse.json({ metric: { id: 99, name: 'm1', version: 2 } });
+        })
+      );
+      const result = await client.createMetricVersion(
+        1,
+        { type: 'goal_unique_count' },
+        'switch type'
+      );
+      expect(result.id).toBe(99);
+      expect(capturedBody).toEqual({
+        data: { type: 'goal_unique_count' },
+        reason: 'switch type',
+      });
+    });
+
+    it('should create metric version without reason when omitted', async () => {
+      let capturedBody: unknown;
+      server.use(
+        http.post(`${BASE_URL}/metrics/1/version`, async ({ request }) => {
+          capturedBody = await request.json();
+          return HttpResponse.json({ metric: { id: 100, name: 'm1', version: 3 } });
+        })
+      );
+      await client.createMetricVersion(1, { name: 'renamed' });
+      expect(capturedBody).toEqual({ data: { name: 'renamed' } });
+    });
   });
 
   describe('experiment sub-resources', () => {

@@ -936,6 +936,17 @@ export class APIClient {
     return this.validateEntityResponse<Metric>(response, 'metric', 'activateMetric');
   }
 
+  async createMetricVersion(
+    id: MetricId,
+    data: Partial<Metric>,
+    reason?: string
+  ): Promise<Metric> {
+    const payload: Record<string, unknown> = { data };
+    if (reason !== undefined) payload.reason = reason;
+    const response = await this.request('POST', `/metrics/${id}/version`, { data: payload });
+    return this.validateEntityResponse<Metric>(response, 'metric', 'createMetricVersion');
+  }
+
   async archiveMetric(id: MetricId, unarchive = false): Promise<void> {
     await this.request('PUT', `/metrics/${id}/archive`, { data: { archive: !unarchive } });
   }
