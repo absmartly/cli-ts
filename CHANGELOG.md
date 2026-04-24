@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.2.0](https://github.com/absmartly/cli-ts/compare/cli-v1.1.0...cli-v1.2.0) (2026-04-24)
+
+
+### Features
+
+* add --activate flag to metric create command ([10eb57e](https://github.com/absmartly/cli-ts/commit/10eb57edaac28a9de5fd215fdc4a71cfbf4372cb))
+* add goal_ratio and related version-level fields to metric CLI ([137672a](https://github.com/absmartly/cli-ts/commit/137672ae75f4b4f8e0dee1d0da0e055e3547cf44))
+* add metric version command and smart create --new-version routing ([c86d8d3](https://github.com/absmartly/cli-ts/commit/c86d8d3f6481706d98640ca18a4a2c8f9da6331d))
+* add search, sort, archived, and ids options to all list commands ([209dc2b](https://github.com/absmartly/cli-ts/commit/209dc2bffe531121eb0597daca4d8332b58450b5))
+* allow goal name in metric create and add search to list APIs ([1e06649](https://github.com/absmartly/cli-ts/commit/1e06649e9193ca189bca968a2e8fab479e40998e))
+* render Prisma 5xx bodies as message/detail instead of the full wrapper ([01ae255](https://github.com/absmartly/cli-ts/commit/01ae255a3a9a895b4f7c309c29292f74d278327b))
+* respect explicit -o table when piped and add -o ids format ([2890448](https://github.com/absmartly/cli-ts/commit/2890448af5d15f15c28e83590205a8edf65a31a4))
+* skip OAuth when profile already has a valid API key ([a6262ea](https://github.com/absmartly/cli-ts/commit/a6262ea6cdce40c3d2b8892c99d5fff8d8c67ff1))
+* validate metric fields client-side and surface 5xx body messages ([541f14d](https://github.com/absmartly/cli-ts/commit/541f14d8e0817dbed9a1d267ca93842dbf05ff84))
+
+
+### Bug Fixes
+
+* default denominator_value_source_property for goal_ratio payloads ([a85d3ea](https://github.com/absmartly/cli-ts/commit/a85d3eadabf641aee1d600246d0eabb0d345c10e))
+* handle HTTP-to-HTTPS redirects in OAuth token exchange ([5b2ebd3](https://github.com/absmartly/cli-ts/commit/5b2ebd388d134f1c543121f99aedc59b1456d733))
+
 ## [1.1.0](https://github.com/absmartly/cli-ts/compare/cli-v1.0.0...cli-v1.1.0) (2026-04-13)
 
 
