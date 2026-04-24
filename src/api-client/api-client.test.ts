@@ -100,12 +100,15 @@ describe.skipIf(isLiveMode)('APIClient core', () => {
       expect(caught).toBeDefined();
       const msg = caught!.message;
       expect(msg).toContain(
-        'message: new row for relation "metrics" violates check constraint "chk_goal_ratio"'
+        'new row for relation "metrics" violates check constraint "chk_goal_ratio"'
       );
-      expect(msg).toContain('detail: Failing row contains (394, 92, ...).');
+      expect(msg).toContain('Failing row contains (394, 92, ...).');
       // The original noisy wrapper should be gone:
       expect(msg).not.toContain('ConnectorError(');
       expect(msg).not.toContain('PostgresError {');
+      // And we should not have prefixed the extracted parts:
+      expect(msg).not.toMatch(/^\s*message:\s/m);
+      expect(msg).not.toMatch(/^\s*detail:\s/m);
     });
   });
 

@@ -13,7 +13,7 @@ const NON_IDEMPOTENT_PUT_PATHS = ['/start', '/stop', '/restart', '/development',
 const IDEMPOTENT_METHODS = ['GET', 'HEAD', 'OPTIONS', 'PUT', 'DELETE'];
 
 /**
- * Turn a Prisma-wrapped Postgres error into a readable two-line summary.
+ * Turn a Prisma-wrapped Postgres error into a readable summary.
  * Input looks like (whitespace collapsed for this comment):
  *   Invalid `prisma.metric.create()` invocation: ... ConnectorError { ...
  *     PostgresError { code: "23514", message: "new row for relation \"metrics\"
@@ -21,12 +21,9 @@ const IDEMPOTENT_METHODS = ['GET', 'HEAD', 'OPTIONS', 'PUT', 'DELETE'];
  *     detail: Some("Failing row contains (...)"), column: None, hint: None }
  *     ... }
  *
- * Returns:
- *   message: new row for relation "metrics" violates check constraint "chk_goal_ratio"
- *   detail: Failing row contains (...)
- *
- * Returns `undefined` when the input doesn't look like a Prisma error, so the
- * caller can fall back to the raw body.
+ * Returns the Postgres `message` on its own line, followed by the `detail`
+ * on a second line when present. Returns `undefined` when the input doesn't
+ * look like a Prisma error, so the caller can fall back to the raw body.
  */
 export function formatPrismaError(text: string): string | undefined {
   if (!text.includes('PostgresError') && !text.includes('prisma.')) return undefined;
@@ -34,10 +31,8 @@ export function formatPrismaError(text: string): string | undefined {
   const message = extractRustString(text, /\bmessage:\s*"/);
   if (message === undefined) return undefined;
 
-  const lines = [`message: ${message}`];
   const detail = extractRustString(text, /\bdetail:\s*Some\("/);
-  if (detail !== undefined) lines.push(`detail: ${detail}`);
-  return lines.join('\n');
+  return detail !== undefined ? `${message}\n${detail}` : message;
 }
 
 /**
