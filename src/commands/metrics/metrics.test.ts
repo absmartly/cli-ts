@@ -261,6 +261,215 @@ describe('metrics command', () => {
     );
   });
 
+  it('should create a goal_ratio metric with numerator and denominator types', async () => {
+    await metricsCommand.parseAsync([
+      'node',
+      'test',
+      'create',
+      '--name',
+      'Conversion Rate',
+      '--type',
+      'goal_ratio',
+      '--description',
+      'Purchases per visit',
+      '--numerator-type',
+      'goal_unique_count',
+      '--denominator-type',
+      'goal_count',
+      '--denominator-outlier-limit-method',
+      'unlimited',
+      '--goal',
+      '1',
+      '--denominator-goal',
+      '2',
+    ]);
+
+    expect(mockClient.createMetric).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'goal_ratio',
+        numerator_type: 'goal_unique_count',
+        denominator_type: 'goal_count',
+        denominator_outlier_limit_method: 'unlimited',
+        goal_id: 1,
+        denominator_goal_id: 2,
+      })
+    );
+  });
+
+  it('should resolve denominator goal name via API', async () => {
+    await metricsCommand.parseAsync([
+      'node',
+      'test',
+      'create',
+      '--name',
+      'Revenue per Signup',
+      '--type',
+      'goal_ratio',
+      '--description',
+      'Rev / signups',
+      '--numerator-type',
+      'goal_property',
+      '--denominator-type',
+      'goal_count',
+      '--denominator-outlier-limit-method',
+      'unlimited',
+      '--goal',
+      '1',
+      '--denominator-goal',
+      'purchase',
+      '--value-source-property',
+      'amount',
+    ]);
+
+    expect(mockClient.resolveGoals).toHaveBeenCalledWith(['purchase']);
+    expect(mockClient.createMetric).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'goal_ratio',
+        numerator_type: 'goal_property',
+        denominator_type: 'goal_count',
+        denominator_goal_id: 42,
+        value_source_property: 'amount',
+      })
+    );
+  });
+
+  it('should parse --property-filter as JSON', async () => {
+    await metricsCommand.parseAsync([
+      'node',
+      'test',
+      'create',
+      '--name',
+      'Filtered Revenue',
+      '--type',
+      'goal_property',
+      '--description',
+      'Filtered',
+      '--goal',
+      '1',
+      '--value-source-property',
+      'amount',
+      '--property-filter',
+      '{"currency":"USD"}',
+    ]);
+
+    expect(mockClient.createMetric).toHaveBeenCalledWith(
+      expect.objectContaining({
+        property_filter: { currency: 'USD' },
+      })
+    );
+  });
+
+  it('should error on invalid --property-filter JSON', async () => {
+    await expect(
+      metricsCommand.parseAsync([
+        'node',
+        'test',
+        'create',
+        '--name',
+        'Bad',
+        '--type',
+        'goal_property',
+        '--description',
+        'd',
+        '--property-filter',
+        'not json',
+      ])
+    ).rejects.toThrow(/Invalid JSON/);
+    expect(mockClient.createMetric).not.toHaveBeenCalled();
+  });
+
+  it('should forward goal_retention fields on create', async () => {
+    await metricsCommand.parseAsync([
+      'node',
+      'test',
+      'create',
+      '--name',
+      'Day-7 Retention',
+      '--type',
+      'goal_retention',
+      '--description',
+      'Retained after 7 days',
+      '--goal',
+      '1',
+      '--retention-time',
+      '7d',
+      '--retention-time-reference',
+      'first_exposure',
+    ]);
+
+    expect(mockClient.createMetric).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'goal_retention',
+        retention_time: '7d',
+        retention_time_reference: 'first_exposure',
+      })
+    );
+  });
+
+  it('should forward all denominator-side goal_ratio fields', async () => {
+    await metricsCommand.parseAsync([
+      'node',
+      'test',
+      'create',
+      '--name',
+      'Ratio',
+      '--type',
+      'goal_ratio',
+      '--description',
+      'd',
+      '--numerator-type',
+      'goal_count',
+      '--denominator-type',
+      'goal_property',
+      '--goal',
+      '1',
+      '--denominator-goal',
+      '2',
+      '--denominator-value-source-property',
+      'amount',
+      '--denominator-outlier-limit-method',
+      'quantile',
+      '--denominator-property-filter',
+      '{"kind":"paid"}',
+      '--ratio-condition',
+      'require_denominator',
+    ]);
+
+    expect(mockClient.createMetric).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'goal_ratio',
+        numerator_type: 'goal_count',
+        denominator_type: 'goal_property',
+        denominator_goal_id: 2,
+        denominator_value_source_property: 'amount',
+        denominator_outlier_limit_method: 'quantile',
+        denominator_property_filter: { kind: 'paid' },
+        ratio_condition: 'require_denominator',
+      })
+    );
+  });
+
+  it('should change numerator_type via `metric version`', async () => {
+    await metricsCommand.parseAsync([
+      'node',
+      'test',
+      'version',
+      '1',
+      '--reason',
+      'switch numerator',
+      '--numerator-type',
+      'goal_property',
+      '--value-source-property',
+      'amount',
+    ]);
+
+    expect(mockClient.createMetricVersion).toHaveBeenCalledWith(
+      1,
+      { numerator_type: 'goal_property', value_source_property: 'amount' },
+      'switch numerator'
+    );
+  });
+
   it('should create a metric with goal name resolved to ID', async () => {
     await metricsCommand.parseAsync([
       'node',

@@ -203,6 +203,77 @@ describe('createMetric', () => {
       })
     );
   });
+
+  it('should map goal_ratio and related fields to snake_case', async () => {
+    mockClient.createMetric.mockResolvedValue({ id: 12 });
+
+    await createMetric(mockClient, {
+      name: 'Conversion Rate',
+      type: 'goal_ratio',
+      description: 'Purchases per visit',
+      numeratorType: 'goal_property',
+      denominatorType: 'goal_count',
+      denominatorOutlierLimitMethod: 'unlimited',
+      goalId: 1,
+      denominatorGoalId: 2,
+      valueSourceProperty: 'amount',
+      propertyFilter: { currency: 'USD' },
+      denominatorValueSourceProperty: 'count',
+      denominatorPropertyFilter: { kind: 'paid' },
+      retentionTime: '7d',
+      retentionTimeReference: 'first_exposure',
+      activityInterval: '1d',
+      customSql: 'SELECT 1',
+      customStatisticsType: 'continuous',
+      vrLookbackInterval: '2w',
+      relationKind: 'refund',
+      relationRefundOperation: 'subtract',
+      relationForeignDuplicateOperation: 'first',
+      denominatorRetentionTime: '14d',
+      denominatorRetentionTimeReference: 'first_achievement',
+      denominatorActivityInterval: '7d',
+      denominatorCustomSql: 'SELECT 2',
+      denominatorCustomStatisticsType: 'binomial',
+      denominatorVrLookbackInterval: '3w',
+      denominatorRelationKind: 'replacement',
+      denominatorRelationRefundOperation: 'add',
+      denominatorRelationForeignDuplicateOperation: 'last',
+      ratioCondition: 'require_denominator',
+    });
+
+    const payload = mockClient.createMetric.mock.calls[0][0];
+    expect(payload).toMatchObject({
+      type: 'goal_ratio',
+      numerator_type: 'goal_property',
+      denominator_type: 'goal_count',
+      denominator_outlier_limit_method: 'unlimited',
+      goal_id: 1,
+      denominator_goal_id: 2,
+      value_source_property: 'amount',
+      property_filter: { currency: 'USD' },
+      denominator_value_source_property: 'count',
+      denominator_property_filter: { kind: 'paid' },
+      retention_time: '7d',
+      retention_time_reference: 'first_exposure',
+      activity_interval: '1d',
+      custom_sql: 'SELECT 1',
+      custom_statistics_type: 'continuous',
+      vr_lookback_interval: '2w',
+      relation_kind: 'refund',
+      relation_refund_operation: 'subtract',
+      relation_foreign_duplicate_operation: 'first',
+      denominator_retention_time: '14d',
+      denominator_retention_time_reference: 'first_achievement',
+      denominator_activity_interval: '7d',
+      denominator_custom_sql: 'SELECT 2',
+      denominator_custom_statistics_type: 'binomial',
+      denominator_vr_lookback_interval: '3w',
+      denominator_relation_kind: 'replacement',
+      denominator_relation_refund_operation: 'add',
+      denominator_relation_foreign_duplicate_operation: 'last',
+      ratio_condition: 'require_denominator',
+    });
+  });
 });
 
 describe('updateMetric', () => {

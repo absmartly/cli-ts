@@ -21,6 +21,7 @@ import { updateMetric } from '../../core/metrics/update.js';
 import { archiveMetric } from '../../core/metrics/archive.js';
 import { activateMetric } from '../../core/metrics/activate.js';
 import { createMetricVersion } from '../../core/metrics/new-version.js';
+import type { MetricFields } from '../../core/metrics/payload.js';
 import { resolveGoalId } from '../../core/resolve.js';
 import { accessCommand } from './access.js';
 import { reviewCommand } from './review.js';
@@ -81,32 +82,181 @@ const getCommand = new Command('get')
     })
   );
 
-const createCommand = new Command('create')
-  .description('Create a new metric (or a new version of an existing metric with --new-version)')
-  .option('--name <name>', 'metric name')
-  .option(
-    '--type <type>',
-    'metric type (goal_count, goal_unique_count, goal_ratio, goal_property)'
+function parseJsonOption(value: string): unknown {
+  try {
+    return JSON.parse(value);
+  } catch (e) {
+    throw new Error(`Invalid JSON: ${(e as Error).message}`);
+  }
+}
+
+function addMetricFieldOptions(cmd: Command): Command {
+  return cmd
+    .option('--name <name>', 'metric name')
+    .option(
+      '--type <type>',
+      'metric type (goal_count, goal_unique_count, goal_time_to_achievement, goal_property, goal_property_unique_count, goal_ratio, goal_retention, goal_activity_period_count, custom_sql)'
+    )
+    .option('--description <text>', 'metric description')
+    .option('--effect <effect>', 'expected effect direction (positive, negative, unknown)')
+    .option('--goal <name-or-id>', 'goal name or ID (required for goal_* types)')
+    .option('--goal-id <id>', 'goal ID (deprecated, use --goal instead)', parseInt)
+    .option('--owner <user_id>', 'owner user ID', parseInt)
+    .option('--format-str <str>', 'display format string')
+    .option('--scale <n>', 'display scale', parseInt)
+    .option('--precision <n>', 'display precision', parseInt)
+    .option('--mean-format-str <str>', 'mean display format string')
+    .option('--mean-scale <n>', 'mean display scale', parseInt)
+    .option('--mean-precision <n>', 'mean display precision', parseInt)
+    .option(
+      '--outlier-limit-method <method>',
+      'outlier limit method (unlimited, quantile, stdev, fixed)'
+    )
+    .option(
+      '--value-source-property <property>',
+      'value source property (required for goal_property type)'
+    )
+    .option('--property-filter <json>', 'property filter (JSON)', parseJsonOption)
+    .option('--retention-time <duration>', 'retention time (required for goal_retention type)')
+    .option(
+      '--retention-time-reference <ref>',
+      'retention time reference (first_exposure, first_achievement)'
+    )
+    .option(
+      '--activity-interval <interval>',
+      'activity interval (required for goal_activity_period_count type)'
+    )
+    .option('--custom-sql <sql>', 'custom SQL (required for custom_sql type)')
+    .option(
+      '--custom-statistics-type <type>',
+      'custom statistics type (continuous, binomial)'
+    )
+    .option('--vr-lookback-interval <interval>', 'VR lookback interval (1w, 2w, 3w, 4w)')
+    .option('--relation-kind <kind>', 'goal relation kind (refund, replacement)')
+    .option('--relation-refund-operation <op>', 'refund operation (add, subtract)')
+    .option(
+      '--relation-foreign-duplicate-operation <op>',
+      'foreign duplicate operation (first, last, sum, min, max)'
+    )
+    // goal_ratio-specific fields
+    .option(
+      '--numerator-type <type>',
+      'numerator type (required for goal_ratio, same values as --type)'
+    )
+    .option(
+      '--denominator-type <type>',
+      'denominator type (required for goal_ratio, same values as --type)'
+    )
+    .option(
+      '--denominator-outlier-limit-method <method>',
+      'denominator outlier limit method (required for goal_ratio; unlimited, quantile, stdev, fixed)'
+    )
+    .option('--denominator-goal <name-or-id>', 'denominator goal name or ID (goal_ratio)')
+    .option(
+      '--denominator-value-source-property <property>',
+      'denominator value source property'
+    )
+    .option(
+      '--denominator-property-filter <json>',
+      'denominator property filter (JSON)',
+      parseJsonOption
+    )
+    .option('--denominator-retention-time <duration>', 'denominator retention time')
+    .option(
+      '--denominator-retention-time-reference <ref>',
+      'denominator retention time reference (first_exposure, first_achievement)'
+    )
+    .option('--denominator-activity-interval <interval>', 'denominator activity interval')
+    .option('--denominator-custom-sql <sql>', 'denominator custom SQL')
+    .option(
+      '--denominator-custom-statistics-type <type>',
+      'denominator custom statistics type (continuous, binomial)'
+    )
+    .option(
+      '--denominator-vr-lookback-interval <interval>',
+      'denominator VR lookback interval (1w, 2w, 3w, 4w)'
+    )
+    .option('--denominator-relation-kind <kind>', 'denominator relation kind (refund, replacement)')
+    .option(
+      '--denominator-relation-refund-operation <op>',
+      'denominator refund operation (add, subtract)'
+    )
+    .option(
+      '--denominator-relation-foreign-duplicate-operation <op>',
+      'denominator foreign duplicate operation (first, last, sum, min, max)'
+    )
+    .option('--ratio-condition <condition>', 'ratio condition (require_denominator)');
+}
+
+async function resolveMetricFieldsFromOptions(
+  client: Awaited<ReturnType<typeof getAPIClientFromOptions>>,
+  options: Record<string, unknown>
+): Promise<MetricFields> {
+  const goalRef = (options.goal as string | undefined) ?? options.goalId;
+  const goalId =
+    goalRef != null ? await resolveGoalId(client, String(goalRef)) : undefined;
+  const denominatorGoalRef = options.denominatorGoal as string | undefined;
+  const denominatorGoalId =
+    denominatorGoalRef != null
+      ? await resolveGoalId(client, String(denominatorGoalRef))
+      : undefined;
+
+  return {
+    name: options.name as string | undefined,
+    type: options.type as string | undefined,
+    description: options.description as string | undefined,
+    effect: options.effect as string | undefined,
+    goalId,
+    owner: options.owner as number | undefined,
+    formatStr: options.formatStr as string | undefined,
+    scale: options.scale as number | undefined,
+    precision: options.precision as number | undefined,
+    meanFormatStr: options.meanFormatStr as string | undefined,
+    meanScale: options.meanScale as number | undefined,
+    meanPrecision: options.meanPrecision as number | undefined,
+    outlierLimitMethod: options.outlierLimitMethod as string | undefined,
+    valueSourceProperty: options.valueSourceProperty as string | undefined,
+    propertyFilter: options.propertyFilter,
+    retentionTime: options.retentionTime as string | undefined,
+    retentionTimeReference: options.retentionTimeReference as string | undefined,
+    activityInterval: options.activityInterval as string | undefined,
+    customSql: options.customSql as string | undefined,
+    customStatisticsType: options.customStatisticsType as string | undefined,
+    vrLookbackInterval: options.vrLookbackInterval as string | undefined,
+    relationKind: options.relationKind as string | undefined,
+    relationRefundOperation: options.relationRefundOperation as string | undefined,
+    relationForeignDuplicateOperation: options.relationForeignDuplicateOperation as
+      | string
+      | undefined,
+    numeratorType: options.numeratorType as string | undefined,
+    denominatorType: options.denominatorType as string | undefined,
+    denominatorGoalId,
+    denominatorValueSourceProperty: options.denominatorValueSourceProperty as string | undefined,
+    denominatorPropertyFilter: options.denominatorPropertyFilter,
+    denominatorOutlierLimitMethod: options.denominatorOutlierLimitMethod as string | undefined,
+    denominatorRetentionTime: options.denominatorRetentionTime as string | undefined,
+    denominatorRetentionTimeReference: options.denominatorRetentionTimeReference as
+      | string
+      | undefined,
+    denominatorActivityInterval: options.denominatorActivityInterval as string | undefined,
+    denominatorCustomSql: options.denominatorCustomSql as string | undefined,
+    denominatorCustomStatisticsType: options.denominatorCustomStatisticsType as string | undefined,
+    denominatorVrLookbackInterval: options.denominatorVrLookbackInterval as string | undefined,
+    denominatorRelationKind: options.denominatorRelationKind as string | undefined,
+    denominatorRelationRefundOperation: options.denominatorRelationRefundOperation as
+      | string
+      | undefined,
+    denominatorRelationForeignDuplicateOperation:
+      options.denominatorRelationForeignDuplicateOperation as string | undefined,
+    ratioCondition: options.ratioCondition as string | undefined,
+  };
+}
+
+const createCommand = addMetricFieldOptions(
+  new Command('create').description(
+    'Create a new metric (or a new version of an existing metric with --new-version)'
   )
-  .option('--description <text>', 'metric description')
-  .option('--effect <effect>', 'expected effect direction (positive, negative)')
-  .option('--goal <name-or-id>', 'goal name or ID (required for goal_* types)')
-  .option('--goal-id <id>', 'goal ID (deprecated, use --goal instead)', parseInt)
-  .option('--owner <user_id>', 'owner user ID', parseInt)
-  .option('--format-str <str>', 'display format string')
-  .option('--scale <n>', 'display scale', parseInt)
-  .option('--precision <n>', 'display precision', parseInt)
-  .option('--mean-format-str <str>', 'mean display format string')
-  .option('--mean-scale <n>', 'mean display scale', parseInt)
-  .option('--mean-precision <n>', 'mean display precision', parseInt)
-  .option(
-    '--outlier-limit-method <method>',
-    'outlier limit method (unlimited, tukey, percentile)'
-  )
-  .option(
-    '--value-source-property <property>',
-    'value source property (required for goal_property type)'
-  )
+)
   .option('--activate', 'activate the metric immediately after creation')
   .option(
     '--new-version <id>',
@@ -119,8 +269,10 @@ const createCommand = new Command('create')
       const globalOptions = getGlobalOptions(createCommand);
       const client = await getAPIClientFromOptions(globalOptions);
 
-      const goalRef = (options.goal as string | undefined) ?? options.goalId;
-      const goalId = goalRef != null ? await resolveGoalId(client, String(goalRef)) : undefined;
+      const fields = await resolveMetricFieldsFromOptions(
+        client,
+        options as Record<string, unknown>
+      );
 
       if (options.newVersion !== undefined) {
         if (!options.reason) {
@@ -129,20 +281,7 @@ const createCommand = new Command('create')
         const versionResult = await createMetricVersion(client, {
           id: options.newVersion as MetricId,
           reason: options.reason,
-          name: options.name,
-          description: options.description,
-          type: options.type,
-          effect: options.effect,
-          goalId,
-          owner: options.owner,
-          formatStr: options.formatStr,
-          scale: options.scale,
-          precision: options.precision,
-          meanFormatStr: options.meanFormatStr,
-          meanScale: options.meanScale,
-          meanPrecision: options.meanPrecision,
-          outlierLimitMethod: options.outlierLimitMethod,
-          valueSourceProperty: options.valueSourceProperty,
+          ...fields,
         });
         const newId = versionResult.data.id;
         if (options.activate) {
@@ -167,20 +306,18 @@ const createCommand = new Command('create')
       }
 
       const result = await createMetric(client, {
+        ...fields,
         name: options.name,
         type: options.type,
         description: options.description,
-        effect: options.effect ?? 'positive',
-        goalId,
-        owner: options.owner,
-        formatStr: options.formatStr ?? '{}',
-        scale: options.scale ?? 1,
-        precision: options.precision ?? 2,
-        meanFormatStr: options.meanFormatStr ?? '{}%',
-        meanScale: options.meanScale ?? 100,
-        meanPrecision: options.meanPrecision ?? 2,
-        outlierLimitMethod: options.outlierLimitMethod ?? 'unlimited',
-        valueSourceProperty: options.valueSourceProperty,
+        effect: fields.effect ?? 'positive',
+        formatStr: fields.formatStr ?? '{}',
+        scale: fields.scale ?? 1,
+        precision: fields.precision ?? 2,
+        meanFormatStr: fields.meanFormatStr ?? '{}%',
+        meanScale: fields.meanScale ?? 100,
+        meanPrecision: fields.meanPrecision ?? 2,
+        outlierLimitMethod: fields.outlierLimitMethod ?? 'unlimited',
       });
 
       if (options.activate) {
@@ -244,60 +381,30 @@ const activateCommand = new Command('activate')
     })
   );
 
-const versionCommand = new Command('version')
-  .alias('new-version')
-  .description(
-    'Create a new draft version of a metric with changed version-level fields (type, goal, format, etc.). Fields not provided are inherited from the current version.'
-  )
-  .argument('<id>', 'metric ID', parseMetricId)
-  .requiredOption('--reason <text>', 'reason note for the new version')
-  .option('--name <name>', 'metric name')
-  .option(
-    '--type <type>',
-    'metric type (goal_count, goal_unique_count, goal_ratio, goal_property)'
-  )
-  .option('--description <text>', 'metric description')
-  .option('--effect <effect>', 'expected effect direction (positive, negative)')
-  .option('--goal <name-or-id>', 'goal name or ID')
-  .option('--goal-id <id>', 'goal ID (deprecated, use --goal instead)', parseInt)
-  .option('--owner <user_id>', 'owner user ID', parseInt)
-  .option('--format-str <str>', 'display format string')
-  .option('--scale <n>', 'display scale', parseInt)
-  .option('--precision <n>', 'display precision', parseInt)
-  .option('--mean-format-str <str>', 'mean display format string')
-  .option('--mean-scale <n>', 'mean display scale', parseInt)
-  .option('--mean-precision <n>', 'mean display precision', parseInt)
-  .option(
-    '--outlier-limit-method <method>',
-    'outlier limit method (unlimited, tukey, percentile)'
-  )
-  .option('--value-source-property <property>', 'value source property')
+const versionCommand = addMetricFieldOptions(
+  new Command('version')
+    .alias('new-version')
+    .description(
+      'Create a new draft version of a metric with changed version-level fields (type, goal, format, etc.). Fields not provided are inherited from the current version.'
+    )
+    .argument('<id>', 'metric ID', parseMetricId)
+    .requiredOption('--reason <text>', 'reason note for the new version')
+)
   .option('--activate', 'activate the new version immediately after creation')
   .action(
     withErrorHandling(async (id: MetricId, options) => {
       const globalOptions = getGlobalOptions(versionCommand);
       const client = await getAPIClientFromOptions(globalOptions);
 
-      const goalRef = (options.goal as string | undefined) ?? options.goalId;
-      const goalId = goalRef != null ? await resolveGoalId(client, String(goalRef)) : undefined;
+      const fields = await resolveMetricFieldsFromOptions(
+        client,
+        options as Record<string, unknown>
+      );
 
       const result = await createMetricVersion(client, {
         id,
         reason: options.reason,
-        name: options.name,
-        description: options.description,
-        type: options.type,
-        effect: options.effect,
-        goalId,
-        owner: options.owner,
-        formatStr: options.formatStr,
-        scale: options.scale,
-        precision: options.precision,
-        meanFormatStr: options.meanFormatStr,
-        meanScale: options.meanScale,
-        meanPrecision: options.meanPrecision,
-        outlierLimitMethod: options.outlierLimitMethod,
-        valueSourceProperty: options.valueSourceProperty,
+        ...fields,
       });
 
       const newId = result.data.id;
