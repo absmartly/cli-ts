@@ -66,8 +66,7 @@ describe.skipIf(isLiveMode)('APIClient core', () => {
         http.post(`${BASE_URL}/metrics/1/version`, () =>
           HttpResponse.json(
             {
-              message:
-                'new row for relation "metrics" violates check constraint "chk_goal_ratio"',
+              message: 'new row for relation "metrics" violates check constraint "chk_goal_ratio"',
             },
             { status: 500 }
           )

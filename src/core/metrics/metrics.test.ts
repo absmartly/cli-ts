@@ -180,7 +180,11 @@ describe('createMetric', () => {
     });
 
     expect(mockClient.createMetric).toHaveBeenCalledWith(
-      expect.objectContaining({ name: 'CTR', type: 'goal_count', description: 'Click-through rate' })
+      expect.objectContaining({
+        name: 'CTR',
+        type: 'goal_count',
+        description: 'Click-through rate',
+      })
     );
     expect(result).toEqual({ data: { id: 10 } });
   });
@@ -408,11 +412,7 @@ describe('createMetricVersion', () => {
       name: 'ctr v2',
     });
 
-    expect(mockClient.createMetricVersion).toHaveBeenCalledWith(
-      5,
-      { name: 'ctr v2' },
-      'rename'
-    );
+    expect(mockClient.createMetricVersion).toHaveBeenCalledWith(5, { name: 'ctr v2' }, 'rename');
   });
 
   it('should map camelCase params to snake_case API fields', async () => {
@@ -684,19 +684,13 @@ describe('replyToMetricReviewComment', () => {
 describe('validateMetricFields', () => {
   it('strict mode rejects unknown --type', () => {
     expect(() =>
-      validateMetricFields(
-        { name: 'x', type: 'ratio', description: 'd' },
-        { mode: 'strict' }
-      )
+      validateMetricFields({ name: 'x', type: 'ratio', description: 'd' }, { mode: 'strict' })
     ).toThrow(/Unknown metric --type 'ratio'/);
   });
 
   it('strict mode requires --goal for goal_count', () => {
     expect(() =>
-      validateMetricFields(
-        { name: 'x', type: 'goal_count', description: 'd' },
-        { mode: 'strict' }
-      )
+      validateMetricFields({ name: 'x', type: 'goal_count', description: 'd' }, { mode: 'strict' })
     ).toThrow(/--goal is required when --type is goal_count/);
   });
 
@@ -716,10 +710,7 @@ describe('validateMetricFields', () => {
 
   it('strict mode requires numerator_type, denominator_type, denominator_outlier_limit_method for goal_ratio', () => {
     try {
-      validateMetricFields(
-        { name: 'x', type: 'goal_ratio', description: 'd' },
-        { mode: 'strict' }
-      );
+      validateMetricFields({ name: 'x', type: 'goal_ratio', description: 'd' }, { mode: 'strict' });
       throw new Error('expected throw');
     } catch (e) {
       const msg = (e as Error).message;
@@ -789,28 +780,19 @@ describe('validateMetricFields', () => {
 
   it('loose mode skips validation when no type/numerator/denominator is being set', () => {
     expect(() =>
-      validateMetricFields(
-        { name: 'renamed', description: 'still d' },
-        { mode: 'loose' }
-      )
+      validateMetricFields({ name: 'renamed', description: 'still d' }, { mode: 'loose' })
     ).not.toThrow();
   });
 
   it('loose mode validates when numerator_type is set', () => {
     expect(() =>
-      validateMetricFields(
-        { numeratorType: 'goal_property' },
-        { mode: 'loose' }
-      )
+      validateMetricFields({ numeratorType: 'goal_property' }, { mode: 'loose' })
     ).toThrow(/--value-source-property is required when --numerator-type is goal_property/);
   });
 
   it('loose mode validates when denominator_type is set', () => {
     expect(() =>
-      validateMetricFields(
-        { denominatorType: 'goal_count' },
-        { mode: 'loose' }
-      )
+      validateMetricFields({ denominatorType: 'goal_count' }, { mode: 'loose' })
     ).toThrow(/--denominator-goal is required when --denominator-type is goal_count/);
   });
 

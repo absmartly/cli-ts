@@ -694,11 +694,7 @@ describe('metrics command', () => {
       'ctr v2',
     ]);
 
-    expect(mockClient.createMetricVersion).toHaveBeenCalledWith(
-      1,
-      { name: 'ctr v2' },
-      'rename'
-    );
+    expect(mockClient.createMetricVersion).toHaveBeenCalledWith(1, { name: 'ctr v2' }, 'rename');
   });
 
   it('should create and activate a new version with --activate', async () => {

@@ -172,7 +172,12 @@ const fieldToFlag: Partial<Record<keyof MetricFields, string>> = {
 };
 
 function flagFor(field: keyof MetricFields): string {
-  return fieldToFlag[field] ?? `--${String(field).replace(/([A-Z])/g, '-$1').toLowerCase()}`;
+  return (
+    fieldToFlag[field] ??
+    `--${String(field)
+      .replace(/([A-Z])/g, '-$1')
+      .toLowerCase()}`
+  );
 }
 
 function isMissing(value: unknown): boolean {

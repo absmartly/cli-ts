@@ -127,7 +127,10 @@ const loginCommand = new Command('login')
               insecure: options.insecure,
             });
             await client.getCurrentUser();
-            setProfile(profileName, buildProfile(existingEndpoint, 'api-key', options, profileName));
+            setProfile(
+              profileName,
+              buildProfile(existingEndpoint, 'api-key', options, profileName)
+            );
             console.log(`✓ Already authenticated (profile: ${profileName})`);
             console.log(`  Endpoint: ${existingEndpoint}`);
             console.log('  Use --oauth to force re-authentication.');

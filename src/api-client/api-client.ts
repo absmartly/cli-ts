@@ -936,11 +936,7 @@ export class APIClient {
     return this.validateEntityResponse<Metric>(response, 'metric', 'activateMetric');
   }
 
-  async createMetricVersion(
-    id: MetricId,
-    data: Partial<Metric>,
-    reason?: string
-  ): Promise<Metric> {
+  async createMetricVersion(id: MetricId, data: Partial<Metric>, reason?: string): Promise<Metric> {
     const payload: Record<string, unknown> = { data };
     if (reason !== undefined) payload.reason = reason;
     const response = await this.request('POST', `/metrics/${id}/version`, { data: payload });
@@ -2199,16 +2195,12 @@ export class APIClient {
   }
 
   async resolveGoals(namesOrIds: string[]): Promise<Array<{ id: number; name: string }>> {
-    const results = await resolveBySearch(namesOrIds, (name) =>
-      this.listGoals({ search: name })
-    );
+    const results = await resolveBySearch(namesOrIds, (name) => this.listGoals({ search: name }));
     return namesOrIds.map((ref) => resolveByName(results, ref, 'Goal'));
   }
 
   async resolveTeams(namesOrIds: string[]): Promise<Array<{ id: number; name: string }>> {
-    const results = await resolveBySearch(namesOrIds, (name) =>
-      this.listTeams({ search: name })
-    );
+    const results = await resolveBySearch(namesOrIds, (name) => this.listTeams({ search: name }));
     return namesOrIds.map((ref) => resolveByName(results, ref, 'Team'));
   }
 

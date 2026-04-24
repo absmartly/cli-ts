@@ -70,7 +70,6 @@ function extractRustString(text: string, startRe: RegExp): string | undefined {
   return undefined;
 }
 
-
 export type AuthConfig =
   | { method: 'api-key'; apiKey: string }
   | { method: 'oauth-jwt'; token: string; onExpired?: () => Promise<AuthConfig> };
@@ -256,7 +255,9 @@ export class AxiosHttpClient implements HttpClient {
     //   message: new row for relation "metrics" violates check constraint "chk_goal_ratio"
     //   detail: Failing row contains (...)
     // instead of the full ConnectorError/PostgresError debug dump.
-    const bodyMessage = rawBodyMessage ? formatPrismaError(rawBodyMessage) ?? rawBodyMessage : undefined;
+    const bodyMessage = rawBodyMessage
+      ? (formatPrismaError(rawBodyMessage) ?? rawBodyMessage)
+      : undefined;
 
     // DB check-constraint failures (5xx) often bubble up cryptic Prisma text.
     // Detect the goal_ratio constraint and add a concrete hint.
@@ -310,7 +311,10 @@ export class AxiosHttpClient implements HttpClient {
             `Endpoint: ${method} ${endpoint}\n` +
             `The server took too long to respond. Please try again.`;
         } else {
-          const lines = [`API error: ${error.message || 'unknown error'}`, `Endpoint: ${method} ${endpoint}`];
+          const lines = [
+            `API error: ${error.message || 'unknown error'}`,
+            `Endpoint: ${method} ${endpoint}`,
+          ];
           if (bodyMessage) lines.push('', bodyMessage);
           if (constraintHint) lines.push('', constraintHint);
           message = lines.join('\n');

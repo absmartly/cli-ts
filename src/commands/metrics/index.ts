@@ -91,101 +91,100 @@ function parseJsonOption(value: string): unknown {
 }
 
 function addMetricFieldOptions(cmd: Command): Command {
-  return cmd
-    .option('--name <name>', 'metric name')
-    .option(
-      '--type <type>',
-      'metric type (goal_count, goal_unique_count, goal_time_to_achievement, goal_property, goal_property_unique_count, goal_ratio, goal_retention, goal_activity_period_count, custom_sql)'
-    )
-    .option('--description <text>', 'metric description')
-    .option('--effect <effect>', 'expected effect direction (positive, negative, unknown)')
-    .option('--goal <name-or-id>', 'goal name or ID (required for goal_* types)')
-    .option('--goal-id <id>', 'goal ID (deprecated, use --goal instead)', parseInt)
-    .option('--owner <user_id>', 'owner user ID', parseInt)
-    .option('--format-str <str>', 'display format string')
-    .option('--scale <n>', 'display scale', parseInt)
-    .option('--precision <n>', 'display precision', parseInt)
-    .option('--mean-format-str <str>', 'mean display format string')
-    .option('--mean-scale <n>', 'mean display scale', parseInt)
-    .option('--mean-precision <n>', 'mean display precision', parseInt)
-    .option(
-      '--outlier-limit-method <method>',
-      'outlier limit method (unlimited, quantile, stdev, fixed)'
-    )
-    .option(
-      '--value-source-property <property>',
-      'value source property (required for goal_property type)'
-    )
-    .option('--property-filter <json>', 'property filter (JSON)', parseJsonOption)
-    .option('--retention-time <duration>', 'retention time (required for goal_retention type)')
-    .option(
-      '--retention-time-reference <ref>',
-      'retention time reference (first_exposure, first_achievement)'
-    )
-    .option(
-      '--activity-interval <interval>',
-      'activity interval (required for goal_activity_period_count type)'
-    )
-    .option('--custom-sql <sql>', 'custom SQL (required for custom_sql type)')
-    .option(
-      '--custom-statistics-type <type>',
-      'custom statistics type (continuous, binomial)'
-    )
-    .option('--vr-lookback-interval <interval>', 'VR lookback interval (1w, 2w, 3w, 4w)')
-    .option('--relation-kind <kind>', 'goal relation kind (refund, replacement)')
-    .option('--relation-refund-operation <op>', 'refund operation (add, subtract)')
-    .option(
-      '--relation-foreign-duplicate-operation <op>',
-      'foreign duplicate operation (first, last, sum, min, max)'
-    )
-    // goal_ratio-specific fields
-    .option(
-      '--numerator-type <type>',
-      'numerator type (required for goal_ratio, same values as --type)'
-    )
-    .option(
-      '--denominator-type <type>',
-      'denominator type (required for goal_ratio, same values as --type)'
-    )
-    .option(
-      '--denominator-outlier-limit-method <method>',
-      'denominator outlier limit method (required for goal_ratio; unlimited, quantile, stdev, fixed)'
-    )
-    .option('--denominator-goal <name-or-id>', 'denominator goal name or ID (goal_ratio)')
-    .option(
-      '--denominator-value-source-property <property>',
-      'denominator value source property'
-    )
-    .option(
-      '--denominator-property-filter <json>',
-      'denominator property filter (JSON)',
-      parseJsonOption
-    )
-    .option('--denominator-retention-time <duration>', 'denominator retention time')
-    .option(
-      '--denominator-retention-time-reference <ref>',
-      'denominator retention time reference (first_exposure, first_achievement)'
-    )
-    .option('--denominator-activity-interval <interval>', 'denominator activity interval')
-    .option('--denominator-custom-sql <sql>', 'denominator custom SQL')
-    .option(
-      '--denominator-custom-statistics-type <type>',
-      'denominator custom statistics type (continuous, binomial)'
-    )
-    .option(
-      '--denominator-vr-lookback-interval <interval>',
-      'denominator VR lookback interval (1w, 2w, 3w, 4w)'
-    )
-    .option('--denominator-relation-kind <kind>', 'denominator relation kind (refund, replacement)')
-    .option(
-      '--denominator-relation-refund-operation <op>',
-      'denominator refund operation (add, subtract)'
-    )
-    .option(
-      '--denominator-relation-foreign-duplicate-operation <op>',
-      'denominator foreign duplicate operation (first, last, sum, min, max)'
-    )
-    .option('--ratio-condition <condition>', 'ratio condition (require_denominator)');
+  return (
+    cmd
+      .option('--name <name>', 'metric name')
+      .option(
+        '--type <type>',
+        'metric type (goal_count, goal_unique_count, goal_time_to_achievement, goal_property, goal_property_unique_count, goal_ratio, goal_retention, goal_activity_period_count, custom_sql)'
+      )
+      .option('--description <text>', 'metric description')
+      .option('--effect <effect>', 'expected effect direction (positive, negative, unknown)')
+      .option('--goal <name-or-id>', 'goal name or ID (required for goal_* types)')
+      .option('--goal-id <id>', 'goal ID (deprecated, use --goal instead)', parseInt)
+      .option('--owner <user_id>', 'owner user ID', parseInt)
+      .option('--format-str <str>', 'display format string')
+      .option('--scale <n>', 'display scale', parseInt)
+      .option('--precision <n>', 'display precision', parseInt)
+      .option('--mean-format-str <str>', 'mean display format string')
+      .option('--mean-scale <n>', 'mean display scale', parseInt)
+      .option('--mean-precision <n>', 'mean display precision', parseInt)
+      .option(
+        '--outlier-limit-method <method>',
+        'outlier limit method (unlimited, quantile, stdev, fixed)'
+      )
+      .option(
+        '--value-source-property <property>',
+        'value source property (required for goal_property type)'
+      )
+      .option('--property-filter <json>', 'property filter (JSON)', parseJsonOption)
+      .option('--retention-time <duration>', 'retention time (required for goal_retention type)')
+      .option(
+        '--retention-time-reference <ref>',
+        'retention time reference (first_exposure, first_achievement)'
+      )
+      .option(
+        '--activity-interval <interval>',
+        'activity interval (required for goal_activity_period_count type)'
+      )
+      .option('--custom-sql <sql>', 'custom SQL (required for custom_sql type)')
+      .option('--custom-statistics-type <type>', 'custom statistics type (continuous, binomial)')
+      .option('--vr-lookback-interval <interval>', 'VR lookback interval (1w, 2w, 3w, 4w)')
+      .option('--relation-kind <kind>', 'goal relation kind (refund, replacement)')
+      .option('--relation-refund-operation <op>', 'refund operation (add, subtract)')
+      .option(
+        '--relation-foreign-duplicate-operation <op>',
+        'foreign duplicate operation (first, last, sum, min, max)'
+      )
+      // goal_ratio-specific fields
+      .option(
+        '--numerator-type <type>',
+        'numerator type (required for goal_ratio, same values as --type)'
+      )
+      .option(
+        '--denominator-type <type>',
+        'denominator type (required for goal_ratio, same values as --type)'
+      )
+      .option(
+        '--denominator-outlier-limit-method <method>',
+        'denominator outlier limit method (required for goal_ratio; unlimited, quantile, stdev, fixed)'
+      )
+      .option('--denominator-goal <name-or-id>', 'denominator goal name or ID (goal_ratio)')
+      .option('--denominator-value-source-property <property>', 'denominator value source property')
+      .option(
+        '--denominator-property-filter <json>',
+        'denominator property filter (JSON)',
+        parseJsonOption
+      )
+      .option('--denominator-retention-time <duration>', 'denominator retention time')
+      .option(
+        '--denominator-retention-time-reference <ref>',
+        'denominator retention time reference (first_exposure, first_achievement)'
+      )
+      .option('--denominator-activity-interval <interval>', 'denominator activity interval')
+      .option('--denominator-custom-sql <sql>', 'denominator custom SQL')
+      .option(
+        '--denominator-custom-statistics-type <type>',
+        'denominator custom statistics type (continuous, binomial)'
+      )
+      .option(
+        '--denominator-vr-lookback-interval <interval>',
+        'denominator VR lookback interval (1w, 2w, 3w, 4w)'
+      )
+      .option(
+        '--denominator-relation-kind <kind>',
+        'denominator relation kind (refund, replacement)'
+      )
+      .option(
+        '--denominator-relation-refund-operation <op>',
+        'denominator refund operation (add, subtract)'
+      )
+      .option(
+        '--denominator-relation-foreign-duplicate-operation <op>',
+        'denominator foreign duplicate operation (first, last, sum, min, max)'
+      )
+      .option('--ratio-condition <condition>', 'ratio condition (require_denominator)')
+  );
 }
 
 async function resolveMetricFieldsFromOptions(
@@ -193,8 +192,7 @@ async function resolveMetricFieldsFromOptions(
   options: Record<string, unknown>
 ): Promise<MetricFields> {
   const goalRef = (options.goal as string | undefined) ?? options.goalId;
-  const goalId =
-    goalRef != null ? await resolveGoalId(client, String(goalRef)) : undefined;
+  const goalId = goalRef != null ? await resolveGoalId(client, String(goalRef)) : undefined;
   const denominatorGoalRef = options.denominatorGoal as string | undefined;
   const denominatorGoalId =
     denominatorGoalRef != null
@@ -286,9 +284,7 @@ const createCommand = addMetricFieldOptions(
         const newId = versionResult.data.id;
         if (options.activate) {
           await client.activateMetric(newId as MetricId, options.reason);
-          console.log(
-            chalk.green(`✓ New metric version created and activated (id: ${newId})`)
-          );
+          console.log(chalk.green(`✓ New metric version created and activated (id: ${newId})`));
         } else {
           console.log(chalk.green(`✓ New metric version created as draft (id: ${newId})`));
         }
@@ -411,14 +407,10 @@ const versionCommand = addMetricFieldOptions(
       if (options.activate) {
         await client.activateMetric(newId as MetricId, options.reason);
         console.log(
-          chalk.green(
-            `✓ New version of metric ${id} created and activated (new id: ${newId})`
-          )
+          chalk.green(`✓ New version of metric ${id} created and activated (new id: ${newId})`)
         );
       } else {
-        console.log(
-          chalk.green(`✓ New draft version of metric ${id} created (new id: ${newId})`)
-        );
+        console.log(chalk.green(`✓ New draft version of metric ${id} created (new id: ${newId})`));
       }
     })
   );
