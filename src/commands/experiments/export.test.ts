@@ -391,7 +391,7 @@ describe('experiments export', () => {
       vi.mocked(confirm).mockResolvedValue(false);
 
       // Mock the polling to complete immediately
-      vi.mocked(startPolling).mockImplementation((opts) => {
+      vi.mocked(startPolling).mockImplementation((_opts) => {
         // Don't fire any ticks — the initial fetchAndDisplay call handles it
         return { stop: vi.fn() };
       });

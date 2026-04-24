@@ -1,7 +1,7 @@
 import { describe, it, expect, afterEach, beforeAll } from 'vitest';
 import { server } from '../../test/mocks/server.js';
 import { createAPIClient } from './client.js';
-import { isLiveMode, TEST_BASE_URL, TEST_API_KEY } from '../../test/helpers/test-config.js';
+import { TEST_BASE_URL, TEST_API_KEY } from '../../test/helpers/test-config.js';
 
 const BASE_URL = TEST_BASE_URL;
 

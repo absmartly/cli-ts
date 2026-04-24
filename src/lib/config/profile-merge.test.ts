@@ -10,7 +10,7 @@ vi.mock('os', async (importOriginal) => {
   return { ...mod, homedir: () => fakeHome };
 });
 
-import { loadConfig, saveConfig, getConfigPath, ensureConfigDir } from './config.js';
+import { loadConfig, getConfigPath, ensureConfigDir } from './config.js';
 
 describe('Profile Deep Merge', () => {
   const testConfigPath = getConfigPath();

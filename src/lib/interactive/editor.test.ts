@@ -73,9 +73,7 @@ describe('InteractiveEditor', () => {
     mockSearch.mockResolvedValue('user_id');
     mockEditor.mockResolvedValue('');
 
-    let selectCallCount = 0;
     mockSelect.mockImplementation((opts: any) => {
-      selectCallCount++;
       const choices = opts.choices;
       if (choices?.some((c: any) => c.value === 'confirm')) return 'confirm';
       if (choices?.some((c: any) => c.value === 'done')) return 'done';

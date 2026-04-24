@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { listExperiments } from './list.js';
-import type { ExperimentId } from '../../lib/api/branded-types.js';
 
 vi.mock('../../api-client/experiment-summary.js', () => ({
   summarizeExperimentRow: vi.fn().mockImplementation((e: Record<string, unknown>) => ({

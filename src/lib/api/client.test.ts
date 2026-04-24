@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeAll, beforeEach, afterEach, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterEach, afterAll } from 'vitest';
 import { createAPIClient } from './client.js';
 import { server } from '../../test/mocks/server.js';
 import { http, HttpResponse } from 'msw';

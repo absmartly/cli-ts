@@ -1,8 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { configCommand } from './index.js';
 import {
-  loadConfig,
-  listProfiles,
   setDefaultProfile,
   getConfigValue,
   setConfigValue,

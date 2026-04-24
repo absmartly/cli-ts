@@ -118,7 +118,7 @@ async function main() {
     });
 
     await runTest('Full-on (variant 1)', async () => {
-      const exp = await client.fullOnExperiment(experimentId!, 1, 'live test: full-on');
+      await client.fullOnExperiment(experimentId!, 1, 'live test: full-on');
       const fetched = await client.getExperiment(experimentId!);
       assert(
         fetched.full_on_variant === 1,

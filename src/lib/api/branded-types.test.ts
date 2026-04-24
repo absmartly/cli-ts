@@ -292,7 +292,7 @@ describe('ProfileName', () => {
 describe('Type Safety (Compile-time)', () => {
   it('should prevent mixing ID types at compile time', () => {
     const expId = ExperimentId(1);
-    const goalId = GoalId(2);
+    const _goalId = GoalId(2);
 
     function takesExperimentId(id: ExperimentId) {
       return id;
@@ -301,7 +301,7 @@ describe('Type Safety (Compile-time)', () => {
     expect(takesExperimentId(expId)).toBe(1);
 
     // This would fail at compile time (but we can't test that in runtime)
-    // takesExperimentId(goalId);
+    // takesExperimentId(_goalId);
   });
 
   it('should allow branded types to be used as numbers', () => {

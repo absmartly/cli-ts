@@ -13,7 +13,6 @@ describe('APIClient - Experiments', () => {
   const client = createAPIClient(BASE_URL, TEST_API_KEY);
 
   let expId: ExperimentId;
-  let expName: string;
 
   const handlers = !isLiveMode ? createStatefulExperimentHandlers(BASE_URL) : [];
 
@@ -21,7 +20,6 @@ describe('APIClient - Experiments', () => {
     if (!isLiveMode) server.use(...handlers);
     const meta = await fetchLiveMetadata(client);
     const data = buildExperimentData(meta);
-    expName = data.name;
     const created = await client.createExperiment(data as any);
     expId = created.id as ExperimentId;
   });
