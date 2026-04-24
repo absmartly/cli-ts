@@ -107,6 +107,17 @@ export function buildMetricPayload(fields: MetricFields): Record<string, unknown
 
   set('ratio_condition', fields.ratioCondition);
 
+  // The backend's chk_goal_ratio DB CHECK constraint requires
+  // denominator_value_source_property to be NOT NULL for every goal_ratio row.
+  // The column is nullable with no DB default, so a payload that omits the
+  // field produces a 500 at insert time. Default it to "" here (mirroring the
+  // backend-side fix in office/backend/src/routes/metrics/index.ts
+  // prepareDraftData) so users aren't forced to pass --denominator-value-source-property
+  // for every goal_ratio metric.
+  if (fields.type === 'goal_ratio' && !('denominator_value_source_property' in data)) {
+    data.denominator_value_source_property = '';
+  }
+
   return data;
 }
 

@@ -276,6 +276,59 @@ describe('createMetric', () => {
       ratio_condition: 'require_denominator',
     });
   });
+
+  it('should default denominator_value_source_property to empty string for goal_ratio', async () => {
+    mockClient.createMetric.mockResolvedValue({ id: 13 });
+
+    await createMetric(mockClient, {
+      name: 'Conversion Rate',
+      type: 'goal_ratio',
+      description: 'Purchases per visit',
+      numeratorType: 'goal_property',
+      denominatorType: 'goal_count',
+      denominatorOutlierLimitMethod: 'unlimited',
+      goalId: 1,
+      denominatorGoalId: 2,
+      valueSourceProperty: 'amount',
+    });
+
+    const payload = mockClient.createMetric.mock.calls[0][0];
+    expect(payload.denominator_value_source_property).toBe('');
+  });
+
+  it('should preserve an explicit denominator_value_source_property for goal_ratio', async () => {
+    mockClient.createMetric.mockResolvedValue({ id: 14 });
+
+    await createMetric(mockClient, {
+      name: 'Revenue Ratio',
+      type: 'goal_ratio',
+      description: 'Rev / visits',
+      numeratorType: 'goal_property',
+      denominatorType: 'goal_property',
+      denominatorOutlierLimitMethod: 'unlimited',
+      goalId: 1,
+      denominatorGoalId: 2,
+      valueSourceProperty: 'amount',
+      denominatorValueSourceProperty: 'visits',
+    });
+
+    const payload = mockClient.createMetric.mock.calls[0][0];
+    expect(payload.denominator_value_source_property).toBe('visits');
+  });
+
+  it('should not add denominator_value_source_property on non-goal_ratio types', async () => {
+    mockClient.createMetric.mockResolvedValue({ id: 15 });
+
+    await createMetric(mockClient, {
+      name: 'CTR',
+      type: 'goal_count',
+      description: 'Count',
+      goalId: 1,
+    });
+
+    const payload = mockClient.createMetric.mock.calls[0][0];
+    expect('denominator_value_source_property' in payload).toBe(false);
+  });
 });
 
 describe('updateMetric', () => {
