@@ -220,6 +220,8 @@ describe('metrics command', () => {
       'ctr',
       '--type',
       'goal_count',
+      '--goal',
+      '1',
       '--description',
       'Click-through rate',
     ]);
@@ -459,15 +461,87 @@ describe('metrics command', () => {
       'switch numerator',
       '--numerator-type',
       'goal_property',
+      '--goal',
+      '1',
       '--value-source-property',
       'amount',
     ]);
 
     expect(mockClient.createMetricVersion).toHaveBeenCalledWith(
       1,
-      { numerator_type: 'goal_property', value_source_property: 'amount' },
+      {
+        numerator_type: 'goal_property',
+        goal_id: 1,
+        value_source_property: 'amount',
+      },
       'switch numerator'
     );
+  });
+
+  it('should reject goal_ratio create missing denominator goal id with a clear message', async () => {
+    try {
+      await metricsCommand.parseAsync([
+        'node',
+        'test',
+        'create',
+        '--name',
+        'Bad',
+        '--type',
+        'goal_ratio',
+        '--description',
+        'd',
+        '--numerator-type',
+        'goal_count',
+        '--denominator-type',
+        'goal_count',
+        '--denominator-outlier-limit-method',
+        'unlimited',
+        '--goal',
+        '1',
+      ]);
+      throw new Error('Should have thrown');
+    } catch (error) {
+      if (!(error as Error).message.startsWith('process.exit')) throw error;
+      const errorOutput = consoleErrorSpy.mock.calls.flat().join(' ');
+      expect(errorOutput).toContain('--denominator-goal is required');
+    }
+    expect(mockClient.createMetric).not.toHaveBeenCalled();
+  });
+
+  it('should reject version changing numerator_type without the fields it implies', async () => {
+    try {
+      await metricsCommand.parseAsync([
+        'node',
+        'test',
+        'version',
+        '1',
+        '--reason',
+        'switch',
+        '--numerator-type',
+        'goal_property',
+      ]);
+      throw new Error('Should have thrown');
+    } catch (error) {
+      if (!(error as Error).message.startsWith('process.exit')) throw error;
+      const errorOutput = consoleErrorSpy.mock.calls.flat().join(' ');
+      expect(errorOutput).toContain('--value-source-property is required');
+    }
+    expect(mockClient.createMetricVersion).not.toHaveBeenCalled();
+  });
+
+  it('should allow version to change fields that do not alter type shape', async () => {
+    await metricsCommand.parseAsync([
+      'node',
+      'test',
+      'version',
+      '1',
+      '--reason',
+      'rename',
+      '--name',
+      'new name',
+    ]);
+
+    expect(mockClient.createMetricVersion).toHaveBeenCalledWith(1, { name: 'new name' }, 'rename');
   });
 
   it('should create a metric with goal name resolved to ID', async () => {
@@ -527,6 +601,8 @@ describe('metrics command', () => {
       'Active Metric',
       '--type',
       'goal_count',
+      '--goal',
+      '1',
       '--description',
       'Activated on creation',
       '--activate',
@@ -547,6 +623,8 @@ describe('metrics command', () => {
       'Draft Metric',
       '--type',
       'goal_count',
+      '--goal',
+      '1',
       '--description',
       'Not activated',
     ]);
@@ -633,12 +711,14 @@ describe('metrics command', () => {
       'bump',
       '--type',
       'goal_unique_count',
+      '--goal',
+      '1',
       '--activate',
     ]);
 
     expect(mockClient.createMetricVersion).toHaveBeenCalledWith(
       1,
-      { type: 'goal_unique_count' },
+      { type: 'goal_unique_count', goal_id: 1 },
       'bump'
     );
     expect(mockClient.activateMetric).toHaveBeenCalledWith(123, 'bump');

@@ -49,6 +49,34 @@ describe.skipIf(isLiveMode)('APIClient core', () => {
       server.use(http.get(`${BASE_URL}/roles`, () => new HttpResponse(null, { status: 500 })));
       await expect(client.listRoles()).rejects.toThrow(/API error/);
     });
+
+    it('should surface a 500 body message field', async () => {
+      server.use(
+        http.post(`${BASE_URL}/metrics/1/version`, () =>
+          HttpResponse.json({ message: 'Invalid prisma.metric.create()' }, { status: 500 })
+        )
+      );
+      await expect(client.createMetricVersion(1, {}, 'r')).rejects.toThrow(
+        /Invalid prisma\.metric\.create/
+      );
+    });
+
+    it('should add a hint on chk_goal_ratio constraint errors', async () => {
+      server.use(
+        http.post(`${BASE_URL}/metrics/1/version`, () =>
+          HttpResponse.json(
+            {
+              message:
+                'new row for relation "metrics" violates check constraint "chk_goal_ratio"',
+            },
+            { status: 500 }
+          )
+        )
+      );
+      await expect(client.createMetricVersion(1, {}, 'r')).rejects.toThrow(
+        /Hint: goal_ratio needs consistent/
+      );
+    });
   });
 
   describe('validateListResponse', () => {

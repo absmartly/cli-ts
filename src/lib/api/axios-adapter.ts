@@ -178,6 +178,33 @@ export class AxiosHttpClient implements HttpClient {
     const endpoint = error.config?.url || 'unknown endpoint';
     const method = error.config?.method?.toUpperCase() || 'unknown method';
     const status = error.response?.status;
+    const responseData = error.response?.data as Record<string, unknown> | undefined;
+
+    // Surface a human-readable body message from common error shapes.
+    // The backend returns {errors: [...]} for validation failures (handled by
+    // handleCommandError when the APIError reaches the command layer) and may
+    // return {message: "..."} or a raw string for other errors.
+    const bodyMessage = (() => {
+      if (!responseData) return undefined;
+      if (typeof responseData === 'string') return responseData;
+      const msg = responseData.message ?? responseData.error ?? responseData.detail;
+      return typeof msg === 'string' ? msg : undefined;
+    })();
+
+    // DB check-constraint failures (5xx) often bubble up cryptic Prisma text.
+    // Detect the goal_ratio constraint and add a concrete hint.
+    const constraintHint = (() => {
+      const haystack = `${error.message ?? ''} ${bodyMessage ?? ''}`;
+      if (haystack.includes('chk_goal_ratio')) {
+        return (
+          `Hint: goal_ratio needs consistent numerator/denominator fields. Verify\n` +
+          `that goal_id/value_source_property match the numerator_type and that\n` +
+          `denominator_goal_id/denominator_value_source_property match the\n` +
+          `denominator_type. Empty strings are not equivalent to null.`
+        );
+      }
+      return undefined;
+    })();
 
     let message: string;
     switch (status) {
@@ -216,8 +243,10 @@ export class AxiosHttpClient implements HttpClient {
             `Endpoint: ${method} ${endpoint}\n` +
             `The server took too long to respond. Please try again.`;
         } else {
-          message =
-            `API error: ${error.message || 'unknown error'}\n` + `Endpoint: ${method} ${endpoint}`;
+          const lines = [`API error: ${error.message || 'unknown error'}`, `Endpoint: ${method} ${endpoint}`];
+          if (bodyMessage) lines.push('', bodyMessage);
+          if (constraintHint) lines.push('', constraintHint);
+          message = lines.join('\n');
         }
     }
 
