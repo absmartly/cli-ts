@@ -77,6 +77,36 @@ describe.skipIf(isLiveMode)('APIClient core', () => {
         /Hint: goal_ratio needs consistent/
       );
     });
+
+    it('should parse a Prisma 500 body into clean message/detail lines', async () => {
+      const prismaBody =
+        'Invalid `prisma.metric.create()` invocation:\n\n\n' +
+        'Error occurred during query execution:\n' +
+        'ConnectorError(ConnectorError { user_facing_error: None, kind: QueryError(' +
+        'PostgresError { code: "23514", message: "new row for relation \\"metrics\\" violates check constraint \\"chk_goal_ratio\\"", ' +
+        'severity: "ERROR", detail: Some("Failing row contains (394, 92, ...)."), ' +
+        'column: None, hint: None }), transient: false })';
+      server.use(
+        http.post(`${BASE_URL}/metrics/1/version`, () =>
+          HttpResponse.json({ message: prismaBody }, { status: 500 })
+        )
+      );
+      let caught: Error | undefined;
+      try {
+        await client.createMetricVersion(1, {}, 'r');
+      } catch (e) {
+        caught = e as Error;
+      }
+      expect(caught).toBeDefined();
+      const msg = caught!.message;
+      expect(msg).toContain(
+        'message: new row for relation "metrics" violates check constraint "chk_goal_ratio"'
+      );
+      expect(msg).toContain('detail: Failing row contains (394, 92, ...).');
+      // The original noisy wrapper should be gone:
+      expect(msg).not.toContain('ConnectorError(');
+      expect(msg).not.toContain('PostgresError {');
+    });
   });
 
   describe('validateListResponse', () => {

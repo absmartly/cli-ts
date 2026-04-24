@@ -12,6 +12,70 @@ const NON_IDEMPOTENT_PUT_PATHS = ['/start', '/stop', '/restart', '/development',
 
 const IDEMPOTENT_METHODS = ['GET', 'HEAD', 'OPTIONS', 'PUT', 'DELETE'];
 
+/**
+ * Turn a Prisma-wrapped Postgres error into a readable two-line summary.
+ * Input looks like (whitespace collapsed for this comment):
+ *   Invalid `prisma.metric.create()` invocation: ... ConnectorError { ...
+ *     PostgresError { code: "23514", message: "new row for relation \"metrics\"
+ *     violates check constraint \"chk_goal_ratio\"", severity: "ERROR",
+ *     detail: Some("Failing row contains (...)"), column: None, hint: None }
+ *     ... }
+ *
+ * Returns:
+ *   message: new row for relation "metrics" violates check constraint "chk_goal_ratio"
+ *   detail: Failing row contains (...)
+ *
+ * Returns `undefined` when the input doesn't look like a Prisma error, so the
+ * caller can fall back to the raw body.
+ */
+export function formatPrismaError(text: string): string | undefined {
+  if (!text.includes('PostgresError') && !text.includes('prisma.')) return undefined;
+
+  const message = extractRustString(text, /\bmessage:\s*"/);
+  if (message === undefined) return undefined;
+
+  const lines = [`message: ${message}`];
+  const detail = extractRustString(text, /\bdetail:\s*Some\("/);
+  if (detail !== undefined) lines.push(`detail: ${detail}`);
+  return lines.join('\n');
+}
+
+/**
+ * Scan forward from the first match of `startRe` and return the contents of
+ * the following Rust-debug-formatted double-quoted string, unescaping `\"`
+ * and `\\` (the only escapes Rust's default Debug impl for &str emits).
+ */
+function extractRustString(text: string, startRe: RegExp): string | undefined {
+  const match = startRe.exec(text);
+  if (!match) return undefined;
+  let i = match.index + match[0].length;
+  let out = '';
+  while (i < text.length) {
+    const ch = text[i]!;
+    if (ch === '\\' && i + 1 < text.length) {
+      const next = text[i + 1]!;
+      if (next === '"' || next === '\\') {
+        out += next;
+        i += 2;
+        continue;
+      }
+      if (next === 'n') {
+        out += '\n';
+        i += 2;
+        continue;
+      }
+      out += next;
+      i += 2;
+      continue;
+    }
+    if (ch === '"') return out;
+    out += ch;
+    i += 1;
+  }
+  return undefined;
+}
+
+
 export type AuthConfig =
   | { method: 'api-key'; apiKey: string }
   | { method: 'oauth-jwt'; token: string; onExpired?: () => Promise<AuthConfig> };
@@ -184,17 +248,25 @@ export class AxiosHttpClient implements HttpClient {
     // The backend returns {errors: [...]} for validation failures (handled by
     // handleCommandError when the APIError reaches the command layer) and may
     // return {message: "..."} or a raw string for other errors.
-    const bodyMessage = (() => {
+    const rawBodyMessage = (() => {
       if (!responseData) return undefined;
       if (typeof responseData === 'string') return responseData;
       const msg = responseData.message ?? responseData.error ?? responseData.detail;
       return typeof msg === 'string' ? msg : undefined;
     })();
 
+    // DB errors from Prisma come back with a long wrapper that buries the two
+    // parts an operator actually needs: the Postgres `message` and `detail`.
+    // When we recognise the shape, render just those so the user sees
+    //   message: new row for relation "metrics" violates check constraint "chk_goal_ratio"
+    //   detail: Failing row contains (...)
+    // instead of the full ConnectorError/PostgresError debug dump.
+    const bodyMessage = rawBodyMessage ? formatPrismaError(rawBodyMessage) ?? rawBodyMessage : undefined;
+
     // DB check-constraint failures (5xx) often bubble up cryptic Prisma text.
     // Detect the goal_ratio constraint and add a concrete hint.
     const constraintHint = (() => {
-      const haystack = `${error.message ?? ''} ${bodyMessage ?? ''}`;
+      const haystack = `${error.message ?? ''} ${rawBodyMessage ?? ''}`;
       if (haystack.includes('chk_goal_ratio')) {
         return (
           `Hint: goal_ratio needs consistent numerator/denominator fields. Verify\n` +
