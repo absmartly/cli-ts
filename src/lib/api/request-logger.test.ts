@@ -255,6 +255,17 @@ describe('formatRequestHTTP', () => {
     );
     expect(out).toContain('→ GET https://other.example.com/path');
   });
+
+  it('omits the body when omitBody is set, keeping headers', () => {
+    const out = formatRequestHTTP(
+      makeConfig({ method: 'POST', data: { name: 'x', huge: 'should not appear' } }),
+      { showSecrets: false, color: false, omitBody: true }
+    );
+    expect(out).toContain('→ POST');
+    expect(out).toContain('Content-Type: application/json');
+    expect(out).not.toContain('huge');
+    expect(out).not.toContain('"name"');
+  });
 });
 
 describe('formatRequestCurl', () => {
@@ -316,6 +327,16 @@ describe('formatRequestCurl', () => {
     );
     expect(out).toContain(`-d '{"username":"u","password":"***"}'`);
     expect(out).not.toContain('plaintext');
+  });
+
+  it('drops the -d flag entirely when omitBody is set', () => {
+    const out = formatRequestCurl(
+      makeConfig({ method: 'POST', data: { name: 'x' } }),
+      { showSecrets: false, color: false, omitBody: true }
+    );
+    expect(out).toContain('curl -X POST');
+    expect(out).not.toContain('-d ');
+    expect(out).not.toContain('"name"');
   });
 });
 
@@ -471,6 +492,21 @@ describe('formatResponseHTTP', () => {
     );
     expect(out).toContain('Set-Cookie: session=abc');
     expect(out).toContain('"key": "visible-key"');
+  });
+
+  it('omits the body when omitBody is set, keeping status and headers', () => {
+    const out = formatResponseHTTP(
+      makeResponse({
+        headers: { 'Content-Type': 'application/json', etag: 'W/"abc"' },
+        data: { huge: 'should not appear', items: Array(1000).fill('x') },
+      }),
+      10,
+      { showSecrets: false, color: false, omitBody: true }
+    );
+    expect(out).toContain('← 200 OK');
+    expect(out).toContain('etag: W/"abc"');
+    expect(out).not.toContain('huge');
+    expect(out).not.toContain('items');
   });
 
   it('joins multi-value headers (Set-Cookie array) into a single line', () => {

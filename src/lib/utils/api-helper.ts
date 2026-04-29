@@ -86,6 +86,7 @@ export async function getAPIClientFromOptions(options: GlobalOptions): Promise<A
     showResponse: options.showResponse ?? false,
     curl: options.curl ?? false,
     showSecrets: options.showSecrets ?? false,
+    headersOnly: options.headersOnly ?? false,
     // Pass user-intent only (--no-color or NO_COLOR), not the stdout-TTY
     // conflated value: stderr diagnostics make their own TTY decision.
     noColor: options.colorDisabled ?? false,
@@ -114,6 +115,7 @@ export interface GlobalOptions {
   showResponse?: boolean;
   curl?: boolean;
   showSecrets?: boolean;
+  headersOnly?: boolean;
 }
 
 const VALID_FORMATS: OutputFormat[] = [
@@ -159,6 +161,7 @@ export function getGlobalOptions(cmd: Command): GlobalOptions {
     showResponse: opts.showResponse || false,
     curl: opts.curl || false,
     showSecrets: opts.showSecrets || false,
+    headersOnly: opts.headersOnly || false,
   };
 }
 

@@ -16,6 +16,7 @@ export interface DownloadLoggingOptions {
   showResponse?: boolean;
   curl?: boolean;
   showSecrets?: boolean;
+  headersOnly?: boolean;
   noColor?: boolean;
 }
 
@@ -45,6 +46,7 @@ function resolveLogger(options: DownloadLoggingOptions): ResolvedLogger | undefi
     curl,
     formatOpts: {
       showSecrets: options.showSecrets ?? false,
+      omitBody: options.headersOnly ?? false,
       color: !!process.stderr.isTTY && !(options.noColor ?? false),
     },
   };

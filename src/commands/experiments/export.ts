@@ -59,6 +59,7 @@ async function performDownload(
     showResponse?: boolean;
     curl?: boolean;
     showSecrets?: boolean;
+    headersOnly?: boolean;
     colorDisabled?: boolean;
   }
 ): Promise<void> {
@@ -76,6 +77,7 @@ async function performDownload(
     showResponse: globalOptions.showResponse ?? false,
     curl: globalOptions.curl ?? false,
     showSecrets: globalOptions.showSecrets ?? false,
+    headersOnly: globalOptions.headersOnly ?? false,
     noColor: globalOptions.colorDisabled ?? false,
     onProgress: (downloaded, total) => {
       const frame = spinnerFrames[spinnerFrame++ % spinnerFrames.length];

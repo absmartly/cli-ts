@@ -72,6 +72,10 @@ program
   .option(
     '--show-secrets',
     'do not redact the Authorization header in --show-request / --curl output'
+  )
+  .option(
+    '--headers-only',
+    'omit request and response bodies in --show-request / --show-response / --curl output'
   );
 
 program.addCommand(experimentsCommand);

@@ -15,6 +15,10 @@ const JSON_THEME: Theme = {
 export interface FormatOptions {
   showSecrets: boolean;
   color: boolean;
+  // Suppresses the body section in HTTP-block output and the -d flag in
+  // curl output. Useful when responses are huge but the user only cares
+  // about status + headers.
+  omitBody?: boolean;
 }
 
 const REDACTED = '***';
@@ -184,6 +188,7 @@ function formatJsonBody(data: unknown, color: boolean): string {
 }
 
 function formatBodyHTTP(data: unknown, contentType: string, opts: FormatOptions): string {
+  if (opts.omitBody) return '';
   if (data === undefined || data === null || data === '') return '';
   const redacted = redactBody(data, opts.showSecrets);
   if (contentType.toLowerCase().includes('application/json')) {
@@ -224,7 +229,8 @@ export function formatRequestCurl(config: InternalAxiosRequestConfig, opts: Form
   const url = buildUrl(config);
   const headers = redactHeaders(extractHeaders(config), opts.showSecrets);
   const headerEntries = Object.entries(headers);
-  const hasBody = config.data !== undefined && config.data !== null && config.data !== '';
+  const hasBody =
+    !opts.omitBody && config.data !== undefined && config.data !== null && config.data !== '';
 
   const dollar = opts.color ? c.dim('$') : '$';
   const flag = (s: string) => (opts.color ? c.cyan(s) : s);
