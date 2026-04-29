@@ -5,6 +5,11 @@ export interface ClientOptions {
   verbose?: boolean;
   timeout?: number;
   insecure?: boolean;
+  showRequest?: boolean;
+  showResponse?: boolean;
+  curl?: boolean;
+  showSecrets?: boolean;
+  noColor?: boolean;
 }
 
 export class APIClient extends EngineAPIClient {

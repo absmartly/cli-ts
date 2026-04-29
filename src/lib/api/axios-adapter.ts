@@ -4,6 +4,19 @@ import axiosRetry from 'axios-retry';
 import { version } from '../utils/version.js';
 import { APIError } from '../../api-client/http-client.js';
 import type { HttpClient, HttpRequestConfig, HttpResponse } from '../../api-client/http-client.js';
+import {
+  formatRequestHTTP,
+  formatRequestCurl,
+  formatResponseHTTP,
+  formatNetworkError,
+  type FormatOptions,
+} from './request-logger.js';
+
+declare module 'axios' {
+  interface InternalAxiosRequestConfig {
+    metadata?: { startTime: number };
+  }
+}
 
 const DEFAULT_TIMEOUT = 30000;
 const RETRY_COUNT = 3;
@@ -77,14 +90,34 @@ export type AuthConfig =
 export class AxiosHttpClient implements HttpClient {
   private client: AxiosInstance;
   private verbose: boolean;
+  private showRequest: boolean;
+  private showResponse: boolean;
+  private curl: boolean;
+  private formatOpts: FormatOptions;
   protected authConfig: AuthConfig;
 
   constructor(
     endpoint: string,
     auth: string | AuthConfig,
-    options: { verbose?: boolean; timeout?: number; insecure?: boolean } = {}
+    options: {
+      verbose?: boolean;
+      timeout?: number;
+      insecure?: boolean;
+      showRequest?: boolean;
+      showResponse?: boolean;
+      curl?: boolean;
+      showSecrets?: boolean;
+      noColor?: boolean;
+    } = {}
   ) {
     this.verbose = options.verbose ?? false;
+    this.showRequest = options.showRequest ?? false;
+    this.showResponse = options.showResponse ?? false;
+    this.curl = options.curl ?? false;
+    this.formatOpts = {
+      showSecrets: options.showSecrets ?? false,
+      color: !!process.stderr.isTTY && !(options.noColor ?? false),
+    };
 
     this.authConfig = typeof auth === 'string' ? { method: 'api-key', apiKey: auth } : auth;
 
@@ -132,6 +165,44 @@ export class AxiosHttpClient implements HttpClient {
         console.error(`[DEBUG] ${config.method?.toUpperCase()} ${config.url}`);
         return config;
       });
+    }
+
+    if (this.showRequest || this.curl || this.showResponse) {
+      this.client.interceptors.request.use((config) => {
+        config.metadata = { startTime: Date.now() };
+        if (this.showRequest) {
+          process.stderr.write(formatRequestHTTP(config, this.formatOpts) + '\n');
+        }
+        if (this.curl) {
+          process.stderr.write(formatRequestCurl(config, this.formatOpts) + '\n');
+        }
+        return config;
+      });
+    }
+
+    if (this.showResponse) {
+      this.client.interceptors.response.use(
+        (response) => {
+          const start = response.config.metadata?.startTime ?? Date.now();
+          const elapsed = Date.now() - start;
+          process.stderr.write(formatResponseHTTP(response, elapsed, this.formatOpts) + '\n');
+          return response;
+        },
+        (error: unknown) => {
+          if (axios.isAxiosError(error)) {
+            const start = error.config?.metadata?.startTime ?? Date.now();
+            const elapsed = Date.now() - start;
+            if (error.response) {
+              process.stderr.write(
+                formatResponseHTTP(error.response, elapsed, this.formatOpts) + '\n'
+              );
+            } else {
+              process.stderr.write(formatNetworkError(error, elapsed, this.formatOpts) + '\n');
+            }
+          }
+          return Promise.reject(error);
+        }
+      );
     }
 
     if (this.authConfig.method === 'oauth-jwt' && this.authConfig.onExpired) {
@@ -328,7 +399,16 @@ export class AxiosHttpClient implements HttpClient {
 export function createAxiosHttpClient(
   endpoint: string,
   auth: string | AuthConfig,
-  options?: { verbose?: boolean; timeout?: number; insecure?: boolean }
+  options?: {
+    verbose?: boolean;
+    timeout?: number;
+    insecure?: boolean;
+    showRequest?: boolean;
+    showResponse?: boolean;
+    curl?: boolean;
+    showSecrets?: boolean;
+    noColor?: boolean;
+  }
 ): AxiosHttpClient {
   return new AxiosHttpClient(endpoint, auth, options);
 }

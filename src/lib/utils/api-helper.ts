@@ -82,6 +82,11 @@ export async function getAPIClientFromOptions(options: GlobalOptions): Promise<A
   return createAPIClient(endpoint, auth, {
     verbose: options.verbose ?? false,
     insecure: profile.api.insecure ?? false,
+    showRequest: options.showRequest ?? false,
+    showResponse: options.showResponse ?? false,
+    curl: options.curl ?? false,
+    showSecrets: options.showSecrets ?? false,
+    noColor: options.noColor ?? false,
   });
 }
 
@@ -99,6 +104,10 @@ export interface GlobalOptions {
   terse?: boolean;
   full?: boolean;
   raw?: boolean;
+  showRequest?: boolean;
+  showResponse?: boolean;
+  curl?: boolean;
+  showSecrets?: boolean;
 }
 
 const VALID_FORMATS: OutputFormat[] = [
@@ -137,6 +146,10 @@ export function getGlobalOptions(cmd: Command): GlobalOptions {
     terse: opts.terse || false,
     full: opts.full || false,
     raw: opts.raw || false,
+    showRequest: opts.showRequest || false,
+    showResponse: opts.showResponse || false,
+    curl: opts.curl || false,
+    showSecrets: opts.showSecrets || false,
   };
 }
 

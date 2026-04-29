@@ -101,7 +101,7 @@ describe('API Helper', () => {
       expect(createAPIClient).toHaveBeenCalledWith(
         'https://staging.api.com/v1',
         { method: 'api-key', apiKey: 'staging-key' },
-        { verbose: false, insecure: false }
+        expect.objectContaining({ verbose: false, insecure: false })
       );
     });
 
