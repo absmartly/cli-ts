@@ -128,7 +128,13 @@ export const exportCommand = new Command('export')
           const fileKey = recent.downloadUrl.split('/').pop()!;
           console.log(chalk.gray(`Resuming download of ${fileKey}...`));
           try {
-            await performDownload(recent.downloadUrl, fileKey, client.getAuthHeader(), true, globalOptions);
+            await performDownload(
+              recent.downloadUrl,
+              fileKey,
+              client.getAuthHeader(),
+              true,
+              globalOptions
+            );
             return;
           } catch (err) {
             const msg = err instanceof Error ? err.message : String(err);
@@ -166,7 +172,13 @@ export const exportCommand = new Command('export')
 
             if (startNew) {
               const fileKey = recent.downloadUrl.split('/').pop()!;
-              await performDownload(recent.downloadUrl, fileKey, client.getAuthHeader(), false, globalOptions);
+              await performDownload(
+                recent.downloadUrl,
+                fileKey,
+                client.getAuthHeader(),
+                false,
+                globalOptions
+              );
               return;
             }
             console.log('');

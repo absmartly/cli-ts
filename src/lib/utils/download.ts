@@ -57,7 +57,12 @@ function logRequest(
   logger: ResolvedLogger | undefined
 ): void {
   if (!logger || (!logger.showRequest && !logger.curl)) return;
-  const fakeConfig = { method, url, headers, data: undefined } as unknown as InternalAxiosRequestConfig;
+  const fakeConfig = {
+    method,
+    url,
+    headers,
+    data: undefined,
+  } as unknown as InternalAxiosRequestConfig;
   if (logger.showRequest) {
     process.stderr.write(formatRequestHTTP(fakeConfig, logger.formatOpts) + '\n');
   }

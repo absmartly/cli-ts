@@ -114,20 +114,16 @@ function extractAuthValue(headers: unknown): string {
 
 export class AxiosHttpClient implements HttpClient {
   private client: AxiosInstance;
-  private verbose: boolean;
-  private showRequest: boolean;
-  private showResponse: boolean;
-  private curl: boolean;
-  private formatOpts: FormatOptions;
+  private readonly verbose: boolean;
+  private readonly showRequest: boolean;
+  private readonly showResponse: boolean;
+  private readonly curl: boolean;
+  private readonly formatOpts: FormatOptions;
   private lastFingerprint?: string;
   private suppressedCount = 0;
   protected authConfig: AuthConfig;
 
-  constructor(
-    endpoint: string,
-    auth: string | AuthConfig,
-    options: AxiosHttpClientOptions = {}
-  ) {
+  constructor(endpoint: string, auth: string | AuthConfig, options: AxiosHttpClientOptions = {}) {
     this.verbose = options.verbose ?? false;
     this.showRequest = options.showRequest ?? false;
     this.showResponse = options.showResponse ?? false;
@@ -185,6 +181,8 @@ export class AxiosHttpClient implements HttpClient {
       });
     }
 
+    // Request interceptor stamps startTime even when only --show-response is
+    // set, so the response handler below can compute elapsed time.
     if (this.showRequest || this.curl || this.showResponse) {
       this.client.interceptors.request.use((config) => {
         config.metadata = { startTime: Date.now() };

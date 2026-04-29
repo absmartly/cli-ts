@@ -273,6 +273,21 @@ describe('formatRequestCurl', () => {
     expect(out).toContain(`-d '{"msg":"it'\\''s working"}'`);
   });
 
+  it('escapes single quotes in URL and header values for paste-safety', () => {
+    const out = formatRequestCurl(
+      makeConfig({
+        url: "/items?name=o'reilly",
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Note': "user's note",
+        },
+      }),
+      NO_COLOR
+    );
+    expect(out).toContain(`/items?name=o'\\''reilly`);
+    expect(out).toContain(`'X-Note: user'\\''s note'`);
+  });
+
   it('omits the -d flag when there is no body', () => {
     const out = formatRequestCurl(makeConfig({ method: 'GET' }), NO_COLOR);
     expect(out).not.toContain(`-d `);

@@ -2,9 +2,7 @@ import { Chalk } from 'chalk';
 import { highlight, type Theme } from 'cli-highlight';
 import type { InternalAxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
 
-// Forced Chalk instance: always emit ANSI codes when called. Lets the caller
-// gate coloring with a single boolean (typically process.stderr.isTTY) and
-// keeps tests independent of chalk's own TTY heuristics.
+// level: 1 forces ANSI on; coloring is gated per-call via opts.color.
 const c = new Chalk({ level: 1 });
 
 const JSON_THEME: Theme = {
@@ -230,23 +228,23 @@ export function formatRequestCurl(config: InternalAxiosRequestConfig, opts: Form
 
   const dollar = opts.color ? c.dim('$') : '$';
   const flag = (s: string) => (opts.color ? c.cyan(s) : s);
+  const shellEscape = (s: string) => s.replace(/'/g, `'\\''`);
   const lines: string[] = [];
 
   const firstTrailing = headerEntries.length > 0 || hasBody ? ' \\' : '';
-  lines.push(`${dollar} curl ${flag('-X')} ${method} '${url}'${firstTrailing}`);
+  lines.push(`${dollar} curl ${flag('-X')} ${method} '${shellEscape(url)}'${firstTrailing}`);
 
   for (let i = 0; i < headerEntries.length; i++) {
     const [k, v] = headerEntries[i]!;
     const isLastHeader = i === headerEntries.length - 1;
     const trailing = !isLastHeader || hasBody ? ' \\' : '';
-    lines.push(`  ${flag('-H')} '${k}: ${v}'${trailing}`);
+    lines.push(`  ${flag('-H')} '${shellEscape(`${k}: ${v}`)}'${trailing}`);
   }
 
   if (hasBody) {
     const redacted = redactBody(config.data, opts.showSecrets);
-    let body = typeof redacted === 'string' ? redacted : JSON.stringify(redacted);
-    body = body.replace(/'/g, `'\\''`);
-    lines.push(`  ${flag('-d')} '${body}'`);
+    const body = typeof redacted === 'string' ? redacted : JSON.stringify(redacted);
+    lines.push(`  ${flag('-d')} '${shellEscape(body)}'`);
   }
 
   return lines.join('\n');
@@ -288,11 +286,7 @@ export function formatNetworkError(
   return `${arrow} ${msg} ${elapsed}`;
 }
 
-export function formatGenericError(
-  error: unknown,
-  elapsedMs: number,
-  opts: FormatOptions
-): string {
+export function formatGenericError(error: unknown, elapsedMs: number, opts: FormatOptions): string {
   const arrow = opts.color ? c.bold.red('←') : '←';
   const msg = error instanceof Error ? error.message : String(error);
   const tag = opts.color ? c.dim('(non-HTTP error)') : '(non-HTTP error)';

@@ -9,21 +9,13 @@ const mswServer = setupServer();
 
 function captureStderr(): { calls: string[]; restore: () => void } {
   const calls: string[] = [];
-  const original = process.stderr.write.bind(process.stderr);
   const spy = vi
     .spyOn(process.stderr, 'write')
     .mockImplementation((chunk: string | Uint8Array): boolean => {
       calls.push(typeof chunk === 'string' ? chunk : Buffer.from(chunk).toString('utf8'));
       return true;
     });
-  return {
-    calls,
-    restore: () => {
-      spy.mockRestore();
-      // Sanity: in case future test logic still references original.
-      void original;
-    },
-  };
+  return { calls, restore: () => spy.mockRestore() };
 }
 
 describe('AxiosHttpClient request/response logging', () => {
