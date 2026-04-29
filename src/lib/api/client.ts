@@ -1,11 +1,11 @@
 import { APIClient as EngineAPIClient } from '../../api-client/api-client.js';
-import { createAxiosHttpClient, type AuthConfig } from './axios-adapter.js';
+import {
+  createAxiosHttpClient,
+  type AuthConfig,
+  type AxiosHttpClientOptions,
+} from './axios-adapter.js';
 
-export interface ClientOptions {
-  verbose?: boolean;
-  timeout?: number;
-  insecure?: boolean;
-}
+export type ClientOptions = AxiosHttpClientOptions;
 
 export class APIClient extends EngineAPIClient {
   constructor(endpoint: string, auth: string | AuthConfig, options: ClientOptions = {}) {

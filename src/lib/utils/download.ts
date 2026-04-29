@@ -3,13 +3,93 @@ import { pipeline } from 'stream/promises';
 import { Transform } from 'stream';
 import https from 'https';
 import http from 'http';
+import type { InternalAxiosRequestConfig, AxiosResponse } from 'axios';
+import {
+  formatRequestHTTP,
+  formatRequestCurl,
+  formatResponseHTTP,
+  formatGenericError,
+  type FormatOptions,
+} from '../api/request-logger.js';
 
-export interface DownloadOptions {
+export interface DownloadLoggingOptions {
+  showRequest?: boolean;
+  showResponse?: boolean;
+  curl?: boolean;
+  showSecrets?: boolean;
+  headersOnly?: boolean;
+  statusOnly?: boolean;
+  noColor?: boolean;
+}
+
+export interface DownloadOptions extends DownloadLoggingOptions {
   url: string;
   outputPath: string;
   headers?: Record<string, string>;
   resume?: boolean;
   onProgress?: (downloaded: number, total: number | null) => void;
+}
+
+interface ResolvedLogger {
+  showRequest: boolean;
+  showResponse: boolean;
+  curl: boolean;
+  formatOpts: FormatOptions;
+}
+
+function resolveLogger(options: DownloadLoggingOptions): ResolvedLogger | undefined {
+  const showRequest = options.showRequest ?? false;
+  const showResponse = options.showResponse ?? false;
+  const curl = options.curl ?? false;
+  if (!showRequest && !showResponse && !curl) return undefined;
+  return {
+    showRequest,
+    showResponse,
+    curl,
+    formatOpts: {
+      showSecrets: options.showSecrets ?? false,
+      omitBody: options.headersOnly ?? false,
+      statusOnly: options.statusOnly ?? false,
+      color: !!process.stderr.isTTY && !(options.noColor ?? false),
+    },
+  };
+}
+
+function logRequest(
+  method: string,
+  url: string,
+  headers: Record<string, string>,
+  logger: ResolvedLogger | undefined
+): void {
+  if (!logger || (!logger.showRequest && !logger.curl)) return;
+  const fakeConfig = {
+    method,
+    url,
+    headers,
+    data: undefined,
+  } as unknown as InternalAxiosRequestConfig;
+  if (logger.showRequest) {
+    process.stderr.write(formatRequestHTTP(fakeConfig, logger.formatOpts) + '\n');
+  }
+  if (logger.curl) {
+    process.stderr.write(formatRequestCurl(fakeConfig, logger.formatOpts) + '\n');
+  }
+}
+
+function logResponse(
+  response: http.IncomingMessage,
+  elapsedMs: number,
+  logger: ResolvedLogger | undefined
+): void {
+  if (!logger?.showResponse) return;
+  const fakeResp = {
+    status: response.statusCode ?? 0,
+    statusText: response.statusMessage ?? '',
+    headers: response.headers as Record<string, unknown>,
+    data: undefined,
+    config: {} as InternalAxiosRequestConfig,
+  } as unknown as AxiosResponse;
+  process.stderr.write(formatResponseHTTP(fakeResp, elapsedMs, logger.formatOpts) + '\n');
 }
 
 export interface DownloadResult {
@@ -50,11 +130,30 @@ function cleanupMeta(outputPath: string): void {
   }
 }
 
-function httpGet(url: string, headers: Record<string, string>): Promise<http.IncomingMessage> {
+function httpGet(
+  url: string,
+  headers: Record<string, string>,
+  logger?: ResolvedLogger
+): Promise<http.IncomingMessage> {
   return new Promise((resolve, reject) => {
+    const start = Date.now();
+    logRequest('GET', url, headers, logger);
     const client = url.startsWith('https:') ? https : http;
-    const req = client.get(url, { headers }, resolve);
-    req.on('error', reject);
+    const req = client.get(url, { headers }, (response) => {
+      logResponse(response, Date.now() - start, logger);
+      resolve(response);
+    });
+    req.on('error', (error) => {
+      // Surface DNS / TLS / socket failures on stderr when --show-response is on.
+      // Without this the raw download path stays silent for errors that never
+      // produce an HTTP response, unlike the axios path.
+      if (logger?.showResponse) {
+        process.stderr.write(
+          formatGenericError(error, Date.now() - start, logger.formatOpts) + '\n'
+        );
+      }
+      reject(error);
+    });
   });
 }
 
@@ -67,14 +166,15 @@ interface ResolvedResponse {
 async function resolveRedirects(
   url: string,
   headers: Record<string, string>,
-  maxRedirects = 10
+  maxRedirects = 10,
+  logger?: ResolvedLogger
 ): Promise<ResolvedResponse> {
   let currentUrl = url;
   const reqHeaders = { ...headers };
   let redirectCount = 0;
 
   while (redirectCount < maxRedirects) {
-    const response = await httpGet(currentUrl, reqHeaders);
+    const response = await httpGet(currentUrl, reqHeaders, logger);
     const status = response.statusCode ?? 0;
 
     if (status >= 300 && status < 400 && response.headers.location) {
@@ -100,6 +200,7 @@ async function resolveRedirects(
 
 export async function downloadFile(options: DownloadOptions): Promise<DownloadResult> {
   const { url, outputPath, onProgress } = options;
+  const logger = resolveLogger(options);
 
   const existingSize = options.resume ? getExistingSize(outputPath) : 0;
 
@@ -108,7 +209,7 @@ export async function downloadFile(options: DownloadOptions): Promise<DownloadRe
     const savedUrl = loadMeta(outputPath);
     if (savedUrl) {
       const rangeHeaders: Record<string, string> = { Range: `bytes=${existingSize}-` };
-      const rangeResponse = await httpGet(savedUrl, rangeHeaders);
+      const rangeResponse = await httpGet(savedUrl, rangeHeaders, logger);
       const rangeStatus = rangeResponse.statusCode ?? 0;
 
       if (rangeStatus === 416) {
@@ -136,7 +237,7 @@ export async function downloadFile(options: DownloadOptions): Promise<DownloadRe
 
   // Resolve redirects (API → S3) to get the final URL
   const headers: Record<string, string> = { ...options.headers };
-  const { response, finalUrl, finalHeaders } = await resolveRedirects(url, headers);
+  const { response, finalUrl, finalHeaders } = await resolveRedirects(url, headers, 10, logger);
   const status = response.statusCode ?? 0;
 
   if (status < 200 || status >= 300) {
@@ -151,7 +252,7 @@ export async function downloadFile(options: DownloadOptions): Promise<DownloadRe
   if (existingSize > 0) {
     response.resume();
     const rangeHeaders = { ...finalHeaders, Range: `bytes=${existingSize}-` };
-    const rangeResponse = await httpGet(finalUrl, rangeHeaders);
+    const rangeResponse = await httpGet(finalUrl, rangeHeaders, logger);
     const rangeStatus = rangeResponse.statusCode ?? 0;
 
     if (rangeStatus === 416) {

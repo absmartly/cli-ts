@@ -48,3 +48,4 @@ docs/plans/
 .claude/tasks/
 docs/
 PLAN-*.md
+.worktrees/

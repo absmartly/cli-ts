@@ -65,7 +65,22 @@ program
   .option('--profile <name>', 'use specific profile')
   .option('--terse', 'show compact format with truncation')
   .option('--full', 'show full text without truncation')
-  .option('--raw', 'show raw API response without summarizing or transforming');
+  .option('--raw', 'show raw API response without summarizing or transforming')
+  .option('--show-request', 'print outgoing HTTP requests to stderr')
+  .option('--show-response', 'print HTTP responses to stderr (success and error)')
+  .option('--curl', 'print outgoing requests as curl commands to stderr')
+  .option(
+    '--show-secrets',
+    'do not redact the Authorization header in --show-request / --curl output'
+  )
+  .option(
+    '--headers-only',
+    'omit request and response bodies in --show-request / --show-response / --curl output'
+  )
+  .option(
+    '--status-only',
+    'print only the response status line (implies --show-response; no headers, no body)'
+  );
 
 program.addCommand(experimentsCommand);
 program.addCommand(authCommand);
