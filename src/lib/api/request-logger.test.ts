@@ -125,7 +125,12 @@ describe('redactBody', () => {
 
   it('walks arrays of objects', () => {
     const out = redactBody(
-      { keys: [{ name: 'a', key: 'k1' }, { name: 'b', key: 'k2' }] },
+      {
+        keys: [
+          { name: 'a', key: 'k1' },
+          { name: 'b', key: 'k2' },
+        ],
+      },
       false
     );
     expect(out).toEqual({

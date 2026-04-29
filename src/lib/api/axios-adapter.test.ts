@@ -287,9 +287,7 @@ describe('AxiosHttpClient request/response logging', () => {
 
   describe('suppression of identical consecutive requests', () => {
     it('emits the request once for back-to-back identical polls and reports the suppressed count', async () => {
-      mswServer.use(
-        http.get(`${BASE_URL}/poll`, () => HttpResponse.json({ status: 'running' }))
-      );
+      mswServer.use(http.get(`${BASE_URL}/poll`, () => HttpResponse.json({ status: 'running' })));
 
       const stderr = captureStderr();
       try {
@@ -301,9 +299,7 @@ describe('AxiosHttpClient request/response logging', () => {
         await client.request({ method: 'GET', url: '/poll' });
         await client.request({ method: 'GET', url: '/poll' });
         // Different URL flushes the suppression count.
-        mswServer.use(
-          http.get(`${BASE_URL}/done`, () => HttpResponse.json({ ok: true }))
-        );
+        mswServer.use(http.get(`${BASE_URL}/done`, () => HttpResponse.json({ ok: true })));
         await client.request({ method: 'GET', url: '/done' });
 
         const out = stderr.calls.join('');
