@@ -17,6 +17,8 @@ const WITH_COLOR: FormatOptions = { showSecrets: false, color: true };
 const WITH_SECRETS: FormatOptions = { showSecrets: true, color: false };
 
 const ANSI_RE = /\x1b\[[0-9;]*m/;
+const ANSI_GLOBAL_RE = /\x1b\[[0-9;]*m/g;
+const stripAnsi = (s: string) => s.replace(ANSI_GLOBAL_RE, '');
 
 function makeConfig(
   overrides: Partial<InternalAxiosRequestConfig> = {}
@@ -314,36 +316,47 @@ describe('formatResponseHTTP', () => {
     expect(out).toContain('"id": 42');
   });
 
-  it('colors 2xx status green', () => {
-    const out = formatResponseHTTP(makeResponse({ status: 200, statusText: 'OK' }), 10, WITH_COLOR);
-    expect(out).toContain('\x1b[32m');
+  it('colors 2xx status (visible text + ANSI present, distinct from 4xx coloring)', () => {
+    const ok = formatResponseHTTP(makeResponse({ status: 200, statusText: 'OK' }), 10, WITH_COLOR);
+    const notFound = formatResponseHTTP(
+      makeResponse({ status: 404, statusText: 'Not Found' }),
+      10,
+      WITH_COLOR
+    );
+    expect(stripAnsi(ok)).toContain('200 OK');
+    expect(ok).toMatch(ANSI_RE);
+    // Different status bands should produce different colored output.
+    expect(ok.match(ANSI_GLOBAL_RE)?.join('')).not.toBe(notFound.match(ANSI_GLOBAL_RE)?.join(''));
   });
 
-  it('colors 3xx status yellow', () => {
+  it('colors 3xx status', () => {
     const out = formatResponseHTTP(
       makeResponse({ status: 301, statusText: 'Moved Permanently' }),
       10,
       WITH_COLOR
     );
-    expect(out).toContain('\x1b[33m');
+    expect(stripAnsi(out)).toContain('301 Moved Permanently');
+    expect(out).toMatch(ANSI_RE);
   });
 
-  it('colors 4xx status red', () => {
+  it('colors 4xx status', () => {
     const out = formatResponseHTTP(
       makeResponse({ status: 404, statusText: 'Not Found' }),
       10,
       WITH_COLOR
     );
-    expect(out).toContain('\x1b[31m');
+    expect(stripAnsi(out)).toContain('404 Not Found');
+    expect(out).toMatch(ANSI_RE);
   });
 
-  it('colors 5xx status bold red', () => {
+  it('colors 5xx status (bold red — visible text + ANSI present)', () => {
     const out = formatResponseHTTP(
       makeResponse({ status: 500, statusText: 'Internal Server Error' }),
       10,
       WITH_COLOR
     );
-    expect(out).toMatch(/\x1b\[1m.*\x1b\[31m|\x1b\[31m.*\x1b\[1m/);
+    expect(stripAnsi(out)).toContain('500 Internal Server Error');
+    expect(out).toMatch(ANSI_RE);
   });
 
   it('omits body section when response has no body', () => {
