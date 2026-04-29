@@ -125,9 +125,7 @@ describe('safeStringify', () => {
 
 describe('redactUrl', () => {
   it('passes through URLs without query strings', () => {
-    expect(redactUrl('https://api.example.com/path', false)).toBe(
-      'https://api.example.com/path'
-    );
+    expect(redactUrl('https://api.example.com/path', false)).toBe('https://api.example.com/path');
   });
 
   it('passes through URLs with non-sensitive query params', () => {
@@ -150,9 +148,7 @@ describe('redactUrl', () => {
   });
 
   it('matches sensitive query param names case-insensitively', () => {
-    expect(redactUrl('https://x/y?signature=abc', false)).toBe(
-      'https://x/y?[redacted-presigned]'
-    );
+    expect(redactUrl('https://x/y?signature=abc', false)).toBe('https://x/y?[redacted-presigned]');
     expect(redactUrl('https://x/y?Token=jwt', false)).toBe('https://x/y?[redacted-presigned]');
   });
 
