@@ -4,6 +4,7 @@ import { AxiosHeaders } from 'axios';
 import {
   redactHeaders,
   redactBody,
+  safeStringify,
   formatRequestHTTP,
   formatRequestCurl,
   formatResponseHTTP,
@@ -104,6 +105,20 @@ describe('redactHeaders', () => {
     );
     expect(out.Authorization).toBe('***');
     expect(out['Set-Cookie']).toBe('***');
+  });
+});
+
+describe('safeStringify', () => {
+  it('returns JSON for serialisable values', () => {
+    expect(safeStringify({ a: 1 })).toBe('{"a":1}');
+    expect(safeStringify({ a: 1 }, 2)).toBe('{\n  "a": 1\n}');
+  });
+
+  it('returns a placeholder instead of throwing on circular refs', () => {
+    const obj: Record<string, unknown> = { a: 1 };
+    obj.self = obj;
+    expect(() => safeStringify(obj)).not.toThrow();
+    expect(safeStringify(obj)).toBe('"[unserialisable]"');
   });
 });
 
@@ -268,6 +283,16 @@ describe('formatRequestHTTP', () => {
     expect(out).toContain('Content-Type: application/json');
     expect(out).not.toContain('huge');
     expect(out).not.toContain('"name"');
+  });
+
+  it('renders a circular-ref body as a placeholder, never throws', () => {
+    const data: Record<string, unknown> = { name: 'x' };
+    data.self = data;
+    expect(() =>
+      formatRequestHTTP(makeConfig({ method: 'POST', data }), NO_COLOR)
+    ).not.toThrow();
+    const out = formatRequestHTTP(makeConfig({ method: 'POST', data }), NO_COLOR);
+    expect(out).toMatch(/\[circular\]|\[unserialisable\]/);
   });
 });
 

@@ -74,8 +74,15 @@ export function redactHeaders(
 }
 
 export function redactBody(data: unknown, showSecrets: boolean): unknown {
-  if (showSecrets || data === null || typeof data !== 'object') return data;
-  if (Array.isArray(data)) return data.map((item) => redactBody(item, showSecrets));
+  if (showSecrets) return data;
+  return redactBodyInner(data, new WeakSet());
+}
+
+function redactBodyInner(data: unknown, visited: WeakSet<object>): unknown {
+  if (data === null || typeof data !== 'object') return data;
+  if (visited.has(data as object)) return '[circular]';
+  visited.add(data as object);
+  if (Array.isArray(data)) return data.map((item) => redactBodyInner(item, visited));
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(data as Record<string, unknown>)) {
     // Sensitive keys redact regardless of value type so an object/array under
@@ -85,7 +92,7 @@ export function redactBody(data: unknown, showSecrets: boolean): unknown {
       out[k] = REDACTED;
       continue;
     }
-    out[k] = redactBody(v, showSecrets);
+    out[k] = redactBodyInner(v, visited);
   }
   return out;
 }
@@ -183,7 +190,7 @@ function formatJsonBody(data: unknown, color: boolean): string {
       return `${tag}\n${data}`;
     }
   } else {
-    json = JSON.stringify(data, null, 2);
+    json = safeStringify(data, 2);
   }
   return color
     ? highlight(json, { language: 'json', ignoreIllegals: true, theme: JSON_THEME })
@@ -197,7 +204,7 @@ function formatBodyHTTP(data: unknown, contentType: string, opts: FormatOptions)
   if (contentType.toLowerCase().includes('application/json')) {
     return formatJsonBody(redacted, opts.color);
   }
-  return typeof redacted === 'string' ? redacted : JSON.stringify(redacted);
+  return typeof redacted === 'string' ? redacted : safeStringify(redacted);
 }
 
 function indent(text: string, prefix: string): string {
@@ -205,6 +212,16 @@ function indent(text: string, prefix: string): string {
     .split('\n')
     .map((line) => prefix + line)
     .join('\n');
+}
+
+// Wraps JSON.stringify so logging never throws into the request path. Circular
+// references (and any other Errors from stringify) become a fixed placeholder.
+export function safeStringify(value: unknown, indentSpaces?: number): string {
+  try {
+    return JSON.stringify(value, null, indentSpaces);
+  } catch {
+    return '"[unserialisable]"';
+  }
 }
 
 export function formatRequestHTTP(config: InternalAxiosRequestConfig, opts: FormatOptions): string {
@@ -252,7 +269,7 @@ export function formatRequestCurl(config: InternalAxiosRequestConfig, opts: Form
 
   if (hasBody) {
     const redacted = redactBody(config.data, opts.showSecrets);
-    const body = typeof redacted === 'string' ? redacted : JSON.stringify(redacted);
+    const body = typeof redacted === 'string' ? redacted : safeStringify(redacted);
     lines.push(`  ${flag('-d')} '${shellEscape(body)}'`);
   }
 

@@ -11,6 +11,7 @@ import {
   formatNetworkError,
   formatGenericError,
   formatSuppressionNotice,
+  safeStringify,
   type FormatOptions,
 } from './request-logger.js';
 
@@ -311,8 +312,8 @@ export class AxiosHttpClient implements HttpClient {
   }): string {
     const method = (config.method ?? 'GET').toUpperCase();
     const url = config.url ?? '';
-    const params = config.params ? JSON.stringify(config.params) : '';
-    const body = config.data ? JSON.stringify(config.data) : '';
+    const params = config.params ? safeStringify(config.params) : '';
+    const body = config.data ? safeStringify(config.data) : '';
     // Include the Authorization header so OAuth refresh retries (which change
     // the token) and the axios-retry retryCount so failed-then-retried
     // requests are not collapsed into the original.
