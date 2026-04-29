@@ -8,6 +8,7 @@ import {
   formatRequestHTTP,
   formatRequestCurl,
   formatResponseHTTP,
+  formatGenericError,
   type FormatOptions,
 } from '../api/request-logger.js';
 
@@ -142,7 +143,17 @@ function httpGet(
       logResponse(response, Date.now() - start, logger);
       resolve(response);
     });
-    req.on('error', reject);
+    req.on('error', (error) => {
+      // Surface DNS / TLS / socket failures on stderr when --show-response is on.
+      // Without this the raw download path stays silent for errors that never
+      // produce an HTTP response, unlike the axios path.
+      if (logger?.showResponse) {
+        process.stderr.write(
+          formatGenericError(error, Date.now() - start, logger.formatOpts) + '\n'
+        );
+      }
+      reject(error);
+    });
   });
 }
 

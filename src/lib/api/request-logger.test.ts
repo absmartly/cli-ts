@@ -4,6 +4,7 @@ import { AxiosHeaders } from 'axios';
 import {
   redactHeaders,
   redactBody,
+  redactUrl,
   safeStringify,
   formatRequestHTTP,
   formatRequestCurl,
@@ -119,6 +120,51 @@ describe('safeStringify', () => {
     obj.self = obj;
     expect(() => safeStringify(obj)).not.toThrow();
     expect(safeStringify(obj)).toBe('"[unserialisable]"');
+  });
+});
+
+describe('redactUrl', () => {
+  it('passes through URLs without query strings', () => {
+    expect(redactUrl('https://api.example.com/path', false)).toBe(
+      'https://api.example.com/path'
+    );
+  });
+
+  it('passes through URLs with non-sensitive query params', () => {
+    expect(redactUrl('https://api.example.com/path?page=1&expand=metrics', false)).toBe(
+      'https://api.example.com/path?page=1&expand=metrics'
+    );
+  });
+
+  it('redacts the entire query string when an AWS presigned param is present', () => {
+    const url =
+      'https://bucket.s3.amazonaws.com/key.zip?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIA.../20260430&X-Amz-Date=20260430T000000Z&X-Amz-Expires=900&X-Amz-Signature=deadbeef&X-Amz-SignedHeaders=host';
+    expect(redactUrl(url, false)).toBe(
+      'https://bucket.s3.amazonaws.com/key.zip?[redacted-presigned]'
+    );
+  });
+
+  it('redacts GCP presigned params too', () => {
+    const url = 'https://storage.googleapis.com/k?X-Goog-Signature=abc&foo=bar';
+    expect(redactUrl(url, false)).toBe('https://storage.googleapis.com/k?[redacted-presigned]');
+  });
+
+  it('matches sensitive query param names case-insensitively', () => {
+    expect(redactUrl('https://x/y?signature=abc', false)).toBe(
+      'https://x/y?[redacted-presigned]'
+    );
+    expect(redactUrl('https://x/y?Token=jwt', false)).toBe('https://x/y?[redacted-presigned]');
+  });
+
+  it('preserves the URL fragment after redaction', () => {
+    expect(redactUrl('https://x/y?Signature=abc#frag', false)).toBe(
+      'https://x/y?[redacted-presigned]#frag'
+    );
+  });
+
+  it('with showSecrets: true leaves the URL untouched', () => {
+    const url = 'https://x/y?X-Amz-Signature=abc';
+    expect(redactUrl(url, true)).toBe(url);
   });
 });
 
@@ -272,6 +318,18 @@ describe('formatRequestHTTP', () => {
       NO_COLOR
     );
     expect(out).toContain('→ GET https://other.example.com/path');
+  });
+
+  it('redacts presigned query strings in the request URL', () => {
+    const out = formatRequestHTTP(
+      makeConfig({
+        baseURL: '',
+        url: 'https://bucket.s3.amazonaws.com/k.zip?X-Amz-Signature=secretvalue&X-Amz-Expires=900',
+      }),
+      NO_COLOR
+    );
+    expect(out).toContain('https://bucket.s3.amazonaws.com/k.zip?[redacted-presigned]');
+    expect(out).not.toContain('secretvalue');
   });
 
   it('omits the body when omitBody is set, keeping headers', () => {
@@ -506,6 +564,23 @@ describe('formatResponseHTTP', () => {
     expect(out).not.toContain('jwt-here');
     expect(out).toContain('"password": "***"');
     expect(out).toContain('"token": "***"');
+  });
+
+  it('redacts a Location header that contains a presigned URL', () => {
+    const out = formatResponseHTTP(
+      makeResponse({
+        status: 302,
+        statusText: 'Found',
+        headers: {
+          location:
+            'https://bucket.s3.amazonaws.com/k.zip?X-Amz-Signature=deadbeef&X-Amz-Expires=900',
+        },
+      }),
+      10,
+      NO_COLOR
+    );
+    expect(out).toContain('location: https://bucket.s3.amazonaws.com/k.zip?[redacted-presigned]');
+    expect(out).not.toContain('deadbeef');
   });
 
   it('does not redact response headers or body when showSecrets is true', () => {

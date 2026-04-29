@@ -50,6 +50,53 @@ const SENSITIVE_BODY_FIELDS = new Set([
 // Headers redacted to keep their scheme prefix (e.g. "Api-Key ***", "Bearer ***").
 const SCHEMED_AUTH_HEADERS = new Set(['authorization', 'proxy-authorization']);
 
+// Query-string parameter names that frequently carry presigned credentials
+// (AWS / GCP / Azure / generic). Matched case-insensitively. When any of these
+// appear we replace the *entire* query string — not just the matched keys —
+// since the surrounding params (Expires, Policy, etc.) are also part of the
+// signed bundle and a partial reveal can still attribute the URL.
+const SENSITIVE_QUERY_PARAMS = new Set([
+  'signature',
+  'x-amz-signature',
+  'x-amz-credential',
+  'x-amz-security-token',
+  'x-amz-algorithm',
+  'x-amz-date',
+  'x-amz-expires',
+  'x-amz-signedheaders',
+  'x-goog-signature',
+  'x-goog-credential',
+  'x-goog-algorithm',
+  'x-goog-date',
+  'x-goog-expires',
+  'x-goog-signedheaders',
+  'sig',
+  'token',
+  'auth',
+  'access_token',
+]);
+
+const PRESIGNED_REDACTED_QS = '?[redacted-presigned]';
+const REDIRECT_HEADERS = new Set(['location', 'content-location']);
+
+export function redactUrl(url: string, showSecrets: boolean): string {
+  if (showSecrets) return url;
+  const qIdx = url.indexOf('?');
+  if (qIdx < 0) return url;
+  const qs = url.slice(qIdx + 1);
+  const hashIdx = qs.indexOf('#');
+  const params = (hashIdx >= 0 ? qs.slice(0, hashIdx) : qs).split('&');
+  const trailing = hashIdx >= 0 ? qs.slice(hashIdx) : '';
+  for (const p of params) {
+    const eq = p.indexOf('=');
+    const name = (eq >= 0 ? p.slice(0, eq) : p).toLowerCase();
+    if (SENSITIVE_QUERY_PARAMS.has(name)) {
+      return url.slice(0, qIdx) + PRESIGNED_REDACTED_QS + trailing;
+    }
+  }
+  return url;
+}
+
 export function redactHeaders(
   headers: Record<string, string>,
   showSecrets: boolean
@@ -58,6 +105,10 @@ export function redactHeaders(
   const out: Record<string, string> = {};
   for (const [key, value] of Object.entries(headers)) {
     const lower = key.toLowerCase();
+    if (REDIRECT_HEADERS.has(lower) && typeof value === 'string') {
+      out[key] = redactUrl(value, false);
+      continue;
+    }
     if (!SENSITIVE_HEADERS.has(lower)) {
       out[key] = value;
       continue;
@@ -229,7 +280,7 @@ export function safeStringify(value: unknown, indentSpaces?: number): string {
 
 export function formatRequestHTTP(config: InternalAxiosRequestConfig, opts: FormatOptions): string {
   const method = (config.method ?? 'GET').toUpperCase();
-  const url = buildUrl(config);
+  const url = redactUrl(buildUrl(config), opts.showSecrets);
   const arrow = opts.color ? c.bold.cyan('→') : '→';
   const renderedUrl = opts.color ? c.dim(url) : url;
   const lines: string[] = [`${arrow} ${colorMethod(method, opts.color)} ${renderedUrl}`];
@@ -249,7 +300,7 @@ export function formatRequestHTTP(config: InternalAxiosRequestConfig, opts: Form
 
 export function formatRequestCurl(config: InternalAxiosRequestConfig, opts: FormatOptions): string {
   const method = (config.method ?? 'GET').toUpperCase();
-  const url = buildUrl(config);
+  const url = redactUrl(buildUrl(config), opts.showSecrets);
   const headers = redactHeaders(extractHeaders(config), opts.showSecrets);
   const headerEntries = Object.entries(headers);
   const hasBody =
