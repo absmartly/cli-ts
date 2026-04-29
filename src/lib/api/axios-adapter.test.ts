@@ -232,4 +232,105 @@ describe('AxiosHttpClient request/response logging', () => {
       }
     });
   });
+
+  describe('TTY and noColor', () => {
+    function withStderrTTY<T>(value: boolean | undefined, fn: () => T): T {
+      const original = process.stderr.isTTY;
+      Object.defineProperty(process.stderr, 'isTTY', { value, configurable: true });
+      try {
+        return fn();
+      } finally {
+        Object.defineProperty(process.stderr, 'isTTY', { value: original, configurable: true });
+      }
+    }
+
+    it('emits ANSI codes when stderr is a TTY and noColor is false', async () => {
+      mswServer.use(http.get(`${BASE_URL}/ping`, () => HttpResponse.json({ ok: true })));
+
+      await withStderrTTY(true, async () => {
+        const stderr = captureStderr();
+        try {
+          const client = new AxiosHttpClient(BASE_URL, 'tok', { showRequest: true });
+          await client.request({ method: 'GET', url: '/ping' });
+          expect(stderr.calls.join('')).toMatch(/\x1b\[/);
+        } finally {
+          stderr.restore();
+        }
+      });
+    });
+
+    it('emits no ANSI when noColor is true even on a TTY', async () => {
+      mswServer.use(http.get(`${BASE_URL}/ping`, () => HttpResponse.json({ ok: true })));
+
+      await withStderrTTY(true, async () => {
+        const stderr = captureStderr();
+        try {
+          const client = new AxiosHttpClient(BASE_URL, 'tok', {
+            showRequest: true,
+            noColor: true,
+          });
+          await client.request({ method: 'GET', url: '/ping' });
+          expect(stderr.calls.join('')).not.toMatch(/\x1b\[/);
+        } finally {
+          stderr.restore();
+        }
+      });
+    });
+
+    it('emits no ANSI when stderr is not a TTY', async () => {
+      mswServer.use(http.get(`${BASE_URL}/ping`, () => HttpResponse.json({ ok: true })));
+
+      await withStderrTTY(false, async () => {
+        const stderr = captureStderr();
+        try {
+          const client = new AxiosHttpClient(BASE_URL, 'tok', { showRequest: true });
+          await client.request({ method: 'GET', url: '/ping' });
+          expect(stderr.calls.join('')).not.toMatch(/\x1b\[/);
+        } finally {
+          stderr.restore();
+        }
+      });
+    });
+  });
+
+  describe('oauth-jwt + showResponse', () => {
+    it('logs both the original 401 and the retry response after token refresh', async () => {
+      let callCount = 0;
+      mswServer.use(
+        http.get(`${BASE_URL}/protected`, ({ request }) => {
+          callCount++;
+          const auth = request.headers.get('Authorization');
+          if (auth === 'Bearer expired-token') {
+            return HttpResponse.json({ error: 'unauthorized' }, { status: 401 });
+          }
+          if (auth === 'Bearer fresh-token') {
+            return HttpResponse.json({ ok: true });
+          }
+          return HttpResponse.json({ error: 'unexpected' }, { status: 400 });
+        })
+      );
+
+      const onExpired = vi.fn().mockResolvedValue({ method: 'oauth-jwt', token: 'fresh-token' });
+
+      const stderr = captureStderr();
+      try {
+        const client = new AxiosHttpClient(
+          BASE_URL,
+          { method: 'oauth-jwt', token: 'expired-token', onExpired },
+          { showResponse: true }
+        );
+        const response = await client.request({ method: 'GET', url: '/protected' });
+        expect(response.status).toBe(200);
+        expect(callCount).toBe(2);
+
+        const out = stderr.calls.join('');
+        const arrows = out.match(/← \d+/g) ?? [];
+        expect(arrows.length).toBe(2);
+        expect(out).toMatch(/← 401/);
+        expect(out).toMatch(/← 200/);
+      } finally {
+        stderr.restore();
+      }
+    });
+  });
 });

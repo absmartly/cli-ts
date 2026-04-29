@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { InternalAxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
+import { AxiosHeaders } from 'axios';
 import {
   redactHeaders,
   redactBody,
@@ -227,6 +228,17 @@ describe('formatRequestHTTP', () => {
       NO_COLOR
     );
     expect(out).toContain('→ GET https://api.example.com');
+  });
+
+  it('uses AxiosHeaders.toJSON() when headers is an AxiosHeaders instance', () => {
+    const headers = new AxiosHeaders();
+    headers.set('Authorization', 'Api-Key real-key-value');
+    headers.set('Content-Type', 'application/json');
+    const config = makeConfig({ headers, data: { id: 1 } });
+    const out = formatRequestHTTP(config, NO_COLOR);
+    expect(out).toContain('Authorization: Api-Key ***');
+    expect(out).toContain('Content-Type: application/json');
+    expect(out).not.toContain('real-key-value');
   });
 
   it('uses absolute url verbatim when one is supplied', () => {
