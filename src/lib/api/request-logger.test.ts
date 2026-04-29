@@ -330,10 +330,11 @@ describe('formatRequestCurl', () => {
   });
 
   it('drops the -d flag entirely when omitBody is set', () => {
-    const out = formatRequestCurl(
-      makeConfig({ method: 'POST', data: { name: 'x' } }),
-      { showSecrets: false, color: false, omitBody: true }
-    );
+    const out = formatRequestCurl(makeConfig({ method: 'POST', data: { name: 'x' } }), {
+      showSecrets: false,
+      color: false,
+      omitBody: true,
+    });
     expect(out).toContain('curl -X POST');
     expect(out).not.toContain('-d ');
     expect(out).not.toContain('"name"');
