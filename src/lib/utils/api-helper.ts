@@ -86,7 +86,9 @@ export async function getAPIClientFromOptions(options: GlobalOptions): Promise<A
     showResponse: options.showResponse ?? false,
     curl: options.curl ?? false,
     showSecrets: options.showSecrets ?? false,
-    noColor: options.noColor ?? false,
+    // Pass user-intent only (--no-color or NO_COLOR), not the stdout-TTY
+    // conflated value: stderr diagnostics make their own TTY decision.
+    noColor: options.colorDisabled ?? false,
   });
 }
 
@@ -98,6 +100,10 @@ export interface GlobalOptions {
   env?: string;
   output?: OutputFormat;
   noColor?: boolean;
+  // True when the user explicitly disabled color (--no-color or NO_COLOR env).
+  // noColor above additionally disables when stdout isn't a TTY; this field
+  // is the strict user-intent variant for stderr-bound consumers.
+  colorDisabled?: boolean;
   verbose?: boolean;
   quiet?: boolean;
   profile?: string;
@@ -132,6 +138,8 @@ export function getGlobalOptions(cmd: Command): GlobalOptions {
     );
   }
 
+  const colorDisabled = opts.color === false || !!process.env.NO_COLOR;
+
   return {
     config: opts.config,
     apiKey: opts.apiKey,
@@ -139,7 +147,8 @@ export function getGlobalOptions(cmd: Command): GlobalOptions {
     app: opts.app,
     env: opts.env,
     output,
-    noColor: opts.color === false || !process.stdout.isTTY,
+    noColor: colorDisabled || !process.stdout.isTTY,
+    colorDisabled,
     verbose: opts.verbose || false,
     quiet: opts.quiet || false,
     profile: opts.profile,
