@@ -149,10 +149,7 @@ function indent(text: string, prefix: string): string {
     .join('\n');
 }
 
-export function formatRequestHTTP(
-  config: InternalAxiosRequestConfig,
-  opts: FormatOptions
-): string {
+export function formatRequestHTTP(config: InternalAxiosRequestConfig, opts: FormatOptions): string {
   const method = (config.method ?? 'GET').toUpperCase();
   const url = buildUrl(config);
   const arrow = opts.color ? c.bold.cyan('→') : '→';
@@ -172,10 +169,7 @@ export function formatRequestHTTP(
   return lines.join('\n');
 }
 
-export function formatRequestCurl(
-  config: InternalAxiosRequestConfig,
-  opts: FormatOptions
-): string {
+export function formatRequestCurl(config: InternalAxiosRequestConfig, opts: FormatOptions): string {
   const method = (config.method ?? 'GET').toUpperCase();
   const url = buildUrl(config);
   const headers = redactHeaders(extractHeaders(config), opts.showSecrets);

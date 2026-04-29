@@ -131,18 +131,12 @@ describe('formatRequestHTTP', () => {
   });
 
   it('with color: false produces no ANSI escape codes', () => {
-    const out = formatRequestHTTP(
-      makeConfig({ method: 'POST', data: { foo: 'bar' } }),
-      NO_COLOR
-    );
+    const out = formatRequestHTTP(makeConfig({ method: 'POST', data: { foo: 'bar' } }), NO_COLOR);
     expect(out).not.toMatch(ANSI_RE);
   });
 
   it('with color: true includes ANSI codes', () => {
-    const out = formatRequestHTTP(
-      makeConfig({ method: 'POST', data: { foo: 'bar' } }),
-      WITH_COLOR
-    );
+    const out = formatRequestHTTP(makeConfig({ method: 'POST', data: { foo: 'bar' } }), WITH_COLOR);
     expect(out).toMatch(ANSI_RE);
   });
 
@@ -195,10 +189,7 @@ describe('formatRequestCurl', () => {
   });
 
   it('with color: false produces no ANSI escape codes', () => {
-    const out = formatRequestCurl(
-      makeConfig({ method: 'POST', data: { foo: 'bar' } }),
-      NO_COLOR
-    );
+    const out = formatRequestCurl(makeConfig({ method: 'POST', data: { foo: 'bar' } }), NO_COLOR);
     expect(out).not.toMatch(ANSI_RE);
   });
 
@@ -227,11 +218,7 @@ describe('formatResponseHTTP', () => {
   });
 
   it('colors 2xx status green', () => {
-    const out = formatResponseHTTP(
-      makeResponse({ status: 200, statusText: 'OK' }),
-      10,
-      WITH_COLOR
-    );
+    const out = formatResponseHTTP(makeResponse({ status: 200, statusText: 'OK' }), 10, WITH_COLOR);
     expect(out).toContain('\x1b[32m');
   });
 
