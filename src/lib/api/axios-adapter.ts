@@ -16,7 +16,7 @@ import {
 
 declare module 'axios' {
   interface InternalAxiosRequestConfig {
-    metadata?: { startTime: number; suppressed?: boolean };
+    metadata?: { startTime: number };
   }
 }
 
@@ -189,30 +189,30 @@ export class AxiosHttpClient implements HttpClient {
       this.client.interceptors.request.use((config) => {
         config.metadata = { startTime: Date.now() };
 
-        // Polling loops produce streams of repeating requests, often
-        // alternating between several URLs. Track every fingerprint we've
-        // already printed in this client and suppress any later request that
-        // matches one of them. The first time a brand-new request comes
-        // through, flush a "(N suppressed)" summary before printing it.
-        const fp = this.fingerprint(config);
-        if (this.seenFingerprints.has(fp)) {
-          this.suppressedCount++;
-          config.metadata.suppressed = true;
-          return config;
-        }
-        if (this.suppressedCount > 0) {
-          process.stderr.write(
-            formatSuppressionNotice(this.suppressedCount, this.formatOpts.color) + '\n'
-          );
-          this.suppressedCount = 0;
-        }
-        this.seenFingerprints.add(fp);
+        // Suppression is scoped to request/curl emission only. Responses
+        // always log when --show-response is on, so polling state changes
+        // (e.g. status: running -> complete) stay visible even when the
+        // request URLs repeat.
+        if (this.showRequest || this.curl) {
+          const fp = this.fingerprint(config);
+          if (this.seenFingerprints.has(fp)) {
+            this.suppressedCount++;
+            return config;
+          }
+          if (this.suppressedCount > 0) {
+            process.stderr.write(
+              formatSuppressionNotice(this.suppressedCount, this.formatOpts.color) + '\n'
+            );
+            this.suppressedCount = 0;
+          }
+          this.seenFingerprints.add(fp);
 
-        if (this.showRequest) {
-          process.stderr.write(formatRequestHTTP(config, this.formatOpts) + '\n');
-        }
-        if (this.curl) {
-          process.stderr.write(formatRequestCurl(config, this.formatOpts) + '\n');
+          if (this.showRequest) {
+            process.stderr.write(formatRequestHTTP(config, this.formatOpts) + '\n');
+          }
+          if (this.curl) {
+            process.stderr.write(formatRequestCurl(config, this.formatOpts) + '\n');
+          }
         }
         return config;
       });
@@ -221,7 +221,6 @@ export class AxiosHttpClient implements HttpClient {
     if (this.showResponse) {
       this.client.interceptors.response.use(
         (response) => {
-          if (response.config.metadata?.suppressed) return response;
           const start = response.config.metadata?.startTime ?? Date.now();
           const elapsed = Date.now() - start;
           process.stderr.write(formatResponseHTTP(response, elapsed, this.formatOpts) + '\n');
@@ -229,7 +228,6 @@ export class AxiosHttpClient implements HttpClient {
         },
         (error: unknown) => {
           if (axios.isAxiosError(error)) {
-            if (error.config?.metadata?.suppressed) return Promise.reject(error);
             const start = error.config?.metadata?.startTime ?? Date.now();
             const elapsed = Date.now() - start;
             if (error.response) {

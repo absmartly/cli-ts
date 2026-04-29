@@ -305,9 +305,31 @@ describe('AxiosHttpClient request/response logging', () => {
         const out = stderr.calls.join('');
         const pollRequests = (out.match(/→ GET .*\/poll/g) ?? []).length;
         const doneRequests = (out.match(/→ GET .*\/done/g) ?? []).length;
+        // Suppression scoped to request emission only — every response logs.
+        const responses = (out.match(/← 200/g) ?? []).length;
         expect(pollRequests).toBe(1);
         expect(doneRequests).toBe(1);
+        expect(responses).toBe(4);
         expect(out).toContain('(2 identical requests suppressed)');
+      } finally {
+        stderr.restore();
+      }
+    });
+
+    it('does not emit a suppression notice when only --show-response is on', async () => {
+      mswServer.use(http.get(`${BASE_URL}/poll`, () => HttpResponse.json({ status: 'running' })));
+
+      const stderr = captureStderr();
+      try {
+        const client = new AxiosHttpClient(BASE_URL, 'tok', { showResponse: true });
+        await client.request({ method: 'GET', url: '/poll' });
+        await client.request({ method: 'GET', url: '/poll' });
+        await client.request({ method: 'GET', url: '/poll' });
+
+        const out = stderr.calls.join('');
+        expect((out.match(/← 200/g) ?? []).length).toBe(3);
+        expect(out).not.toContain('suppressed');
+        expect(out).not.toContain('→');
       } finally {
         stderr.restore();
       }
