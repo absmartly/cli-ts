@@ -153,6 +153,8 @@ function extractHeaders(source: { headers?: unknown }): Record<string, string> {
   for (const [k, v] of Object.entries(obj)) {
     if (typeof v === 'string') out[k] = v;
     else if (typeof v === 'number' || typeof v === 'boolean') out[k] = String(v);
+    else if (Array.isArray(v)) out[k] = v.map((item) => String(item)).join(', ');
+    else if (v !== null && v !== undefined) out[k] = `[unprintable: ${typeof v}]`;
   }
   return out;
 }

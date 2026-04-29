@@ -414,6 +414,50 @@ describe('formatResponseHTTP', () => {
     expect(out).toContain('Set-Cookie: session=abc');
     expect(out).toContain('"key": "visible-key"');
   });
+
+  it('joins multi-value headers (Set-Cookie array) into a single line', () => {
+    const out = formatResponseHTTP(
+      makeResponse({
+        headers: {
+          'Content-Type': 'application/json',
+          'Set-Cookie': ['session=abc; HttpOnly', 'refresh=xyz; HttpOnly'] as unknown as string,
+        },
+      }),
+      10,
+      WITH_SECRETS
+    );
+    expect(out).toContain('Set-Cookie: session=abc; HttpOnly, refresh=xyz; HttpOnly');
+  });
+
+  it('redacts a multi-value sensitive header to *** without leaking values', () => {
+    const out = formatResponseHTTP(
+      makeResponse({
+        headers: {
+          'Content-Type': 'application/json',
+          'Set-Cookie': ['session=abc; HttpOnly', 'refresh=xyz'] as unknown as string,
+        },
+      }),
+      10,
+      NO_COLOR
+    );
+    expect(out).toContain('Set-Cookie: ***');
+    expect(out).not.toContain('session=abc');
+    expect(out).not.toContain('refresh=xyz');
+  });
+
+  it('marks unprintable header values rather than dropping them silently', () => {
+    const out = formatResponseHTTP(
+      makeResponse({
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Weird': { nested: 'object' } as unknown as string,
+        },
+      }),
+      10,
+      NO_COLOR
+    );
+    expect(out).toContain('X-Weird: [unprintable: object]');
+  });
 });
 
 describe('formatNetworkError', () => {
