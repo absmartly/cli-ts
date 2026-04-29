@@ -20,7 +20,30 @@ export interface FormatOptions {
 }
 
 const REDACTED = '***';
-const SENSITIVE_HEADERS = new Set(['authorization']);
+const SENSITIVE_HEADERS = new Set([
+  'authorization',
+  'cookie',
+  'set-cookie',
+  'x-api-key',
+  'proxy-authorization',
+]);
+
+// Body field names that commonly carry secrets in ABSmartly API request/response
+// payloads (api keys, password reset, OAuth login, etc.). Match is case-insensitive
+// on the key; values are replaced with '***' when showSecrets is false.
+const SENSITIVE_BODY_FIELDS = new Set([
+  'key',
+  'password',
+  'token',
+  'secret',
+  'access_token',
+  'refresh_token',
+  'api_key',
+  'apikey',
+]);
+
+// Headers redacted to keep their scheme prefix (e.g. "Api-Key ***", "Bearer ***").
+const SCHEMED_AUTH_HEADERS = new Set(['authorization', 'proxy-authorization']);
 
 export function redactHeaders(
   headers: Record<string, string>,
@@ -29,11 +52,34 @@ export function redactHeaders(
   if (showSecrets) return { ...headers };
   const out: Record<string, string> = {};
   for (const [key, value] of Object.entries(headers)) {
-    if (SENSITIVE_HEADERS.has(key.toLowerCase())) {
+    const lower = key.toLowerCase();
+    if (!SENSITIVE_HEADERS.has(lower)) {
+      out[key] = value;
+      continue;
+    }
+    if (typeof value !== 'string') {
+      out[key] = REDACTED;
+      continue;
+    }
+    if (SCHEMED_AUTH_HEADERS.has(lower)) {
       const space = value.indexOf(' ');
       out[key] = space > 0 ? `${value.slice(0, space)} ${REDACTED}` : REDACTED;
     } else {
-      out[key] = value;
+      out[key] = REDACTED;
+    }
+  }
+  return out;
+}
+
+export function redactBody(data: unknown, showSecrets: boolean): unknown {
+  if (showSecrets || data === null || typeof data !== 'object') return data;
+  if (Array.isArray(data)) return data.map((item) => redactBody(item, showSecrets));
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(data as Record<string, unknown>)) {
+    if (SENSITIVE_BODY_FIELDS.has(k.toLowerCase()) && typeof v === 'string' && v !== '') {
+      out[k] = REDACTED;
+    } else {
+      out[k] = redactBody(v, showSecrets);
     }
   }
   return out;
@@ -134,12 +180,13 @@ function formatJsonBody(data: unknown, pretty: boolean, color: boolean): string 
     : json;
 }
 
-function formatBodyHTTP(data: unknown, contentType: string, color: boolean): string {
+function formatBodyHTTP(data: unknown, contentType: string, opts: FormatOptions): string {
   if (data === undefined || data === null || data === '') return '';
+  const redacted = redactBody(data, opts.showSecrets);
   if (contentType.toLowerCase().includes('application/json')) {
-    return formatJsonBody(data, true, color);
+    return formatJsonBody(redacted, true, opts.color);
   }
-  return typeof data === 'string' ? data : JSON.stringify(data);
+  return typeof redacted === 'string' ? redacted : JSON.stringify(redacted);
 }
 
 function indent(text: string, prefix: string): string {
@@ -161,7 +208,7 @@ export function formatRequestHTTP(config: InternalAxiosRequestConfig, opts: Form
     lines.push(`  ${colorHeaderName(k, opts.color)}: ${v}`);
   }
 
-  const body = formatBodyHTTP(config.data, getContentType(headers), opts.color);
+  const body = formatBodyHTTP(config.data, getContentType(headers), opts);
   if (body) {
     lines.push('');
     lines.push(indent(body, '  '));
@@ -191,7 +238,8 @@ export function formatRequestCurl(config: InternalAxiosRequestConfig, opts: Form
   }
 
   if (hasBody) {
-    let body = typeof config.data === 'string' ? config.data : JSON.stringify(config.data);
+    const redacted = redactBody(config.data, opts.showSecrets);
+    let body = typeof redacted === 'string' ? redacted : JSON.stringify(redacted);
     body = body.replace(/'/g, `'\\''`);
     lines.push(`  ${flag('-d')} '${body}'`);
   }
@@ -211,12 +259,12 @@ export function formatResponseHTTP(
   const elapsed = opts.color ? c.dim(`(${elapsedMs}ms)`) : `(${elapsedMs}ms)`;
   const lines: string[] = [`${arrow} ${status} ${elapsed}`];
 
-  const headers = extractHeaders(response);
+  const headers = redactHeaders(extractHeaders(response), opts.showSecrets);
   for (const [k, v] of Object.entries(headers)) {
     lines.push(`  ${colorHeaderName(k, opts.color)}: ${v}`);
   }
 
-  const body = formatBodyHTTP(response.data, getContentType(headers), opts.color);
+  const body = formatBodyHTTP(response.data, getContentType(headers), opts);
   if (body) {
     lines.push('');
     lines.push(indent(body, '  '));

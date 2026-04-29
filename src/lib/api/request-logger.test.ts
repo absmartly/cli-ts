@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import type { InternalAxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
 import {
   redactHeaders,
+  redactBody,
   formatRequestHTTP,
   formatRequestCurl,
   formatResponseHTTP,
@@ -71,6 +72,80 @@ describe('redactHeaders', () => {
     const out = redactHeaders({ authorization: 'Api-Key abc', AUTHORIZATION: 'Bearer xyz' }, false);
     expect(out.authorization).toBe('Api-Key ***');
     expect(out.AUTHORIZATION).toBe('Bearer ***');
+  });
+
+  it('fully redacts Cookie / Set-Cookie / X-Api-Key (no scheme to preserve)', () => {
+    const out = redactHeaders(
+      {
+        Cookie: 'session=abc; Path=/',
+        'Set-Cookie': 'token=xyz; HttpOnly',
+        'X-Api-Key': 'raw-key-no-prefix',
+      },
+      false
+    );
+    expect(out.Cookie).toBe('***');
+    expect(out['Set-Cookie']).toBe('***');
+    expect(out['X-Api-Key']).toBe('***');
+  });
+
+  it('redacts Proxy-Authorization with scheme preservation', () => {
+    const out = redactHeaders({ 'Proxy-Authorization': 'Basic dXNlcjpwYXNz' }, false);
+    expect(out['Proxy-Authorization']).toBe('Basic ***');
+  });
+
+  it('redacts a non-string sensitive header to plain ***', () => {
+    const out = redactHeaders(
+      { Authorization: 12345 as unknown as string, 'Set-Cookie': null as unknown as string },
+      false
+    );
+    expect(out.Authorization).toBe('***');
+    expect(out['Set-Cookie']).toBe('***');
+  });
+});
+
+describe('redactBody', () => {
+  it('replaces top-level sensitive string fields with ***', () => {
+    const out = redactBody({ key: 'abc', name: 'frontend' }, false);
+    expect(out).toEqual({ key: '***', name: 'frontend' });
+  });
+
+  it('matches sensitive field names case-insensitively', () => {
+    const out = redactBody({ Password: 'secret', API_KEY: 'k', Token: 't' }, false);
+    expect(out).toEqual({ Password: '***', API_KEY: '***', Token: '***' });
+  });
+
+  it('walks nested objects', () => {
+    const out = redactBody({ user: { id: 1, password: 'x' }, meta: { token: 'y' } }, false);
+    expect(out).toEqual({ user: { id: 1, password: '***' }, meta: { token: '***' } });
+  });
+
+  it('walks arrays of objects', () => {
+    const out = redactBody(
+      { keys: [{ name: 'a', key: 'k1' }, { name: 'b', key: 'k2' }] },
+      false
+    );
+    expect(out).toEqual({
+      keys: [
+        { name: 'a', key: '***' },
+        { name: 'b', key: '***' },
+      ],
+    });
+  });
+
+  it('preserves null and non-string values for sensitive keys (no spurious ***)', () => {
+    const out = redactBody({ token: null, key: 0, secret: false }, false);
+    expect(out).toEqual({ token: null, key: 0, secret: false });
+  });
+
+  it('with showSecrets: true returns the input unchanged', () => {
+    const input = { password: 'plaintext', nested: { key: 'k' } };
+    expect(redactBody(input, true)).toBe(input);
+  });
+
+  it('passes through primitive top-level values', () => {
+    expect(redactBody('hello', false)).toBe('hello');
+    expect(redactBody(42, false)).toBe(42);
+    expect(redactBody(null, false)).toBe(null);
   });
 });
 
@@ -198,6 +273,15 @@ describe('formatRequestCurl', () => {
     expect(out).toContain(`Authorization: Api-Key ***`);
     expect(out).not.toContain('secret-key-123');
   });
+
+  it('redacts sensitive body fields by default', () => {
+    const out = formatRequestCurl(
+      makeConfig({ method: 'POST', data: { username: 'u', password: 'plaintext' } }),
+      NO_COLOR
+    );
+    expect(out).toContain(`-d '{"username":"u","password":"***"}'`);
+    expect(out).not.toContain('plaintext');
+  });
 });
 
 describe('formatResponseHTTP', () => {
@@ -268,6 +352,66 @@ describe('formatResponseHTTP', () => {
       NO_COLOR
     );
     expect(out).toContain('hello world');
+  });
+
+  it('redacts sensitive response headers (Set-Cookie, Authorization echo)', () => {
+    const out = formatResponseHTTP(
+      makeResponse({
+        headers: {
+          'Content-Type': 'application/json',
+          'Set-Cookie': 'session=abc; HttpOnly',
+          Authorization: 'Bearer echoed-token',
+        },
+        data: {},
+      }),
+      10,
+      NO_COLOR
+    );
+    expect(out).toContain('Set-Cookie: ***');
+    expect(out).toContain('Authorization: Bearer ***');
+    expect(out).not.toContain('session=abc');
+    expect(out).not.toContain('echoed-token');
+  });
+
+  it('redacts secret fields in response bodies (api key creation)', () => {
+    const out = formatResponseHTTP(
+      makeResponse({
+        status: 201,
+        statusText: 'Created',
+        data: { id: 7, name: 'frontend', key: 'newly-minted-secret-key' },
+      }),
+      10,
+      NO_COLOR
+    );
+    expect(out).toContain('"key": "***"');
+    expect(out).not.toContain('newly-minted-secret-key');
+  });
+
+  it('redacts secret fields in nested response structures', () => {
+    const out = formatResponseHTTP(
+      makeResponse({
+        data: { user: { id: 1, password: 'reset-pw' }, meta: { token: 'jwt-here' } },
+      }),
+      10,
+      NO_COLOR
+    );
+    expect(out).not.toContain('reset-pw');
+    expect(out).not.toContain('jwt-here');
+    expect(out).toContain('"password": "***"');
+    expect(out).toContain('"token": "***"');
+  });
+
+  it('does not redact response headers or body when showSecrets is true', () => {
+    const out = formatResponseHTTP(
+      makeResponse({
+        headers: { 'Content-Type': 'application/json', 'Set-Cookie': 'session=abc' },
+        data: { key: 'visible-key' },
+      }),
+      10,
+      WITH_SECRETS
+    );
+    expect(out).toContain('Set-Cookie: session=abc');
+    expect(out).toContain('"key": "visible-key"');
   });
 });
 
