@@ -330,6 +330,37 @@ describe('AxiosHttpClient request/response logging', () => {
         stderr.restore();
       }
     });
+
+    it('suppresses alternating polling patterns (A, B, A, B, ...)', async () => {
+      mswServer.use(
+        http.get(`${BASE_URL}/cfg/1`, () => HttpResponse.json({ status: 'running' })),
+        http.get(`${BASE_URL}/cfg/1/history`, () => HttpResponse.json({ items: [] })),
+        http.get(`${BASE_URL}/done`, () => HttpResponse.json({ ok: true }))
+      );
+
+      const stderr = captureStderr();
+      try {
+        const client = new AxiosHttpClient(BASE_URL, 'tok', { showRequest: true });
+        // First poll cycle — both new, both printed.
+        await client.request({ method: 'GET', url: '/cfg/1' });
+        await client.request({ method: 'GET', url: '/cfg/1/history' });
+        // Three more cycles — every request should be suppressed.
+        for (let i = 0; i < 3; i++) {
+          await client.request({ method: 'GET', url: '/cfg/1' });
+          await client.request({ method: 'GET', url: '/cfg/1/history' });
+        }
+        // Polling ends; new request flushes the suppressed count.
+        await client.request({ method: 'GET', url: '/done' });
+
+        const out = stderr.calls.join('');
+        expect((out.match(/→ GET .*\/cfg\/1$/gm) ?? []).length).toBe(1);
+        expect((out.match(/→ GET .*\/cfg\/1\/history/g) ?? []).length).toBe(1);
+        expect((out.match(/→ GET .*\/done/g) ?? []).length).toBe(1);
+        expect(out).toContain('(6 identical requests suppressed)');
+      } finally {
+        stderr.restore();
+      }
+    });
   });
 
   describe('oauth-jwt + showResponse', () => {

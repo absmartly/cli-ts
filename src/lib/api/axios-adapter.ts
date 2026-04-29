@@ -119,7 +119,7 @@ export class AxiosHttpClient implements HttpClient {
   private readonly showResponse: boolean;
   private readonly curl: boolean;
   private readonly formatOpts: FormatOptions;
-  private lastFingerprint?: string;
+  private seenFingerprints: Set<string> = new Set();
   private suppressedCount = 0;
   protected authConfig: AuthConfig;
 
@@ -187,11 +187,13 @@ export class AxiosHttpClient implements HttpClient {
       this.client.interceptors.request.use((config) => {
         config.metadata = { startTime: Date.now() };
 
-        // Polling and other tight loops produce streams of identical requests.
-        // Suppress consecutive matches and emit a count when the next distinct
-        // request arrives, so --show-request stays useful in those flows.
+        // Polling loops produce streams of repeating requests, often
+        // alternating between several URLs. Track every fingerprint we've
+        // already printed in this client and suppress any later request that
+        // matches one of them. The first time a brand-new request comes
+        // through, flush a "(N suppressed)" summary before printing it.
         const fp = this.fingerprint(config);
-        if (fp === this.lastFingerprint) {
+        if (this.seenFingerprints.has(fp)) {
           this.suppressedCount++;
           config.metadata.suppressed = true;
           return config;
@@ -202,7 +204,7 @@ export class AxiosHttpClient implements HttpClient {
           );
           this.suppressedCount = 0;
         }
-        this.lastFingerprint = fp;
+        this.seenFingerprints.add(fp);
 
         if (this.showRequest) {
           process.stderr.write(formatRequestHTTP(config, this.formatOpts) + '\n');
