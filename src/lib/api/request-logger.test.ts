@@ -288,9 +288,7 @@ describe('formatRequestHTTP', () => {
   it('renders a circular-ref body as a placeholder, never throws', () => {
     const data: Record<string, unknown> = { name: 'x' };
     data.self = data;
-    expect(() =>
-      formatRequestHTTP(makeConfig({ method: 'POST', data }), NO_COLOR)
-    ).not.toThrow();
+    expect(() => formatRequestHTTP(makeConfig({ method: 'POST', data }), NO_COLOR)).not.toThrow();
     const out = formatRequestHTTP(makeConfig({ method: 'POST', data }), NO_COLOR);
     expect(out).toMatch(/\[circular\]|\[unserialisable\]/);
   });

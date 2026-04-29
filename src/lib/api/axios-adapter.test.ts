@@ -226,10 +226,7 @@ describe('AxiosHttpClient request/response logging', () => {
   });
 
   describe('TTY and noColor', () => {
-    async function withStderrTTY<T>(
-      value: boolean | undefined,
-      fn: () => Promise<T>
-    ): Promise<T> {
+    async function withStderrTTY<T>(value: boolean | undefined, fn: () => Promise<T>): Promise<T> {
       const original = process.stderr.isTTY;
       Object.defineProperty(process.stderr, 'isTTY', { value, configurable: true });
       try {
