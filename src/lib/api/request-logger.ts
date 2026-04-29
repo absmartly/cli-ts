@@ -78,11 +78,14 @@ export function redactBody(data: unknown, showSecrets: boolean): unknown {
   if (Array.isArray(data)) return data.map((item) => redactBody(item, showSecrets));
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(data as Record<string, unknown>)) {
-    if (SENSITIVE_BODY_FIELDS.has(k.toLowerCase()) && typeof v === 'string' && v !== '') {
+    // Sensitive keys redact regardless of value type so an object/array under
+    // `token` etc. cannot leak its children. Even null/0/false are masked —
+    // the key being present is itself a signal worth concealing.
+    if (SENSITIVE_BODY_FIELDS.has(k.toLowerCase())) {
       out[k] = REDACTED;
-    } else {
-      out[k] = redactBody(v, showSecrets);
+      continue;
     }
+    out[k] = redactBody(v, showSecrets);
   }
   return out;
 }

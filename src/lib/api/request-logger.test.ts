@@ -141,9 +141,12 @@ describe('redactBody', () => {
     });
   });
 
-  it('preserves null and non-string values for sensitive keys (no spurious ***)', () => {
-    const out = redactBody({ token: null, key: 0, secret: false }, false);
-    expect(out).toEqual({ token: null, key: 0, secret: false });
+  it('masks sensitive keys regardless of value type (object, number, null)', () => {
+    const out = redactBody(
+      { token: { value: 'leaked-jwt' }, key: 0, secret: null, password: ['p1', 'p2'] },
+      false
+    );
+    expect(out).toEqual({ token: '***', key: '***', secret: '***', password: '***' });
   });
 
   it('with showSecrets: true returns the input unchanged', () => {
