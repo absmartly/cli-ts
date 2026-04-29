@@ -355,6 +355,19 @@ describe('formatResponseHTTP', () => {
     expect(out).toContain('hello world');
   });
 
+  it('marks malformed JSON bodies so the user knows parsing failed', () => {
+    const out = formatResponseHTTP(
+      makeResponse({
+        headers: { 'Content-Type': 'application/json' },
+        data: '{"oops": broken',
+      }),
+      10,
+      NO_COLOR
+    );
+    expect(out).toContain('// (invalid JSON, showing raw body)');
+    expect(out).toContain('{"oops": broken');
+  });
+
   it('redacts sensitive response headers (Set-Cookie, Authorization echo)', () => {
     const out = formatResponseHTTP(
       makeResponse({

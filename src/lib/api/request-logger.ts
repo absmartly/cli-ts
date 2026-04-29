@@ -166,16 +166,19 @@ function getContentType(headers: Record<string, string>): string {
   return '';
 }
 
-function formatJsonBody(data: unknown, pretty: boolean, color: boolean): string {
+function formatJsonBody(data: unknown, color: boolean): string {
   let json: string;
   if (typeof data === 'string') {
     try {
-      json = JSON.stringify(JSON.parse(data), null, pretty ? 2 : 0);
+      json = JSON.stringify(JSON.parse(data), null, 2);
     } catch {
-      return data;
+      const tag = color
+        ? c.dim('// (invalid JSON, showing raw body)')
+        : '// (invalid JSON, showing raw body)';
+      return `${tag}\n${data}`;
     }
   } else {
-    json = pretty ? JSON.stringify(data, null, 2) : JSON.stringify(data);
+    json = JSON.stringify(data, null, 2);
   }
   return color
     ? highlight(json, { language: 'json', ignoreIllegals: true, theme: JSON_THEME })
@@ -186,7 +189,7 @@ function formatBodyHTTP(data: unknown, contentType: string, opts: FormatOptions)
   if (data === undefined || data === null || data === '') return '';
   const redacted = redactBody(data, opts.showSecrets);
   if (contentType.toLowerCase().includes('application/json')) {
-    return formatJsonBody(redacted, true, opts.color);
+    return formatJsonBody(redacted, opts.color);
   }
   return typeof redacted === 'string' ? redacted : JSON.stringify(redacted);
 }
