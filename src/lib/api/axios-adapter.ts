@@ -10,12 +10,13 @@ import {
   formatResponseHTTP,
   formatNetworkError,
   formatGenericError,
+  formatSuppressionNotice,
   type FormatOptions,
 } from './request-logger.js';
 
 declare module 'axios' {
   interface InternalAxiosRequestConfig {
-    metadata?: { startTime: number };
+    metadata?: { startTime: number; suppressed?: boolean };
   }
 }
 
@@ -99,6 +100,18 @@ export type AuthConfig =
   | { method: 'api-key'; apiKey: string }
   | { method: 'oauth-jwt'; token: string; onExpired?: () => Promise<AuthConfig> };
 
+function extractAuthValue(headers: unknown): string {
+  if (!headers || typeof headers !== 'object') return '';
+  const obj =
+    typeof (headers as { toJSON?: () => unknown }).toJSON === 'function'
+      ? ((headers as { toJSON: () => Record<string, unknown> }).toJSON() as Record<string, unknown>)
+      : (headers as Record<string, unknown>);
+  for (const [k, v] of Object.entries(obj)) {
+    if (k.toLowerCase() === 'authorization' && typeof v === 'string') return v;
+  }
+  return '';
+}
+
 export class AxiosHttpClient implements HttpClient {
   private client: AxiosInstance;
   private verbose: boolean;
@@ -106,6 +119,8 @@ export class AxiosHttpClient implements HttpClient {
   private showResponse: boolean;
   private curl: boolean;
   private formatOpts: FormatOptions;
+  private lastFingerprint?: string;
+  private suppressedCount = 0;
   protected authConfig: AuthConfig;
 
   constructor(
@@ -173,6 +188,24 @@ export class AxiosHttpClient implements HttpClient {
     if (this.showRequest || this.curl || this.showResponse) {
       this.client.interceptors.request.use((config) => {
         config.metadata = { startTime: Date.now() };
+
+        // Polling and other tight loops produce streams of identical requests.
+        // Suppress consecutive matches and emit a count when the next distinct
+        // request arrives, so --show-request stays useful in those flows.
+        const fp = this.fingerprint(config);
+        if (fp === this.lastFingerprint) {
+          this.suppressedCount++;
+          config.metadata.suppressed = true;
+          return config;
+        }
+        if (this.suppressedCount > 0) {
+          process.stderr.write(
+            formatSuppressionNotice(this.suppressedCount, this.formatOpts.color) + '\n'
+          );
+          this.suppressedCount = 0;
+        }
+        this.lastFingerprint = fp;
+
         if (this.showRequest) {
           process.stderr.write(formatRequestHTTP(config, this.formatOpts) + '\n');
         }
@@ -186,6 +219,7 @@ export class AxiosHttpClient implements HttpClient {
     if (this.showResponse) {
       this.client.interceptors.response.use(
         (response) => {
+          if (response.config.metadata?.suppressed) return response;
           const start = response.config.metadata?.startTime ?? Date.now();
           const elapsed = Date.now() - start;
           process.stderr.write(formatResponseHTTP(response, elapsed, this.formatOpts) + '\n');
@@ -193,6 +227,7 @@ export class AxiosHttpClient implements HttpClient {
         },
         (error: unknown) => {
           if (axios.isAxiosError(error)) {
+            if (error.config?.metadata?.suppressed) return Promise.reject(error);
             const start = error.config?.metadata?.startTime ?? Date.now();
             const elapsed = Date.now() - start;
             if (error.response) {
@@ -264,6 +299,26 @@ export class AxiosHttpClient implements HttpClient {
         throw error;
       }
     );
+  }
+
+  private fingerprint(config: {
+    method?: string;
+    url?: string;
+    params?: unknown;
+    data?: unknown;
+    headers?: unknown;
+    'axios-retry'?: { retryCount?: number };
+  }): string {
+    const method = (config.method ?? 'GET').toUpperCase();
+    const url = config.url ?? '';
+    const params = config.params ? JSON.stringify(config.params) : '';
+    const body = config.data ? JSON.stringify(config.data) : '';
+    // Include the Authorization header so OAuth refresh retries (which change
+    // the token) and the axios-retry retryCount so failed-then-retried
+    // requests are not collapsed into the original.
+    const auth = extractAuthValue(config.headers);
+    const retry = config['axios-retry']?.retryCount ?? 0;
+    return `${method}|${url}|${params}|${body}|${auth}|${retry}`;
   }
 
   async request<T>(config: HttpRequestConfig): Promise<HttpResponse<T>> {

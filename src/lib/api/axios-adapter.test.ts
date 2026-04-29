@@ -293,6 +293,57 @@ describe('AxiosHttpClient request/response logging', () => {
     });
   });
 
+  describe('suppression of identical consecutive requests', () => {
+    it('emits the request once for back-to-back identical polls and reports the suppressed count', async () => {
+      mswServer.use(
+        http.get(`${BASE_URL}/poll`, () => HttpResponse.json({ status: 'running' }))
+      );
+
+      const stderr = captureStderr();
+      try {
+        const client = new AxiosHttpClient(BASE_URL, 'tok', {
+          showRequest: true,
+          showResponse: true,
+        });
+        await client.request({ method: 'GET', url: '/poll' });
+        await client.request({ method: 'GET', url: '/poll' });
+        await client.request({ method: 'GET', url: '/poll' });
+        // Different URL flushes the suppression count.
+        mswServer.use(
+          http.get(`${BASE_URL}/done`, () => HttpResponse.json({ ok: true }))
+        );
+        await client.request({ method: 'GET', url: '/done' });
+
+        const out = stderr.calls.join('');
+        const pollRequests = (out.match(/→ GET .*\/poll/g) ?? []).length;
+        const doneRequests = (out.match(/→ GET .*\/done/g) ?? []).length;
+        expect(pollRequests).toBe(1);
+        expect(doneRequests).toBe(1);
+        expect(out).toContain('(2 identical requests suppressed)');
+      } finally {
+        stderr.restore();
+      }
+    });
+
+    it('does not suppress when params or body differ', async () => {
+      mswServer.use(http.get(`${BASE_URL}/items`, () => HttpResponse.json({ ok: true })));
+
+      const stderr = captureStderr();
+      try {
+        const client = new AxiosHttpClient(BASE_URL, 'tok', { showRequest: true });
+        await client.request({ method: 'GET', url: '/items', params: { page: 1 } });
+        await client.request({ method: 'GET', url: '/items', params: { page: 2 } });
+
+        const out = stderr.calls.join('');
+        const requests = (out.match(/→ GET .*\/items/g) ?? []).length;
+        expect(requests).toBe(2);
+        expect(out).not.toContain('suppressed');
+      } finally {
+        stderr.restore();
+      }
+    });
+  });
+
   describe('oauth-jwt + showResponse', () => {
     it('logs both the original 401 and the retry response after token refresh', async () => {
       let callCount = 0;

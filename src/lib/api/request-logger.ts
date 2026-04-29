@@ -299,3 +299,9 @@ export function formatGenericError(
   const elapsed = opts.color ? c.dim(`(${elapsedMs}ms)`) : `(${elapsedMs}ms)`;
   return `${arrow} ${tag} ${msg} ${elapsed}`;
 }
+
+export function formatSuppressionNotice(count: number, color: boolean): string {
+  const word = count === 1 ? 'request' : 'requests';
+  const text = `(${count} identical ${word} suppressed)`;
+  return color ? `  ${c.dim(text)}` : `  ${text}`;
+}
