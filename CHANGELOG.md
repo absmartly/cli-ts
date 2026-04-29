@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.0](https://github.com/absmartly/cli-ts/compare/cli-v1.2.0...cli-v1.3.0) (2026-04-29)
+
+
+### Features
+
+* add --show-request, --show-response, --curl, --show-secrets flags ([#23](https://github.com/absmartly/cli-ts/issues/23)) ([8e9de8c](https://github.com/absmartly/cli-ts/commit/8e9de8cf24cfd9474d2381c0b55ef6a84a0135b9))
+
 ## [1.2.0](https://github.com/absmartly/cli-ts/compare/cli-v1.1.0...cli-v1.2.0) (2026-04-24)
 
 
