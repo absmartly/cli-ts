@@ -143,6 +143,30 @@ These options are available on every command:
 | `--full` | Full text without truncation |
 | `--raw` | Show raw API response without summarizing or transforming |
 
+### Debugging API traffic
+
+These flags write to **stderr** (so they don't pollute piped stdout) and respect `--no-color` and the `NO_COLOR` env var. Authorization headers and known sensitive body fields (`key`, `password`, `token`, `secret`, `access_token`, `refresh_token`, `api_key`) are redacted by default.
+
+| Option | Description |
+|---|---|
+| `--show-request` | Print outgoing HTTP requests as a readable HTTP-style block. |
+| `--show-response` | Print HTTP responses (success and error) as an HTTP-style block. |
+| `--curl` | Print outgoing requests as runnable curl commands. |
+| `--show-secrets` | Don't redact `Authorization` / `Set-Cookie` / sensitive body fields. Use with care. |
+| `--headers-only` | Omit request and response bodies from `--show-request` / `--show-response` / `--curl` output. |
+| `--status-only` | Print only the response status line, e.g. `← 200 OK (175ms)`. Implies `--show-response`. |
+
+When stderr is a TTY, JSON bodies and HTTP headers are pretty-printed and syntax-highlighted. Polling loops that fire the same request repeatedly are deduped: each unique request is printed once and a `(N identical requests suppressed)` summary appears when the next distinct request arrives. Responses are always logged so that state transitions during polling stay visible.
+
+Examples:
+
+```bash
+abs experiments get 1816 --show-request --show-response
+abs experiments list --curl                            # paste-runnable curl
+abs experiments get 1816 --show-response --status-only # just `← 200 OK (...)`
+abs experiments export 5 --download --show-request --headers-only
+```
+
 ## Commands
 
 ### Experiments

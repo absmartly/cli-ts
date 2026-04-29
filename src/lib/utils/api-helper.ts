@@ -143,6 +143,10 @@ export function getGlobalOptions(cmd: Command): GlobalOptions {
   }
 
   const colorDisabled = opts.color === false || !!process.env.NO_COLOR;
+  // --status-only is response-only by definition; auto-enable --show-response
+  // so the user doesn't have to type both.
+  const statusOnly = opts.statusOnly || false;
+  const showResponse = opts.showResponse || statusOnly || false;
 
   return {
     config: opts.config,
@@ -160,11 +164,11 @@ export function getGlobalOptions(cmd: Command): GlobalOptions {
     full: opts.full || false,
     raw: opts.raw || false,
     showRequest: opts.showRequest || false,
-    showResponse: opts.showResponse || false,
+    showResponse,
     curl: opts.curl || false,
     showSecrets: opts.showSecrets || false,
     headersOnly: opts.headersOnly || false,
-    statusOnly: opts.statusOnly || false,
+    statusOnly,
   };
 }
 

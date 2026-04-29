@@ -79,7 +79,7 @@ program
   )
   .option(
     '--status-only',
-    'with --show-response, print only the response status line (no headers, no body)'
+    'print only the response status line (implies --show-response; no headers, no body)'
   );
 
 program.addCommand(experimentsCommand);

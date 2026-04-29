@@ -233,6 +233,20 @@ describe('API Helper', () => {
       expect(options.verbose).toBe(true);
     });
 
+    it('should auto-enable showResponse when statusOnly is set', () => {
+      mockCommand.setOptionValue('statusOnly', true);
+
+      const options = getGlobalOptions(mockCommand);
+      expect(options.statusOnly).toBe(true);
+      expect(options.showResponse).toBe(true);
+    });
+
+    it('should not enable showResponse when neither flag is set', () => {
+      const options = getGlobalOptions(mockCommand);
+      expect(options.statusOnly).toBe(false);
+      expect(options.showResponse).toBe(false);
+    });
+
     it('should handle --no-color flag', () => {
       mockCommand.parse(['node', 'test', '--no-color']);
 
