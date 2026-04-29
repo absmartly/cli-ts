@@ -19,6 +19,17 @@ declare module 'axios' {
   }
 }
 
+export interface AxiosHttpClientOptions {
+  verbose?: boolean;
+  timeout?: number;
+  insecure?: boolean;
+  showRequest?: boolean;
+  showResponse?: boolean;
+  curl?: boolean;
+  showSecrets?: boolean;
+  noColor?: boolean;
+}
+
 const DEFAULT_TIMEOUT = 30000;
 const RETRY_COUNT = 3;
 
@@ -100,16 +111,7 @@ export class AxiosHttpClient implements HttpClient {
   constructor(
     endpoint: string,
     auth: string | AuthConfig,
-    options: {
-      verbose?: boolean;
-      timeout?: number;
-      insecure?: boolean;
-      showRequest?: boolean;
-      showResponse?: boolean;
-      curl?: boolean;
-      showSecrets?: boolean;
-      noColor?: boolean;
-    } = {}
+    options: AxiosHttpClientOptions = {}
   ) {
     this.verbose = options.verbose ?? false;
     this.showRequest = options.showRequest ?? false;
@@ -406,16 +408,7 @@ export class AxiosHttpClient implements HttpClient {
 export function createAxiosHttpClient(
   endpoint: string,
   auth: string | AuthConfig,
-  options?: {
-    verbose?: boolean;
-    timeout?: number;
-    insecure?: boolean;
-    showRequest?: boolean;
-    showResponse?: boolean;
-    curl?: boolean;
-    showSecrets?: boolean;
-    noColor?: boolean;
-  }
+  options?: AxiosHttpClientOptions
 ): AxiosHttpClient {
   return new AxiosHttpClient(endpoint, auth, options);
 }
