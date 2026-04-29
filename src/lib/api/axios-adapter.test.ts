@@ -305,19 +305,23 @@ describe('AxiosHttpClient request/response logging', () => {
         const out = stderr.calls.join('');
         const pollRequests = (out.match(/→ GET .*\/poll/g) ?? []).length;
         const doneRequests = (out.match(/→ GET .*\/done/g) ?? []).length;
-        // Suppression scoped to request emission only — every response logs.
+        // Responses also dedup with their request — only the first
+        // /poll response and the /done response are emitted.
         const responses = (out.match(/← 200/g) ?? []).length;
         expect(pollRequests).toBe(1);
         expect(doneRequests).toBe(1);
-        expect(responses).toBe(4);
+        expect(responses).toBe(2);
         expect(out).toContain('(2 identical requests suppressed)');
       } finally {
         stderr.restore();
       }
     });
 
-    it('does not emit a suppression notice when only --show-response is on', async () => {
-      mswServer.use(http.get(`${BASE_URL}/poll`, () => HttpResponse.json({ status: 'running' })));
+    it('also suppresses responses when only --show-response is on', async () => {
+      mswServer.use(
+        http.get(`${BASE_URL}/poll`, () => HttpResponse.json({ status: 'running' })),
+        http.get(`${BASE_URL}/done`, () => HttpResponse.json({ ok: true }))
+      );
 
       const stderr = captureStderr();
       try {
@@ -325,10 +329,13 @@ describe('AxiosHttpClient request/response logging', () => {
         await client.request({ method: 'GET', url: '/poll' });
         await client.request({ method: 'GET', url: '/poll' });
         await client.request({ method: 'GET', url: '/poll' });
+        await client.request({ method: 'GET', url: '/done' });
 
         const out = stderr.calls.join('');
-        expect((out.match(/← 200/g) ?? []).length).toBe(3);
-        expect(out).not.toContain('suppressed');
+        // First /poll response + /done response. The two repeat polls
+        // collapse into a "(2 identical requests suppressed)" line.
+        expect((out.match(/← 200/g) ?? []).length).toBe(2);
+        expect(out).toContain('(2 identical requests suppressed)');
         expect(out).not.toContain('→');
       } finally {
         stderr.restore();

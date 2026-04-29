@@ -17,7 +17,7 @@ import {
 
 declare module 'axios' {
   interface InternalAxiosRequestConfig {
-    metadata?: { startTime: number };
+    metadata?: { startTime: number; suppressed?: boolean };
   }
 }
 
@@ -192,14 +192,23 @@ export class AxiosHttpClient implements HttpClient {
       this.client.interceptors.request.use((config) => {
         config.metadata = { startTime: Date.now() };
 
-        // Suppression is scoped to request/curl emission only. Responses
-        // always log when --show-response is on, so polling state changes
-        // (e.g. status: running -> complete) stay visible even when the
-        // request URLs repeat.
-        if (this.showRequest || this.curl) {
+        // Polling loops produce streams of repeating requests, often
+        // alternating between several URLs. Track every fingerprint we've
+        // already printed in this client and suppress any later request
+        // (and its matching response) that matches one we've seen. The
+        // first time a brand-new request comes through, flush a
+        // "(N suppressed)" summary before printing it.
+        //
+        // This trades response visibility for noise reduction: state
+        // changes that *only* show up in response bodies of otherwise-
+        // identical requests will be hidden. Acceptable for typical CLI
+        // debugging — the user can disable suppression by varying their
+        // requests, or split into separate invocations.
+        if (this.showRequest || this.curl || this.showResponse) {
           const fp = this.fingerprint(config);
           if (this.seenFingerprints.has(fp)) {
             this.suppressedCount++;
+            config.metadata.suppressed = true;
             return config;
           }
           if (this.suppressedCount > 0) {
@@ -224,6 +233,7 @@ export class AxiosHttpClient implements HttpClient {
     if (this.showResponse) {
       this.client.interceptors.response.use(
         (response) => {
+          if (response.config.metadata?.suppressed) return response;
           const start = response.config.metadata?.startTime ?? Date.now();
           const elapsed = Date.now() - start;
           process.stderr.write(formatResponseHTTP(response, elapsed, this.formatOpts) + '\n');
@@ -231,6 +241,7 @@ export class AxiosHttpClient implements HttpClient {
         },
         (error: unknown) => {
           if (axios.isAxiosError(error)) {
+            if (error.config?.metadata?.suppressed) return Promise.reject(error);
             const start = error.config?.metadata?.startTime ?? Date.now();
             const elapsed = Date.now() - start;
             if (error.response) {
