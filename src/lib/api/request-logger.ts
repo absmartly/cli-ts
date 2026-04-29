@@ -282,3 +282,15 @@ export function formatNetworkError(
   const elapsed = opts.color ? c.dim(`(${elapsedMs}ms)`) : `(${elapsedMs}ms)`;
   return `${arrow} ${msg} ${elapsed}`;
 }
+
+export function formatGenericError(
+  error: unknown,
+  elapsedMs: number,
+  opts: FormatOptions
+): string {
+  const arrow = opts.color ? c.bold.red('←') : '←';
+  const msg = error instanceof Error ? error.message : String(error);
+  const tag = opts.color ? c.dim('(non-HTTP error)') : '(non-HTTP error)';
+  const elapsed = opts.color ? c.dim(`(${elapsedMs}ms)`) : `(${elapsedMs}ms)`;
+  return `${arrow} ${tag} ${msg} ${elapsed}`;
+}

@@ -9,6 +9,7 @@ import {
   formatRequestCurl,
   formatResponseHTTP,
   formatNetworkError,
+  formatGenericError,
   type FormatOptions,
 } from './request-logger.js';
 
@@ -199,6 +200,12 @@ export class AxiosHttpClient implements HttpClient {
             } else {
               process.stderr.write(formatNetworkError(error, elapsed, this.formatOpts) + '\n');
             }
+          } else {
+            // Non-axios errors reach this handler when an upstream interceptor
+            // (e.g. the OAuth refresh path below) wraps and rejects with a
+            // custom error type. Without this branch --show-response would go
+            // silent in those cases.
+            process.stderr.write(formatGenericError(error, 0, this.formatOpts) + '\n');
           }
           return Promise.reject(error);
         }

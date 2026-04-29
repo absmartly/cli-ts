@@ -7,6 +7,7 @@ import {
   formatRequestCurl,
   formatResponseHTTP,
   formatNetworkError,
+  formatGenericError,
   type FormatOptions,
 } from './request-logger.js';
 
@@ -432,5 +433,19 @@ describe('formatNetworkError', () => {
     const err = { message: '' } as AxiosError;
     const out = formatNetworkError(err, 0, NO_COLOR);
     expect(out).toContain('network error');
+  });
+});
+
+describe('formatGenericError', () => {
+  it('prefixes a non-HTTP marker so the user knows it is not a response', () => {
+    const out = formatGenericError(new Error('upstream interceptor blew up'), 0, NO_COLOR);
+    expect(out).toContain('(non-HTTP error)');
+    expect(out).toContain('upstream interceptor blew up');
+    expect(out.startsWith('←')).toBe(true);
+  });
+
+  it('coerces non-Error throws to string', () => {
+    const out = formatGenericError({ weird: true }, 0, NO_COLOR);
+    expect(out).toContain('[object Object]');
   });
 });
