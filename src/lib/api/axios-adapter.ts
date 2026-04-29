@@ -30,6 +30,7 @@ export interface AxiosHttpClientOptions {
   curl?: boolean;
   showSecrets?: boolean;
   headersOnly?: boolean;
+  statusOnly?: boolean;
   noColor?: boolean;
 }
 
@@ -133,6 +134,7 @@ export class AxiosHttpClient implements HttpClient {
     this.formatOpts = {
       showSecrets: options.showSecrets ?? false,
       omitBody: options.headersOnly ?? false,
+      statusOnly: options.statusOnly ?? false,
       color: !!process.stderr.isTTY && !(options.noColor ?? false),
     };
 

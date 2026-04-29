@@ -19,6 +19,9 @@ export interface FormatOptions {
   // curl output. Useful when responses are huge but the user only cares
   // about status + headers.
   omitBody?: boolean;
+  // For responses only: emit only the "← STATUS TEXT (Nms)" line, no
+  // headers, no body. Strict superset of omitBody.
+  statusOnly?: boolean;
 }
 
 const REDACTED = '***';
@@ -286,8 +289,11 @@ export function formatResponseHTTP(
   const arrow = opts.color ? arrowColor('←') : '←';
   const status = colorStatus(response.status, response.statusText || '', opts.color);
   const elapsed = opts.color ? c.dim(`(${elapsedMs}ms)`) : `(${elapsedMs}ms)`;
-  const lines: string[] = [`${arrow} ${status} ${elapsed}`];
+  const statusLine = `${arrow} ${status} ${elapsed}`;
 
+  if (opts.statusOnly) return statusLine;
+
+  const lines: string[] = [statusLine];
   const headers = redactHeaders(extractHeaders(response), opts.showSecrets);
   for (const [k, v] of Object.entries(headers)) {
     lines.push(`  ${colorHeaderName(k, opts.color)}: ${v}`);

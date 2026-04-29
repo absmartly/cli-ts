@@ -76,6 +76,10 @@ program
   .option(
     '--headers-only',
     'omit request and response bodies in --show-request / --show-response / --curl output'
+  )
+  .option(
+    '--status-only',
+    'with --show-response, print only the response status line (no headers, no body)'
   );
 
 program.addCommand(experimentsCommand);

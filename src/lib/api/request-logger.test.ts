@@ -538,6 +538,23 @@ describe('formatResponseHTTP', () => {
     expect(out).not.toContain('items');
   });
 
+  it('with statusOnly: true emits only the status line', () => {
+    const out = formatResponseHTTP(
+      makeResponse({
+        status: 200,
+        statusText: 'OK',
+        headers: { 'Content-Type': 'application/json', etag: 'W/"abc"' },
+        data: { id: 42 },
+      }),
+      150,
+      { showSecrets: false, color: false, statusOnly: true }
+    );
+    expect(out).toBe('← 200 OK (150ms)');
+    expect(out).not.toContain('etag');
+    expect(out).not.toContain('Content-Type');
+    expect(out).not.toContain('"id"');
+  });
+
   it('joins multi-value headers (Set-Cookie array) into a single line', () => {
     const out = formatResponseHTTP(
       makeResponse({
