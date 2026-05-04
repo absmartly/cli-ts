@@ -172,3 +172,24 @@ function classifyStatus(
   if (Math.abs(percent) < FLAT_PCT && pValue > FLAT_PVALUE) return 'flat';
   return 'inconclusive';
 }
+
+export function leadingPrimaryImpactFromSnapshot(
+  snapshot: { columnNames?: string[]; rows?: unknown[][] } | null | undefined,
+  primaryMetricId: number
+): number | null {
+  if (!snapshot || !Array.isArray(snapshot.rows)) return null;
+  const cols = snapshot.columnNames ?? [];
+  const cMetric = cols.indexOf('metric_id');
+  const cVariant = cols.indexOf('variant');
+  const cPct = cols.indexOf('percent_change');
+  let best: number | null = null;
+  for (const row of snapshot.rows) {
+    if (!Array.isArray(row)) continue;
+    const m = numAt(row, cMetric);
+    const v = numAt(row, cVariant);
+    const p = numAt(row, cPct);
+    if (m !== primaryMetricId || v === null || v === 0 || p === null) continue;
+    if (best === null || p > best) best = p;
+  }
+  return best;
+}
