@@ -120,6 +120,17 @@ describe('heuristics rules', () => {
     expect(heuristicOutput.find(h => h.rule === 'no_recommendation_overdue')!.fired).toBe(true);
   });
 
+  it('sample_size_not_reached fires for running group_sequential without the alert', () => {
+    const a = runHeuristics({ ...baseInput });
+    expect(a.heuristicOutput.find(h => h.rule === 'sample_size_not_reached')!.fired).toBe(true);
+
+    const b = runHeuristics({
+      ...baseInput,
+      alerts: [{ id: 9, type: 'sample_size_reached', dismissed: false }],
+    });
+    expect(b.heuristicOutput.find(h => h.rule === 'sample_size_not_reached')!.fired).toBe(false);
+  });
+
   it('returns null recommendation when no rule fires meaningfully', () => {
     const { recommendation } = runHeuristics({
       ...baseInput,
@@ -205,6 +216,15 @@ describe('computeDesignReadout', () => {
       benchmark: { observed_impacts: [2, 3, 4], median_abs_impact: 3 },
     });
     expect(r.summary).toMatch(/smaller expected effect/);
+  });
+
+  it('uses the in-between phrasing when benchmark median is between 0.5x and 1.5x of MDE', () => {
+    const r = computeDesignReadout({
+      ...baseInput,
+      experiment: { ...baseInput.experiment, minimum_detectable_effect: 5 },
+      benchmark: { observed_impacts: [4, 5, 6], median_abs_impact: 5 },
+    });
+    expect(r.summary).toMatch(/Design appears usable/);
   });
 
   it('falls back when no benchmark available', () => {

@@ -16,6 +16,7 @@ const BLOCKING_ALERT_TYPES = new Set([
 ]);
 
 const RECOMMENDATION_OVERDUE_DAYS = 21;
+const DEFAULT_ALPHA = 0.1;
 
 interface AlertLite {
   id: number;
@@ -104,7 +105,7 @@ const rules: Record<RuleId, RuleFn> = {
   },
   primary_metric_significant_loss: input => {
     const lv = input.leadingVariant;
-    const alpha = parseAlpha(input.experiment.required_alpha) ?? 0.1;
+    const alpha = parseAlpha(input.experiment.required_alpha) ?? DEFAULT_ALPHA;
     const fired = !!lv && lv.p_value !== null && lv.p_value < alpha && lv.impact_percent < 0;
     return entry(
       'primary_metric_significant_loss',
@@ -117,7 +118,7 @@ const rules: Record<RuleId, RuleFn> = {
   },
   primary_metric_significant_win: input => {
     const lv = input.leadingVariant;
-    const alpha = parseAlpha(input.experiment.required_alpha) ?? 0.1;
+    const alpha = parseAlpha(input.experiment.required_alpha) ?? DEFAULT_ALPHA;
     const fired = !!lv && lv.p_value !== null && lv.p_value < alpha && lv.impact_percent > 0;
     return entry(
       'primary_metric_significant_win',
