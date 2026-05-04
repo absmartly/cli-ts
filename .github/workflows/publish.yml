@@ -58,13 +58,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-          registry-url: 'https://registry.npmjs.org'
 
       - run: bun install --frozen-lockfile
 
       - run: bun tsc
 
-      - run: npm publish --provenance --access public
+      - run: npm publish --access public
 
       - name: Tag and create GitHub release
         env:
