@@ -101,6 +101,7 @@ export async function analyzeExperiment(
     participant_count: participantCount,
     leading_variant_name: leadingVariant?.variant_name ?? null,
     leading_variant_impact_percent: leadingVariant?.impact_percent ?? null,
+    // 1 - p_value (frequentist "confidence level"); interpret alongside p_value rather than as a calibrated probability
     leading_variant_confidence:
       leadingVariant && leadingVariant.p_value !== null ? 1 - leadingVariant.p_value : null,
     current_recommended_action:
