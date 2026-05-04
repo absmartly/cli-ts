@@ -9,6 +9,7 @@ import {
 } from './heuristics.js';
 import { summarizeRelatedExperiments } from './related-benchmarks.js';
 import { SourceSignalRegistry } from './source-signals.js';
+import { summarizeAnalyzeResult } from './summary.js';
 import type {
   AnalyzeAlert,
   AnalyzeExperimentSection,
@@ -124,7 +125,7 @@ export async function analyzeExperiment(
     heuristic_output: heuristicOutput,
   };
 
-  return { data, detail: data as unknown as Record<string, unknown> };
+  return { data, detail: summarizeAnalyzeResult(data) };
 }
 
 async function resolveAlerts(

@@ -80,4 +80,26 @@ describe('analyze command', () => {
     expect((data.experiment as Record<string, unknown>).id).toBe(42);
     expect(Array.isArray(data.heuristic_output)).toBe(true);
   });
+
+  it('uses the flat summary detail when output is table', async () => {
+    vi.mocked(getGlobalOptions).mockReturnValue({ output: 'table' } as any);
+    // Mark `output` as CLI-supplied so isOutputExplicit() returns true and the
+    // implicit-default override is skipped.
+    analyzeCommand.setOptionValueWithSource('output', 'table', 'cli');
+    await analyzeCommand.parseAsync(['node', 'test', '42']);
+    const data = vi.mocked(printFormatted).mock.calls[0]![0] as Record<string, unknown>;
+    expect(data.id).toBe(42);
+    expect(data.name).toBe('demo');
+    expect('experiment' in data).toBe(false);
+    expect('heuristic_output' in data).toBe(false);
+    expect('heuristics_fired' in data).toBe(true);
+  });
+
+  it('emits the full nested object when output is json', async () => {
+    vi.mocked(getGlobalOptions).mockReturnValue({ output: 'json' } as any);
+    await analyzeCommand.parseAsync(['node', 'test', '42']);
+    const data = vi.mocked(printFormatted).mock.calls[0]![0] as Record<string, unknown>;
+    expect((data.experiment as Record<string, unknown>).id).toBe(42);
+    expect(Array.isArray(data.heuristic_output)).toBe(true);
+  });
 });
