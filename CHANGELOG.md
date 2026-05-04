@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/absmartly/cli-ts/compare/cli-v1.3.0...cli-v1.4.0) (2026-05-04)
+
+
+### Features
+
+* **experiments:** add 'analyze' subcommand ([#25](https://github.com/absmartly/cli-ts/issues/25)) ([f516430](https://github.com/absmartly/cli-ts/commit/f51643086f5509258081b8f481d4e5f32cc606a5))
+
 ## [1.3.0](https://github.com/absmartly/cli-ts/compare/cli-v1.2.0...cli-v1.3.0) (2026-04-29)
 
 
