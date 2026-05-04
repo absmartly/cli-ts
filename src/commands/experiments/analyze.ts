@@ -18,6 +18,6 @@ export const analyzeCommand = new Command('analyze')
       const id = await client.resolveExperimentId(nameOrId);
 
       const result = await analyzeExperiment(client, { experimentId: id });
-      printFormatted(result.data as unknown as Record<string, unknown>, globalOptions);
+      printFormatted(result.detail!, globalOptions);
     })
   );
