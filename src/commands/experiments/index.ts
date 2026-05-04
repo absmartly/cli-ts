@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import { listCommand } from './list.js';
 import { getCommand } from './get.js';
+import { analyzeCommand } from './analyze.js';
 import { searchCommand } from './search.js';
 import { startCommand } from './start.js';
 import { stopCommand } from './stop.js';
@@ -33,6 +34,7 @@ import { estimateParticipantsCommand } from './estimate-participants.js';
 const subcommands = [
   listCommand,
   getCommand,
+  analyzeCommand,
   searchCommand,
   createCommand,
   cloneCommand,
