@@ -22,6 +22,9 @@ jobs:
         with:
           node-version: '22'
 
+      - name: Install libsecret (keytar build dep)
+        run: sudo apt-get update && sudo apt-get install -y libsecret-1-dev
+
       - run: bun install --frozen-lockfile
 
       - name: Prettier check
@@ -44,6 +47,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
+
+      - name: Install libsecret (keytar build dep)
+        run: sudo apt-get update && sudo apt-get install -y libsecret-1-dev
 
       - run: bun install --frozen-lockfile
 
@@ -70,6 +76,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+
+      - name: Install libsecret (keytar build dep)
+        run: sudo apt-get update && sudo apt-get install -y libsecret-1-dev
 
       - run: bun install --frozen-lockfile
 
