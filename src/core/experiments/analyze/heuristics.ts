@@ -67,31 +67,31 @@ type RuleId = (typeof RULE_ORDER)[number];
 type RuleFn = (input: HeuristicsInput) => HeuristicEntry;
 
 const rules: Record<RuleId, RuleFn> = {
-  blocking_alert: input => {
-    const hits = input.alerts.filter(a => !a.dismissed && BLOCKING_ALERT_TYPES.has(a.type));
+  blocking_alert: (input) => {
+    const hits = input.alerts.filter((a) => !a.dismissed && BLOCKING_ALERT_TYPES.has(a.type));
     return entry(
       'blocking_alert',
       hits.length > 0,
       'warning',
       'Investigate the experiment before making a rollout decision.',
       'Active health checks indicate that the current results may be misleading. Resolve the data-quality or assignment issue before acting on the outcome.',
-      { alert_types: hits.map(h => h.type) }
+      { alert_types: hits.map((h) => h.type) }
     );
   },
-  cleanup_needed: input => {
-    const hits = input.alerts.filter(a => !a.dismissed && a.type === 'cleanup_needed');
+  cleanup_needed: (input) => {
+    const hits = input.alerts.filter((a) => !a.dismissed && a.type === 'cleanup_needed');
     return entry(
       'cleanup_needed',
       hits.length > 0,
       'warning',
       'Clean up stale assignments before proceeding.',
       'The experiment has cleanup_needed signals; old data may skew the analysis.',
-      { alert_ids: hits.map(h => h.id) }
+      { alert_ids: hits.map((h) => h.id) }
     );
   },
-  guardrail_contradicts: input => {
+  guardrail_contradicts: (input) => {
     const hits = input.metricSignals.filter(
-      s => s.metric_type === 'guardrail' && s.status === 'contradicts'
+      (s) => s.metric_type === 'guardrail' && s.status === 'contradicts'
     );
     const variant = input.leadingVariant?.variant_name ?? 'the leading variant';
     return entry(
@@ -100,10 +100,10 @@ const rules: Record<RuleId, RuleFn> = {
       'warning',
       `Review guardrail regressions before rolling out ${variant}.`,
       'At least one guardrail metric is moving in the wrong direction, so the apparent win on the primary metric should not be treated as rollout-ready yet.',
-      { metrics: hits.map(h => h.metric_name) }
+      { metrics: hits.map((h) => h.metric_name) }
     );
   },
-  primary_metric_significant_loss: input => {
+  primary_metric_significant_loss: (input) => {
     const lv = input.leadingVariant;
     const alpha = parseAlpha(input.experiment.required_alpha) ?? DEFAULT_ALPHA;
     const fired = !!lv && lv.p_value !== null && lv.p_value < alpha && lv.impact_percent < 0;
@@ -116,7 +116,7 @@ const rules: Record<RuleId, RuleFn> = {
       lv ? { variant: lv.variant_name, impact_percent: lv.impact_percent, p_value: lv.p_value } : {}
     );
   },
-  primary_metric_significant_win: input => {
+  primary_metric_significant_win: (input) => {
     const lv = input.leadingVariant;
     const alpha = parseAlpha(input.experiment.required_alpha) ?? DEFAULT_ALPHA;
     const fired = !!lv && lv.p_value !== null && lv.p_value < alpha && lv.impact_percent > 0;
@@ -129,11 +129,12 @@ const rules: Record<RuleId, RuleFn> = {
       lv ? { variant: lv.variant_name, impact_percent: lv.impact_percent, p_value: lv.p_value } : {}
     );
   },
-  sample_size_not_reached: input => {
+  sample_size_not_reached: (input) => {
     const isRunningGS =
-      input.experiment.state === 'running' &&
-      input.experiment.analysis_type === 'group_sequential';
-    const hasReachedAlert = input.alerts.some(a => !a.dismissed && a.type === 'sample_size_reached');
+      input.experiment.state === 'running' && input.experiment.analysis_type === 'group_sequential';
+    const hasReachedAlert = input.alerts.some(
+      (a) => !a.dismissed && a.type === 'sample_size_reached'
+    );
     const fired = isRunningGS && !hasReachedAlert;
     return entry(
       'sample_size_not_reached',
@@ -144,7 +145,7 @@ const rules: Record<RuleId, RuleFn> = {
       {}
     );
   },
-  hypothesis_missing: input => {
+  hypothesis_missing: (input) => {
     const fired = !input.experiment.hypothesis || input.experiment.hypothesis.trim() === '';
     return entry(
       'hypothesis_missing',
@@ -155,7 +156,7 @@ const rules: Record<RuleId, RuleFn> = {
       {}
     );
   },
-  no_recommendation_overdue: input => {
+  no_recommendation_overdue: (input) => {
     const startedAt = input.experiment.started_at ? Date.parse(input.experiment.started_at) : NaN;
     const days = Number.isFinite(startedAt) ? (Date.now() - startedAt) / 86400000 : 0;
     const fired = days >= RECOMMENDATION_OVERDUE_DAYS && !input.experiment.recommended_action;
@@ -168,7 +169,7 @@ const rules: Record<RuleId, RuleFn> = {
       { days_running: Math.floor(days) }
     );
   },
-  snapshot_unavailable: input => {
+  snapshot_unavailable: (input) => {
     const fired = input.participantCount === null && input.metricSignals.length === 0;
     return entry(
       'snapshot_unavailable',
@@ -185,7 +186,7 @@ export function runHeuristics(input: HeuristicsInput): {
   heuristicOutput: HeuristicEntry[];
   recommendation: Recommendation | null;
 } {
-  const heuristicOutput = RULE_ORDER.map(id => rules[id](input));
+  const heuristicOutput = RULE_ORDER.map((id) => rules[id](input));
   const picked = pickRecommendation(heuristicOutput);
   const recommendation: Recommendation | null = picked
     ? { theme: picked.theme, title: picked.title, details: picked.details }
@@ -194,24 +195,24 @@ export function runHeuristics(input: HeuristicsInput): {
 }
 
 function pickRecommendation(entries: HeuristicEntry[]): HeuristicEntry | null {
-  const firstWarning = entries.find(h => h.fired && h.theme === 'warning');
+  const firstWarning = entries.find((h) => h.fired && h.theme === 'warning');
   if (firstWarning) return firstWarning;
-  const firstSuccess = entries.find(h => h.fired && h.theme === 'success');
+  const firstSuccess = entries.find((h) => h.fired && h.theme === 'success');
   if (firstSuccess) return firstSuccess;
   return null;
 }
 
 export function computeAnalysisConfidence(input: HeuristicsInput): AnalysisConfidence {
   const hasBlockingAlert = input.alerts.some(
-    a => !a.dismissed && BLOCKING_ALERT_TYPES.has(a.type)
+    (a) => !a.dismissed && BLOCKING_ALERT_TYPES.has(a.type)
   );
-  const sampleReached = input.alerts.some(a => !a.dismissed && a.type === 'sample_size_reached');
+  const sampleReached = input.alerts.some((a) => !a.dismissed && a.type === 'sample_size_reached');
   const hypothesisPresent =
     !!input.experiment.hypothesis && input.experiment.hypothesis.trim() !== '';
   const primaryPresent =
     input.experiment.primary_metric_id !== null && input.experiment.primary_metric_id !== undefined;
   const guardrailsPresent = (input.experiment.secondary_metrics ?? []).some(
-    m => m.type === 'guardrail'
+    (m) => m.type === 'guardrail'
   );
   const noBlockingAlerts = !hasBlockingAlert;
 
@@ -230,7 +231,7 @@ export function computeAnalysisConfidence(input: HeuristicsInput): AnalysisConfi
   if (!guardrailsPresent) reasons.push('No guardrail metric configured.');
   if (!noBlockingAlerts) reasons.push('A blocking health alert is active.');
 
-  const missing = Object.values(factors).filter(v => !v).length;
+  const missing = Object.values(factors).filter((v) => !v).length;
   let level: AnalysisConfidence['level'];
   if (!noBlockingAlerts || missing >= 2) level = 'low';
   else if (missing === 1) level = 'medium';

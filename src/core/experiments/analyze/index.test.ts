@@ -22,7 +22,11 @@ const baseExperiment = {
     { variant: 1, name: 'treatment' },
   ],
   secondary_metrics: [
-    { metric_id: 200, type: 'guardrail', metric: { id: 200, name: 'Latency', lower_is_better: true } },
+    {
+      metric_id: 200,
+      type: 'guardrail',
+      metric: { id: 200, name: 'Latency', lower_is_better: true },
+    },
   ],
   alerts: [{ id: 9, type: 'sample_size_reached', dismissed: false }],
   recommended_action: { recommendation: 'review' },
@@ -46,8 +50,20 @@ describe('analyzeExperiment', () => {
       getExperiment: vi.fn().mockResolvedValue(baseExperiment),
       listExperiments: vi.fn().mockResolvedValue([
         { id: 1, primary_metric_id: 100 }, // self — should be filtered out
-        { id: 2, name: 'r2', state: 'stopped', primary_metric_id: 100, primary_metric: { id: 100, name: 'Conversions' } },
-        { id: 3, name: 'r3', state: 'stopped', primary_metric_id: 100, primary_metric: { id: 100, name: 'Conversions' } },
+        {
+          id: 2,
+          name: 'r2',
+          state: 'stopped',
+          primary_metric_id: 100,
+          primary_metric: { id: 100, name: 'Conversions' },
+        },
+        {
+          id: 3,
+          name: 'r3',
+          state: 'stopped',
+          primary_metric_id: 100,
+          primary_metric: { id: 100, name: 'Conversions' },
+        },
       ]),
       getExperimentMetricsCached: vi.fn().mockResolvedValue({
         columnNames: ['metric_id', 'variant', 'percent_change'],
@@ -70,7 +86,7 @@ describe('analyzeExperiment', () => {
     expect(res.data.experiment.report_note).toBe('Looking good.');
     expect(res.data.alerts).toEqual([{ id: 9, type: 'sample_size_reached', dismissed: false }]);
     expect(res.data.metric_signals.length).toBeGreaterThan(0);
-    expect(res.data.related_experiments.map(r => r.id).sort()).toEqual([2, 3]);
+    expect(res.data.related_experiments.map((r) => r.id).sort()).toEqual([2, 3]);
     expect(res.data.recommendation?.theme).toBe('success');
     expect(res.data.analysis_confidence.level).toBe('high');
     expect(res.data.heuristic_output.length).toBeGreaterThan(0);
@@ -90,7 +106,9 @@ describe('analyzeExperiment', () => {
     const res = await analyzeExperiment(client as any, { experimentId: id(1) });
     expect(res.data.related_experiments).toEqual([]);
     expect(
-      res.data.source_signals.some(s => s.covers === 'related_experiments' && /error/.test(s.source))
+      res.data.source_signals.some(
+        (s) => s.covers === 'related_experiments' && /error/.test(s.source)
+      )
     ).toBe(true);
   });
 
@@ -98,7 +116,9 @@ describe('analyzeExperiment', () => {
     client.getExperiment.mockResolvedValue({ ...baseExperiment, metrics_snapshot: undefined });
     const res = await analyzeExperiment(client as any, { experimentId: id(1) });
     expect(res.data.experiment.participant_count).toBeNull();
-    expect(res.data.heuristic_output.find(h => h.rule === 'snapshot_unavailable')!.fired).toBe(true);
+    expect(res.data.heuristic_output.find((h) => h.rule === 'snapshot_unavailable')!.fired).toBe(
+      true
+    );
   });
 
   it('passes the right list options to listExperiments', async () => {

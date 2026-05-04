@@ -5,7 +5,11 @@ const baseExperiment = {
   primary_metric_id: 100,
   primary_metric: { id: 100, name: 'Conversions' },
   secondary_metrics: [
-    { metric_id: 200, type: 'guardrail', metric: { id: 200, name: 'Latency', lower_is_better: true } },
+    {
+      metric_id: 200,
+      type: 'guardrail',
+      metric: { id: 200, name: 'Latency', lower_is_better: true },
+    },
     { metric_id: 300, type: 'secondary', metric: { id: 300, name: 'Revenue' } },
   ],
   variants: [
@@ -35,9 +39,9 @@ const baseExperiment = {
 describe('extractSignals', () => {
   it('produces metric signals with metric_type tagged from membership', () => {
     const out = extractSignals(baseExperiment as any);
-    const primary = out.metricSignals.find(s => s.metric_id === 100 && s.variant_id === 1);
-    const guardrail = out.metricSignals.find(s => s.metric_id === 200);
-    const secondary = out.metricSignals.find(s => s.metric_id === 300);
+    const primary = out.metricSignals.find((s) => s.metric_id === 100 && s.variant_id === 1);
+    const guardrail = out.metricSignals.find((s) => s.metric_id === 200);
+    const secondary = out.metricSignals.find((s) => s.metric_id === 300);
     expect(primary?.metric_type).toBe('primary');
     expect(guardrail?.metric_type).toBe('guardrail');
     expect(secondary?.metric_type).toBe('secondary');
@@ -45,20 +49,20 @@ describe('extractSignals', () => {
 
   it('flags primary improvement as `improves`', () => {
     const out = extractSignals(baseExperiment as any);
-    const primary = out.metricSignals.find(s => s.metric_id === 100 && s.variant_id === 1)!;
+    const primary = out.metricSignals.find((s) => s.metric_id === 100 && s.variant_id === 1)!;
     expect(primary.status).toBe('improves');
   });
 
   it('flags guardrail regression as `contradicts` (lower_is_better)', () => {
     const out = extractSignals(baseExperiment as any);
-    const guardrail = out.metricSignals.find(s => s.metric_id === 200)!;
+    const guardrail = out.metricSignals.find((s) => s.metric_id === 200)!;
     // lower_is_better=true and percent_change=+12% with p<alpha → contradicts
     expect(guardrail.status).toBe('contradicts');
   });
 
   it('flags small flat secondary as `flat`', () => {
     const out = extractSignals(baseExperiment as any);
-    const secondary = out.metricSignals.find(s => s.metric_id === 300)!;
+    const secondary = out.metricSignals.find((s) => s.metric_id === 300)!;
     expect(secondary.status).toBe('flat');
   });
 

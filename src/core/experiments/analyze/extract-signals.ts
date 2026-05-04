@@ -54,7 +54,8 @@ export function extractSignals(experiment: Exp): ExtractResult {
 
   const variantNames = new Map<number, string>();
   for (const v of experiment.variants ?? []) {
-    if (typeof v.variant === 'number') variantNames.set(v.variant, v.name ?? `Variant ${v.variant}`);
+    if (typeof v.variant === 'number')
+      variantNames.set(v.variant, v.name ?? `Variant ${v.variant}`);
   }
 
   const primaryMetricId = experiment.primary_metric_id ?? experiment.primary_metric?.id ?? null;
@@ -64,15 +65,21 @@ export function extractSignals(experiment: Exp): ExtractResult {
 
   if (primaryMetricId !== null) {
     metricKindById.set(primaryMetricId, 'primary');
-    metricNameById.set(primaryMetricId, experiment.primary_metric?.name ?? `metric_${primaryMetricId}`);
+    metricNameById.set(
+      primaryMetricId,
+      experiment.primary_metric?.name ?? `metric_${primaryMetricId}`
+    );
     if (experiment.primary_metric?.lower_is_better) lowerIsBetter.set(primaryMetricId, true);
   }
   for (const sm of experiment.secondary_metrics ?? []) {
     const mid = sm.metric_id ?? sm.metric?.id;
     if (typeof mid !== 'number') continue;
     const kind: MetricKind =
-      sm.type === 'guardrail' ? 'guardrail' :
-      sm.type === 'exploratory' ? 'exploratory' : 'secondary';
+      sm.type === 'guardrail'
+        ? 'guardrail'
+        : sm.type === 'exploratory'
+          ? 'exploratory'
+          : 'secondary';
     if (!metricKindById.has(mid)) metricKindById.set(mid, kind);
     if (!metricNameById.has(mid)) metricNameById.set(mid, sm.metric?.name ?? `metric_${mid}`);
     if (sm.metric?.lower_is_better) lowerIsBetter.set(mid, true);

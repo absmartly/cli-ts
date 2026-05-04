@@ -29,12 +29,13 @@ export async function summarizeRelatedExperiments(
   benchmark: { observed_impacts: number[]; median_abs_impact: number | null } | null;
 }> {
   const focalPrimary = focal.primary_metric_id ?? null;
-  const filtered = related.filter(r => r.id !== focal.id).slice(0, 24);
+  const filtered = related.filter((r) => r.id !== focal.id).slice(0, 24);
 
   let attemptedFetches = 0;
   const fetches = filtered.map(async (rel) => {
     const sharesMetric =
-      focalPrimary !== null && (rel.primary_metric_id ?? rel.primary_metric?.id ?? null) === focalPrimary;
+      focalPrimary !== null &&
+      (rel.primary_metric_id ?? rel.primary_metric?.id ?? null) === focalPrimary;
 
     let impact: number | null = null;
     if (sharesMetric) {
@@ -69,7 +70,7 @@ export async function summarizeRelatedExperiments(
 
   const items = await Promise.all(fetches);
   const observed = items
-    .map(i => i.leading_variant_impact_percent)
+    .map((i) => i.leading_variant_impact_percent)
     .filter((n): n is number => typeof n === 'number' && Number.isFinite(n));
 
   let benchmark: { observed_impacts: number[]; median_abs_impact: number | null } | null = null;

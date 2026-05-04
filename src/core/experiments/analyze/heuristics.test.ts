@@ -1,9 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  computeAnalysisConfidence,
-  computeDesignReadout,
-  runHeuristics,
-} from './heuristics.js';
+import { computeAnalysisConfidence, computeDesignReadout, runHeuristics } from './heuristics.js';
 import type { MetricSignal, LeadingVariant } from './types.js';
 
 const baseInput = {
@@ -34,7 +30,7 @@ describe('heuristics rules', () => {
       ...baseInput,
       alerts: [{ id: 1, type: 'srm', dismissed: false }],
     });
-    const rule = heuristicOutput.find(h => h.rule === 'blocking_alert')!;
+    const rule = heuristicOutput.find((h) => h.rule === 'blocking_alert')!;
     expect(rule.fired).toBe(true);
     expect(rule.theme).toBe('warning');
     expect(recommendation?.title).toContain('Investigate');
@@ -45,49 +41,81 @@ describe('heuristics rules', () => {
       ...baseInput,
       alerts: [{ id: 5, type: 'cleanup_needed', dismissed: false }],
     });
-    expect(heuristicOutput.find(h => h.rule === 'cleanup_needed')!.fired).toBe(true);
+    expect(heuristicOutput.find((h) => h.rule === 'cleanup_needed')!.fired).toBe(true);
     expect(recommendation?.theme).toBe('warning');
   });
 
   it('guardrail_contradicts fires when guardrail signal contradicts', () => {
     const sig: MetricSignal = {
-      metric_id: 200, metric_name: 'Latency', metric_type: 'guardrail',
-      variant_id: 1, variant_name: 'treatment',
-      percent_change: 8, p_value: 0.02, ci_low: 1, ci_high: 15,
+      metric_id: 200,
+      metric_name: 'Latency',
+      metric_type: 'guardrail',
+      variant_id: 1,
+      variant_name: 'treatment',
+      percent_change: 8,
+      p_value: 0.02,
+      ci_low: 1,
+      ci_high: 15,
       status: 'contradicts',
     };
     const { heuristicOutput } = runHeuristics({ ...baseInput, metricSignals: [sig] });
-    expect(heuristicOutput.find(h => h.rule === 'guardrail_contradicts')!.fired).toBe(true);
+    expect(heuristicOutput.find((h) => h.rule === 'guardrail_contradicts')!.fired).toBe(true);
   });
 
   it('primary_metric_significant_loss outranks primary_metric_significant_win', () => {
     const sig: MetricSignal = {
-      metric_id: 100, metric_name: 'Conv', metric_type: 'primary',
-      variant_id: 1, variant_name: 'treatment',
-      percent_change: -3, p_value: 0.01, ci_low: -5, ci_high: -1,
+      metric_id: 100,
+      metric_name: 'Conv',
+      metric_type: 'primary',
+      variant_id: 1,
+      variant_name: 'treatment',
+      percent_change: -3,
+      p_value: 0.01,
+      ci_low: -5,
+      ci_high: -1,
       status: 'contradicts',
     };
     const { heuristicOutput, recommendation } = runHeuristics({
       ...baseInput,
       metricSignals: [sig],
-      leadingVariant: { variant_id: 1, variant_name: 'treatment', impact_percent: -3, p_value: 0.01 },
+      leadingVariant: {
+        variant_id: 1,
+        variant_name: 'treatment',
+        impact_percent: -3,
+        p_value: 0.01,
+      },
     });
-    expect(heuristicOutput.find(h => h.rule === 'primary_metric_significant_loss')!.fired).toBe(true);
-    expect(heuristicOutput.find(h => h.rule === 'primary_metric_significant_win')!.fired).toBe(false);
+    expect(heuristicOutput.find((h) => h.rule === 'primary_metric_significant_loss')!.fired).toBe(
+      true
+    );
+    expect(heuristicOutput.find((h) => h.rule === 'primary_metric_significant_win')!.fired).toBe(
+      false
+    );
     expect(recommendation?.theme).toBe('warning');
   });
 
   it('primary_metric_significant_win produces a success recommendation when no warning fires', () => {
     const sig: MetricSignal = {
-      metric_id: 100, metric_name: 'Conv', metric_type: 'primary',
-      variant_id: 1, variant_name: 'treatment',
-      percent_change: 6, p_value: 0.01, ci_low: 2, ci_high: 10,
+      metric_id: 100,
+      metric_name: 'Conv',
+      metric_type: 'primary',
+      variant_id: 1,
+      variant_name: 'treatment',
+      percent_change: 6,
+      p_value: 0.01,
+      ci_low: 2,
+      ci_high: 10,
       status: 'improves',
     };
     const { recommendation } = runHeuristics({
       ...baseInput,
       metricSignals: [sig],
-      leadingVariant: { variant_id: 1, variant_name: 'treatment', impact_percent: 6, p_value: 0.01 },
+      leadingVariant: {
+        variant_id: 1,
+        variant_name: 'treatment',
+        impact_percent: 6,
+        p_value: 0.01,
+      },
     });
     expect(recommendation?.theme).toBe('success');
   });
@@ -97,7 +125,7 @@ describe('heuristics rules', () => {
       ...baseInput,
       experiment: { ...baseInput.experiment, hypothesis: '' },
     });
-    expect(heuristicOutput.find(h => h.rule === 'hypothesis_missing')!.fired).toBe(true);
+    expect(heuristicOutput.find((h) => h.rule === 'hypothesis_missing')!.fired).toBe(true);
   });
 
   it('snapshot_unavailable fires when participantCount is null and no signals', () => {
@@ -106,7 +134,7 @@ describe('heuristics rules', () => {
       participantCount: null,
       metricSignals: [],
     });
-    expect(heuristicOutput.find(h => h.rule === 'snapshot_unavailable')!.fired).toBe(true);
+    expect(heuristicOutput.find((h) => h.rule === 'snapshot_unavailable')!.fired).toBe(true);
   });
 
   it('no_recommendation_overdue fires when running >=21 days with no recommended_action', () => {
@@ -117,18 +145,18 @@ describe('heuristics rules', () => {
         started_at: new Date(Date.now() - 30 * 86400 * 1000).toISOString(),
       },
     });
-    expect(heuristicOutput.find(h => h.rule === 'no_recommendation_overdue')!.fired).toBe(true);
+    expect(heuristicOutput.find((h) => h.rule === 'no_recommendation_overdue')!.fired).toBe(true);
   });
 
   it('sample_size_not_reached fires for running group_sequential without the alert', () => {
     const a = runHeuristics({ ...baseInput });
-    expect(a.heuristicOutput.find(h => h.rule === 'sample_size_not_reached')!.fired).toBe(true);
+    expect(a.heuristicOutput.find((h) => h.rule === 'sample_size_not_reached')!.fired).toBe(true);
 
     const b = runHeuristics({
       ...baseInput,
       alerts: [{ id: 9, type: 'sample_size_reached', dismissed: false }],
     });
-    expect(b.heuristicOutput.find(h => h.rule === 'sample_size_not_reached')!.fired).toBe(false);
+    expect(b.heuristicOutput.find((h) => h.rule === 'sample_size_not_reached')!.fired).toBe(false);
   });
 
   it('returns null recommendation when no rule fires meaningfully', () => {
@@ -141,7 +169,7 @@ describe('heuristics rules', () => {
 
   it('emits all rules in stable order', () => {
     const { heuristicOutput } = runHeuristics(baseInput);
-    expect(heuristicOutput.map(h => h.rule)).toEqual([
+    expect(heuristicOutput.map((h) => h.rule)).toEqual([
       'blocking_alert',
       'cleanup_needed',
       'guardrail_contradicts',
@@ -237,6 +265,6 @@ describe('computeDesignReadout', () => {
       ...baseInput,
       experiment: { ...baseInput.experiment, percentage_of_traffic: 5 },
     });
-    expect(r.notes.some(n => /traffic/i.test(n))).toBe(true);
+    expect(r.notes.some((n) => /traffic/i.test(n))).toBe(true);
   });
 });

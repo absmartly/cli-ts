@@ -4,7 +4,10 @@ import { SourceSignalRegistry } from './source-signals.js';
 describe('SourceSignalRegistry', () => {
   it('records entries in insertion order', () => {
     const reg = new SourceSignalRegistry();
-    reg.record('experiment.participant_count', 'experiment.metrics_snapshot.rows[*].cum_unit_count');
+    reg.record(
+      'experiment.participant_count',
+      'experiment.metrics_snapshot.rows[*].cum_unit_count'
+    );
     reg.record('alerts', 'experiment.alerts[0].type=srm');
     expect(reg.toArray()).toEqual([
       {
