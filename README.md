@@ -1217,7 +1217,7 @@ Statistical analysis tools for experiment planning.
 Aliases: `statistics`, `stats`
 
 ```bash
-abs statistics power-matrix --config '{"split":[0.5,0.5],"metric_mean":100,"metric_variance":25,"metric_type":"count","powers":[0.8,0.9]}'
+abs statistics power-matrix --json-config '{"split":[0.5,0.5],"metric_mean":100,"metric_variance":25,"metric_type":"count","powers":[0.8,0.9]}'
 ```
 
 ### Storage configs
@@ -1229,9 +1229,9 @@ Aliases: `storage-configs`, `storageconfigs`
 ```bash
 abs storage-configs list
 abs storage-configs get 1
-abs storage-configs create --config '{"type": "s3", ...}'
-abs storage-configs update 1 --config '{"bucket": "new-bucket"}'
-abs storage-configs test --config '{"type": "s3", ...}'
+abs storage-configs create --json-config '{"type": "s3", ...}'
+abs storage-configs update 1 --json-config '{"bucket": "new-bucket"}'
+abs storage-configs test --json-config '{"type": "s3", ...}'
 ```
 
 ### Action dialog fields
@@ -1243,8 +1243,8 @@ Aliases: `action-dialog-fields`, `actiondialogfields`
 ```bash
 abs action-dialog-fields list
 abs action-dialog-fields get 1
-abs action-dialog-fields create --config '{"name": "Reason", "type": "text"}'
-abs action-dialog-fields update 1 --config '{"required": true}'
+abs action-dialog-fields create --json-config '{"name": "Reason", "type": "text"}'
+abs action-dialog-fields update 1 --json-config '{"required": true}'
 ```
 
 ### Platform configuration
@@ -1280,13 +1280,13 @@ Aliases: `datasources`, `datasource`, `ds`
 ```bash
 abs datasources list
 abs datasources get 1
-abs datasources create --config '{"type": "postgres", ...}'
-abs datasources update 1 --config '{"host": "new-host"}'
+abs datasources create --json-config '{"type": "postgres", ...}'
+abs datasources update 1 --json-config '{"host": "new-host"}'
 abs datasources archive 1
-abs datasources test --config '{"type": "postgres", ...}'
-abs datasources introspect --config '{"type": "postgres", ...}'
-abs datasources validate-query --config '{"query": "SELECT ..."}'
-abs datasources preview-query --config '{"query": "SELECT ..."}'
+abs datasources test --json-config '{"type": "postgres", ...}'
+abs datasources introspect --json-config '{"type": "postgres", ...}'
+abs datasources validate-query --json-config '{"query": "SELECT ..."}'
+abs datasources preview-query --json-config '{"query": "SELECT ..."}'
 abs datasources set-default 1
 abs datasources schema 1
 ```
@@ -1300,8 +1300,8 @@ Aliases: `export-configs`, `exportconfigs`, `export-config`
 ```bash
 abs export-configs list
 abs export-configs get 1
-abs export-configs create --config '{"destination": "s3", ...}'
-abs export-configs update 1 --config '{"schedule": "daily"}'
+abs export-configs create --json-config '{"destination": "s3", ...}'
+abs export-configs update 1 --json-config '{"schedule": "daily"}'
 abs export-configs archive 1
 abs export-configs pause 1
 abs export-configs histories 1
@@ -1317,8 +1317,8 @@ Aliases: `update-schedules`, `updateschedules`
 ```bash
 abs update-schedules list
 abs update-schedules get 1
-abs update-schedules create --config '{"interval": "1h"}'
-abs update-schedules update 1 --config '{"interval": "30m"}'
+abs update-schedules create --json-config '{"interval": "1h"}'
+abs update-schedules update 1 --json-config '{"interval": "30m"}'
 abs update-schedules delete 1
 ```
 

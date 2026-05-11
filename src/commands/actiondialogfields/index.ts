@@ -49,12 +49,12 @@ const getCommand = new Command('get')
 
 const createCommand = new Command('create')
   .description('Create a new action dialog field')
-  .requiredOption('--config <json>', 'action dialog field configuration as JSON')
+  .requiredOption('--json-config <json>', 'action dialog field configuration as JSON')
   .action(
     withErrorHandling(async (options) => {
       const globalOptions = getGlobalOptions(createCommand);
       const client = await getAPIClientFromOptions(globalOptions);
-      const config = validateJSON(options.config, '--config');
+      const config = validateJSON(options.jsonConfig, '--json-config');
       if (config === null || Array.isArray(config) || typeof config !== 'object') {
         throw new Error('--config must be a JSON object (not null, array, or primitive)');
       }
@@ -69,12 +69,12 @@ const createCommand = new Command('create')
 const updateCommand = new Command('update')
   .description('Update an action dialog field')
   .argument('<id>', 'action dialog field ID', parsePositiveInt)
-  .requiredOption('--config <json>', 'action dialog field configuration as JSON')
+  .requiredOption('--json-config <json>', 'action dialog field configuration as JSON')
   .action(
     withErrorHandling(async (id: number, options) => {
       const globalOptions = getGlobalOptions(updateCommand);
       const client = await getAPIClientFromOptions(globalOptions);
-      const config = validateJSON(options.config, '--config');
+      const config = validateJSON(options.jsonConfig, '--json-config');
       if (config === null || Array.isArray(config) || typeof config !== 'object') {
         throw new Error('--config must be a JSON object (not null, array, or primitive)');
       }

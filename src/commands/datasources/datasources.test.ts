@@ -84,7 +84,7 @@ describe('datasources command', () => {
       'node',
       'test',
       'create',
-      '--config',
+      '--json-config',
       '{"type":"clickhouse"}',
     ]);
 
@@ -97,7 +97,7 @@ describe('datasources command', () => {
       'test',
       'update',
       '1',
-      '--config',
+      '--json-config',
       '{"type":"clickhouse"}',
     ]);
 
@@ -121,7 +121,7 @@ describe('datasources command', () => {
       'node',
       'test',
       'test',
-      '--config',
+      '--json-config',
       '{"type":"clickhouse"}',
     ]);
 
@@ -133,7 +133,7 @@ describe('datasources command', () => {
       'node',
       'test',
       'introspect',
-      '--config',
+      '--json-config',
       '{"type":"clickhouse"}',
     ]);
 
@@ -146,7 +146,7 @@ describe('datasources command', () => {
       'node',
       'test',
       'validate-query',
-      '--config',
+      '--json-config',
       '{"query":"SELECT 1"}',
     ]);
 
@@ -158,7 +158,7 @@ describe('datasources command', () => {
       'node',
       'test',
       'preview-query',
-      '--config',
+      '--json-config',
       '{"query":"SELECT 1"}',
     ]);
 

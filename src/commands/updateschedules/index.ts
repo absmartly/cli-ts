@@ -43,12 +43,12 @@ const getCommand = new Command('get')
 
 const createCommand = new Command('create')
   .description('Create a new update schedule')
-  .requiredOption('--config <json>', 'schedule configuration as JSON')
+  .requiredOption('--json-config <json>', 'schedule configuration as JSON')
   .action(
     withErrorHandling(async (options) => {
       const globalOptions = getGlobalOptions(createCommand);
       const client = await getAPIClientFromOptions(globalOptions);
-      const config = validateJSON(options.config, '--config') as Record<string, unknown>;
+      const config = validateJSON(options.jsonConfig, '--json-config') as Record<string, unknown>;
       const result = await createUpdateSchedule(client, { config });
       console.log(chalk.green(`✓ Update schedule created`));
       printFormatted(result.data, globalOptions);
@@ -58,12 +58,12 @@ const createCommand = new Command('create')
 const updateCommand = new Command('update')
   .description('Update an update schedule')
   .argument('<id>', 'update schedule ID', parseUpdateScheduleId)
-  .requiredOption('--config <json>', 'schedule configuration as JSON')
+  .requiredOption('--json-config <json>', 'schedule configuration as JSON')
   .action(
     withErrorHandling(async (id: UpdateScheduleId, options) => {
       const globalOptions = getGlobalOptions(updateCommand);
       const client = await getAPIClientFromOptions(globalOptions);
-      const config = validateJSON(options.config, '--config') as Record<string, unknown>;
+      const config = validateJSON(options.jsonConfig, '--json-config') as Record<string, unknown>;
       const result = await updateUpdateSchedule(client, { id, config });
       console.log(chalk.green(`✓ Update schedule ${id} updated`));
       printFormatted(result.data, globalOptions);

@@ -64,7 +64,13 @@ describe('storage-configs command', () => {
   });
 
   it('should create a storage config', async () => {
-    await storageConfigsCommand.parseAsync(['node', 'test', 'create', '--config', '{"type":"s3"}']);
+    await storageConfigsCommand.parseAsync([
+      'node',
+      'test',
+      'create',
+      '--json-config',
+      '{"type":"s3"}',
+    ]);
 
     expect(mockClient.createStorageConfig).toHaveBeenCalledWith({ type: 's3' });
     expect(printFormatted).toHaveBeenCalled();
@@ -76,7 +82,7 @@ describe('storage-configs command', () => {
       'test',
       'update',
       '1',
-      '--config',
+      '--json-config',
       '{"bucket":"new"}',
     ]);
 
@@ -85,7 +91,13 @@ describe('storage-configs command', () => {
   });
 
   it('should test a storage config', async () => {
-    await storageConfigsCommand.parseAsync(['node', 'test', 'test', '--config', '{"type":"s3"}']);
+    await storageConfigsCommand.parseAsync([
+      'node',
+      'test',
+      'test',
+      '--json-config',
+      '{"type":"s3"}',
+    ]);
 
     expect(mockClient.testStorageConfig).toHaveBeenCalledWith({ type: 's3' });
     expect(consoleSpy).toHaveBeenCalledWith(
