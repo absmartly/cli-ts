@@ -2439,6 +2439,11 @@ export class APIClient {
     return response.data;
   }
 
+  async deleteDatasource(id: DatasourceId): Promise<void> {
+    const response = await this.request('DELETE', `/datasources/${id}`);
+    this.validateOkResponse(response, 'deleteDatasource');
+  }
+
   async cancelExportHistory(
     exportConfigId: ExportConfigId,
     historyId: number,
