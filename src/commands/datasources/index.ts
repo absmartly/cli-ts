@@ -21,6 +21,9 @@ import {
   setDefaultDatasource as coreSetDefaultDatasource,
   getDatasourceSchema as coreGetDatasourceSchema,
   deleteDatasource as coreDeleteDatasource,
+  createDatasourceJsonLayouts as coreCreateDatasourceJsonLayouts,
+  recreateDatasourceJsonLayouts as coreRecreateDatasourceJsonLayouts,
+  previewDatasourceJsonLayouts as corePreviewDatasourceJsonLayouts,
 } from '../../core/datasources/datasources.js';
 
 export const datasourcesCommand = new Command('datasources')
@@ -179,6 +182,37 @@ const deleteCommand = new Command('delete')
     })
   );
 
+const jsonLayoutsCommand = new Command('json-layouts').description(
+  'Manage the json_layouts table on a datasource'
+);
+
+const jsonLayoutsCreateCommand = new Command('create')
+  .description('Create the json_layouts table on a datasource')
+  .argument('<id>', 'datasource ID', parseDatasourceId)
+  .action(
+    withErrorHandling(async (id: DatasourceId) => {
+      const globalOptions = getGlobalOptions(jsonLayoutsCreateCommand);
+      const client = await getAPIClientFromOptions(globalOptions);
+      await coreCreateDatasourceJsonLayouts(client, { id });
+      console.log(chalk.green(`✓ json_layouts table created on datasource ${id}`));
+    })
+  );
+
+const jsonLayoutsPreviewCommand = new Command('preview')
+  .description('Preview the json_layouts table (row count + 5-row sample)')
+  .argument('<id>', 'datasource ID', parseDatasourceId)
+  .action(
+    withErrorHandling(async (id: DatasourceId) => {
+      const globalOptions = getGlobalOptions(jsonLayoutsPreviewCommand);
+      const client = await getAPIClientFromOptions(globalOptions);
+      const result = await corePreviewDatasourceJsonLayouts(client, { id });
+      printFormatted(result.data, globalOptions);
+    })
+  );
+
+jsonLayoutsCommand.addCommand(jsonLayoutsCreateCommand);
+jsonLayoutsCommand.addCommand(jsonLayoutsPreviewCommand);
+
 datasourcesCommand.addCommand(listCommand);
 datasourcesCommand.addCommand(getCommand);
 datasourcesCommand.addCommand(createCommand);
@@ -191,3 +225,4 @@ datasourcesCommand.addCommand(previewQueryCommand);
 datasourcesCommand.addCommand(setDefaultCommand);
 datasourcesCommand.addCommand(schemaCommand);
 datasourcesCommand.addCommand(deleteCommand);
+datasourcesCommand.addCommand(jsonLayoutsCommand);

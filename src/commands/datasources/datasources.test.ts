@@ -35,6 +35,15 @@ describe('datasources command', () => {
     setDefaultDatasource: vi.fn().mockResolvedValue(undefined),
     getDatasourceSchema: vi.fn().mockResolvedValue({ tables: [] }),
     deleteDatasource: vi.fn().mockResolvedValue(undefined),
+    createDatasourceJsonLayouts: vi.fn().mockResolvedValue(undefined),
+    recreateDatasourceJsonLayouts: vi.fn().mockResolvedValue(undefined),
+    previewDatasourceJsonLayouts: vi.fn().mockResolvedValue({
+      ok: true,
+      row_count: 0,
+      column_names: [],
+      column_types: [],
+      rows: [],
+    }),
   };
 
   beforeEach(() => {
@@ -174,5 +183,18 @@ describe('datasources command', () => {
     await datasourcesCommand.parseAsync(['node', 'test', 'delete', '1']);
 
     expect(mockClient.deleteDatasource).toHaveBeenCalledWith(1);
+  });
+
+  it('should create json_layouts table', async () => {
+    await datasourcesCommand.parseAsync(['node', 'test', 'json-layouts', 'create', '1']);
+
+    expect(mockClient.createDatasourceJsonLayouts).toHaveBeenCalledWith(1);
+  });
+
+  it('should preview json_layouts table', async () => {
+    await datasourcesCommand.parseAsync(['node', 'test', 'json-layouts', 'preview', '1']);
+
+    expect(mockClient.previewDatasourceJsonLayouts).toHaveBeenCalledWith(1);
+    expect(printFormatted).toHaveBeenCalled();
   });
 });
