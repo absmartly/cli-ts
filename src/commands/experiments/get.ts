@@ -80,10 +80,20 @@ export const getCommand = new Command('get')
           'teams',
           'tags',
         ];
+        const metricListFields = new Set([
+          'secondary_metrics',
+          'guardrail_metrics',
+          'exploratory_metrics',
+        ]);
+        const deferredMetrics: Array<{ key: string; val: string }> = [];
         for (const key of tableFields) {
           const val = summary[key];
           if (val !== undefined && val !== '' && String(val).replace(/,\s*/g, '').trim()) {
-            lines.push(`| **${key}** | ${val} |`);
+            if (metricListFields.has(key)) {
+              deferredMetrics.push({ key, val: String(val) });
+            } else {
+              lines.push(`| **${key}** | ${val} |`);
+            }
           }
         }
         for (const key of Object.keys(summary)) {
@@ -93,6 +103,15 @@ export const getCommand = new Command('get')
           }
         }
         lines.push('');
+
+        for (const { key, val } of deferredMetrics) {
+          const label = key.replace(/_/g, ' ');
+          lines.push(`## ${label.charAt(0).toUpperCase() + label.slice(1)}`);
+          for (const metric of val.split(', ')) {
+            lines.push(`- ${metric}`);
+          }
+          lines.push('');
+        }
 
         if (summary.audience && String(summary.audience) !== '') {
           lines.push('## Audience');
