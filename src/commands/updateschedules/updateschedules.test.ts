@@ -68,7 +68,7 @@ describe('update-schedules command', () => {
       'node',
       'test',
       'create',
-      '--config',
+      '--json-config',
       '{"name":"daily"}',
     ]);
 
@@ -81,7 +81,7 @@ describe('update-schedules command', () => {
       'test',
       'update',
       '1',
-      '--config',
+      '--json-config',
       '{"name":"weekly"}',
     ]);
 

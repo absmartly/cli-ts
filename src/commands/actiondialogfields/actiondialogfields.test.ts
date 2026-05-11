@@ -67,7 +67,7 @@ describe('actiondialogfields command', () => {
       'node',
       'test',
       'create',
-      '--config',
+      '--json-config',
       '{"name":"Reason"}',
     ]);
 
@@ -81,7 +81,7 @@ describe('actiondialogfields command', () => {
       'test',
       'update',
       '1',
-      '--config',
+      '--json-config',
       '{"required":true}',
     ]);
 

@@ -42,12 +42,12 @@ const getCommand = new Command('get')
 
 const createCommand = new Command('create')
   .description('Create a new storage config')
-  .requiredOption('--config <json>', 'storage config configuration as JSON')
+  .requiredOption('--json-config <json>', 'storage config configuration as JSON')
   .action(
     withErrorHandling(async (options) => {
       const globalOptions = getGlobalOptions(createCommand);
       const client = await getAPIClientFromOptions(globalOptions);
-      const config = validateJSON(options.config, '--config') as Record<string, unknown>;
+      const config = validateJSON(options.jsonConfig, '--json-config') as Record<string, unknown>;
       const result = await createStorageConfig(client, { config });
       console.log(chalk.green(`✓ Storage config created`));
       printFormatted(result.data, globalOptions);
@@ -57,12 +57,12 @@ const createCommand = new Command('create')
 const updateCommand = new Command('update')
   .description('Update a storage config')
   .argument('<id>', 'storage config ID', (v: string) => parseInt(v, 10))
-  .requiredOption('--config <json>', 'storage config configuration as JSON')
+  .requiredOption('--json-config <json>', 'storage config configuration as JSON')
   .action(
     withErrorHandling(async (id: number, options) => {
       const globalOptions = getGlobalOptions(updateCommand);
       const client = await getAPIClientFromOptions(globalOptions);
-      const config = validateJSON(options.config, '--config') as Record<string, unknown>;
+      const config = validateJSON(options.jsonConfig, '--json-config') as Record<string, unknown>;
       const result = await updateStorageConfig(client, { id, config });
       console.log(chalk.green(`✓ Storage config ${id} updated`));
       printFormatted(result.data, globalOptions);
@@ -71,12 +71,12 @@ const updateCommand = new Command('update')
 
 const testCommand = new Command('test')
   .description('Test storage config connection')
-  .requiredOption('--config <json>', 'storage config configuration as JSON')
+  .requiredOption('--json-config <json>', 'storage config configuration as JSON')
   .action(
     withErrorHandling(async (options) => {
       const globalOptions = getGlobalOptions(testCommand);
       const client = await getAPIClientFromOptions(globalOptions);
-      const config = validateJSON(options.config, '--config') as Record<string, unknown>;
+      const config = validateJSON(options.jsonConfig, '--json-config') as Record<string, unknown>;
       await testStorageConfig(client, { config });
       console.log(chalk.green(`✓ Storage config connection test passed`));
     })

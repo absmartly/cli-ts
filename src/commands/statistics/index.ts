@@ -196,10 +196,10 @@ Examples:
     --minimum-detectable-effects 0.05,0.10,0.15 --powers 0.8
 
   # Raw JSON config (passed directly to the API)
-  abs stats power-matrix --config '{"sample_sizes":[2000,3000],...}'`
+  abs stats power-matrix --json-config '{"sample_sizes":[2000,3000],...}'`
   )
   .option(
-    '--config <json>',
+    '--json-config <json>',
     'power analysis configuration as JSON (alternative to individual options)'
   )
   .option('--analysis-type <type>', 'analysis type (e.g., group_sequential)')
@@ -226,8 +226,8 @@ Examples:
       const client = await getAPIClientFromOptions(globalOptions);
 
       let config: PowerMatrixConfig;
-      if (options.config) {
-        config = validateJSON(options.config, '--config') as PowerMatrixConfig;
+      if (options.jsonConfig) {
+        config = validateJSON(options.jsonConfig, '--json-config') as PowerMatrixConfig;
       } else {
         config = buildConfigFromOptions(options);
         if (
@@ -236,12 +236,12 @@ Examples:
           config.metric_variance === undefined
         ) {
           throw new Error(
-            'Required: --metric-type, --metric-mean, and --metric-variance (or use --config with JSON)'
+            'Required: --metric-type, --metric-mean, and --metric-variance (or use --json-config with JSON)'
           );
         }
         if (!config.sample_sizes && !config.minimum_detectable_effects) {
           throw new Error(
-            'Required: --sample-sizes or --minimum-detectable-effects (or use --config with JSON)'
+            'Required: --sample-sizes or --minimum-detectable-effects (or use --json-config with JSON)'
           );
         }
       }

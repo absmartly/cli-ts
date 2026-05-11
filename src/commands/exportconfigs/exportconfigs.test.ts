@@ -71,7 +71,7 @@ describe('export-configs command', () => {
       'node',
       'test',
       'create',
-      '--config',
+      '--json-config',
       '{"name":"test"}',
     ]);
 
@@ -84,7 +84,7 @@ describe('export-configs command', () => {
       'test',
       'update',
       '1',
-      '--config',
+      '--json-config',
       '{"name":"updated"}',
     ]);
 

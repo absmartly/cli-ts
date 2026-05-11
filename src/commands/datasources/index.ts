@@ -53,12 +53,12 @@ const getCommand = new Command('get')
 
 const createCommand = new Command('create')
   .description('Create a new datasource')
-  .requiredOption('--config <json>', 'datasource configuration as JSON')
+  .requiredOption('--json-config <json>', 'datasource configuration as JSON')
   .action(
     withErrorHandling(async (options) => {
       const globalOptions = getGlobalOptions(createCommand);
       const client = await getAPIClientFromOptions(globalOptions);
-      const config = validateJSON(options.config, '--config') as Record<string, unknown>;
+      const config = validateJSON(options.jsonConfig, '--json-config') as Record<string, unknown>;
       const result = await coreCreateDatasource(client, { config });
       console.error(chalk.green(`✓ Datasource created`));
       printFormatted(result.data, globalOptions);
@@ -68,12 +68,12 @@ const createCommand = new Command('create')
 const updateCommand = new Command('update')
   .description('Update a datasource')
   .argument('<id>', 'datasource ID', parseDatasourceId)
-  .requiredOption('--config <json>', 'datasource configuration as JSON')
+  .requiredOption('--json-config <json>', 'datasource configuration as JSON')
   .action(
     withErrorHandling(async (id: DatasourceId, options) => {
       const globalOptions = getGlobalOptions(updateCommand);
       const client = await getAPIClientFromOptions(globalOptions);
-      const config = validateJSON(options.config, '--config') as Record<string, unknown>;
+      const config = validateJSON(options.jsonConfig, '--json-config') as Record<string, unknown>;
       const result = await coreUpdateDatasource(client, { id, config });
       console.error(chalk.green(`✓ Datasource ${id} updated`));
       printFormatted(result.data, globalOptions);
@@ -96,12 +96,12 @@ const archiveCommand = new Command('archive')
 
 const testCommand = new Command('test')
   .description('Test datasource connection')
-  .requiredOption('--config <json>', 'datasource configuration as JSON')
+  .requiredOption('--json-config <json>', 'datasource configuration as JSON')
   .action(
     withErrorHandling(async (options) => {
       const globalOptions = getGlobalOptions(testCommand);
       const client = await getAPIClientFromOptions(globalOptions);
-      const config = validateJSON(options.config, '--config') as Record<string, unknown>;
+      const config = validateJSON(options.jsonConfig, '--json-config') as Record<string, unknown>;
       await coreTestDatasource(client, { config });
       console.log(chalk.green(`✓ Datasource connection test passed`));
     })
@@ -109,12 +109,12 @@ const testCommand = new Command('test')
 
 const introspectCommand = new Command('introspect')
   .description('Introspect datasource schema')
-  .requiredOption('--config <json>', 'datasource configuration as JSON')
+  .requiredOption('--json-config <json>', 'datasource configuration as JSON')
   .action(
     withErrorHandling(async (options) => {
       const globalOptions = getGlobalOptions(introspectCommand);
       const client = await getAPIClientFromOptions(globalOptions);
-      const config = validateJSON(options.config, '--config') as Record<string, unknown>;
+      const config = validateJSON(options.jsonConfig, '--json-config') as Record<string, unknown>;
       const result = await coreIntrospectDatasource(client, { config });
       printFormatted(result.data, globalOptions);
     })
@@ -122,12 +122,12 @@ const introspectCommand = new Command('introspect')
 
 const validateQueryCommand = new Command('validate-query')
   .description('Validate a datasource query')
-  .requiredOption('--config <json>', 'query configuration as JSON')
+  .requiredOption('--json-config <json>', 'query configuration as JSON')
   .action(
     withErrorHandling(async (options) => {
       const globalOptions = getGlobalOptions(validateQueryCommand);
       const client = await getAPIClientFromOptions(globalOptions);
-      const config = validateJSON(options.config, '--config') as Record<string, unknown>;
+      const config = validateJSON(options.jsonConfig, '--json-config') as Record<string, unknown>;
       await coreValidateDatasourceQuery(client, { config });
       console.log(chalk.green(`✓ Datasource query is valid`));
     })
@@ -135,12 +135,12 @@ const validateQueryCommand = new Command('validate-query')
 
 const previewQueryCommand = new Command('preview-query')
   .description('Preview a datasource query')
-  .requiredOption('--config <json>', 'query configuration as JSON')
+  .requiredOption('--json-config <json>', 'query configuration as JSON')
   .action(
     withErrorHandling(async (options) => {
       const globalOptions = getGlobalOptions(previewQueryCommand);
       const client = await getAPIClientFromOptions(globalOptions);
-      const config = validateJSON(options.config, '--config') as Record<string, unknown>;
+      const config = validateJSON(options.jsonConfig, '--json-config') as Record<string, unknown>;
       const result = await corePreviewDatasourceQuery(client, { config });
       printFormatted(result.data, globalOptions);
     })

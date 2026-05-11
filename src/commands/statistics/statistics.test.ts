@@ -50,7 +50,7 @@ describe('statistics command', () => {
       'node',
       'test',
       'power-matrix',
-      '--config',
+      '--json-config',
       '{"split":[0.5,0.5],"metric_mean":100,"metric_variance":25,"metric_type":"count","powers":[0.8],"sample_sizes":[2000,3000,4000]}',
     ]);
 
@@ -76,7 +76,7 @@ describe('statistics command', () => {
       'node',
       'test',
       'power-matrix',
-      '--config',
+      '--json-config',
       '{"sample_sizes":[2000,3000,4000],"powers":[0.8],"metric_mean":10,"metric_variance":10000,"metric_type":"goal_count","participants_per_week":1000}',
     ]);
 
@@ -94,7 +94,7 @@ describe('statistics command', () => {
       'node',
       'test',
       'power-matrix',
-      '--config',
+      '--json-config',
       '{"sample_sizes":[5000,10000],"powers":[0.8],"metric_mean":10,"metric_variance":10000,"metric_type":"goal_count"}',
     ]);
 
@@ -281,7 +281,7 @@ describe('statistics command', () => {
       'node',
       'test',
       'power-matrix',
-      '--config',
+      '--json-config',
       '{"sample_sizes":[2000],"powers":[0.8],"metric_mean":10,"metric_variance":10000,"metric_type":"goal_count"}',
     ]);
 
@@ -303,7 +303,7 @@ describe('statistics command', () => {
       'node',
       'test',
       'power-matrix',
-      '--config',
+      '--json-config',
       '{"sample_sizes":[2000,3000],"powers":[0.8,0.9],"metric_mean":10,"metric_variance":10000,"metric_type":"goal_count"}',
     ]);
 
@@ -323,7 +323,7 @@ describe('statistics command', () => {
       'node',
       'test',
       'power-matrix',
-      '--config',
+      '--json-config',
       '{"minimum_detectable_effects":[0.05,0.10],"powers":[0.8],"metric_mean":10,"metric_variance":10000,"metric_type":"goal_count"}',
     ]);
 
