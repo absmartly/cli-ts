@@ -20,6 +20,7 @@ import {
   previewDatasourceQuery as corePreviewDatasourceQuery,
   setDefaultDatasource as coreSetDefaultDatasource,
   getDatasourceSchema as coreGetDatasourceSchema,
+  deleteDatasource as coreDeleteDatasource,
 } from '../../core/datasources/datasources.js';
 
 export const datasourcesCommand = new Command('datasources')
@@ -166,6 +167,18 @@ const schemaCommand = new Command('schema')
     })
   );
 
+const deleteCommand = new Command('delete')
+  .description('Delete a datasource (fails if default or used by any goal)')
+  .argument('<id>', 'datasource ID', parseDatasourceId)
+  .action(
+    withErrorHandling(async (id: DatasourceId) => {
+      const globalOptions = getGlobalOptions(deleteCommand);
+      const client = await getAPIClientFromOptions(globalOptions);
+      await coreDeleteDatasource(client, { id });
+      console.log(chalk.green(`✓ Datasource ${id} deleted`));
+    })
+  );
+
 datasourcesCommand.addCommand(listCommand);
 datasourcesCommand.addCommand(getCommand);
 datasourcesCommand.addCommand(createCommand);
@@ -177,3 +190,4 @@ datasourcesCommand.addCommand(validateQueryCommand);
 datasourcesCommand.addCommand(previewQueryCommand);
 datasourcesCommand.addCommand(setDefaultCommand);
 datasourcesCommand.addCommand(schemaCommand);
+datasourcesCommand.addCommand(deleteCommand);

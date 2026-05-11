@@ -34,6 +34,7 @@ describe('datasources command', () => {
     previewDatasourceQuery: vi.fn().mockResolvedValue({ result: [] }),
     setDefaultDatasource: vi.fn().mockResolvedValue(undefined),
     getDatasourceSchema: vi.fn().mockResolvedValue({ tables: [] }),
+    deleteDatasource: vi.fn().mockResolvedValue(undefined),
   };
 
   beforeEach(() => {
@@ -167,5 +168,11 @@ describe('datasources command', () => {
 
     expect(mockClient.getDatasourceSchema).toHaveBeenCalledWith(1);
     expect(printFormatted).toHaveBeenCalled();
+  });
+
+  it('should delete a datasource', async () => {
+    await datasourcesCommand.parseAsync(['node', 'test', 'delete', '1']);
+
+    expect(mockClient.deleteDatasource).toHaveBeenCalledWith(1);
   });
 });
