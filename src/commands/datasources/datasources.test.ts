@@ -199,14 +199,7 @@ describe('datasources command', () => {
   });
 
   it('should recreate json_layouts table when --yes is passed', async () => {
-    await datasourcesCommand.parseAsync([
-      'node',
-      'test',
-      'json-layouts',
-      'recreate',
-      '1',
-      '--yes',
-    ]);
+    await datasourcesCommand.parseAsync(['node', 'test', 'json-layouts', 'recreate', '1', '--yes']);
 
     expect(mockClient.recreateDatasourceJsonLayouts).toHaveBeenCalledWith(1);
   });
@@ -217,8 +210,6 @@ describe('datasources command', () => {
     ).rejects.toThrow(/process\.exit: 1/);
 
     expect(mockClient.recreateDatasourceJsonLayouts).not.toHaveBeenCalled();
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      expect.stringContaining('--yes')
-    );
+    expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('--yes'));
   });
 });
