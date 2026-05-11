@@ -20,6 +20,10 @@ import {
   previewDatasourceQuery as corePreviewDatasourceQuery,
   setDefaultDatasource as coreSetDefaultDatasource,
   getDatasourceSchema as coreGetDatasourceSchema,
+  deleteDatasource as coreDeleteDatasource,
+  createDatasourceJsonLayouts as coreCreateDatasourceJsonLayouts,
+  recreateDatasourceJsonLayouts as coreRecreateDatasourceJsonLayouts,
+  previewDatasourceJsonLayouts as corePreviewDatasourceJsonLayouts,
 } from '../../core/datasources/datasources.js';
 
 export const datasourcesCommand = new Command('datasources')
@@ -166,6 +170,73 @@ const schemaCommand = new Command('schema')
     })
   );
 
+const deleteCommand = new Command('delete')
+  .description('Delete a datasource (fails if default or used by any goal)')
+  .argument('<id>', 'datasource ID', parseDatasourceId)
+  .action(
+    withErrorHandling(async (id: DatasourceId) => {
+      const globalOptions = getGlobalOptions(deleteCommand);
+      const client = await getAPIClientFromOptions(globalOptions);
+      await coreDeleteDatasource(client, { id });
+      console.log(chalk.green(`✓ Datasource ${id} deleted`));
+    })
+  );
+
+const jsonLayoutsCommand = new Command('json-layouts').description(
+  'Manage the json_layouts table on a datasource'
+);
+
+const jsonLayoutsCreateCommand = new Command('create')
+  .description('Create the json_layouts table on a datasource')
+  .argument('<id>', 'datasource ID', parseDatasourceId)
+  .action(
+    withErrorHandling(async (id: DatasourceId) => {
+      const globalOptions = getGlobalOptions(jsonLayoutsCreateCommand);
+      const client = await getAPIClientFromOptions(globalOptions);
+      await coreCreateDatasourceJsonLayouts(client, { id });
+      console.log(chalk.green(`✓ json_layouts table created on datasource ${id}`));
+    })
+  );
+
+const jsonLayoutsRecreateCommand = new Command('recreate')
+  .description(
+    'Drop and recreate the json_layouts table on a datasource (destructive — requires --yes)'
+  )
+  .argument('<id>', 'datasource ID', parseDatasourceId)
+  .option('--yes', 'confirm the destructive recreate', false)
+  .action(
+    withErrorHandling(async (id: DatasourceId, options: { yes: boolean }) => {
+      if (!options.yes) {
+        console.error(
+          chalk.red(
+            `✗ Refusing to recreate the json_layouts table on datasource ${id} without --yes. This drops the existing table.`
+          )
+        );
+        process.exit(1);
+      }
+      const globalOptions = getGlobalOptions(jsonLayoutsRecreateCommand);
+      const client = await getAPIClientFromOptions(globalOptions);
+      await coreRecreateDatasourceJsonLayouts(client, { id });
+      console.log(chalk.green(`✓ json_layouts table recreated on datasource ${id}`));
+    })
+  );
+
+const jsonLayoutsPreviewCommand = new Command('preview')
+  .description('Preview the json_layouts table (row count + 5-row sample)')
+  .argument('<id>', 'datasource ID', parseDatasourceId)
+  .action(
+    withErrorHandling(async (id: DatasourceId) => {
+      const globalOptions = getGlobalOptions(jsonLayoutsPreviewCommand);
+      const client = await getAPIClientFromOptions(globalOptions);
+      const result = await corePreviewDatasourceJsonLayouts(client, { id });
+      printFormatted(result.data, globalOptions);
+    })
+  );
+
+jsonLayoutsCommand.addCommand(jsonLayoutsCreateCommand);
+jsonLayoutsCommand.addCommand(jsonLayoutsRecreateCommand);
+jsonLayoutsCommand.addCommand(jsonLayoutsPreviewCommand);
+
 datasourcesCommand.addCommand(listCommand);
 datasourcesCommand.addCommand(getCommand);
 datasourcesCommand.addCommand(createCommand);
@@ -177,3 +248,5 @@ datasourcesCommand.addCommand(validateQueryCommand);
 datasourcesCommand.addCommand(previewQueryCommand);
 datasourcesCommand.addCommand(setDefaultCommand);
 datasourcesCommand.addCommand(schemaCommand);
+datasourcesCommand.addCommand(deleteCommand);
+datasourcesCommand.addCommand(jsonLayoutsCommand);

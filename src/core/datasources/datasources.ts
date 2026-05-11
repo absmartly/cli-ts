@@ -128,3 +128,51 @@ export async function getDatasourceSchema(
   const data = await client.getDatasourceSchema(params.id);
   return { data };
 }
+
+export interface DeleteDatasourceParams {
+  id: DatasourceId;
+}
+
+export async function deleteDatasource(
+  client: APIClient,
+  params: DeleteDatasourceParams
+): Promise<CommandResult<void>> {
+  await client.deleteDatasource(params.id);
+  return { data: undefined };
+}
+
+export interface CreateDatasourceJsonLayoutsParams {
+  id: DatasourceId;
+}
+
+export async function createDatasourceJsonLayouts(
+  client: APIClient,
+  params: CreateDatasourceJsonLayoutsParams
+): Promise<CommandResult<void>> {
+  await client.createDatasourceJsonLayouts(params.id);
+  return { data: undefined };
+}
+
+export interface RecreateDatasourceJsonLayoutsParams {
+  id: DatasourceId;
+}
+
+export async function recreateDatasourceJsonLayouts(
+  client: APIClient,
+  params: RecreateDatasourceJsonLayoutsParams
+): Promise<CommandResult<void>> {
+  await client.recreateDatasourceJsonLayouts(params.id);
+  return { data: undefined };
+}
+
+export interface PreviewDatasourceJsonLayoutsParams {
+  id: DatasourceId;
+}
+
+export async function previewDatasourceJsonLayouts(
+  client: APIClient,
+  params: PreviewDatasourceJsonLayoutsParams
+): Promise<CommandResult<unknown>> {
+  const data = await client.previewDatasourceJsonLayouts(params.id);
+  return { data };
+}

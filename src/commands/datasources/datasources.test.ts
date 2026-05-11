@@ -34,6 +34,16 @@ describe('datasources command', () => {
     previewDatasourceQuery: vi.fn().mockResolvedValue({ result: [] }),
     setDefaultDatasource: vi.fn().mockResolvedValue(undefined),
     getDatasourceSchema: vi.fn().mockResolvedValue({ tables: [] }),
+    deleteDatasource: vi.fn().mockResolvedValue(undefined),
+    createDatasourceJsonLayouts: vi.fn().mockResolvedValue(undefined),
+    recreateDatasourceJsonLayouts: vi.fn().mockResolvedValue(undefined),
+    previewDatasourceJsonLayouts: vi.fn().mockResolvedValue({
+      ok: true,
+      row_count: 0,
+      column_names: [],
+      column_types: [],
+      rows: [],
+    }),
   };
 
   beforeEach(() => {
@@ -167,5 +177,39 @@ describe('datasources command', () => {
 
     expect(mockClient.getDatasourceSchema).toHaveBeenCalledWith(1);
     expect(printFormatted).toHaveBeenCalled();
+  });
+
+  it('should delete a datasource', async () => {
+    await datasourcesCommand.parseAsync(['node', 'test', 'delete', '1']);
+
+    expect(mockClient.deleteDatasource).toHaveBeenCalledWith(1);
+  });
+
+  it('should create json_layouts table', async () => {
+    await datasourcesCommand.parseAsync(['node', 'test', 'json-layouts', 'create', '1']);
+
+    expect(mockClient.createDatasourceJsonLayouts).toHaveBeenCalledWith(1);
+  });
+
+  it('should preview json_layouts table', async () => {
+    await datasourcesCommand.parseAsync(['node', 'test', 'json-layouts', 'preview', '1']);
+
+    expect(mockClient.previewDatasourceJsonLayouts).toHaveBeenCalledWith(1);
+    expect(printFormatted).toHaveBeenCalled();
+  });
+
+  it('should recreate json_layouts table when --yes is passed', async () => {
+    await datasourcesCommand.parseAsync(['node', 'test', 'json-layouts', 'recreate', '1', '--yes']);
+
+    expect(mockClient.recreateDatasourceJsonLayouts).toHaveBeenCalledWith(1);
+  });
+
+  it('should refuse to recreate json_layouts table without --yes', async () => {
+    await expect(
+      datasourcesCommand.parseAsync(['node', 'test', 'json-layouts', 'recreate', '1'])
+    ).rejects.toThrow(/process\.exit: 1/);
+
+    expect(mockClient.recreateDatasourceJsonLayouts).not.toHaveBeenCalled();
+    expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('--yes'));
   });
 });

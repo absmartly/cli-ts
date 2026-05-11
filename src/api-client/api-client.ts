@@ -2439,6 +2439,24 @@ export class APIClient {
     return response.data;
   }
 
+  async deleteDatasource(id: DatasourceId): Promise<void> {
+    const response = await this.request('DELETE', `/datasources/${id}`);
+    this.validateOkResponse(response, 'deleteDatasource');
+  }
+
+  async createDatasourceJsonLayouts(id: DatasourceId): Promise<void> {
+    await this.request('POST', `/datasources/${id}/json_layouts/create`);
+  }
+
+  async recreateDatasourceJsonLayouts(id: DatasourceId): Promise<void> {
+    await this.request('POST', `/datasources/${id}/json_layouts/recreate`);
+  }
+
+  async previewDatasourceJsonLayouts(id: DatasourceId): Promise<unknown> {
+    const response = await this.request('POST', `/datasources/${id}/json_layouts/preview`);
+    return response.data;
+  }
+
   async cancelExportHistory(
     exportConfigId: ExportConfigId,
     historyId: number,

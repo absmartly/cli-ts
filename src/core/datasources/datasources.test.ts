@@ -11,6 +11,10 @@ import {
   previewDatasourceQuery,
   setDefaultDatasource,
   getDatasourceSchema,
+  deleteDatasource,
+  createDatasourceJsonLayouts,
+  recreateDatasourceJsonLayouts,
+  previewDatasourceJsonLayouts,
 } from './datasources.js';
 
 describe('datasources', () => {
@@ -26,6 +30,10 @@ describe('datasources', () => {
     previewDatasourceQuery: vi.fn(),
     setDefaultDatasource: vi.fn(),
     getDatasourceSchema: vi.fn(),
+    deleteDatasource: vi.fn(),
+    createDatasourceJsonLayouts: vi.fn(),
+    recreateDatasourceJsonLayouts: vi.fn(),
+    previewDatasourceJsonLayouts: vi.fn(),
   };
 
   it('should list datasources', async () => {
@@ -119,5 +127,40 @@ describe('datasources', () => {
     const result = await getDatasourceSchema(mockClient as any, { id: 1 as any });
     expect(mockClient.getDatasourceSchema).toHaveBeenCalledWith(1);
     expect(result.data).toEqual(schema);
+  });
+
+  it('should delete datasource', async () => {
+    mockClient.deleteDatasource.mockResolvedValue(undefined);
+    const result = await deleteDatasource(mockClient as any, { id: 1 as any });
+    expect(mockClient.deleteDatasource).toHaveBeenCalledWith(1);
+    expect(result.data).toBeUndefined();
+  });
+
+  it('should create json_layouts table', async () => {
+    mockClient.createDatasourceJsonLayouts.mockResolvedValue(undefined);
+    const result = await createDatasourceJsonLayouts(mockClient as any, { id: 1 as any });
+    expect(mockClient.createDatasourceJsonLayouts).toHaveBeenCalledWith(1);
+    expect(result.data).toBeUndefined();
+  });
+
+  it('should recreate json_layouts table', async () => {
+    mockClient.recreateDatasourceJsonLayouts.mockResolvedValue(undefined);
+    const result = await recreateDatasourceJsonLayouts(mockClient as any, { id: 1 as any });
+    expect(mockClient.recreateDatasourceJsonLayouts).toHaveBeenCalledWith(1);
+    expect(result.data).toBeUndefined();
+  });
+
+  it('should preview json_layouts table', async () => {
+    const preview = {
+      ok: true,
+      row_count: 42,
+      column_names: ['name', 'definition'],
+      column_types: ['String', 'String'],
+      rows: [['hero', '{...}']],
+    };
+    mockClient.previewDatasourceJsonLayouts.mockResolvedValue(preview);
+    const result = await previewDatasourceJsonLayouts(mockClient as any, { id: 1 as any });
+    expect(mockClient.previewDatasourceJsonLayouts).toHaveBeenCalledWith(1);
+    expect(result.data).toEqual(preview);
   });
 });
