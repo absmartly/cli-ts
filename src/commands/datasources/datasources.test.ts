@@ -197,4 +197,28 @@ describe('datasources command', () => {
     expect(mockClient.previewDatasourceJsonLayouts).toHaveBeenCalledWith(1);
     expect(printFormatted).toHaveBeenCalled();
   });
+
+  it('should recreate json_layouts table when --yes is passed', async () => {
+    await datasourcesCommand.parseAsync([
+      'node',
+      'test',
+      'json-layouts',
+      'recreate',
+      '1',
+      '--yes',
+    ]);
+
+    expect(mockClient.recreateDatasourceJsonLayouts).toHaveBeenCalledWith(1);
+  });
+
+  it('should refuse to recreate json_layouts table without --yes', async () => {
+    await expect(
+      datasourcesCommand.parseAsync(['node', 'test', 'json-layouts', 'recreate', '1'])
+    ).rejects.toThrow(/process\.exit: 1/);
+
+    expect(mockClient.recreateDatasourceJsonLayouts).not.toHaveBeenCalled();
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('--yes')
+    );
+  });
 });

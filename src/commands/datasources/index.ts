@@ -198,6 +198,29 @@ const jsonLayoutsCreateCommand = new Command('create')
     })
   );
 
+const jsonLayoutsRecreateCommand = new Command('recreate')
+  .description(
+    'Drop and recreate the json_layouts table on a datasource (destructive — requires --yes)'
+  )
+  .argument('<id>', 'datasource ID', parseDatasourceId)
+  .option('--yes', 'confirm the destructive recreate', false)
+  .action(
+    withErrorHandling(async (id: DatasourceId, options: { yes: boolean }) => {
+      if (!options.yes) {
+        console.error(
+          chalk.red(
+            `✗ Refusing to recreate the json_layouts table on datasource ${id} without --yes. This drops the existing table.`
+          )
+        );
+        process.exit(1);
+      }
+      const globalOptions = getGlobalOptions(jsonLayoutsRecreateCommand);
+      const client = await getAPIClientFromOptions(globalOptions);
+      await coreRecreateDatasourceJsonLayouts(client, { id });
+      console.log(chalk.green(`✓ json_layouts table recreated on datasource ${id}`));
+    })
+  );
+
 const jsonLayoutsPreviewCommand = new Command('preview')
   .description('Preview the json_layouts table (row count + 5-row sample)')
   .argument('<id>', 'datasource ID', parseDatasourceId)
@@ -211,6 +234,7 @@ const jsonLayoutsPreviewCommand = new Command('preview')
   );
 
 jsonLayoutsCommand.addCommand(jsonLayoutsCreateCommand);
+jsonLayoutsCommand.addCommand(jsonLayoutsRecreateCommand);
 jsonLayoutsCommand.addCommand(jsonLayoutsPreviewCommand);
 
 datasourcesCommand.addCommand(listCommand);
