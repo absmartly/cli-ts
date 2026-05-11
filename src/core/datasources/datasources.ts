@@ -128,3 +128,15 @@ export async function getDatasourceSchema(
   const data = await client.getDatasourceSchema(params.id);
   return { data };
 }
+
+export interface DeleteDatasourceParams {
+  id: DatasourceId;
+}
+
+export async function deleteDatasource(
+  client: APIClient,
+  params: DeleteDatasourceParams
+): Promise<CommandResult<void>> {
+  await client.deleteDatasource(params.id);
+  return { data: undefined };
+}

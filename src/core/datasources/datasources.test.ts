@@ -11,6 +11,7 @@ import {
   previewDatasourceQuery,
   setDefaultDatasource,
   getDatasourceSchema,
+  deleteDatasource,
 } from './datasources.js';
 
 describe('datasources', () => {
@@ -26,6 +27,7 @@ describe('datasources', () => {
     previewDatasourceQuery: vi.fn(),
     setDefaultDatasource: vi.fn(),
     getDatasourceSchema: vi.fn(),
+    deleteDatasource: vi.fn(),
   };
 
   it('should list datasources', async () => {
@@ -119,5 +121,12 @@ describe('datasources', () => {
     const result = await getDatasourceSchema(mockClient as any, { id: 1 as any });
     expect(mockClient.getDatasourceSchema).toHaveBeenCalledWith(1);
     expect(result.data).toEqual(schema);
+  });
+
+  it('should delete datasource', async () => {
+    mockClient.deleteDatasource.mockResolvedValue(undefined);
+    const result = await deleteDatasource(mockClient as any, { id: 1 as any });
+    expect(mockClient.deleteDatasource).toHaveBeenCalledWith(1);
+    expect(result.data).toBeUndefined();
   });
 });
