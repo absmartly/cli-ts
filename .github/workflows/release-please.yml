@@ -1,37 +1,54 @@
-name: Release Please
+name: Publish
 
 on:
   push:
     branches: [main]
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: read
 
 jobs:
-  release-please:
+  detect:
+    name: Detect version change
     runs-on: ubuntu-latest
     outputs:
-      releases_created: ${{ steps.release.outputs.releases_created }}
-      prs_created: ${{ steps.release.outputs.prs_created }}
-      prs: ${{ steps.release.outputs.prs }}
+      should_publish: ${{ steps.check.outputs.should_publish }}
+      version: ${{ steps.check.outputs.version }}
+      name: ${{ steps.check.outputs.name }}
     steps:
-      - uses: googleapis/release-please-action@v4
-        id: release
+      - uses: actions/checkout@v4
 
-      - name: Auto-merge release PR
-        if: steps.release.outputs.prs_created == 'true'
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh pr merge ${{ fromJson(steps.release.outputs.prs)[0].number }} --auto --squash --repo ${{ github.repository }}
+      - id: check
+        shell: bash
+        run: |
+          set -euo pipefail
+          NAME=$(jq -r .name package.json)
+          VERSION=$(jq -r .version package.json)
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+          if [ -n "$(npm view "$NAME@$VERSION" version 2>/dev/null)" ]; then
+            echo "Version $VERSION of $NAME is already on npm; skipping publish."
+            echo "should_publish=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Version $VERSION of $NAME is not yet on npm; will publish."
+            echo "should_publish=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  ci:
+    name: CI Checks
+    needs: detect
+    if: needs.detect.outputs.should_publish == 'true'
+    uses: ./.github/workflows/_ci-checks.yml
 
   publish:
-    needs: release-please
-    if: needs.release-please.outputs.releases_created == 'true'
+    name: Publish to npm
+    needs: [detect, ci]
+    if: needs.detect.outputs.should_publish == 'true'
     runs-on: ubuntu-latest
     environment: npm
     permissions:
-      contents: read
+      contents: write
       id-token: write
     steps:
       - uses: actions/checkout@v4
@@ -42,8 +59,23 @@ jobs:
         with:
           node-version: '24'
 
+      - name: Install libsecret (keytar build dep)
+        run: sudo apt-get update && sudo apt-get install -y libsecret-1-dev
+
       - run: bun install --frozen-lockfile
 
       - run: bun tsc
 
       - run: npm publish --access public
+
+      - name: Tag and create GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ needs.detect.outputs.version }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag "v$VERSION"
+          git push origin "v$VERSION"
+          gh release create "v$VERSION" --title "v$VERSION" --generate-notes

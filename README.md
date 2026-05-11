@@ -143,6 +143,30 @@ These options are available on every command:
 | `--full` | Full text without truncation |
 | `--raw` | Show raw API response without summarizing or transforming |
 
+### Debugging API traffic
+
+These flags write to **stderr** (so they don't pollute piped stdout) and respect `--no-color` and the `NO_COLOR` env var. Authorization headers and known sensitive body fields (`key`, `password`, `token`, `secret`, `access_token`, `refresh_token`, `api_key`) are redacted by default.
+
+| Option | Description |
+|---|---|
+| `--show-request` | Print outgoing HTTP requests as a readable HTTP-style block. |
+| `--show-response` | Print HTTP responses (success and error) as an HTTP-style block. |
+| `--curl` | Print outgoing requests as runnable curl commands. |
+| `--show-secrets` | Don't redact `Authorization` / `Set-Cookie` / sensitive body fields. Use with care. |
+| `--headers-only` | Omit request and response bodies from `--show-request` / `--show-response` / `--curl` output. |
+| `--status-only` | Print only the response status line, e.g. `← 200 OK (175ms)`. Implies `--show-response`. |
+
+When stderr is a TTY, JSON bodies and HTTP headers are pretty-printed and syntax-highlighted. Polling loops that fire the same request repeatedly are deduped: each unique request is printed once and a `(N identical requests suppressed)` summary appears when the next distinct request arrives. Responses are always logged so that state transitions during polling stay visible.
+
+Examples:
+
+```bash
+abs experiments get 1816 --show-request --show-response
+abs experiments list --curl                            # paste-runnable curl
+abs experiments get 1816 --show-response --status-only # just `← 200 OK (...)`
+abs experiments export 5 --download --show-request --headers-only
+```
+
 ## Commands
 
 ### Experiments
@@ -293,6 +317,14 @@ abs experiments alerts dismiss 456
 abs experiments recommendations list 123
 abs experiments recommendations dismiss 456
 
+# Analyze experiment design + signals + benchmarks (returns JSON by default)
+abs experiments analyze 123                              # full structured analysis (JSON)
+abs experiments analyze checkout_redesign                # by name
+abs experiments analyze 123 -o table                     # flat one-row summary
+abs experiments analyze 123 -o yaml                      # full analysis as YAML
+abs experiments analyze 123 | jq .recommendation         # pluck a single section
+abs experiments analyze 123 | jq '[.heuristic_output[] | select(.fired)]'
+
 # Access control
 abs experiments access list-users 123
 abs experiments access grant-user 123 --user 1 --role 2
@@ -359,6 +391,249 @@ abs experiments estimate-participants --unit-type user_id --from 90d
 abs experiments estimate-participants --unit-type user_id --application absmartly.com --audience '{"filter":{"and":[{"eq":[{"var":{"path":"application"}},{"value":"absmartly.com"}]}]}}'
 abs experiments estimate-participants --unit-type user_id -o json
 ```
+
+#### Analyze experiment
+
+`abs experiments analyze <id>` produces a single structured document that combines what you'd otherwise piece together from `get`, `metrics results`, `alerts list`, `recommendations list`, and `list --type`. It's designed to be consumed by an LLM-based analyzer or a human reviewer; the JSON shape is stable.
+
+Default output is **JSON** (the `-o table` global default is overridden when `-o` is not explicitly set, since the data is deeply nested). `-o yaml` works the same way. `-o table`/`-o markdown`/`-o plain` switch to a flat one-row summary suitable for tabular display.
+
+The output has nine top-level sections:
+
+| Section | What it contains |
+|---|---|
+| `experiment` | Headline facts: `name`, `state`, `hypothesis`, `primary_metric_name`, `participant_count`, `leading_variant_*`, `current_recommended_action`, `report_note`. |
+| `alerts` | Active alerts (`{id, type, dismissed}`) — `srm`, `audience_mismatch`, `cleanup_needed`, etc. |
+| `recommendation` | The single best deterministic recommendation (`{theme, title, details}`) picked from the heuristic rule set, or `null`. Warnings outrank successes. |
+| `metric_signals` | Per-metric / per-variant rows from `metrics_snapshot` with `percent_change`, `p_value`, CI bounds, and a derived `status`: `improves` / `contradicts` / `flat` / `inconclusive`. |
+| `related_experiments` | Up to 24 recent same-type experiments. For peers that share the primary metric, `leading_variant_impact_percent` is fetched and compared. |
+| `analysis_confidence` | `high` / `medium` / `low` plus 5 boolean factors and human-readable reasons. Captures *whether there's enough signal to analyze*. |
+| `design_readout` | Whether the experiment design fits the question — summary line, parameter pass-through, and a benchmark from related experiments when available. |
+| `source_signals` | Audit trail mapping each derived field to its API source path (e.g. `experiment.metrics_snapshot.rows[*].percent_change`). Useful for verifying AI analyses. |
+| `heuristic_output` | All 9 heuristic rules with `{rule, fired, theme, title, details, evidence}`. The starting point for an AI analysis when one is available. |
+
+**Example output** (illustrative — a running experiment with a metric snapshot, two comparable peers, a primary-metric win, and a contradicting guardrail):
+
+```json
+{
+  "experiment": {
+    "id": 18234,
+    "name": "checkout_redesign",
+    "type": "test",
+    "state": "running",
+    "hypothesis": "Single-page checkout reduces drop-off by surfacing all required fields earlier.",
+    "primary_metric_name": "Checkout Completion Rate",
+    "unit_type_name": "user_id",
+    "participant_count": 102450,
+    "leading_variant_name": "treatment",
+    "leading_variant_impact_percent": 3.8,
+    "leading_variant_confidence": 0.987,
+    "current_recommended_action": "review",
+    "report_note": "Treatment is winning on primary metric; awaiting eng review of latency regression."
+  },
+  "alerts": [
+    { "id": 1042, "type": "sample_size_reached", "dismissed": false }
+  ],
+  "recommendation": {
+    "theme": "warning",
+    "title": "Review guardrail regressions before rolling out treatment.",
+    "details": "At least one guardrail metric is moving in the wrong direction, so the apparent win on the primary metric should not be treated as rollout-ready yet."
+  },
+  "metric_signals": [
+    {
+      "metric_id": 14, "metric_name": "Checkout Completion Rate", "metric_type": "primary",
+      "variant_id": 1, "variant_name": "treatment",
+      "percent_change": 3.8, "p_value": 0.013, "ci_low": 1.6, "ci_high": 6.0,
+      "status": "improves"
+    },
+    {
+      "metric_id": 18, "metric_name": "P95 Page Latency", "metric_type": "guardrail",
+      "variant_id": 1, "variant_name": "treatment",
+      "percent_change": 4.2, "p_value": 0.022, "ci_low": 0.9, "ci_high": 7.5,
+      "status": "contradicts"
+    },
+    {
+      "metric_id": 21, "metric_name": "Revenue per Visitor", "metric_type": "secondary",
+      "variant_id": 1, "variant_name": "treatment",
+      "percent_change": 0.4, "p_value": 0.61, "ci_low": -1.1, "ci_high": 1.9,
+      "status": "flat"
+    }
+  ],
+  "related_experiments": [
+    {
+      "id": 17988, "name": "checkout_steps_v2", "state": "stopped",
+      "started_at": "2025-09-04T12:00:00Z", "stopped_at": "2025-10-02T16:00:00Z",
+      "primary_metric_id": 14, "primary_metric_name": "Checkout Completion Rate",
+      "leading_variant_impact_percent": 2.1
+    },
+    {
+      "id": 18012, "name": "guest_checkout_default", "state": "stopped",
+      "started_at": "2025-10-15T09:00:00Z", "stopped_at": "2025-11-12T09:00:00Z",
+      "primary_metric_id": 14, "primary_metric_name": "Checkout Completion Rate",
+      "leading_variant_impact_percent": 4.6
+    },
+    {
+      "id": 18103, "name": "trust_badges_above_fold", "state": "running",
+      "started_at": "2025-12-01T10:00:00Z", "stopped_at": null,
+      "primary_metric_id": 14, "primary_metric_name": "Checkout Completion Rate",
+      "leading_variant_impact_percent": null
+    }
+  ],
+  "analysis_confidence": {
+    "level": "high",
+    "reasons": [],
+    "factors": {
+      "sample_size_reached": true,
+      "hypothesis_present": true,
+      "primary_metric_present": true,
+      "guardrails_present": true,
+      "no_blocking_alerts": true
+    }
+  },
+  "design_readout": {
+    "summary": "Designed to detect effects in the expected range; comparable experiments moved this metric by ~3.35%.",
+    "notes": [],
+    "parameters": {
+      "analysis_type": "group_sequential",
+      "required_alpha": 0.1,
+      "required_power": 0.8,
+      "minimum_detectable_effect": 2.5,
+      "baseline_primary_metric_mean": 0.382,
+      "baseline_participants_per_day": 7400,
+      "percentage_of_traffic": 100
+    },
+    "benchmark": {
+      "observed_impacts": [2.1, 4.6],
+      "median_abs_impact": 3.35
+    }
+  },
+  "source_signals": [
+    { "covers": "experiment.participant_count",
+      "source": "experiment.metrics_snapshot.rows[*].cum_unit_count" },
+    { "covers": "experiment.leading_variant_impact_percent",
+      "source": "experiment.metrics_snapshot.rows[*].percent_change" },
+    { "covers": "alerts",
+      "source": "experiment.alerts[*].type" },
+    { "covers": "experiment.current_recommended_action",
+      "source": "experiment.recommended_action.recommendation" },
+    { "covers": "experiment.report_note",
+      "source": "experiment.experiment_report.experiment_note.note" },
+    { "covers": "related_experiments[17988].leading_variant_impact_percent",
+      "source": "experiments/17988/metrics/main.percent_change" },
+    { "covers": "related_experiments[18012].leading_variant_impact_percent",
+      "source": "experiments/18012/metrics/main.percent_change" }
+  ],
+  "heuristic_output": [
+    { "rule": "blocking_alert", "fired": false, "theme": "warning",
+      "title": "Investigate the experiment before making a rollout decision.",
+      "details": "Active health checks indicate that the current results may be misleading. Resolve the data-quality or assignment issue before acting on the outcome.",
+      "evidence": { "alert_types": [] } },
+    { "rule": "cleanup_needed", "fired": false, "theme": "warning",
+      "title": "Clean up stale assignments before proceeding.",
+      "details": "The experiment has cleanup_needed signals; old data may skew the analysis.",
+      "evidence": { "alert_ids": [] } },
+    { "rule": "guardrail_contradicts", "fired": true, "theme": "warning",
+      "title": "Review guardrail regressions before rolling out treatment.",
+      "details": "At least one guardrail metric is moving in the wrong direction, so the apparent win on the primary metric should not be treated as rollout-ready yet.",
+      "evidence": { "metrics": ["P95 Page Latency"] } },
+    { "rule": "primary_metric_significant_loss", "fired": false, "theme": "warning",
+      "title": "Primary metric regressed at significance.",
+      "details": "The leading variant moves the primary metric in the wrong direction with p-value below alpha. Do not roll out.",
+      "evidence": { "variant": "treatment", "impact_percent": 3.8, "p_value": 0.013 } },
+    { "rule": "primary_metric_significant_win", "fired": true, "theme": "success",
+      "title": "Primary metric improved with treatment.",
+      "details": "The leading variant beat baseline on the primary metric with p-value below alpha.",
+      "evidence": { "variant": "treatment", "impact_percent": 3.8, "p_value": 0.013 } },
+    { "rule": "sample_size_not_reached", "fired": false, "theme": "info",
+      "title": "Sample size not reached.",
+      "details": "Group-sequential analysis has not yet hit its planned sample size; treat results as interim.",
+      "evidence": {} },
+    { "rule": "hypothesis_missing", "fired": false, "theme": "info",
+      "title": "No hypothesis recorded for this experiment.",
+      "details": "Without a written hypothesis it is hard to judge whether the result answers the original question.",
+      "evidence": {} },
+    { "rule": "no_recommendation_overdue", "fired": false, "theme": "info",
+      "title": "Experiment has been running long without a recommended action.",
+      "details": "Consider whether to stop, full-on, or iterate; running indefinitely is rarely the best option.",
+      "evidence": { "days_running": 18 } },
+    { "rule": "snapshot_unavailable", "fired": false, "theme": "info",
+      "title": "No metric snapshot is available yet.",
+      "details": "The previewer may not have processed this experiment; analysis is limited to design parameters.",
+      "evidence": {} }
+  ]
+}
+```
+
+Notice how the sections reinforce each other in this example:
+
+- `metric_signals` shows the primary metric improving (`status: improves`) AND a guardrail contradicting (`status: contradicts`).
+- That guardrail status drives `heuristic_output[guardrail_contradicts].fired = true` (theme `warning`).
+- Both `guardrail_contradicts` (warning) and `primary_metric_significant_win` (success) fired. `recommendation` is the first fired warning, so the headline becomes "Review guardrail regressions…" — even though the primary metric is winning.
+- `analysis_confidence` is `high`: all five factors are true (sample size reached, hypothesis present, primary metric present, guardrails present, no blocking alerts).
+- `design_readout.benchmark.median_abs_impact` (3.35%) is computed from the two comparable peers; the summary phrasing "designed to detect effects in the expected range" follows because the median is ≥ 1.5× the MDE (2.5%).
+- `source_signals` records one entry per derived field plus per peer-fetch — the audit trail an LLM analyst can cite.
+
+**Example — distilled view via jq:**
+
+```bash
+$ abs experiments analyze 18234 \
+    | jq '{name: .experiment.name,
+           confidence: .analysis_confidence.level,
+           recommendation: .recommendation.title,
+           fired: [.heuristic_output[] | select(.fired) | .rule]}'
+```
+```json
+{
+  "name": "checkout_redesign",
+  "confidence": "high",
+  "recommendation": "Review guardrail regressions before rolling out treatment.",
+  "fired": [
+    "guardrail_contradicts",
+    "primary_metric_significant_win"
+  ]
+}
+```
+
+Useful jq slices:
+
+```bash
+# Headline only
+abs experiments analyze 123 \
+  | jq '{state: .experiment.state, confidence: .analysis_confidence.level, recommendation}'
+
+# Just the rules that fired
+abs experiments analyze 123 \
+  | jq '[.heuristic_output[] | select(.fired) | {rule, theme, title}]'
+
+# Audit trail of where each derived field came from
+abs experiments analyze 123 | jq .source_signals
+
+# Compare two experiments at a glance
+for id in 123 456; do
+  abs experiments analyze "$id" \
+    | jq --arg id "$id" '{id: $id, name: .experiment.name,
+                          confidence: .analysis_confidence.level,
+                          fired: [.heuristic_output[] | select(.fired) | .rule]}'
+done
+```
+
+The 9 heuristic rules, in evaluation order:
+
+| Rule | Theme | Fires when |
+|---|---|---|
+| `blocking_alert` | warning | active alert in `{srm, audience_mismatch, assignment_conflict, experiments_interact}` |
+| `cleanup_needed` | warning | active `cleanup_needed` alert |
+| `guardrail_contradicts` | warning | any guardrail metric_signal status is `contradicts` |
+| `primary_metric_significant_loss` | warning | leading-variant primary `p_value < alpha` and `impact_percent < 0` |
+| `primary_metric_significant_win` | success | leading-variant primary `p_value < alpha` and `impact_percent > 0` |
+| `sample_size_not_reached` | info | running, group_sequential, no `sample_size_reached` alert |
+| `hypothesis_missing` | info | `experiment.hypothesis` empty/null |
+| `no_recommendation_overdue` | info | running ≥ 21 days without a recommended action |
+| `snapshot_unavailable` | info | `metrics_snapshot` not yet computed by the previewer |
+
+`recommendation` is the first fired `warning` rule, falling back to the first fired `success`, else `null`. When no human/AI analyst is available, `heuristic_output` is the deterministic baseline analysis.
+
+`analysis_confidence.level` is computed from five boolean factors (`sample_size_reached`, `hypothesis_present`, `primary_metric_present`, `guardrails_present`, `no_blocking_alerts`): `low` when any blocking alert is active OR ≥2 factors are missing, `medium` when exactly one factor is missing, `high` when all five hold.
 
 #### Custom field options
 

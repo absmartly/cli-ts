@@ -1,0 +1,435 @@
+import { describe, it, expect, vi, beforeAll, afterEach, afterAll } from 'vitest';
+import { http, HttpResponse } from 'msw';
+import { setupServer } from 'msw/node';
+import { AxiosHttpClient } from './axios-adapter.js';
+
+const BASE_URL = 'https://show-request-test.absmartly.com/v1';
+
+const mswServer = setupServer();
+
+function captureStderr(): { calls: string[]; restore: () => void } {
+  const calls: string[] = [];
+  const spy = vi
+    .spyOn(process.stderr, 'write')
+    .mockImplementation((chunk: string | Uint8Array): boolean => {
+      calls.push(typeof chunk === 'string' ? chunk : Buffer.from(chunk).toString('utf8'));
+      return true;
+    });
+  return { calls, restore: () => spy.mockRestore() };
+}
+
+describe('AxiosHttpClient request/response logging', () => {
+  beforeAll(() => mswServer.listen({ onUnhandledRequest: 'bypass' }));
+  afterAll(() => mswServer.close());
+  afterEach(() => mswServer.resetHandlers());
+
+  describe('showRequest', () => {
+    it('writes a formatted HTTP request block to stderr', async () => {
+      mswServer.use(
+        http.post(`${BASE_URL}/experiments`, () => HttpResponse.json({ id: 1 }, { status: 201 }))
+      );
+
+      const stderr = captureStderr();
+      try {
+        const client = new AxiosHttpClient(BASE_URL, 'secret-key', { showRequest: true });
+        await client.request({
+          method: 'POST',
+          url: '/experiments',
+          data: { name: 'my-exp' },
+        });
+
+        const out = stderr.calls.join('');
+        expect(out).toContain('→ POST');
+        expect(out).toContain(`${BASE_URL}/experiments`);
+        expect(out).toContain('"name": "my-exp"');
+      } finally {
+        stderr.restore();
+      }
+    });
+
+    it('redacts Authorization by default', async () => {
+      mswServer.use(http.get(`${BASE_URL}/ping`, () => HttpResponse.json({ ok: true })));
+
+      const stderr = captureStderr();
+      try {
+        const client = new AxiosHttpClient(BASE_URL, 'super-secret-token-xyz', {
+          showRequest: true,
+        });
+        await client.request({ method: 'GET', url: '/ping' });
+
+        const out = stderr.calls.join('');
+        expect(out).toContain('Authorization: Api-Key ***');
+        expect(out).not.toContain('super-secret-token-xyz');
+      } finally {
+        stderr.restore();
+      }
+    });
+
+    it('reveals Authorization when showSecrets is true', async () => {
+      mswServer.use(http.get(`${BASE_URL}/ping`, () => HttpResponse.json({ ok: true })));
+
+      const stderr = captureStderr();
+      try {
+        const client = new AxiosHttpClient(BASE_URL, 'super-secret-token-xyz', {
+          showRequest: true,
+          showSecrets: true,
+        });
+        await client.request({ method: 'GET', url: '/ping' });
+
+        const out = stderr.calls.join('');
+        expect(out).toContain('Authorization: Api-Key super-secret-token-xyz');
+      } finally {
+        stderr.restore();
+      }
+    });
+  });
+
+  describe('curl', () => {
+    it('writes a curl command to stderr', async () => {
+      mswServer.use(
+        http.post(`${BASE_URL}/experiments`, () => HttpResponse.json({ id: 1 }, { status: 201 }))
+      );
+
+      const stderr = captureStderr();
+      try {
+        const client = new AxiosHttpClient(BASE_URL, 'tok', { curl: true });
+        await client.request({
+          method: 'POST',
+          url: '/experiments',
+          data: { name: 'x' },
+        });
+
+        const out = stderr.calls.join('');
+        expect(out).toContain('$ curl -X POST');
+        expect(out).toContain(`'${BASE_URL}/experiments'`);
+        expect(out).toContain(`-d '{"name":"x"}'`);
+      } finally {
+        stderr.restore();
+      }
+    });
+
+    it('emits both formats when showRequest and curl are both set', async () => {
+      mswServer.use(
+        http.post(`${BASE_URL}/experiments`, () => HttpResponse.json({ id: 1 }, { status: 201 }))
+      );
+
+      const stderr = captureStderr();
+      try {
+        const client = new AxiosHttpClient(BASE_URL, 'tok', {
+          showRequest: true,
+          curl: true,
+        });
+        await client.request({
+          method: 'POST',
+          url: '/experiments',
+          data: { name: 'x' },
+        });
+
+        const out = stderr.calls.join('');
+        expect(out).toContain('→ POST');
+        expect(out).toContain('$ curl -X POST');
+      } finally {
+        stderr.restore();
+      }
+    });
+  });
+
+  describe('showResponse', () => {
+    it('writes a successful response to stderr', async () => {
+      mswServer.use(
+        http.get(`${BASE_URL}/exp/42`, () =>
+          HttpResponse.json({ id: 42, name: 'foo' }, { status: 200 })
+        )
+      );
+
+      const stderr = captureStderr();
+      try {
+        const client = new AxiosHttpClient(BASE_URL, 'tok', { showResponse: true });
+        await client.request({ method: 'GET', url: '/exp/42' });
+
+        const out = stderr.calls.join('');
+        expect(out).toContain('← 200');
+        expect(out).toContain('"id": 42');
+      } finally {
+        stderr.restore();
+      }
+    });
+
+    it('writes an error response to stderr (4xx) and still throws', async () => {
+      mswServer.use(
+        http.get(`${BASE_URL}/missing`, () =>
+          HttpResponse.json({ error: 'not found' }, { status: 404 })
+        )
+      );
+
+      const stderr = captureStderr();
+      try {
+        const client = new AxiosHttpClient(BASE_URL, 'tok', { showResponse: true });
+        await expect(client.request({ method: 'GET', url: '/missing' })).rejects.toThrow();
+
+        const out = stderr.calls.join('');
+        expect(out).toContain('← 404');
+        expect(out).toContain('not found');
+      } finally {
+        stderr.restore();
+      }
+    });
+  });
+
+  describe('retries', () => {
+    it('fires the request logger on every retry attempt', async () => {
+      let calls = 0;
+      mswServer.use(
+        http.get(`${BASE_URL}/flaky`, () => {
+          calls++;
+          if (calls < 3) {
+            return HttpResponse.json({ error: 'oops' }, { status: 500 });
+          }
+          return HttpResponse.json({ ok: true });
+        })
+      );
+
+      const stderr = captureStderr();
+      try {
+        const client = new AxiosHttpClient(BASE_URL, 'tok', {
+          showRequest: true,
+          showResponse: true,
+        });
+        await client.request({ method: 'GET', url: '/flaky' });
+
+        const out = stderr.calls.join('');
+        const requestArrows = (out.match(/→ GET/g) ?? []).length;
+        const responseArrows = (out.match(/← /g) ?? []).length;
+        expect(requestArrows).toBe(3);
+        expect(responseArrows).toBe(3);
+      } finally {
+        stderr.restore();
+      }
+    }, 30000);
+  });
+
+  describe('no flags', () => {
+    it('writes nothing to stderr when no logging flags are set', async () => {
+      mswServer.use(http.get(`${BASE_URL}/ping`, () => HttpResponse.json({ ok: true })));
+
+      const stderr = captureStderr();
+      try {
+        const client = new AxiosHttpClient(BASE_URL, 'tok');
+        await client.request({ method: 'GET', url: '/ping' });
+
+        const out = stderr.calls.join('');
+        expect(out).toBe('');
+      } finally {
+        stderr.restore();
+      }
+    });
+  });
+
+  describe('TTY and noColor', () => {
+    async function withStderrTTY<T>(value: boolean | undefined, fn: () => Promise<T>): Promise<T> {
+      const original = process.stderr.isTTY;
+      Object.defineProperty(process.stderr, 'isTTY', { value, configurable: true });
+      try {
+        return await fn();
+      } finally {
+        Object.defineProperty(process.stderr, 'isTTY', { value: original, configurable: true });
+      }
+    }
+
+    it('emits ANSI codes when stderr is a TTY and noColor is false', async () => {
+      mswServer.use(http.get(`${BASE_URL}/ping`, () => HttpResponse.json({ ok: true })));
+
+      await withStderrTTY(true, async () => {
+        const stderr = captureStderr();
+        try {
+          const client = new AxiosHttpClient(BASE_URL, 'tok', { showRequest: true });
+          await client.request({ method: 'GET', url: '/ping' });
+          expect(stderr.calls.join('')).toMatch(/\x1b\[/);
+        } finally {
+          stderr.restore();
+        }
+      });
+    });
+
+    it('emits no ANSI when noColor is true even on a TTY', async () => {
+      mswServer.use(http.get(`${BASE_URL}/ping`, () => HttpResponse.json({ ok: true })));
+
+      await withStderrTTY(true, async () => {
+        const stderr = captureStderr();
+        try {
+          const client = new AxiosHttpClient(BASE_URL, 'tok', {
+            showRequest: true,
+            noColor: true,
+          });
+          await client.request({ method: 'GET', url: '/ping' });
+          expect(stderr.calls.join('')).not.toMatch(/\x1b\[/);
+        } finally {
+          stderr.restore();
+        }
+      });
+    });
+
+    it('emits no ANSI when stderr is not a TTY', async () => {
+      mswServer.use(http.get(`${BASE_URL}/ping`, () => HttpResponse.json({ ok: true })));
+
+      await withStderrTTY(false, async () => {
+        const stderr = captureStderr();
+        try {
+          const client = new AxiosHttpClient(BASE_URL, 'tok', { showRequest: true });
+          await client.request({ method: 'GET', url: '/ping' });
+          expect(stderr.calls.join('')).not.toMatch(/\x1b\[/);
+        } finally {
+          stderr.restore();
+        }
+      });
+    });
+  });
+
+  describe('suppression of identical consecutive requests', () => {
+    it('emits the request once for back-to-back identical polls and reports the suppressed count', async () => {
+      mswServer.use(http.get(`${BASE_URL}/poll`, () => HttpResponse.json({ status: 'running' })));
+
+      const stderr = captureStderr();
+      try {
+        const client = new AxiosHttpClient(BASE_URL, 'tok', {
+          showRequest: true,
+          showResponse: true,
+        });
+        await client.request({ method: 'GET', url: '/poll' });
+        await client.request({ method: 'GET', url: '/poll' });
+        await client.request({ method: 'GET', url: '/poll' });
+        // Different URL flushes the suppression count.
+        mswServer.use(http.get(`${BASE_URL}/done`, () => HttpResponse.json({ ok: true })));
+        await client.request({ method: 'GET', url: '/done' });
+
+        const out = stderr.calls.join('');
+        const pollRequests = (out.match(/→ GET .*\/poll/g) ?? []).length;
+        const doneRequests = (out.match(/→ GET .*\/done/g) ?? []).length;
+        // Responses also dedup with their request — only the first
+        // /poll response and the /done response are emitted.
+        const responses = (out.match(/← 200/g) ?? []).length;
+        expect(pollRequests).toBe(1);
+        expect(doneRequests).toBe(1);
+        expect(responses).toBe(2);
+        expect(out).toContain('(2 identical requests suppressed)');
+      } finally {
+        stderr.restore();
+      }
+    });
+
+    it('also suppresses responses when only --show-response is on', async () => {
+      mswServer.use(
+        http.get(`${BASE_URL}/poll`, () => HttpResponse.json({ status: 'running' })),
+        http.get(`${BASE_URL}/done`, () => HttpResponse.json({ ok: true }))
+      );
+
+      const stderr = captureStderr();
+      try {
+        const client = new AxiosHttpClient(BASE_URL, 'tok', { showResponse: true });
+        await client.request({ method: 'GET', url: '/poll' });
+        await client.request({ method: 'GET', url: '/poll' });
+        await client.request({ method: 'GET', url: '/poll' });
+        await client.request({ method: 'GET', url: '/done' });
+
+        const out = stderr.calls.join('');
+        // First /poll response + /done response. The two repeat polls
+        // collapse into a "(2 identical requests suppressed)" line.
+        expect((out.match(/← 200/g) ?? []).length).toBe(2);
+        expect(out).toContain('(2 identical requests suppressed)');
+        expect(out).not.toContain('→');
+      } finally {
+        stderr.restore();
+      }
+    });
+
+    it('does not suppress when params or body differ', async () => {
+      mswServer.use(http.get(`${BASE_URL}/items`, () => HttpResponse.json({ ok: true })));
+
+      const stderr = captureStderr();
+      try {
+        const client = new AxiosHttpClient(BASE_URL, 'tok', { showRequest: true });
+        await client.request({ method: 'GET', url: '/items', params: { page: 1 } });
+        await client.request({ method: 'GET', url: '/items', params: { page: 2 } });
+
+        const out = stderr.calls.join('');
+        const requests = (out.match(/→ GET .*\/items/g) ?? []).length;
+        expect(requests).toBe(2);
+        expect(out).not.toContain('suppressed');
+      } finally {
+        stderr.restore();
+      }
+    });
+
+    it('suppresses alternating polling patterns (A, B, A, B, ...)', async () => {
+      mswServer.use(
+        http.get(`${BASE_URL}/cfg/1`, () => HttpResponse.json({ status: 'running' })),
+        http.get(`${BASE_URL}/cfg/1/history`, () => HttpResponse.json({ items: [] })),
+        http.get(`${BASE_URL}/done`, () => HttpResponse.json({ ok: true }))
+      );
+
+      const stderr = captureStderr();
+      try {
+        const client = new AxiosHttpClient(BASE_URL, 'tok', { showRequest: true });
+        // First poll cycle — both new, both printed.
+        await client.request({ method: 'GET', url: '/cfg/1' });
+        await client.request({ method: 'GET', url: '/cfg/1/history' });
+        // Three more cycles — every request should be suppressed.
+        for (let i = 0; i < 3; i++) {
+          await client.request({ method: 'GET', url: '/cfg/1' });
+          await client.request({ method: 'GET', url: '/cfg/1/history' });
+        }
+        // Polling ends; new request flushes the suppressed count.
+        await client.request({ method: 'GET', url: '/done' });
+
+        const out = stderr.calls.join('');
+        expect((out.match(/→ GET .*\/cfg\/1$/gm) ?? []).length).toBe(1);
+        expect((out.match(/→ GET .*\/cfg\/1\/history/g) ?? []).length).toBe(1);
+        expect((out.match(/→ GET .*\/done/g) ?? []).length).toBe(1);
+        expect(out).toContain('(6 identical requests suppressed)');
+      } finally {
+        stderr.restore();
+      }
+    });
+  });
+
+  describe('oauth-jwt + showResponse', () => {
+    it('logs both the original 401 and the retry response after token refresh', async () => {
+      let callCount = 0;
+      mswServer.use(
+        http.get(`${BASE_URL}/protected`, ({ request }) => {
+          callCount++;
+          const auth = request.headers.get('Authorization');
+          if (auth === 'Bearer expired-token') {
+            return HttpResponse.json({ error: 'unauthorized' }, { status: 401 });
+          }
+          if (auth === 'Bearer fresh-token') {
+            return HttpResponse.json({ ok: true });
+          }
+          return HttpResponse.json({ error: 'unexpected' }, { status: 400 });
+        })
+      );
+
+      const onExpired = vi.fn().mockResolvedValue({ method: 'oauth-jwt', token: 'fresh-token' });
+
+      const stderr = captureStderr();
+      try {
+        const client = new AxiosHttpClient(
+          BASE_URL,
+          { method: 'oauth-jwt', token: 'expired-token', onExpired },
+          { showResponse: true }
+        );
+        const response = await client.request({ method: 'GET', url: '/protected' });
+        expect(response.status).toBe(200);
+        expect(callCount).toBe(2);
+
+        const out = stderr.calls.join('');
+        const arrows = out.match(/← \d+/g) ?? [];
+        expect(arrows.length).toBe(2);
+        expect(out).toMatch(/← 401/);
+        expect(out).toMatch(/← 200/);
+      } finally {
+        stderr.restore();
+      }
+    });
+  });
+});

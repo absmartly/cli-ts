@@ -4,6 +4,35 @@ import axiosRetry from 'axios-retry';
 import { version } from '../utils/version.js';
 import { APIError } from '../../api-client/http-client.js';
 import type { HttpClient, HttpRequestConfig, HttpResponse } from '../../api-client/http-client.js';
+import {
+  formatRequestHTTP,
+  formatRequestCurl,
+  formatResponseHTTP,
+  formatNetworkError,
+  formatGenericError,
+  formatSuppressionNotice,
+  safeStringify,
+  type FormatOptions,
+} from './request-logger.js';
+
+declare module 'axios' {
+  interface InternalAxiosRequestConfig {
+    metadata?: { startTime: number; suppressed?: boolean };
+  }
+}
+
+export interface AxiosHttpClientOptions {
+  verbose?: boolean;
+  timeout?: number;
+  insecure?: boolean;
+  showRequest?: boolean;
+  showResponse?: boolean;
+  curl?: boolean;
+  showSecrets?: boolean;
+  headersOnly?: boolean;
+  statusOnly?: boolean;
+  noColor?: boolean;
+}
 
 const DEFAULT_TIMEOUT = 30000;
 const RETRY_COUNT = 3;
@@ -74,17 +103,40 @@ export type AuthConfig =
   | { method: 'api-key'; apiKey: string }
   | { method: 'oauth-jwt'; token: string; onExpired?: () => Promise<AuthConfig> };
 
+function extractAuthValue(headers: unknown): string {
+  if (!headers || typeof headers !== 'object') return '';
+  const obj =
+    typeof (headers as { toJSON?: () => unknown }).toJSON === 'function'
+      ? ((headers as { toJSON: () => Record<string, unknown> }).toJSON() as Record<string, unknown>)
+      : (headers as Record<string, unknown>);
+  for (const [k, v] of Object.entries(obj)) {
+    if (k.toLowerCase() === 'authorization' && typeof v === 'string') return v;
+  }
+  return '';
+}
+
 export class AxiosHttpClient implements HttpClient {
   private client: AxiosInstance;
-  private verbose: boolean;
+  private readonly verbose: boolean;
+  private readonly showRequest: boolean;
+  private readonly showResponse: boolean;
+  private readonly curl: boolean;
+  private readonly formatOpts: FormatOptions;
+  private seenFingerprints: Set<string> = new Set();
+  private suppressedCount = 0;
   protected authConfig: AuthConfig;
 
-  constructor(
-    endpoint: string,
-    auth: string | AuthConfig,
-    options: { verbose?: boolean; timeout?: number; insecure?: boolean } = {}
-  ) {
+  constructor(endpoint: string, auth: string | AuthConfig, options: AxiosHttpClientOptions = {}) {
     this.verbose = options.verbose ?? false;
+    this.showRequest = options.showRequest ?? false;
+    this.showResponse = options.showResponse ?? false;
+    this.curl = options.curl ?? false;
+    this.formatOpts = {
+      showSecrets: options.showSecrets ?? false,
+      omitBody: options.headersOnly ?? false,
+      statusOnly: options.statusOnly ?? false,
+      color: !!process.stderr.isTTY && !(options.noColor ?? false),
+    };
 
     this.authConfig = typeof auth === 'string' ? { method: 'api-key', apiKey: auth } : auth;
 
@@ -132,6 +184,83 @@ export class AxiosHttpClient implements HttpClient {
         console.error(`[DEBUG] ${config.method?.toUpperCase()} ${config.url}`);
         return config;
       });
+    }
+
+    // Request interceptor stamps startTime even when only --show-response is
+    // set, so the response handler below can compute elapsed time.
+    if (this.showRequest || this.curl || this.showResponse) {
+      this.client.interceptors.request.use((config) => {
+        config.metadata = { startTime: Date.now() };
+
+        // Polling loops produce streams of repeating requests, often
+        // alternating between several URLs. Track every fingerprint we've
+        // already printed in this client and suppress any later request
+        // (and its matching response) that matches one we've seen. The
+        // first time a brand-new request comes through, flush a
+        // "(N suppressed)" summary before printing it.
+        //
+        // This trades response visibility for noise reduction: state
+        // changes that *only* show up in response bodies of otherwise-
+        // identical requests will be hidden. Acceptable for typical CLI
+        // debugging — the user can disable suppression by varying their
+        // requests, or split into separate invocations.
+        if (this.showRequest || this.curl || this.showResponse) {
+          const fp = this.fingerprint(config);
+          if (this.seenFingerprints.has(fp)) {
+            this.suppressedCount++;
+            config.metadata.suppressed = true;
+            return config;
+          }
+          if (this.suppressedCount > 0) {
+            process.stderr.write(
+              formatSuppressionNotice(this.suppressedCount, this.formatOpts.color) + '\n'
+            );
+            this.suppressedCount = 0;
+          }
+          this.seenFingerprints.add(fp);
+
+          if (this.showRequest) {
+            process.stderr.write(formatRequestHTTP(config, this.formatOpts) + '\n');
+          }
+          if (this.curl) {
+            process.stderr.write(formatRequestCurl(config, this.formatOpts) + '\n');
+          }
+        }
+        return config;
+      });
+    }
+
+    if (this.showResponse) {
+      this.client.interceptors.response.use(
+        (response) => {
+          if (response.config.metadata?.suppressed) return response;
+          const start = response.config.metadata?.startTime ?? Date.now();
+          const elapsed = Date.now() - start;
+          process.stderr.write(formatResponseHTTP(response, elapsed, this.formatOpts) + '\n');
+          return response;
+        },
+        (error: unknown) => {
+          if (axios.isAxiosError(error)) {
+            if (error.config?.metadata?.suppressed) return Promise.reject(error);
+            const start = error.config?.metadata?.startTime ?? Date.now();
+            const elapsed = Date.now() - start;
+            if (error.response) {
+              process.stderr.write(
+                formatResponseHTTP(error.response, elapsed, this.formatOpts) + '\n'
+              );
+            } else {
+              process.stderr.write(formatNetworkError(error, elapsed, this.formatOpts) + '\n');
+            }
+          } else {
+            // Non-axios errors reach this handler when an upstream interceptor
+            // (e.g. the OAuth refresh path below) wraps and rejects with a
+            // custom error type. Without this branch --show-response would go
+            // silent in those cases.
+            process.stderr.write(formatGenericError(error, 0, this.formatOpts) + '\n');
+          }
+          return Promise.reject(error);
+        }
+      );
     }
 
     if (this.authConfig.method === 'oauth-jwt' && this.authConfig.onExpired) {
@@ -184,6 +313,26 @@ export class AxiosHttpClient implements HttpClient {
         throw error;
       }
     );
+  }
+
+  private fingerprint(config: {
+    method?: string;
+    url?: string;
+    params?: unknown;
+    data?: unknown;
+    headers?: unknown;
+    'axios-retry'?: { retryCount?: number };
+  }): string {
+    const method = (config.method ?? 'GET').toUpperCase();
+    const url = config.url ?? '';
+    const params = config.params ? safeStringify(config.params) : '';
+    const body = config.data ? safeStringify(config.data) : '';
+    // Include the Authorization header so OAuth refresh retries (which change
+    // the token) and the axios-retry retryCount so failed-then-retried
+    // requests are not collapsed into the original.
+    const auth = extractAuthValue(config.headers);
+    const retry = config['axios-retry']?.retryCount ?? 0;
+    return `${method}|${url}|${params}|${body}|${auth}|${retry}`;
   }
 
   async request<T>(config: HttpRequestConfig): Promise<HttpResponse<T>> {
@@ -328,7 +477,7 @@ export class AxiosHttpClient implements HttpClient {
 export function createAxiosHttpClient(
   endpoint: string,
   auth: string | AuthConfig,
-  options?: { verbose?: boolean; timeout?: number; insecure?: boolean }
+  options?: AxiosHttpClientOptions
 ): AxiosHttpClient {
   return new AxiosHttpClient(endpoint, auth, options);
 }

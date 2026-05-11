@@ -82,6 +82,15 @@ export async function getAPIClientFromOptions(options: GlobalOptions): Promise<A
   return createAPIClient(endpoint, auth, {
     verbose: options.verbose ?? false,
     insecure: profile.api.insecure ?? false,
+    showRequest: options.showRequest ?? false,
+    showResponse: options.showResponse ?? false,
+    curl: options.curl ?? false,
+    showSecrets: options.showSecrets ?? false,
+    headersOnly: options.headersOnly ?? false,
+    statusOnly: options.statusOnly ?? false,
+    // Pass user-intent only (--no-color or NO_COLOR), not the stdout-TTY
+    // conflated value: stderr diagnostics make their own TTY decision.
+    noColor: options.colorDisabled ?? false,
   });
 }
 
@@ -93,12 +102,22 @@ export interface GlobalOptions {
   env?: string;
   output?: OutputFormat;
   noColor?: boolean;
+  // True when the user explicitly disabled color (--no-color or NO_COLOR env).
+  // noColor above additionally disables when stdout isn't a TTY; this field
+  // is the strict user-intent variant for stderr-bound consumers.
+  colorDisabled?: boolean;
   verbose?: boolean;
   quiet?: boolean;
   profile?: string;
   terse?: boolean;
   full?: boolean;
   raw?: boolean;
+  showRequest?: boolean;
+  showResponse?: boolean;
+  curl?: boolean;
+  showSecrets?: boolean;
+  headersOnly?: boolean;
+  statusOnly?: boolean;
 }
 
 const VALID_FORMATS: OutputFormat[] = [
@@ -123,6 +142,12 @@ export function getGlobalOptions(cmd: Command): GlobalOptions {
     );
   }
 
+  const colorDisabled = opts.color === false || !!process.env.NO_COLOR;
+  // --status-only is response-only by definition; auto-enable --show-response
+  // so the user doesn't have to type both.
+  const statusOnly = opts.statusOnly || false;
+  const showResponse = opts.showResponse || statusOnly || false;
+
   return {
     config: opts.config,
     apiKey: opts.apiKey,
@@ -130,13 +155,20 @@ export function getGlobalOptions(cmd: Command): GlobalOptions {
     app: opts.app,
     env: opts.env,
     output,
-    noColor: opts.color === false || !process.stdout.isTTY,
+    noColor: colorDisabled || !process.stdout.isTTY,
+    colorDisabled,
     verbose: opts.verbose || false,
     quiet: opts.quiet || false,
     profile: opts.profile,
     terse: opts.terse || false,
     full: opts.full || false,
     raw: opts.raw || false,
+    showRequest: opts.showRequest || false,
+    showResponse,
+    curl: opts.curl || false,
+    showSecrets: opts.showSecrets || false,
+    headersOnly: opts.headersOnly || false,
+    statusOnly,
   };
 }
 

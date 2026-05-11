@@ -53,7 +53,16 @@ async function performDownload(
   downloadUrl: string,
   fileKey: string,
   authHeader: string,
-  resume: boolean
+  resume: boolean,
+  globalOptions: {
+    showRequest?: boolean;
+    showResponse?: boolean;
+    curl?: boolean;
+    showSecrets?: boolean;
+    headersOnly?: boolean;
+    statusOnly?: boolean;
+    colorDisabled?: boolean;
+  }
 ): Promise<void> {
   const outputPath = path.resolve(fileKey);
 
@@ -65,6 +74,13 @@ async function performDownload(
     outputPath,
     resume,
     headers: { Authorization: authHeader },
+    showRequest: globalOptions.showRequest ?? false,
+    showResponse: globalOptions.showResponse ?? false,
+    curl: globalOptions.curl ?? false,
+    showSecrets: globalOptions.showSecrets ?? false,
+    headersOnly: globalOptions.headersOnly ?? false,
+    statusOnly: globalOptions.statusOnly ?? false,
+    noColor: globalOptions.colorDisabled ?? false,
     onProgress: (downloaded, total) => {
       const frame = spinnerFrames[spinnerFrame++ % spinnerFrames.length];
       if (total) {
@@ -116,7 +132,13 @@ export const exportCommand = new Command('export')
           const fileKey = recent.downloadUrl.split('/').pop()!;
           console.log(chalk.gray(`Resuming download of ${fileKey}...`));
           try {
-            await performDownload(recent.downloadUrl, fileKey, client.getAuthHeader(), true);
+            await performDownload(
+              recent.downloadUrl,
+              fileKey,
+              client.getAuthHeader(),
+              true,
+              globalOptions
+            );
             return;
           } catch (err) {
             const msg = err instanceof Error ? err.message : String(err);
@@ -154,7 +176,13 @@ export const exportCommand = new Command('export')
 
             if (startNew) {
               const fileKey = recent.downloadUrl.split('/').pop()!;
-              await performDownload(recent.downloadUrl, fileKey, client.getAuthHeader(), false);
+              await performDownload(
+                recent.downloadUrl,
+                fileKey,
+                client.getAuthHeader(),
+                false,
+                globalOptions
+              );
               return;
             }
             console.log('');
@@ -302,7 +330,7 @@ export const exportCommand = new Command('export')
       if (options.download) {
         const downloadUrl = await pollingDone;
         const fileKey = downloadUrl.split('/').pop()!;
-        await performDownload(downloadUrl, fileKey, client.getAuthHeader(), false);
+        await performDownload(downloadUrl, fileKey, client.getAuthHeader(), false, globalOptions);
       }
     })
   );
