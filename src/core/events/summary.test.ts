@@ -1,5 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { getEventsSummary, rollUpEvents, aggregateByTeam, applyCumulative, type AggregatedRow } from './summary.js';
+import {
+  getEventsSummary,
+  rollUpEvents,
+  aggregateByTeam,
+  applyCumulative,
+  type AggregatedRow,
+} from './summary.js';
 
 describe('getEventsSummary', () => {
   const mockClient = {
@@ -26,16 +32,16 @@ describe('getEventsSummary', () => {
   it('rejects ranges greater than 100 days client-side', async () => {
     const from = 0;
     const to = 101 * 86_400_000;
-    await expect(
-      getEventsSummary(mockClient as any, { from, to })
-    ).rejects.toThrow(/maximum is 100 days/i);
+    await expect(getEventsSummary(mockClient as any, { from, to })).rejects.toThrow(
+      /maximum is 100 days/i
+    );
     expect(mockClient.getEventsSummary).not.toHaveBeenCalled();
   });
 
   it('rejects ranges where from > to', async () => {
-    await expect(
-      getEventsSummary(mockClient as any, { from: 200, to: 100 })
-    ).rejects.toThrow(/`from` must be less than or equal to `to`/);
+    await expect(getEventsSummary(mockClient as any, { from: 200, to: 100 })).rejects.toThrow(
+      /`from` must be less than or equal to `to`/
+    );
     expect(mockClient.getEventsSummary).not.toHaveBeenCalled();
   });
 });
@@ -87,8 +93,18 @@ describe('rollUpEvents', () => {
       { date: day(2026, 4, 7), team_id: 1, count: 4, type: 'exposure' as const },
     ];
     const result = rollUpEvents(events, 'week');
-    expect(result).toContainEqual({ date: day(2026, 4, 4), team_id: 1, count: 5, type: 'exposure' });
-    expect(result).toContainEqual({ date: day(2026, 4, 4), team_id: 2, count: 2, type: 'exposure' });
+    expect(result).toContainEqual({
+      date: day(2026, 4, 4),
+      team_id: 1,
+      count: 5,
+      type: 'exposure',
+    });
+    expect(result).toContainEqual({
+      date: day(2026, 4, 4),
+      team_id: 2,
+      count: 2,
+      type: 'exposure',
+    });
     expect(result).toContainEqual({ date: day(2026, 4, 4), team_id: 1, count: 3, type: 'goal' });
     expect(result).toHaveLength(3);
   });
@@ -185,7 +201,9 @@ describe('applyCumulative', () => {
       {
         date: day(2026, 4, 4),
         teams: new Map([[1, { goal: 0, exposure: 5, total: 5 }]]),
-        totalGoal: 0, totalExposure: 5, total: 5,
+        totalGoal: 0,
+        totalExposure: 5,
+        total: 5,
       },
       {
         date: day(2026, 4, 11),
@@ -193,7 +211,9 @@ describe('applyCumulative', () => {
           [1, { goal: 0, exposure: 3, total: 3 }],
           [2, { goal: 0, exposure: 7, total: 7 }],
         ]),
-        totalGoal: 0, totalExposure: 10, total: 10,
+        totalGoal: 0,
+        totalExposure: 10,
+        total: 10,
       },
     ];
     const out = applyCumulative(rows);

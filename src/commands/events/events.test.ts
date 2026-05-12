@@ -207,9 +207,7 @@ describe('events command', () => {
   });
 
   it('should pass from/to to events summary', async () => {
-    await eventsCommand.parseAsync([
-      'node', 'test', 'summary', '--from', '1000', '--to', '2000',
-    ]);
+    await eventsCommand.parseAsync(['node', 'test', 'summary', '--from', '1000', '--to', '2000']);
     expect(mockClient.getEventsSummary).toHaveBeenCalledWith({ from: 1000, to: 2000 });
   });
 
@@ -251,11 +249,22 @@ describe('events command', () => {
 
   it('should produce transposed JSON when --transpose -o json', async () => {
     vi.mocked(getGlobalOptions).mockReturnValueOnce({ output: 'json' } as any);
-    await eventsCommand.parseAsync(['node', 'test', 'summary', '--transpose', '--group-by', 'team']);
+    await eventsCommand.parseAsync([
+      'node',
+      'test',
+      'summary',
+      '--transpose',
+      '--group-by',
+      'team',
+    ]);
     const arg = vi.mocked(printFormatted).mock.calls[0]![0] as Record<string, unknown>;
     expect(arg.transposed).toBe(true);
     expect(arg).toHaveProperty('periods');
-    const rows = arg.rows as Array<{ team_id: number; name: string; periods: Record<string, unknown> }>;
+    const rows = arg.rows as Array<{
+      team_id: number;
+      name: string;
+      periods: Record<string, unknown>;
+    }>;
     // Each row is now a team
     expect(rows[0]).toHaveProperty('team_id');
     expect(rows[0]).toHaveProperty('name');

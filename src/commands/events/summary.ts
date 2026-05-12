@@ -162,7 +162,9 @@ export function formatSummaryTable(
     return formatSummaryTableTransposed(rows, teams, options);
   }
 
-  const head: string[] = [options.period === 'month' ? 'Month' : options.period === 'week' ? 'Week' : 'Date'];
+  const head: string[] = [
+    options.period === 'month' ? 'Month' : options.period === 'week' ? 'Week' : 'Date',
+  ];
   if (options.groupBy === 'team') {
     for (const t of teams) head.push(t.name);
   }
@@ -232,8 +234,7 @@ export function formatSummaryBars(
   options: FormatOptions
 ): string {
   const BAR_WIDTH = 40;
-  const periodWidth =
-    options.period === 'month' ? 7 : options.period === 'week' ? 8 : 10;
+  const periodWidth = options.period === 'month' ? 7 : options.period === 'week' ? 8 : 10;
   const teamWidth = Math.max(...teams.map((t) => t.name.length), 'Total'.length);
 
   const values: number[] = [];
@@ -290,11 +291,12 @@ export const summaryCommand = new Command('summary')
       .default('week')
   )
   .option('--cumulative', 'show running totals across periods')
-  .option('--transpose', 'orient output by team (teams as rows / outer entities); ignored with --group-by total')
+  .option(
+    '--transpose',
+    'orient output by team (teams as rows / outer entities); ignored with --group-by total'
+  )
   .addOption(
-    new Option('--visualization <v>', 'output style')
-      .choices(['table', 'bar'])
-      .default('table')
+    new Option('--visualization <v>', 'output style').choices(['table', 'bar']).default('table')
   )
   .action(
     withErrorHandling(async (options) => {

@@ -57,9 +57,7 @@ describe('formatSummaryTable', () => {
   });
 
   it('formats period as YYYY-MM when period=month', () => {
-    const monthRows: AggregatedRow[] = [
-      { ...rows[0]!, date: day(2026, 4, 1) },
-    ];
+    const monthRows: AggregatedRow[] = [{ ...rows[0]!, date: day(2026, 4, 1) }];
     const out = formatSummaryTable(monthRows, teams, {
       period: 'month',
       groupBy: 'team',
@@ -76,7 +74,9 @@ describe('formatSummaryTable', () => {
       {
         date: day(2026, 4, 4),
         teams: new Map([[-1, { goal: 0, exposure: 4, total: 4 }]]),
-        totalGoal: 0, totalExposure: 4, total: 4,
+        totalGoal: 0,
+        totalExposure: 4,
+        total: 4,
       },
     ];
     const out = formatSummaryTable(r, [unowned], {
