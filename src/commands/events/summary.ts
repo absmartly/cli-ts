@@ -30,12 +30,28 @@ export interface FormatOptions {
   noColor: boolean;
 }
 
+function isoWeek(date: Date): { year: number; week: number } {
+  // ISO 8601 week-numbering: week 1 is the week containing the year's first
+  // Thursday. The "ISO year" is the calendar year of that Thursday.
+  // Map local Y/M/D to a UTC date so the diff math is DST-safe.
+  const utc = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayOfWeek = (utc.getUTCDay() + 6) % 7; // Mon=0 … Sun=6
+  utc.setUTCDate(utc.getUTCDate() + 3 - dayOfWeek);
+  const yearStart = Date.UTC(utc.getUTCFullYear(), 0, 1);
+  const week = Math.floor((utc.getTime() - yearStart) / 86_400_000 / 7) + 1;
+  return { year: utc.getUTCFullYear(), week };
+}
+
 function formatPeriodCell(date: number, period: Period): string {
   const d = new Date(date);
-  const y = d.getUTCFullYear();
-  const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
   if (period === 'month') return `${y}-${m}`;
-  const day = String(d.getUTCDate()).padStart(2, '0');
+  if (period === 'week') {
+    const { year, week } = isoWeek(d);
+    return `${year}-W${String(week).padStart(2, '0')}`;
+  }
+  const day = String(d.getDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
 }
 
@@ -91,7 +107,8 @@ export function formatSummaryBars(
   options: FormatOptions
 ): string {
   const BAR_WIDTH = 40;
-  const periodWidth = options.period === 'month' ? 7 : 10;
+  const periodWidth =
+    options.period === 'month' ? 7 : options.period === 'week' ? 8 : 10;
   const teamWidth = Math.max(...teams.map((t) => t.name.length), 'Total'.length);
 
   const values: number[] = [];

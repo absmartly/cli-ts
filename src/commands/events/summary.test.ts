@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { formatSummaryTable, formatSummaryBars } from './summary.js';
 import type { AggregatedRow, SummaryTeam } from '../../core/events/summary.js';
 
-const day = (y: number, m: number, d: number) => Date.UTC(y, m, d);
+const day = (y: number, m: number, d: number) => new Date(y, m, d).getTime();
 
 const teams: SummaryTeam[] = [
   { id: 1, name: 'Growth', initials: 'GR', color: 'blue' },
@@ -39,7 +39,7 @@ describe('formatSummaryTable', () => {
     });
     expect(out).toMatch(/Growth/);
     expect(out).toMatch(/Platform/);
-    expect(out).toMatch(/2026-05-04/);
+    expect(out).toMatch(/2026-W19/);
     expect(out).toMatch(/Total/);
   });
 
@@ -99,7 +99,7 @@ describe('formatSummaryBars', () => {
     });
     const lines = out.split('\n').filter((l) => l.length > 0);
     expect(lines.length).toBeGreaterThanOrEqual(3); // 2 teams in week1, 1 in week2
-    expect(out).toMatch(/2026-05-04/);
+    expect(out).toMatch(/2026-W19/);
     expect(out).toMatch(/Growth/);
     expect(out).toMatch(/Platform/);
     expect(out).toMatch(/█/);
