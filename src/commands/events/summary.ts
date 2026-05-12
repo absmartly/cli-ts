@@ -77,6 +77,7 @@ function serializeAggregated(
   teams: SummaryTeam[],
   options: FormatOptions & { cumulative: boolean }
 ): unknown {
+  const teamById = new Map(teams.map((t) => [t.id, t]));
   return {
     period: options.period,
     eventType: options.eventType,
@@ -86,7 +87,10 @@ function serializeAggregated(
       date: r.date,
       period: formatPeriodCell(r.date, options.period),
       teams: Object.fromEntries(
-        Array.from(r.teams.entries()).map(([id, v]) => [String(id), v])
+        Array.from(r.teams.entries()).map(([id, v]) => [
+          String(id),
+          { name: teamById.get(id)?.name ?? null, ...v },
+        ])
       ),
       totalGoal: r.totalGoal,
       totalExposure: r.totalExposure,

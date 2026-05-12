@@ -241,5 +241,10 @@ describe('events command', () => {
     expect(arg).toHaveProperty('rows');
     expect(arg).toHaveProperty('teams');
     expect(Array.isArray(arg.rows)).toBe(true);
+    // Each row's team entries should carry the human-readable name
+    // alongside the counts so consumers don't need to cross-reference.
+    const rows = arg.rows as Array<{ teams: Record<string, { name: string }> }>;
+    const firstRow = rows[0]!;
+    expect(firstRow.teams['1']).toMatchObject({ name: 'Growth' });
   });
 });
