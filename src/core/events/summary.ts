@@ -49,3 +49,42 @@ export async function getEventsSummary(
   const data = (await client.getEventsSummary(body)) as EventsSummaryResponse;
   return { data };
 }
+
+export type Period = 'day' | 'week' | 'month';
+
+function bucketStart(date: number, period: Period): number {
+  if (period === 'day') {
+    return Date.UTC(
+      new Date(date).getUTCFullYear(),
+      new Date(date).getUTCMonth(),
+      new Date(date).getUTCDate()
+    );
+  }
+  if (period === 'month') {
+    const d = new Date(date);
+    return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1);
+  }
+  // week: ISO week, Monday start
+  const d = new Date(date);
+  const dayOfWeek = d.getUTCDay(); // 0 = Sun … 6 = Sat
+  const daysSinceMonday = (dayOfWeek + 6) % 7; // Mon=0, Tue=1 … Sun=6
+  return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - daysSinceMonday);
+}
+
+export function rollUpEvents(events: SummaryEventRow[], period: Period): SummaryEventRow[] {
+  if (period === 'day') {
+    return [...events].sort((a, b) => a.date - b.date);
+  }
+  const buckets = new Map<string, SummaryEventRow>();
+  for (const ev of events) {
+    const bucket = bucketStart(ev.date, period);
+    const key = `${bucket}|${ev.team_id}|${ev.type}`;
+    const existing = buckets.get(key);
+    if (existing) {
+      existing.count += ev.count;
+    } else {
+      buckets.set(key, { date: bucket, team_id: ev.team_id, count: ev.count, type: ev.type });
+    }
+  }
+  return Array.from(buckets.values()).sort((a, b) => a.date - b.date);
+}
