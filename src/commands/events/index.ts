@@ -17,6 +17,7 @@ import {
   getEventJsonLayouts as coreGetEventJsonLayouts,
   parseUnits,
 } from '../../core/events/events.js';
+import { summaryCommand } from './summary.js';
 
 function parseNumberArray(value: string, previous: number[]): number[] {
   return [...previous, Number(value)];
@@ -214,3 +215,4 @@ eventsCommand.addCommand(unitDataCommand);
 eventsCommand.addCommand(deleteUnitDataCommand);
 eventsCommand.addCommand(jsonValuesCommand);
 eventsCommand.addCommand(jsonLayoutsCommand);
+eventsCommand.addCommand(summaryCommand);

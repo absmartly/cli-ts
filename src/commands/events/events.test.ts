@@ -35,6 +35,13 @@ describe('events command', () => {
     getEventJsonLayouts: vi
       .fn()
       .mockResolvedValue({ layouts: [{ path: 'variant', type: 'string' }] }),
+    getEventsSummary: vi.fn().mockResolvedValue({
+      events: [
+        { date: Date.UTC(2026, 4, 4), team_id: 1, count: 100, type: 'exposure' },
+        { date: Date.UTC(2026, 4, 4), team_id: 1, count: 5, type: 'goal' },
+      ],
+      teams: [{ id: 1, name: 'Growth', initials: 'GR', color: 'blue' }],
+    }),
   };
 
   beforeEach(() => {
@@ -191,5 +198,30 @@ describe('events command', () => {
       expect.anything(),
       expect.stringContaining('Invalid unit_type_id')
     );
+  });
+
+  it('should run events summary with default args', async () => {
+    await eventsCommand.parseAsync(['node', 'test', 'summary']);
+    expect(mockClient.getEventsSummary).toHaveBeenCalledWith({});
+    expect(consoleSpy).toHaveBeenCalled();
+  });
+
+  it('should pass from/to to events summary', async () => {
+    await eventsCommand.parseAsync([
+      'node', 'test', 'summary', '--from', '1000', '--to', '2000',
+    ]);
+    expect(mockClient.getEventsSummary).toHaveBeenCalledWith({ from: 1000, to: 2000 });
+  });
+
+  it('should reject invalid --period', async () => {
+    await expect(
+      eventsCommand.parseAsync(['node', 'test', 'summary', '--period', 'hour'])
+    ).rejects.toThrow();
+  });
+
+  it('should print raw payload when --raw is set', async () => {
+    vi.mocked(getGlobalOptions).mockReturnValueOnce({ output: 'table', raw: true } as any);
+    await eventsCommand.parseAsync(['node', 'test', 'summary']);
+    expect(printFormatted).toHaveBeenCalled();
   });
 });
