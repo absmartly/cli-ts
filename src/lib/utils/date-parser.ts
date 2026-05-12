@@ -29,6 +29,30 @@ const UNIT_MS: Record<string, number> = {
   years: 365 * 24 * 60 * 60 * 1000,
 };
 
+function parseCalendarKeyword(input: string): number | null {
+  const lower = input.trim().toLowerCase();
+  const now = new Date(Date.now());
+  const year = now.getUTCFullYear();
+  const month = now.getUTCMonth();
+
+  switch (lower) {
+    case 'month-start':
+      return Date.UTC(year, month, 1);
+    case 'last-month-start':
+      return Date.UTC(year, month - 1, 1);
+    case 'last-month-end':
+      return Date.UTC(year, month, 1) - 1;
+    case 'year-start':
+      return Date.UTC(year, 0, 1);
+    case 'last-year-start':
+      return Date.UTC(year - 1, 0, 1);
+    case 'last-year-end':
+      return Date.UTC(year, 0, 1) - 1;
+    default:
+      return null;
+  }
+}
+
 function parseRelativeDate(input: string): number | null {
   const lower = input.trim().toLowerCase();
 
@@ -55,6 +79,9 @@ export function parseDateFlag(dateStr: string): number {
     return asNumber;
   }
 
+  const calendar = parseCalendarKeyword(dateStr);
+  if (calendar !== null) return calendar;
+
   const relative = parseRelativeDate(dateStr);
   if (relative !== null) return relative;
 
@@ -64,6 +91,7 @@ export function parseDateFlag(dateStr: string): number {
       `Invalid date format: "${dateStr}"\n` +
         `Expected formats:\n` +
         `  - Relative: 7d, 2w, 30d ago, yesterday, today\n` +
+        `  - Calendar: month-start, last-month-start, last-month-end, year-start, last-year-start, last-year-end\n` +
         `  - ISO 8601 date: 2024-01-01\n` +
         `  - ISO 8601 datetime: 2024-01-01T00:00:00Z\n` +
         `  - Milliseconds since epoch: 1704067200000\n` +

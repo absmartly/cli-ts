@@ -98,6 +98,55 @@ describe('parseDateFlag', () => {
     });
   });
 
+  describe('calendar keywords', () => {
+    // 2026-05-12T14:23:45Z — a Tuesday mid-month
+    const NOW = Date.UTC(2026, 4, 12, 14, 23, 45);
+
+    beforeEach(() => {
+      vi.useFakeTimers();
+      vi.setSystemTime(NOW);
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('parses "month-start" as 00:00 UTC on the 1st of the current month', () => {
+      expect(parseDateFlag('month-start')).toBe(Date.UTC(2026, 4, 1));
+    });
+
+    it('parses "last-month-start" as 00:00 UTC on the 1st of the previous month', () => {
+      expect(parseDateFlag('last-month-start')).toBe(Date.UTC(2026, 3, 1));
+    });
+
+    it('parses "last-month-end" as 1ms before the start of the current month', () => {
+      expect(parseDateFlag('last-month-end')).toBe(Date.UTC(2026, 4, 1) - 1);
+    });
+
+    it('handles January correctly for last-month-start (rolls to December of previous year)', () => {
+      vi.setSystemTime(Date.UTC(2026, 0, 15));
+      expect(parseDateFlag('last-month-start')).toBe(Date.UTC(2025, 11, 1));
+      expect(parseDateFlag('last-month-end')).toBe(Date.UTC(2026, 0, 1) - 1);
+    });
+
+    it('parses "year-start" as 00:00 UTC on Jan 1 of the current year', () => {
+      expect(parseDateFlag('year-start')).toBe(Date.UTC(2026, 0, 1));
+    });
+
+    it('parses "last-year-start" as 00:00 UTC on Jan 1 of the previous year', () => {
+      expect(parseDateFlag('last-year-start')).toBe(Date.UTC(2025, 0, 1));
+    });
+
+    it('parses "last-year-end" as 1ms before the start of the current year', () => {
+      expect(parseDateFlag('last-year-end')).toBe(Date.UTC(2026, 0, 1) - 1);
+    });
+
+    it('is case-insensitive', () => {
+      expect(parseDateFlag('Month-Start')).toBe(Date.UTC(2026, 4, 1));
+      expect(parseDateFlag('YEAR-START')).toBe(Date.UTC(2026, 0, 1));
+    });
+  });
+
   describe('error handling', () => {
     it('should throw for invalid date format', () => {
       expect(() => parseDateFlag('invalid-date')).toThrow(/Invalid date format/);
