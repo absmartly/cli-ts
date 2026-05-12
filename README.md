@@ -759,13 +759,14 @@ All `--from`, `--to`, `--since`, `--created-after`, `--started-before`, and othe
 | Relative (short) | `7d`, `2w`, `1mo`, `24h`, `30m`, `1y` |
 | Relative (with ago) | `7d ago`, `2 weeks ago`, `3 months ago` |
 | Keywords | `today`, `yesterday`, `now` |
+| Calendar (UTC) | `month-start`, `last-month-start`, `last-month-end`, `year-start`, `last-year-start`, `last-year-end` |
 | ISO 8601 date | `2024-01-01` |
 | ISO 8601 datetime | `2024-01-01T00:00:00Z` |
 | Epoch milliseconds | `1704067200000` |
 
 Relative units: `m` (minutes), `h` (hours), `d` (days), `w` (weeks), `mo` (months), `y` (years). Case-insensitive.
 
-Calendar keywords (UTC): `month-start`, `last-month-start`, `last-month-end`, `year-start`, `last-year-start`, `last-year-end`.
+Calendar keywords resolve to UTC boundaries: `month-start` is 00:00 UTC on the 1st of the current month; `last-month-end` is 1ms before the start of the current month. `year-start` / `last-year-end` work the same way on calendar years.
 
 Commands using date formats:
 - `abs experiments list --created-after`, `--created-before`, `--started-after`, `--started-before`, `--stopped-after`, `--stopped-before`
@@ -785,6 +786,8 @@ abs experiments list --created-after 2024-01-01          # since Jan 1 2024
 abs experiments metrics results 123 --from 7d --to now
 abs activity-feed list --since 1h
 abs events list --from 2w --to yesterday
+abs events summary --from month-start                    # current calendar month
+abs events summary --from last-month-start --to last-month-end   # exactly last calendar month
 ```
 
 #### Valid reasons for stop and restart
