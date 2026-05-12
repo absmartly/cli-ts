@@ -240,11 +240,26 @@ describe('events command', () => {
     expect(arg).toHaveProperty('period');
     expect(arg).toHaveProperty('rows');
     expect(arg).toHaveProperty('teams');
+    expect(arg.transposed).toBe(false);
     expect(Array.isArray(arg.rows)).toBe(true);
     // Each row's team entries should carry the human-readable name
     // alongside the counts so consumers don't need to cross-reference.
     const rows = arg.rows as Array<{ teams: Record<string, { name: string }> }>;
     const firstRow = rows[0]!;
     expect(firstRow.teams['1']).toMatchObject({ name: 'Growth' });
+  });
+
+  it('should produce transposed JSON when --transpose -o json', async () => {
+    vi.mocked(getGlobalOptions).mockReturnValueOnce({ output: 'json' } as any);
+    await eventsCommand.parseAsync(['node', 'test', 'summary', '--transpose', '--group-by', 'team']);
+    const arg = vi.mocked(printFormatted).mock.calls[0]![0] as Record<string, unknown>;
+    expect(arg.transposed).toBe(true);
+    expect(arg).toHaveProperty('periods');
+    const rows = arg.rows as Array<{ team_id: number; name: string; periods: Record<string, unknown> }>;
+    // Each row is now a team
+    expect(rows[0]).toHaveProperty('team_id');
+    expect(rows[0]).toHaveProperty('name');
+    expect(rows[0]).toHaveProperty('periods');
+    expect(typeof rows[0]!.periods).toBe('object');
   });
 });

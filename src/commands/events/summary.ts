@@ -78,24 +78,78 @@ function serializeAggregated(
   options: FormatOptions & { cumulative: boolean }
 ): unknown {
   const teamById = new Map(teams.map((t) => [t.id, t]));
+  const transpose = options.transpose && options.groupBy === 'team';
+
+  if (!transpose) {
+    return {
+      period: options.period,
+      eventType: options.eventType,
+      cumulative: options.cumulative,
+      transposed: false,
+      teams,
+      rows: rows.map((r) => ({
+        date: r.date,
+        period: formatPeriodCell(r.date, options.period),
+        teams: Object.fromEntries(
+          Array.from(r.teams.entries()).map(([id, v]) => [
+            String(id),
+            { name: teamById.get(id)?.name ?? null, ...v },
+          ])
+        ),
+        totalGoal: r.totalGoal,
+        totalExposure: r.totalExposure,
+        total: r.total,
+      })),
+    };
+  }
+
+  // Transposed: teams are the outer dimension.
+  const periods = rows.map((r) => ({
+    date: r.date,
+    period: formatPeriodCell(r.date, options.period),
+    totalGoal: r.totalGoal,
+    totalExposure: r.totalExposure,
+    total: r.total,
+  }));
+
+  const teamRows = teams.map((t) => {
+    const periodsObj: Record<
+      string,
+      { date: number; goal: number; exposure: number; total: number }
+    > = {};
+    let goalSum = 0;
+    let exposureSum = 0;
+    let totalSum = 0;
+    for (const r of rows) {
+      const data = r.teams.get(t.id) ?? { goal: 0, exposure: 0, total: 0 };
+      goalSum += data.goal;
+      exposureSum += data.exposure;
+      totalSum += data.total;
+      periodsObj[formatPeriodCell(r.date, options.period)] = {
+        date: r.date,
+        goal: data.goal,
+        exposure: data.exposure,
+        total: data.total,
+      };
+    }
+    return {
+      team_id: t.id,
+      name: t.name,
+      periods: periodsObj,
+      totalGoal: goalSum,
+      totalExposure: exposureSum,
+      total: totalSum,
+    };
+  });
+
   return {
     period: options.period,
     eventType: options.eventType,
     cumulative: options.cumulative,
+    transposed: true,
     teams,
-    rows: rows.map((r) => ({
-      date: r.date,
-      period: formatPeriodCell(r.date, options.period),
-      teams: Object.fromEntries(
-        Array.from(r.teams.entries()).map(([id, v]) => [
-          String(id),
-          { name: teamById.get(id)?.name ?? null, ...v },
-        ])
-      ),
-      totalGoal: r.totalGoal,
-      totalExposure: r.totalExposure,
-      total: r.total,
-    })),
+    rows: teamRows,
+    periods,
   };
 }
 
@@ -236,7 +290,7 @@ export const summaryCommand = new Command('summary')
       .default('week')
   )
   .option('--cumulative', 'show running totals across periods')
-  .option('--transpose', 'swap table rows and columns (teams as rows; ignored with --group-by total)')
+  .option('--transpose', 'orient output by team (teams as rows / outer entities); ignored with --group-by total')
   .addOption(
     new Option('--visualization <v>', 'output style')
       .choices(['table', 'bar'])
