@@ -2346,6 +2346,14 @@ export class APIClient {
     return response.data;
   }
 
+  async getEventsSummary(params: { from?: number; to?: number }): Promise<unknown> {
+    const queryParams: Record<string, string | number | boolean | undefined> = {};
+    if (params.from !== undefined) queryParams.from = params.from;
+    if (params.to !== undefined) queryParams.to = params.to;
+    const response = await this.request('GET', '/events/summary', { params: queryParams });
+    return response.data;
+  }
+
   async getVelocityInsightsDetail(params: {
     from: number;
     to: number;
