@@ -765,6 +765,8 @@ All `--from`, `--to`, `--since`, `--created-after`, `--started-before`, and othe
 
 Relative units: `m` (minutes), `h` (hours), `d` (days), `w` (weeks), `mo` (months), `y` (years). Case-insensitive.
 
+Calendar keywords (UTC): `month-start`, `last-month-start`, `last-month-end`, `year-start`, `last-year-start`, `last-year-end`.
+
 Commands using date formats:
 - `abs experiments list --created-after`, `--created-before`, `--started-after`, `--started-before`, `--stopped-after`, `--stopped-before`
 - `abs experiments metrics results --from`, `--to`
@@ -773,6 +775,7 @@ Commands using date formats:
 - `abs events history --from`, `--to`
 - `abs events json-values --from`, `--to`
 - `abs events json-layouts --from`, `--to`
+- `abs events summary --from`, `--to`
 
 ```bash
 abs experiments list --created-after 7d                  # last 7 days
@@ -1194,6 +1197,10 @@ abs events unit-data 1:user123 2:device456
 abs events delete-unit-data 1:user123
 abs events json-values --event-type exposure --path "variant" --experiment-id 123
 abs events json-layouts --source unit_attribute --phase after_enrichment
+abs events summary --from month-start                        # this month, weekly buckets, per team (default)
+abs events summary --from last-month-start --to last-month-end --period month
+abs events summary --from 30d --group-by total --cumulative
+abs events summary --from 7d --visualization bar
 ```
 
 ### Insights
