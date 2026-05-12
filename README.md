@@ -759,11 +759,14 @@ All `--from`, `--to`, `--since`, `--created-after`, `--started-before`, and othe
 | Relative (short) | `7d`, `2w`, `1mo`, `24h`, `30m`, `1y` |
 | Relative (with ago) | `7d ago`, `2 weeks ago`, `3 months ago` |
 | Keywords | `today`, `yesterday`, `now` |
+| Calendar | `month-start`, `last-month-start`, `last-month-end`, `year-start`, `last-year-start`, `last-year-end` |
 | ISO 8601 date | `2024-01-01` |
 | ISO 8601 datetime | `2024-01-01T00:00:00Z` |
 | Epoch milliseconds | `1704067200000` |
 
 Relative units: `m` (minutes), `h` (hours), `d` (days), `w` (weeks), `mo` (months), `y` (years). Case-insensitive.
+
+Date inputs default to **your local timezone**. `today` and `yesterday` are calendar-aligned (00:00 local); `2024-01-01` is parsed as local midnight; calendar keywords resolve to local boundaries (`month-start` is 00:00 on the 1st of the current month in your local timezone; `last-month-end` is 1ms before the start of the current month). Explicit ISO datetimes with `Z` (e.g. `2024-01-01T00:00:00Z`) and epoch ms are taken as-is. For deterministic UTC boundaries in automation, run with `TZ=UTC`.
 
 Commands using date formats:
 - `abs experiments list --created-after`, `--created-before`, `--started-after`, `--started-before`, `--stopped-after`, `--stopped-before`
@@ -773,6 +776,7 @@ Commands using date formats:
 - `abs events history --from`, `--to`
 - `abs events json-values --from`, `--to`
 - `abs events json-layouts --from`, `--to`
+- `abs events summary --from`, `--to`
 
 ```bash
 abs experiments list --created-after 7d                  # last 7 days
@@ -782,6 +786,8 @@ abs experiments list --created-after 2024-01-01          # since Jan 1 2024
 abs experiments metrics results 123 --from 7d --to now
 abs activity-feed list --since 1h
 abs events list --from 2w --to yesterday
+abs events summary --from month-start                    # current calendar month
+abs events summary --from last-month-start --to last-month-end   # exactly last calendar month
 ```
 
 #### Valid reasons for stop and restart
@@ -1194,6 +1200,11 @@ abs events unit-data 1:user123 2:device456
 abs events delete-unit-data 1:user123
 abs events json-values --event-type exposure --path "variant" --experiment-id 123
 abs events json-layouts --source unit_attribute --phase after_enrichment
+abs events summary --from month-start                        # this month, weekly buckets, totals (default)
+abs events summary --from last-month-start --to last-month-end --period month
+abs events summary --from 30d --group-by team --cumulative
+abs events summary --from 7d --visualization bar
+abs events summary --from 30d --group-by team --transpose        # teams as rows (handy with many teams)
 ```
 
 ### Insights

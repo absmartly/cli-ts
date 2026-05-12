@@ -35,6 +35,13 @@ describe('events command', () => {
     getEventJsonLayouts: vi
       .fn()
       .mockResolvedValue({ layouts: [{ path: 'variant', type: 'string' }] }),
+    getEventsSummary: vi.fn().mockResolvedValue({
+      events: [
+        { date: Date.UTC(2026, 4, 4), team_id: 1, count: 100, type: 'exposure' },
+        { date: Date.UTC(2026, 4, 4), team_id: 1, count: 5, type: 'goal' },
+      ],
+      teams: [{ id: 1, name: 'Growth', initials: 'GR', color: 'blue' }],
+    }),
   };
 
   beforeEach(() => {
@@ -191,5 +198,77 @@ describe('events command', () => {
       expect.anything(),
       expect.stringContaining('Invalid unit_type_id')
     );
+  });
+
+  it('should run events summary with default args', async () => {
+    await eventsCommand.parseAsync(['node', 'test', 'summary']);
+    expect(mockClient.getEventsSummary).toHaveBeenCalledWith({});
+    expect(consoleSpy).toHaveBeenCalled();
+  });
+
+  it('should pass from/to to events summary', async () => {
+    await eventsCommand.parseAsync(['node', 'test', 'summary', '--from', '1000', '--to', '2000']);
+    expect(mockClient.getEventsSummary).toHaveBeenCalledWith({ from: 1000, to: 2000 });
+  });
+
+  it('should reject invalid --period', async () => {
+    await expect(
+      eventsCommand.parseAsync(['node', 'test', 'summary', '--period', 'hour'])
+    ).rejects.toThrow();
+  });
+
+  it('should print raw payload when --raw is set', async () => {
+    vi.mocked(getGlobalOptions).mockReturnValueOnce({ output: 'table', raw: true } as any);
+    await eventsCommand.parseAsync(['node', 'test', 'summary']);
+    expect(printFormatted).toHaveBeenCalled();
+    // --raw passes the API payload through untouched.
+    const arg = vi.mocked(printFormatted).mock.calls[0]![0] as Record<string, unknown>;
+    expect(arg).toHaveProperty('events');
+    expect(arg).toHaveProperty('teams');
+    expect(arg).not.toHaveProperty('rows');
+  });
+
+  it('should print aggregated rollup when -o json is set', async () => {
+    vi.mocked(getGlobalOptions).mockReturnValueOnce({ output: 'json' } as any);
+    await eventsCommand.parseAsync(['node', 'test', 'summary']);
+    expect(printFormatted).toHaveBeenCalled();
+    const arg = vi.mocked(printFormatted).mock.calls[0]![0] as Record<string, unknown>;
+    // The serialized rollup contains the aggregated rows + metadata,
+    // not the raw API columns.
+    expect(arg).toHaveProperty('period');
+    expect(arg).toHaveProperty('rows');
+    expect(arg).toHaveProperty('teams');
+    expect(arg.transposed).toBe(false);
+    expect(Array.isArray(arg.rows)).toBe(true);
+    // Each row's team entries should carry the human-readable name
+    // alongside the counts so consumers don't need to cross-reference.
+    const rows = arg.rows as Array<{ teams: Record<string, { name: string }> }>;
+    const firstRow = rows[0]!;
+    expect(firstRow.teams['1']).toMatchObject({ name: 'Growth' });
+  });
+
+  it('should produce transposed JSON when --transpose -o json', async () => {
+    vi.mocked(getGlobalOptions).mockReturnValueOnce({ output: 'json' } as any);
+    await eventsCommand.parseAsync([
+      'node',
+      'test',
+      'summary',
+      '--transpose',
+      '--group-by',
+      'team',
+    ]);
+    const arg = vi.mocked(printFormatted).mock.calls[0]![0] as Record<string, unknown>;
+    expect(arg.transposed).toBe(true);
+    expect(arg).toHaveProperty('periods');
+    const rows = arg.rows as Array<{
+      team_id: number;
+      name: string;
+      periods: Record<string, unknown>;
+    }>;
+    // Each row is now a team
+    expect(rows[0]).toHaveProperty('team_id');
+    expect(rows[0]).toHaveProperty('name');
+    expect(rows[0]).toHaveProperty('periods');
+    expect(typeof rows[0]!.periods).toBe('object');
   });
 });

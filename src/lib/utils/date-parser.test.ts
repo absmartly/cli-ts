@@ -12,9 +12,9 @@ describe('parseDateFlag', () => {
     expect(result).toBe(1704067200000);
   });
 
-  it('should parse simple date (UTC midnight)', () => {
+  it('should parse simple date as local midnight', () => {
     const result = parseDateFlag('2024-01-01');
-    expect(result).toBe(1704067200000);
+    expect(result).toBe(new Date(2024, 0, 1).getTime());
   });
 
   it('should accept ISO date with milliseconds', () => {
@@ -28,7 +28,9 @@ describe('parseDateFlag', () => {
   });
 
   describe('relative dates', () => {
-    const NOW = 1711000000000;
+    // 2024-03-21T08:26:40Z — mid-day UTC, so the local calendar day is
+    // 2024-03-21 in any reasonable TZ.
+    const NOW = 1711010000000;
 
     beforeEach(() => {
       vi.useFakeTimers();
@@ -39,16 +41,22 @@ describe('parseDateFlag', () => {
       vi.useRealTimers();
     });
 
-    it('should parse "today" as current time', () => {
-      expect(parseDateFlag('today')).toBe(NOW);
+    it('should parse "today" as local midnight today', () => {
+      const n = new Date(NOW);
+      expect(parseDateFlag('today')).toBe(
+        new Date(n.getFullYear(), n.getMonth(), n.getDate()).getTime()
+      );
     });
 
     it('should parse "now" as current time', () => {
       expect(parseDateFlag('now')).toBe(NOW);
     });
 
-    it('should parse "yesterday" as 24h ago', () => {
-      expect(parseDateFlag('yesterday')).toBe(NOW - 24 * 60 * 60 * 1000);
+    it('should parse "yesterday" as local midnight yesterday', () => {
+      const n = new Date(NOW);
+      expect(parseDateFlag('yesterday')).toBe(
+        new Date(n.getFullYear(), n.getMonth(), n.getDate() - 1).getTime()
+      );
     });
 
     it('should parse "7d" as 7 days ago', () => {
@@ -92,9 +100,62 @@ describe('parseDateFlag', () => {
     });
 
     it('should be case-insensitive', () => {
+      const n = new Date(NOW);
+      const todayStart = new Date(n.getFullYear(), n.getMonth(), n.getDate()).getTime();
+      const yesterdayStart = new Date(n.getFullYear(), n.getMonth(), n.getDate() - 1).getTime();
       expect(parseDateFlag('7D')).toBe(NOW - 7 * 24 * 60 * 60 * 1000);
-      expect(parseDateFlag('Yesterday')).toBe(NOW - 24 * 60 * 60 * 1000);
-      expect(parseDateFlag('TODAY')).toBe(NOW);
+      expect(parseDateFlag('Yesterday')).toBe(yesterdayStart);
+      expect(parseDateFlag('TODAY')).toBe(todayStart);
+    });
+  });
+
+  describe('calendar keywords', () => {
+    // 2026-05-12T14:23:45Z — a Tuesday mid-month (safe for any reasonable TZ
+    // to still report May 12 locally).
+    const NOW = Date.UTC(2026, 4, 12, 14, 23, 45);
+
+    beforeEach(() => {
+      vi.useFakeTimers();
+      vi.setSystemTime(NOW);
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('parses "month-start" as 00:00 local on the 1st of the current month', () => {
+      expect(parseDateFlag('month-start')).toBe(new Date(2026, 4, 1).getTime());
+    });
+
+    it('parses "last-month-start" as 00:00 local on the 1st of the previous month', () => {
+      expect(parseDateFlag('last-month-start')).toBe(new Date(2026, 3, 1).getTime());
+    });
+
+    it('parses "last-month-end" as 1ms before the start of the current month', () => {
+      expect(parseDateFlag('last-month-end')).toBe(new Date(2026, 4, 1).getTime() - 1);
+    });
+
+    it('handles January correctly for last-month-start (rolls to December of previous year)', () => {
+      vi.setSystemTime(Date.UTC(2026, 0, 15, 12));
+      expect(parseDateFlag('last-month-start')).toBe(new Date(2025, 11, 1).getTime());
+      expect(parseDateFlag('last-month-end')).toBe(new Date(2026, 0, 1).getTime() - 1);
+    });
+
+    it('parses "year-start" as 00:00 local on Jan 1 of the current year', () => {
+      expect(parseDateFlag('year-start')).toBe(new Date(2026, 0, 1).getTime());
+    });
+
+    it('parses "last-year-start" as 00:00 local on Jan 1 of the previous year', () => {
+      expect(parseDateFlag('last-year-start')).toBe(new Date(2025, 0, 1).getTime());
+    });
+
+    it('parses "last-year-end" as 1ms before the start of the current year', () => {
+      expect(parseDateFlag('last-year-end')).toBe(new Date(2026, 0, 1).getTime() - 1);
+    });
+
+    it('is case-insensitive', () => {
+      expect(parseDateFlag('Month-Start')).toBe(new Date(2026, 4, 1).getTime());
+      expect(parseDateFlag('YEAR-START')).toBe(new Date(2026, 0, 1).getTime());
     });
   });
 
