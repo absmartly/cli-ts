@@ -128,3 +128,36 @@ export function aggregateByTeam(
   }
   return Array.from(byDate.values()).sort((a, b) => a.date - b.date);
 }
+
+export function applyCumulative(rows: AggregatedRow[]): AggregatedRow[] {
+  let cumGoal = 0;
+  let cumExposure = 0;
+  let cumTotal = 0;
+  const cumByTeam = new Map<number, { goal: number; exposure: number; total: number }>();
+  return rows.map((row) => {
+    cumGoal += row.totalGoal;
+    cumExposure += row.totalExposure;
+    cumTotal += row.total;
+    const newTeams = new Map<number, { goal: number; exposure: number; total: number }>();
+    // Union of team ids seen so far in current row + all previously seen.
+    const allTeamIds = new Set<number>([...cumByTeam.keys(), ...row.teams.keys()]);
+    for (const id of allTeamIds) {
+      const prev = cumByTeam.get(id) ?? { goal: 0, exposure: 0, total: 0 };
+      const cur = row.teams.get(id) ?? { goal: 0, exposure: 0, total: 0 };
+      const merged = {
+        goal: prev.goal + cur.goal,
+        exposure: prev.exposure + cur.exposure,
+        total: prev.total + cur.total,
+      };
+      cumByTeam.set(id, merged);
+      newTeams.set(id, merged);
+    }
+    return {
+      date: row.date,
+      teams: newTeams,
+      totalGoal: cumGoal,
+      totalExposure: cumExposure,
+      total: cumTotal,
+    };
+  });
+}

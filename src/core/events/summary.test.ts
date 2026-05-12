@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { getEventsSummary, rollUpEvents, aggregateByTeam } from './summary.js';
+import { getEventsSummary, rollUpEvents, aggregateByTeam, applyCumulative, type AggregatedRow } from './summary.js';
 
 describe('getEventsSummary', () => {
   const mockClient = {
@@ -149,5 +149,59 @@ describe('aggregateByTeam', () => {
 
   it('returns empty array for no events', () => {
     expect(aggregateByTeam([], { eventType: 'all' })).toEqual([]);
+  });
+});
+
+describe('applyCumulative', () => {
+  const day = (y: number, m: number, d: number) => Date.UTC(y, m, d);
+
+  it('produces running totals over rows', () => {
+    const rows: AggregatedRow[] = [
+      {
+        date: day(2026, 4, 4),
+        teams: new Map([[1, { goal: 1, exposure: 10, total: 11 }]]),
+        totalGoal: 1,
+        totalExposure: 10,
+        total: 11,
+      },
+      {
+        date: day(2026, 4, 11),
+        teams: new Map([[1, { goal: 2, exposure: 5, total: 7 }]]),
+        totalGoal: 2,
+        totalExposure: 5,
+        total: 7,
+      },
+    ];
+    const out = applyCumulative(rows);
+    expect(out[0]!.total).toBe(11);
+    expect(out[1]!.total).toBe(18);
+    expect(out[0]!.totalExposure).toBe(10);
+    expect(out[1]!.totalExposure).toBe(15);
+    expect(out[1]!.teams.get(1)).toEqual({ goal: 3, exposure: 15, total: 18 });
+  });
+
+  it('carries forward teams that appear later', () => {
+    const rows: AggregatedRow[] = [
+      {
+        date: day(2026, 4, 4),
+        teams: new Map([[1, { goal: 0, exposure: 5, total: 5 }]]),
+        totalGoal: 0, totalExposure: 5, total: 5,
+      },
+      {
+        date: day(2026, 4, 11),
+        teams: new Map([
+          [1, { goal: 0, exposure: 3, total: 3 }],
+          [2, { goal: 0, exposure: 7, total: 7 }],
+        ]),
+        totalGoal: 0, totalExposure: 10, total: 10,
+      },
+    ];
+    const out = applyCumulative(rows);
+    expect(out[1]!.teams.get(1)).toEqual({ goal: 0, exposure: 8, total: 8 });
+    expect(out[1]!.teams.get(2)).toEqual({ goal: 0, exposure: 7, total: 7 });
+  });
+
+  it('returns empty array for no rows', () => {
+    expect(applyCumulative([])).toEqual([]);
   });
 });
