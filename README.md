@@ -759,14 +759,14 @@ All `--from`, `--to`, `--since`, `--created-after`, `--started-before`, and othe
 | Relative (short) | `7d`, `2w`, `1mo`, `24h`, `30m`, `1y` |
 | Relative (with ago) | `7d ago`, `2 weeks ago`, `3 months ago` |
 | Keywords | `today`, `yesterday`, `now` |
-| Calendar (UTC) | `month-start`, `last-month-start`, `last-month-end`, `year-start`, `last-year-start`, `last-year-end` |
+| Calendar | `month-start`, `last-month-start`, `last-month-end`, `year-start`, `last-year-start`, `last-year-end` |
 | ISO 8601 date | `2024-01-01` |
 | ISO 8601 datetime | `2024-01-01T00:00:00Z` |
 | Epoch milliseconds | `1704067200000` |
 
 Relative units: `m` (minutes), `h` (hours), `d` (days), `w` (weeks), `mo` (months), `y` (years). Case-insensitive.
 
-Calendar keywords resolve to UTC boundaries: `month-start` is 00:00 UTC on the 1st of the current month; `last-month-end` is 1ms before the start of the current month. `year-start` / `last-year-end` work the same way on calendar years.
+Date inputs default to **your local timezone**. `today` and `yesterday` are calendar-aligned (00:00 local); `2024-01-01` is parsed as local midnight; calendar keywords resolve to local boundaries (`month-start` is 00:00 on the 1st of the current month in your local timezone; `last-month-end` is 1ms before the start of the current month). Explicit ISO datetimes with `Z` (e.g. `2024-01-01T00:00:00Z`) and epoch ms are taken as-is. For deterministic UTC boundaries in automation, run with `TZ=UTC`.
 
 Commands using date formats:
 - `abs experiments list --created-after`, `--created-before`, `--started-after`, `--started-before`, `--stopped-after`, `--stopped-before`

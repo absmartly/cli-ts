@@ -1,12 +1,6 @@
 const RELATIVE_PATTERN =
   /^(\d+)\s*(m|min|minutes?|h|hours?|d|days?|w|weeks?|mo|months?|y|years?)\s*(ago)?$/i;
 
-const RELATIVE_KEYWORDS: Record<string, number> = {
-  now: 0,
-  today: 0,
-  yesterday: 24 * 60 * 60 * 1000,
-};
-
 const UNIT_MS: Record<string, number> = {
   m: 60 * 1000,
   min: 60 * 1000,
@@ -31,23 +25,23 @@ const UNIT_MS: Record<string, number> = {
 
 function parseCalendarKeyword(input: string): number | null {
   const lower = input.trim().toLowerCase();
-  const now = new Date(Date.now());
-  const year = now.getUTCFullYear();
-  const month = now.getUTCMonth();
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth();
 
   switch (lower) {
     case 'month-start':
-      return Date.UTC(year, month, 1);
+      return new Date(year, month, 1).getTime();
     case 'last-month-start':
-      return Date.UTC(year, month - 1, 1);
+      return new Date(year, month - 1, 1).getTime();
     case 'last-month-end':
-      return Date.UTC(year, month, 1) - 1;
+      return new Date(year, month, 1).getTime() - 1;
     case 'year-start':
-      return Date.UTC(year, 0, 1);
+      return new Date(year, 0, 1).getTime();
     case 'last-year-start':
-      return Date.UTC(year - 1, 0, 1);
+      return new Date(year - 1, 0, 1).getTime();
     case 'last-year-end':
-      return Date.UTC(year, 0, 1) - 1;
+      return new Date(year, 0, 1).getTime() - 1;
     default:
       return null;
   }
@@ -56,8 +50,11 @@ function parseCalendarKeyword(input: string): number | null {
 function parseRelativeDate(input: string): number | null {
   const lower = input.trim().toLowerCase();
 
-  if (lower in RELATIVE_KEYWORDS) {
-    return Date.now() - RELATIVE_KEYWORDS[lower]!;
+  if (lower === 'now') return Date.now();
+  if (lower === 'today' || lower === 'yesterday') {
+    const now = new Date();
+    const day = lower === 'today' ? now.getDate() : now.getDate() - 1;
+    return new Date(now.getFullYear(), now.getMonth(), day).getTime();
   }
 
   const match = RELATIVE_PATTERN.exec(lower);
@@ -85,27 +82,33 @@ export function parseDateFlag(dateStr: string): number {
   const relative = parseRelativeDate(dateStr);
   if (relative !== null) return relative;
 
-  const isoPattern = /^\d{4}-\d{2}-\d{2}(T[\d:.-]+Z)?$/;
-  if (!isoPattern.test(dateStr)) {
-    throw new Error(
-      `Invalid date format: "${dateStr}"\n` +
-        `Expected formats:\n` +
-        `  - Relative: 7d, 2w, 30d ago, yesterday, today\n` +
-        `  - Calendar: month-start, last-month-start, last-month-end, year-start, last-year-start, last-year-end\n` +
-        `  - ISO 8601 date: 2024-01-01\n` +
-        `  - ISO 8601 datetime: 2024-01-01T00:00:00Z\n` +
-        `  - Milliseconds since epoch: 1704067200000\n` +
-        `\n` +
-        `Relative units: m (minutes), h (hours), d (days), w (weeks), mo (months), y (years)`
-    );
+  const isoDateMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr);
+  if (isoDateMatch) {
+    const y = parseInt(isoDateMatch[1]!, 10);
+    const mo = parseInt(isoDateMatch[2]!, 10) - 1;
+    const d = parseInt(isoDateMatch[3]!, 10);
+    const t = new Date(y, mo, d).getTime();
+    if (isNaN(t)) throw new Error(`Invalid date: "${dateStr}" could not be parsed`);
+    return t;
   }
 
-  const date = new Date(dateStr);
-  if (isNaN(date.getTime())) {
-    throw new Error(`Invalid date: "${dateStr}" could not be parsed`);
+  if (/^\d{4}-\d{2}-\d{2}T[\d:.-]+Z$/.test(dateStr)) {
+    const t = new Date(dateStr).getTime();
+    if (isNaN(t)) throw new Error(`Invalid date: "${dateStr}" could not be parsed`);
+    return t;
   }
 
-  return date.getTime();
+  throw new Error(
+    `Invalid date format: "${dateStr}"\n` +
+      `Expected formats:\n` +
+      `  - Relative: 7d, 2w, 30d ago, yesterday, today\n` +
+      `  - Calendar: month-start, last-month-start, last-month-end, year-start, last-year-start, last-year-end\n` +
+      `  - ISO 8601 date: 2024-01-01\n` +
+      `  - ISO 8601 datetime: 2024-01-01T00:00:00Z\n` +
+      `  - Milliseconds since epoch: 1704067200000\n` +
+      `\n` +
+      `Relative units: m (minutes), h (hours), d (days), w (weeks), mo (months), y (years)`
+  );
 }
 
 export function parseDateFlagOrUndefined(dateStr?: string): number | undefined {
