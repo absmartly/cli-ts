@@ -223,5 +223,23 @@ describe('events command', () => {
     vi.mocked(getGlobalOptions).mockReturnValueOnce({ output: 'table', raw: true } as any);
     await eventsCommand.parseAsync(['node', 'test', 'summary']);
     expect(printFormatted).toHaveBeenCalled();
+    // --raw passes the API payload through untouched.
+    const arg = vi.mocked(printFormatted).mock.calls[0]![0] as Record<string, unknown>;
+    expect(arg).toHaveProperty('events');
+    expect(arg).toHaveProperty('teams');
+    expect(arg).not.toHaveProperty('rows');
+  });
+
+  it('should print aggregated rollup when -o json is set', async () => {
+    vi.mocked(getGlobalOptions).mockReturnValueOnce({ output: 'json' } as any);
+    await eventsCommand.parseAsync(['node', 'test', 'summary']);
+    expect(printFormatted).toHaveBeenCalled();
+    const arg = vi.mocked(printFormatted).mock.calls[0]![0] as Record<string, unknown>;
+    // The serialized rollup contains the aggregated rows + metadata,
+    // not the raw API columns.
+    expect(arg).toHaveProperty('period');
+    expect(arg).toHaveProperty('rows');
+    expect(arg).toHaveProperty('teams');
+    expect(Array.isArray(arg.rows)).toBe(true);
   });
 });

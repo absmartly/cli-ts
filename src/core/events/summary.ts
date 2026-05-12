@@ -53,22 +53,17 @@ export async function getEventsSummary(
 export type Period = 'day' | 'week' | 'month';
 
 function bucketStart(date: number, period: Period): number {
+  const d = new Date(date);
   if (period === 'day') {
-    return Date.UTC(
-      new Date(date).getUTCFullYear(),
-      new Date(date).getUTCMonth(),
-      new Date(date).getUTCDate()
-    );
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
   }
   if (period === 'month') {
-    const d = new Date(date);
-    return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), 1);
+    return new Date(d.getFullYear(), d.getMonth(), 1).getTime();
   }
-  // week: ISO week, Monday start
-  const d = new Date(date);
-  const dayOfWeek = d.getUTCDay(); // 0 = Sun … 6 = Sat
+  // week: ISO week, Monday start, in local TZ
+  const dayOfWeek = d.getDay(); // 0 = Sun … 6 = Sat
   const daysSinceMonday = (dayOfWeek + 6) % 7; // Mon=0, Tue=1 … Sun=6
-  return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate() - daysSinceMonday);
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate() - daysSinceMonday).getTime();
 }
 
 export function rollUpEvents(events: SummaryEventRow[], period: Period): SummaryEventRow[] {

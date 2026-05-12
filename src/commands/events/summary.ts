@@ -72,6 +72,29 @@ function pickRowTotal(row: AggregatedRow, eventType: EventTypeFilter): number {
   return row.total;
 }
 
+function serializeAggregated(
+  rows: AggregatedRow[],
+  teams: SummaryTeam[],
+  options: FormatOptions & { cumulative: boolean }
+): unknown {
+  return {
+    period: options.period,
+    eventType: options.eventType,
+    cumulative: options.cumulative,
+    teams,
+    rows: rows.map((r) => ({
+      date: r.date,
+      period: formatPeriodCell(r.date, options.period),
+      teams: Object.fromEntries(
+        Array.from(r.teams.entries()).map(([id, v]) => [String(id), v])
+      ),
+      totalGoal: r.totalGoal,
+      totalExposure: r.totalExposure,
+      total: r.total,
+    })),
+  };
+}
+
 export function formatSummaryTable(
   rows: AggregatedRow[],
   teams: SummaryTeam[],
@@ -225,7 +248,8 @@ export const summaryCommand = new Command('summary')
 
       const result = await coreGetEventsSummary(client, { from, to });
 
-      if (globalOptions.raw || globalOptions.output === 'json' || globalOptions.output === 'yaml') {
+      // --raw bypasses all aggregation and returns the API payload as-is.
+      if (globalOptions.raw) {
         printFormatted(result.data, globalOptions);
         return;
       }
@@ -250,6 +274,18 @@ export const summaryCommand = new Command('summary')
         noColor: globalOptions.noColor ?? false,
         transpose: Boolean(options.transpose),
       };
+
+      // Structured outputs render the aggregated/rolled-up data.
+      if (globalOptions.output === 'json' || globalOptions.output === 'yaml') {
+        printFormatted(
+          serializeAggregated(finalRows, teams, {
+            ...formatOpts,
+            cumulative: Boolean(options.cumulative),
+          }),
+          globalOptions
+        );
+        return;
+      }
 
       const out =
         visualization === 'bar'

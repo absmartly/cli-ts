@@ -41,7 +41,7 @@ describe('getEventsSummary', () => {
 });
 
 describe('rollUpEvents', () => {
-  const day = (y: number, m: number, d: number) => Date.UTC(y, m, d);
+  const day = (y: number, m: number, d: number) => new Date(y, m, d).getTime();
 
   it('passes through daily rows unchanged when period=day', () => {
     const events = [
@@ -104,7 +104,7 @@ describe('rollUpEvents', () => {
 });
 
 describe('aggregateByTeam', () => {
-  const day = (y: number, m: number, d: number) => Date.UTC(y, m, d);
+  const day = (y: number, m: number, d: number) => new Date(y, m, d).getTime();
 
   it('groups rows by date and team_id and computes totals', () => {
     const events = [
@@ -153,7 +153,7 @@ describe('aggregateByTeam', () => {
 });
 
 describe('applyCumulative', () => {
-  const day = (y: number, m: number, d: number) => Date.UTC(y, m, d);
+  const day = (y: number, m: number, d: number) => new Date(y, m, d).getTime();
 
   it('produces running totals over rows', () => {
     const rows: AggregatedRow[] = [
