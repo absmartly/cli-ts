@@ -140,7 +140,7 @@ export const summaryCommand = new Command('summary')
   .addOption(
     new Option('--group-by <mode>', 'grouping for the output')
       .choices(['team', 'total'])
-      .default('team')
+      .default('total')
   )
   .addOption(
     new Option('--period <p>', 'client-side rollup bucket')

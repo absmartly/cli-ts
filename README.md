@@ -1197,9 +1197,9 @@ abs events unit-data 1:user123 2:device456
 abs events delete-unit-data 1:user123
 abs events json-values --event-type exposure --path "variant" --experiment-id 123
 abs events json-layouts --source unit_attribute --phase after_enrichment
-abs events summary --from month-start                        # this month, weekly buckets, per team (default)
+abs events summary --from month-start                        # this month, weekly buckets, totals (default)
 abs events summary --from last-month-start --to last-month-end --period month
-abs events summary --from 30d --group-by total --cumulative
+abs events summary --from 30d --group-by team --cumulative
 abs events summary --from 7d --visualization bar
 ```
 
