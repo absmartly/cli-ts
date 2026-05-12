@@ -1204,6 +1204,7 @@ abs events summary --from month-start                        # this month, weekl
 abs events summary --from last-month-start --to last-month-end --period month
 abs events summary --from 30d --group-by team --cumulative
 abs events summary --from 7d --visualization bar
+abs events summary --from 30d --group-by team --transpose        # teams as rows (handy with many teams)
 ```
 
 ### Insights

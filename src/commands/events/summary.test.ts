@@ -87,6 +87,47 @@ describe('formatSummaryTable', () => {
     });
     expect(out).toMatch(/Unowned/);
   });
+
+  it('transposes layout when transpose=true: teams are rows, periods are columns', () => {
+    const out = formatSummaryTable(rows, teams, {
+      period: 'week',
+      groupBy: 'team',
+      eventType: 'all',
+      noColor: true,
+      transpose: true,
+    });
+    // Header row contains 'Team' label and both period columns
+    expect(out).toMatch(/Team/);
+    expect(out).toMatch(/2026-W19/);
+    expect(out).toMatch(/2026-W20/);
+    // Team rows: Growth has 11 + 10 = 21 total; Platform has 5 + 0 = 5
+    const growthRow = out.split('\n').find((l) => /Growth/.test(l));
+    expect(growthRow).toMatch(/21/);
+    const platformRow = out.split('\n').find((l) => /Platform/.test(l));
+    expect(platformRow).toMatch(/\b5\b/);
+    // Bottom totals row sums per period (16, 10) and grand total 26
+    const totalRow = out.split('\n').find((l) => /Total/.test(l) && !/Team/.test(l));
+    expect(totalRow).toMatch(/16/);
+    expect(totalRow).toMatch(/10/);
+    expect(totalRow).toMatch(/26/);
+  });
+
+  it('transpose is ignored when groupBy=total', () => {
+    const normal = formatSummaryTable(rows, teams, {
+      period: 'week',
+      groupBy: 'total',
+      eventType: 'all',
+      noColor: true,
+    });
+    const transposed = formatSummaryTable(rows, teams, {
+      period: 'week',
+      groupBy: 'total',
+      eventType: 'all',
+      noColor: true,
+      transpose: true,
+    });
+    expect(transposed).toBe(normal);
+  });
 });
 
 describe('formatSummaryBars', () => {

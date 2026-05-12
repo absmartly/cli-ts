@@ -28,6 +28,7 @@ export interface FormatOptions {
   groupBy: 'team' | 'total';
   eventType: EventTypeFilter;
   noColor: boolean;
+  transpose?: boolean;
 }
 
 function isoWeek(date: Date): { year: number; week: number } {
@@ -76,6 +77,10 @@ export function formatSummaryTable(
   teams: SummaryTeam[],
   options: FormatOptions
 ): string {
+  if (options.transpose && options.groupBy === 'team') {
+    return formatSummaryTableTransposed(rows, teams, options);
+  }
+
   const head: string[] = [options.period === 'month' ? 'Month' : options.period === 'week' ? 'Week' : 'Date'];
   if (options.groupBy === 'team') {
     for (const t of teams) head.push(t.name);
@@ -98,6 +103,45 @@ export function formatSummaryTable(
     cells.push(pickRowTotal(row, options.eventType).toLocaleString());
     table.push(cells);
   }
+  return table.toString();
+}
+
+function formatSummaryTableTransposed(
+  rows: AggregatedRow[],
+  teams: SummaryTeam[],
+  options: FormatOptions
+): string {
+  const periodHeaders = rows.map((r) => formatPeriodCell(r.date, options.period));
+  const head: string[] = ['Team', ...periodHeaders, 'Total'];
+
+  const table = new Table({
+    head: options.noColor ? head : head.map((h) => chalk.cyan(h)),
+    style: { head: [], border: options.noColor ? [] : ['gray'] },
+    colAligns: ['left', ...head.slice(1).map(() => 'right' as const)],
+  });
+
+  for (const t of teams) {
+    const cells: (string | number)[] = [t.name];
+    let teamSum = 0;
+    for (const row of rows) {
+      const c = pickCount(row.teams.get(t.id), options.eventType);
+      teamSum += c;
+      cells.push(c.toLocaleString());
+    }
+    cells.push(teamSum.toLocaleString());
+    table.push(cells);
+  }
+
+  const totalsRow: (string | number)[] = ['Total'];
+  let grand = 0;
+  for (const row of rows) {
+    const t = pickRowTotal(row, options.eventType);
+    grand += t;
+    totalsRow.push(t.toLocaleString());
+  }
+  totalsRow.push(grand.toLocaleString());
+  table.push(totalsRow);
+
   return table.toString();
 }
 
@@ -165,6 +209,7 @@ export const summaryCommand = new Command('summary')
       .default('week')
   )
   .option('--cumulative', 'show running totals across periods')
+  .option('--transpose', 'swap table rows and columns (teams as rows; ignored with --group-by total)')
   .addOption(
     new Option('--visualization <v>', 'output style')
       .choices(['table', 'bar'])
@@ -203,6 +248,7 @@ export const summaryCommand = new Command('summary')
         groupBy,
         eventType,
         noColor: globalOptions.noColor ?? false,
+        transpose: Boolean(options.transpose),
       };
 
       const out =
