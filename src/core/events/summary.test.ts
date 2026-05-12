@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { getEventsSummary, rollUpEvents } from './summary.js';
+import { getEventsSummary, rollUpEvents, aggregateByTeam } from './summary.js';
 
 describe('getEventsSummary', () => {
   const mockClient = {
@@ -100,5 +100,54 @@ describe('rollUpEvents', () => {
     ];
     const result = rollUpEvents(events, 'week');
     expect(result.map((r) => r.date)).toEqual([day(2026, 4, 4), day(2026, 4, 18)]);
+  });
+});
+
+describe('aggregateByTeam', () => {
+  const day = (y: number, m: number, d: number) => Date.UTC(y, m, d);
+
+  it('groups rows by date and team_id and computes totals', () => {
+    const events = [
+      { date: day(2026, 4, 4), team_id: 1, count: 10, type: 'exposure' as const },
+      { date: day(2026, 4, 4), team_id: 1, count: 3, type: 'goal' as const },
+      { date: day(2026, 4, 4), team_id: 2, count: 7, type: 'exposure' as const },
+      { date: day(2026, 4, 11), team_id: 1, count: 5, type: 'exposure' as const },
+    ];
+    const result = aggregateByTeam(events, { eventType: 'all' });
+    expect(result).toHaveLength(2);
+    const week1 = result[0]!;
+    expect(week1.date).toBe(day(2026, 4, 4));
+    expect(week1.teams.get(1)).toEqual({ goal: 3, exposure: 10, total: 13 });
+    expect(week1.teams.get(2)).toEqual({ goal: 0, exposure: 7, total: 7 });
+    expect(week1.totalExposure).toBe(17);
+    expect(week1.totalGoal).toBe(3);
+    expect(week1.total).toBe(20);
+  });
+
+  it('filters to exposures only when eventType=exposure', () => {
+    const events = [
+      { date: day(2026, 4, 4), team_id: 1, count: 10, type: 'exposure' as const },
+      { date: day(2026, 4, 4), team_id: 1, count: 3, type: 'goal' as const },
+    ];
+    const result = aggregateByTeam(events, { eventType: 'exposure' });
+    expect(result[0]!.totalGoal).toBe(0);
+    expect(result[0]!.totalExposure).toBe(10);
+    expect(result[0]!.total).toBe(10);
+    expect(result[0]!.teams.get(1)).toEqual({ goal: 0, exposure: 10, total: 10 });
+  });
+
+  it('filters to goals only when eventType=goal', () => {
+    const events = [
+      { date: day(2026, 4, 4), team_id: 1, count: 10, type: 'exposure' as const },
+      { date: day(2026, 4, 4), team_id: 1, count: 3, type: 'goal' as const },
+    ];
+    const result = aggregateByTeam(events, { eventType: 'goal' });
+    expect(result[0]!.totalGoal).toBe(3);
+    expect(result[0]!.totalExposure).toBe(0);
+    expect(result[0]!.total).toBe(3);
+  });
+
+  it('returns empty array for no events', () => {
+    expect(aggregateByTeam([], { eventType: 'all' })).toEqual([]);
   });
 });

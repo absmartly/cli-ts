@@ -88,3 +88,43 @@ export function rollUpEvents(events: SummaryEventRow[], period: Period): Summary
   }
   return Array.from(buckets.values()).sort((a, b) => a.date - b.date);
 }
+
+export type EventTypeFilter = 'all' | 'goal' | 'exposure';
+
+export interface AggregatedRow {
+  date: number;
+  teams: Map<number, { goal: number; exposure: number; total: number }>;
+  totalGoal: number;
+  totalExposure: number;
+  total: number;
+}
+
+export function aggregateByTeam(
+  events: SummaryEventRow[],
+  options: { eventType: EventTypeFilter }
+): AggregatedRow[] {
+  const byDate = new Map<number, AggregatedRow>();
+  for (const ev of events) {
+    if (options.eventType !== 'all' && ev.type !== options.eventType) continue;
+    let row = byDate.get(ev.date);
+    if (!row) {
+      row = { date: ev.date, teams: new Map(), totalGoal: 0, totalExposure: 0, total: 0 };
+      byDate.set(ev.date, row);
+    }
+    let team = row.teams.get(ev.team_id);
+    if (!team) {
+      team = { goal: 0, exposure: 0, total: 0 };
+      row.teams.set(ev.team_id, team);
+    }
+    if (ev.type === 'goal') {
+      team.goal += ev.count;
+      row.totalGoal += ev.count;
+    } else {
+      team.exposure += ev.count;
+      row.totalExposure += ev.count;
+    }
+    team.total += ev.count;
+    row.total += ev.count;
+  }
+  return Array.from(byDate.values()).sort((a, b) => a.date - b.date);
+}
