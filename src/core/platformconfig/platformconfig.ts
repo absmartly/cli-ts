@@ -33,7 +33,7 @@ export async function updatePlatformConfig(
       `Cannot update platform config ${params.id}: existing config not found`
     );
   }
-  const { id: _ignored, ...rest } = current as Record<string, unknown>;
+  const { id: _id, ...rest } = current as Record<string, unknown>;
   const merged: Record<string, unknown> = { ...rest, value: params.value };
   const data = await client.updatePlatformConfig(params.id, merged);
   return { data };
