@@ -4,6 +4,7 @@ import { getAPIKey, getOAuthToken } from '../config/keyring.js';
 import type { AuthConfig } from '../api/axios-adapter.js';
 import { Command } from 'commander';
 import { formatOutput, type OutputFormat } from '../output/formatter.js';
+import { isStdoutPiped } from './stdin.js';
 
 export async function resolveAPIKey(options: GlobalOptions): Promise<string> {
   const config = loadConfig();
@@ -101,6 +102,10 @@ export interface GlobalOptions {
   app?: string;
   env?: string;
   output?: OutputFormat;
+  // True when the user explicitly set --output (via CLI or env), false when
+  // the value was defaulted. Used to decide whether to auto-switch to ids
+  // mode when stdout is piped.
+  outputExplicit?: boolean;
   noColor?: boolean;
   // True when the user explicitly disabled color (--no-color or NO_COLOR env).
   // noColor above additionally disables when stdout isn't a TTY; this field
@@ -135,6 +140,8 @@ const VALID_FORMATS: OutputFormat[] = [
 export function getGlobalOptions(cmd: Command): GlobalOptions {
   const opts = cmd.optsWithGlobals();
   const output = (opts.output || 'table') as OutputFormat;
+  const outputSource = cmd.getOptionValueSourceWithGlobals('output');
+  const outputExplicit = outputSource === 'cli' || outputSource === 'env';
 
   if (!VALID_FORMATS.includes(output)) {
     throw new Error(
@@ -155,6 +162,7 @@ export function getGlobalOptions(cmd: Command): GlobalOptions {
     app: opts.app,
     env: opts.env,
     output,
+    outputExplicit,
     noColor: colorDisabled || !process.stdout.isTTY,
     colorDisabled,
     verbose: opts.verbose || false,
@@ -170,6 +178,13 @@ export function getGlobalOptions(cmd: Command): GlobalOptions {
     headersOnly: opts.headersOnly || false,
     statusOnly,
   };
+}
+
+// When stdout is piped to another process, list commands fall back to
+// emitting ids only — unless the user explicitly chose an output format.
+// Centralizes the rule so every list-style command behaves the same way.
+export function shouldOutputIdsOnly(globalOptions: GlobalOptions): boolean {
+  return globalOptions.output === 'ids' || (isStdoutPiped() && !globalOptions.outputExplicit);
 }
 
 export function printFormatted(data: unknown, globalOptions: GlobalOptions): void {

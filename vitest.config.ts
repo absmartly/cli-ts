@@ -1,6 +1,6 @@
 import { config } from 'dotenv';
 config({ path: ['.env.test.local', '.env.local', '.env'] });
-import { defineConfig } from 'vitest/config';
+import { configDefaults, defineConfig } from 'vitest/config';
 
 const isLiveMode = process.env.USE_LIVE_API === '1';
 
@@ -12,6 +12,9 @@ export default defineConfig({
     hookTimeout: isLiveMode ? 15_000 : 10_000,
     setupFiles: ['./src/test/setup.ts'],
     fileParallelism: false,
+    // Sibling git worktrees live under .worktrees/ and would otherwise be
+    // discovered as duplicate test files against stale source.
+    exclude: [...configDefaults.exclude, '.worktrees/**'],
     server: {
       deps: {
         inline: ['absmartly-api-mocks'],
