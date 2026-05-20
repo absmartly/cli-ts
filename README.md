@@ -1192,7 +1192,8 @@ abs events list --from 7d --to now
 abs events list --event-name my-experiment --event-type exposure --from 5h
 abs events list --app 1 --unit-type 2 --event-type exposure --items 50
 abs events list --unit-uid user123 --env-type production
-abs events list --effective-exposures --from 1d              # only assignment-changing exposures
+abs events list --valid-exposures --from 1d                  # only assignment-changing exposures
+abs events list --invalid-exposures --from 1d                # only ineffective exposures (filtered out)
 abs events list --event-name exp1 --event-name exp2          # multiple names (all filters repeatable)
 abs events history --from 7d --period 1d
 abs events history --event-name my-experiment --env-type production

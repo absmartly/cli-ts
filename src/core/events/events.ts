@@ -44,7 +44,7 @@ export interface ListEventsParams {
   eventNames?: string[] | undefined;
   unitUids?: string[] | undefined;
   environmentTypes?: string[] | undefined;
-  effectiveExposures?: boolean | undefined;
+  validExposures?: boolean | undefined;
   take?: number | undefined;
   skip?: number | undefined;
 }
@@ -64,7 +64,7 @@ export async function listEvents(
   if (params.unitUids && params.unitUids.length > 0) filters.unit_uids = params.unitUids;
   if (params.environmentTypes && params.environmentTypes.length > 0)
     filters.environment_types = params.environmentTypes;
-  if (params.effectiveExposures) filters.effective_exposures = true;
+  if (params.validExposures !== undefined) filters.effective_exposures = params.validExposures;
 
   const body: Record<string, unknown> = {};
   if (Object.keys(filters).length > 0) body.filters = filters;

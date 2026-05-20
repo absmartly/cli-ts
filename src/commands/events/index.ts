@@ -51,13 +51,23 @@ const listCommand = new Command('list')
     parseStringArray,
     []
   )
-  .option('--effective-exposures', 'only effective exposures')
+  .option('--valid-exposures', 'only valid (effective) exposures')
+  .option('--invalid-exposures', 'only invalid (ineffective) exposures')
   .option('--items <count>', 'number of items to take', Number)
   .option('--skip <count>', 'number of items to skip', Number)
   .action(
     withErrorHandling(async (options) => {
       const globalOptions = getGlobalOptions(listCommand);
       const client = await getAPIClientFromOptions(globalOptions);
+
+      if (options.validExposures && options.invalidExposures) {
+        throw new Error('--valid-exposures and --invalid-exposures are mutually exclusive');
+      }
+      const validExposures = options.validExposures
+        ? true
+        : options.invalidExposures
+          ? false
+          : undefined;
 
       const fromTs = parseDateFlagOrUndefined(options.from);
       const toTs = parseDateFlagOrUndefined(options.to);
@@ -71,7 +81,7 @@ const listCommand = new Command('list')
         eventNames: options.eventName.length > 0 ? options.eventName : undefined,
         unitUids: options.unitUid.length > 0 ? options.unitUid : undefined,
         environmentTypes: options.envType.length > 0 ? options.envType : undefined,
-        effectiveExposures: options.effectiveExposures || undefined,
+        validExposures,
         take: options.items,
         skip: options.skip,
       });
