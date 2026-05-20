@@ -78,6 +78,22 @@ describe('platform-config command', () => {
     });
   });
 
+  it('should accept a numeric value via --value', async () => {
+    await platformConfigCommand.parseAsync([
+      'node',
+      'test',
+      'update',
+      '1',
+      '--value',
+      '42',
+    ]);
+
+    expect(mockClient.updatePlatformConfig).toHaveBeenCalledWith(1, {
+      name: 'cfg',
+      value: 42,
+    });
+  });
+
   it('should accept an object as --value', async () => {
     await platformConfigCommand.parseAsync([
       'node',
