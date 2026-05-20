@@ -23,9 +23,9 @@ describe('platform-config command', () => {
   let processExitSpy: ReturnType<typeof vi.spyOn>;
 
   const mockClient = {
-    listPlatformConfigs: vi.fn().mockResolvedValue([{ id: 1, value: 'test' }]),
-    getPlatformConfig: vi.fn().mockResolvedValue({ id: 1, value: 'test' }),
-    updatePlatformConfig: vi.fn().mockResolvedValue({ id: 1, value: 'new' }),
+    listPlatformConfigs: vi.fn().mockResolvedValue([{ id: 1, name: 'cfg', value: 'test' }]),
+    getPlatformConfig: vi.fn().mockResolvedValue({ id: 1, name: 'cfg', value: 'test' }),
+    updatePlatformConfig: vi.fn().mockResolvedValue({ id: 1, name: 'cfg', value: 'new' }),
   };
 
   beforeEach(() => {
@@ -61,7 +61,24 @@ describe('platform-config command', () => {
     expect(printFormatted).toHaveBeenCalled();
   });
 
-  it('should update platform config', async () => {
+  it('should fetch the current config and PUT the merged payload (string value)', async () => {
+    await platformConfigCommand.parseAsync([
+      'node',
+      'test',
+      'update',
+      '1',
+      '--value',
+      '"30"',
+    ]);
+
+    expect(mockClient.getPlatformConfig).toHaveBeenCalledWith(1);
+    expect(mockClient.updatePlatformConfig).toHaveBeenCalledWith(1, {
+      name: 'cfg',
+      value: '30',
+    });
+  });
+
+  it('should accept an object as --value', async () => {
     await platformConfigCommand.parseAsync([
       'node',
       'test',
@@ -71,6 +88,9 @@ describe('platform-config command', () => {
       '{"key":"val"}',
     ]);
 
-    expect(mockClient.updatePlatformConfig).toHaveBeenCalledWith(1, { key: 'val' });
+    expect(mockClient.updatePlatformConfig).toHaveBeenCalledWith(1, {
+      name: 'cfg',
+      value: { key: 'val' },
+    });
   });
 });
