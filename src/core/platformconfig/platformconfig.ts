@@ -20,13 +20,21 @@ export async function getPlatformConfig(
 
 export interface UpdatePlatformConfigParams {
   id: number;
-  value: Record<string, unknown>;
+  value: unknown;
 }
 
 export async function updatePlatformConfig(
   client: APIClient,
   params: UpdatePlatformConfigParams
 ): Promise<CommandResult<unknown>> {
-  const data = await client.updatePlatformConfig(params.id, params.value);
+  const current = await client.getPlatformConfig(params.id);
+  if (!current || typeof current !== 'object') {
+    throw new Error(
+      `Cannot update platform config ${params.id}: existing config not found`
+    );
+  }
+  const { id: _ignored, ...rest } = current as Record<string, unknown>;
+  const merged: Record<string, unknown> = { ...rest, value: params.value };
+  const data = await client.updatePlatformConfig(params.id, merged);
   return { data };
 }
