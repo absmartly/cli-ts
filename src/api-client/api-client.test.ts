@@ -1188,7 +1188,30 @@ describe.skipIf(isLiveMode)('APIClient core', () => {
       expect(await client.getPlatformConfig(1)).toBeDefined();
 
       server.use(http.put(`${BASE_URL}/configs/1`, () => HttpResponse.json({ config: { id: 1 } })));
-      await client.updatePlatformConfig(1, { key: 'val' });
+      await client.updatePlatformConfig(1, { name: 'cfg', value: 'val' });
+    });
+
+    it('should PUT the full config object under data, not the bare value', async () => {
+      let sentBody: Record<string, unknown> = {};
+      server.use(
+        http.put(`${BASE_URL}/configs/22`, async ({ request }) => {
+          sentBody = (await request.json()) as Record<string, unknown>;
+          return HttpResponse.json({
+            ok: true,
+            config: { id: 22, name: 'experiment_form_max_secondary_metrics', value: '30' },
+          });
+        })
+      );
+
+      await client.updatePlatformConfig(22, {
+        name: 'experiment_form_max_secondary_metrics',
+        value: '30',
+      });
+
+      // Wire body must be {data: {name, value}} — not {data: '30'} or {data: {data: ...}}
+      expect(sentBody).toEqual({
+        data: { name: 'experiment_form_max_secondary_metrics', value: '30' },
+      });
     });
   });
 
