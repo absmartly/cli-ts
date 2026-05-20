@@ -1,8 +1,8 @@
 import { Command } from 'commander';
-import chalk from 'chalk';
 import {
   getAPIClientFromOptions,
   getGlobalOptions,
+  printResult,
   withErrorHandling,
 } from '../../lib/utils/api-helper.js';
 import { parseGoalId } from '../../lib/utils/validators.js';
@@ -17,7 +17,7 @@ export const followCommand = new Command('follow')
       const globalOptions = getGlobalOptions(followCommand);
       const client = await getAPIClientFromOptions(globalOptions);
       await followGoal(client, { id });
-      console.log(chalk.green(`✓ Now following goal ${id}`));
+      printResult(globalOptions, { message: `✓ Now following goal ${id}`, id });
     })
   );
 
@@ -29,6 +29,6 @@ export const unfollowCommand = new Command('unfollow')
       const globalOptions = getGlobalOptions(unfollowCommand);
       const client = await getAPIClientFromOptions(globalOptions);
       await unfollowGoal(client, { id });
-      console.log(chalk.green(`✓ No longer following goal ${id}`));
+      printResult(globalOptions, { message: `✓ No longer following goal ${id}`, id });
     })
   );

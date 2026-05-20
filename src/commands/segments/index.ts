@@ -1,9 +1,9 @@
 import { Command } from 'commander';
-import chalk from 'chalk';
 import {
   getAPIClientFromOptions,
   getGlobalOptions,
   printFormatted,
+  printResult,
   withErrorHandling,
 } from '../../lib/utils/api-helper.js';
 import { parseSegmentId } from '../../lib/utils/validators.js';
@@ -67,9 +67,12 @@ const createCommand = new Command('create')
         attribute: options.attribute,
         description: options.description,
       });
-      console.log(
-        chalk.green(`✓ Segment created with ID: ${(result.data as Record<string, unknown>).id}`)
-      );
+      const newId = (result.data as Record<string, unknown>).id;
+      printResult(globalOptions, {
+        message: `✓ Segment created with ID: ${newId}`,
+        id: newId,
+        raw: result.data,
+      });
     })
   );
 
@@ -87,7 +90,7 @@ const updateCommand = new Command('update')
         displayName: options.displayName,
         description: options.description,
       });
-      console.log(chalk.green(`✓ Segment ${id} updated`));
+      printResult(globalOptions, { message: `✓ Segment ${id} updated`, id });
     })
   );
 
@@ -99,7 +102,7 @@ const deleteCommand = new Command('delete')
       const globalOptions = getGlobalOptions(deleteCommand);
       const client = await getAPIClientFromOptions(globalOptions);
       await deleteSegment(client, { id });
-      console.log(chalk.green(`✓ Segment ${id} deleted`));
+      printResult(globalOptions, { message: `✓ Segment ${id} deleted`, id });
     })
   );
 

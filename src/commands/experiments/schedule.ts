@@ -3,6 +3,7 @@ import chalk from 'chalk';
 import {
   getAPIClientFromOptions,
   getGlobalOptions,
+  printResult,
   withErrorHandling,
 } from '../../lib/utils/api-helper.js';
 import { parseExperimentId, parseScheduledActionId } from '../../lib/utils/validators.js';
@@ -37,11 +38,20 @@ const createScheduleCommand = new Command('create')
         reason: options.reason,
       });
 
-      console.log(chalk.green(`✓ Scheduled "${options.action}" for experiment ${id}`));
-      if (result.data.actionId) {
-        console.log(`  Scheduled action ID: ${result.data.actionId}`);
+      const format = globalOptions.output ?? 'table';
+      if (format === 'table' || format === 'rendered') {
+        console.log(chalk.green(`✓ Scheduled "${options.action}" for experiment ${id}`));
+        if (result.data.actionId) {
+          console.log(`  Scheduled action ID: ${result.data.actionId}`);
+        }
+        console.log(`  Scheduled at: ${result.data.scheduledAt}`);
+      } else {
+        printResult(globalOptions, {
+          message: `✓ Scheduled "${options.action}" for experiment ${id}`,
+          id: result.data.actionId ?? id,
+          raw: result.data,
+        });
       }
-      console.log(`  Scheduled at: ${result.data.scheduledAt}`);
     })
   );
 
@@ -55,9 +65,10 @@ const deleteScheduleCommand = new Command('delete')
       const client = await getAPIClientFromOptions(globalOptions);
 
       await deleteScheduledAction(client, { experimentId, actionId });
-      console.log(
-        chalk.green(`✓ Scheduled action ${actionId} deleted from experiment ${experimentId}`)
-      );
+      printResult(globalOptions, {
+        message: `✓ Scheduled action ${actionId} deleted from experiment ${experimentId}`,
+        id: actionId,
+      });
     })
   );
 

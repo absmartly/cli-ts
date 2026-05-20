@@ -1,9 +1,9 @@
 import { Command } from 'commander';
-import chalk from 'chalk';
 import {
   getAPIClientFromOptions,
   getGlobalOptions,
   printFormatted,
+  printResult,
   withErrorHandling,
 } from '../../lib/utils/api-helper.js';
 import { validateJSON } from '../../lib/utils/validators.js';
@@ -49,8 +49,12 @@ const createCommand = new Command('create')
       const client = await getAPIClientFromOptions(globalOptions);
       const config = validateJSON(options.jsonConfig, '--json-config') as Record<string, unknown>;
       const result = await createStorageConfig(client, { config });
-      console.log(chalk.green(`✓ Storage config created`));
-      printFormatted(result.data, globalOptions);
+      const data = result.data as { id?: unknown } | undefined;
+      printResult(globalOptions, {
+        message: `✓ Storage config created`,
+        id: data?.id,
+        raw: result.data,
+      });
     })
   );
 
@@ -64,8 +68,11 @@ const updateCommand = new Command('update')
       const client = await getAPIClientFromOptions(globalOptions);
       const config = validateJSON(options.jsonConfig, '--json-config') as Record<string, unknown>;
       const result = await updateStorageConfig(client, { id, config });
-      console.log(chalk.green(`✓ Storage config ${id} updated`));
-      printFormatted(result.data, globalOptions);
+      printResult(globalOptions, {
+        message: `✓ Storage config ${id} updated`,
+        id,
+        raw: result.data,
+      });
     })
   );
 
@@ -78,7 +85,7 @@ const testCommand = new Command('test')
       const client = await getAPIClientFromOptions(globalOptions);
       const config = validateJSON(options.jsonConfig, '--json-config') as Record<string, unknown>;
       await testStorageConfig(client, { config });
-      console.log(chalk.green(`✓ Storage config connection test passed`));
+      printResult(globalOptions, { message: `✓ Storage config connection test passed` });
     })
   );
 

@@ -5,6 +5,7 @@ import {
   getAPIClientFromOptions,
   getGlobalOptions,
   printFormatted,
+  printResult,
   resolveAPIKey,
   resolveEndpoint,
   withErrorHandling,
@@ -245,7 +246,11 @@ const createCommand = new Command('create')
         role: options.role,
       });
 
-      console.log(chalk.green(`✓ User created with ID: ${result.data.id}`));
+      printResult(globalOptions, {
+        message: `✓ User created with ID: ${result.data.id}`,
+        id: result.data.id,
+        raw: result.data,
+      });
     })
   );
 
@@ -264,7 +269,7 @@ const updateCommand = new Command('update')
         name: options.name,
         role: options.role,
       });
-      console.log(chalk.green(`✓ User ${id} updated`));
+      printResult(globalOptions, { message: `✓ User ${id} updated`, id });
     })
   );
 
@@ -279,7 +284,7 @@ const archiveCommand = new Command('archive')
 
       await coreArchiveUser(client, { id, unarchive: options.unarchive });
       const action = options.unarchive ? 'unarchived' : 'archived';
-      console.log(chalk.green(`✓ User ${id} ${action}`));
+      printResult(globalOptions, { message: `✓ User ${id} ${action}`, id });
     })
   );
 

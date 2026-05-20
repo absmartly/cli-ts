@@ -1,9 +1,9 @@
 import { Command } from 'commander';
-import chalk from 'chalk';
 import {
   getAPIClientFromOptions,
   getGlobalOptions,
   printFormatted,
+  printResult,
   withErrorHandling,
 } from '../../lib/utils/api-helper.js';
 import { parseCorsOriginId } from '../../lib/utils/validators.js';
@@ -47,8 +47,12 @@ const createCommand = new Command('create')
       const globalOptions = getGlobalOptions(createCommand);
       const client = await getAPIClientFromOptions(globalOptions);
       const result = await createCorsOrigin(client, { origin: options.origin });
-      console.log(chalk.green(`✓ CORS origin created`));
-      printFormatted(result.data, globalOptions);
+      const data = result.data as { id?: unknown } | undefined;
+      printResult(globalOptions, {
+        message: `✓ CORS origin created`,
+        id: data?.id,
+        raw: result.data,
+      });
     })
   );
 
@@ -61,8 +65,11 @@ const updateCommand = new Command('update')
       const globalOptions = getGlobalOptions(updateCommand);
       const client = await getAPIClientFromOptions(globalOptions);
       const result = await updateCorsOrigin(client, { id, origin: options.origin });
-      console.log(chalk.green(`✓ CORS origin ${id} updated`));
-      printFormatted(result.data, globalOptions);
+      printResult(globalOptions, {
+        message: `✓ CORS origin ${id} updated`,
+        id,
+        raw: result.data,
+      });
     })
   );
 
@@ -74,7 +81,7 @@ const deleteCommand = new Command('delete')
       const globalOptions = getGlobalOptions(deleteCommand);
       const client = await getAPIClientFromOptions(globalOptions);
       await deleteCorsOrigin(client, { id });
-      console.log(chalk.green(`✓ CORS origin ${id} deleted`));
+      printResult(globalOptions, { message: `✓ CORS origin ${id} deleted`, id });
     })
   );
 

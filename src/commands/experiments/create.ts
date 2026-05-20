@@ -3,6 +3,7 @@ import chalk from 'chalk';
 import {
   getAPIClientFromOptions,
   getGlobalOptions,
+  printResult,
   resolveAPIKey,
   resolveEndpoint,
   withErrorHandling,
@@ -196,8 +197,17 @@ createCommand.action(
 
     const result = await createExperiment(client, data);
 
-    console.log(chalk.green(`✓ Experiment created with ID: ${result.data.id}`));
-    console.log(`  Name: ${result.data.name}`);
-    console.log(`  Type: ${result.data.type}`);
+    const format = globalOptions.output ?? 'table';
+    if (format === 'table' || format === 'rendered') {
+      console.log(chalk.green(`✓ Experiment created with ID: ${result.data.id}`));
+      console.log(`  Name: ${result.data.name}`);
+      console.log(`  Type: ${result.data.type}`);
+    } else {
+      printResult(globalOptions, {
+        message: `✓ Experiment created with ID: ${result.data.id}`,
+        id: result.data.id,
+        raw: result.data,
+      });
+    }
   })
 );

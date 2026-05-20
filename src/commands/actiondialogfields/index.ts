@@ -1,9 +1,9 @@
 import { Command } from 'commander';
-import chalk from 'chalk';
 import {
   getAPIClientFromOptions,
   getGlobalOptions,
   printFormatted,
+  printResult,
   withErrorHandling,
 } from '../../lib/utils/api-helper.js';
 import { validateJSON } from '../../lib/utils/validators.js';
@@ -61,8 +61,12 @@ const createCommand = new Command('create')
       const result = await coreCreateActionDialogField(client, {
         config: config as Record<string, unknown>,
       });
-      console.log(chalk.green(`✓ Action dialog field created`));
-      printFormatted(result.data, globalOptions);
+      const data = result.data as { id?: unknown } | undefined;
+      printResult(globalOptions, {
+        message: `✓ Action dialog field created`,
+        id: data?.id,
+        raw: result.data,
+      });
     })
   );
 
@@ -82,8 +86,11 @@ const updateCommand = new Command('update')
         id,
         config: config as Record<string, unknown>,
       });
-      console.log(chalk.green(`✓ Action dialog field ${id} updated`));
-      printFormatted(result.data, globalOptions);
+      printResult(globalOptions, {
+        message: `✓ Action dialog field ${id} updated`,
+        id,
+        raw: result.data,
+      });
     })
   );
 

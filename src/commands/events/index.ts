@@ -4,6 +4,7 @@ import {
   getAPIClientFromOptions,
   getGlobalOptions,
   printFormatted,
+  printResult,
   withErrorHandling,
 } from '../../lib/utils/api-helper.js';
 import { parseDateFlagOrUndefined } from '../../lib/utils/date-parser.js';
@@ -156,9 +157,17 @@ const deleteUnitDataCommand = new Command('delete-unit-data')
       const client = await getAPIClientFromOptions(globalOptions);
       const parsed = parseUnits(units);
       const result = await coreDeleteEventUnitData(client, { units });
-      console.log(chalk.green(`✓ Unit data deleted for ${parsed.length} unit(s)`));
-      if (result.data) {
-        printFormatted(result.data, globalOptions);
+      const format = globalOptions.output ?? 'table';
+      if (format === 'table' || format === 'rendered') {
+        console.log(chalk.green(`✓ Unit data deleted for ${parsed.length} unit(s)`));
+        if (result.data) {
+          printFormatted(result.data, globalOptions);
+        }
+      } else {
+        printResult(globalOptions, {
+          message: `✓ Unit data deleted for ${parsed.length} unit(s)`,
+          raw: result.data,
+        });
       }
     })
   );

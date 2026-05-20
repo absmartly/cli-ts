@@ -4,6 +4,7 @@ import {
   getAPIClientFromOptions,
   getGlobalOptions,
   printFormatted,
+  printResult,
   resolveEndpoint,
   resolveAPIKey,
   withErrorHandling,
@@ -143,7 +144,11 @@ const createActivityCommand = new Command('create')
       const id = await client.resolveExperimentId(nameOrId);
 
       const result = await createExperimentNote(client, { experimentId: id, note: options.note });
-      console.log(chalk.green(`✓ Note created (id: ${result.data.id})`));
+      printResult(globalOptions, {
+        message: `✓ Note created (id: ${result.data.id})`,
+        id: result.data.id,
+        raw: result.data,
+      });
     })
   );
 
@@ -159,7 +164,7 @@ const editActivityCommand = new Command('edit')
       const id = await client.resolveExperimentId(expNameOrId);
 
       await editExperimentNote(client, { experimentId: id, noteId, note: options.note });
-      console.log(chalk.green(`✓ Note ${noteId} updated`));
+      printResult(globalOptions, { message: `✓ Note ${noteId} updated`, id: noteId });
     })
   );
 
@@ -179,7 +184,11 @@ const replyActivityCommand = new Command('reply')
         noteId,
         note: options.note,
       });
-      console.log(chalk.green(`✓ Reply created (id: ${result.data.id})`));
+      printResult(globalOptions, {
+        message: `✓ Reply created (id: ${result.data.id})`,
+        id: result.data.id,
+        raw: result.data,
+      });
     })
   );
 

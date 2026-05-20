@@ -4,6 +4,7 @@ import {
   getAPIClientFromOptions,
   getGlobalOptions,
   printFormatted,
+  printResult,
   withErrorHandling,
 } from '../../lib/utils/api-helper.js';
 import { parseMetricId } from '../../lib/utils/validators.js';
@@ -53,7 +54,7 @@ const addCommand = new Command('add')
       const id = await client.resolveExperimentId(nameOrId);
       const metricIds = options.metrics.split(',').map((s: string) => parseMetricId(s.trim()));
       await addExperimentMetrics(client, { experimentId: id, metricIds });
-      console.log(chalk.green(`✓ Metrics added to experiment ${id}`));
+      printResult(globalOptions, { message: `✓ Metrics added to experiment ${id}`, id });
     })
   );
 
@@ -67,9 +68,10 @@ const confirmImpactCommand = new Command('confirm-impact')
       const client = await getAPIClientFromOptions(globalOptions);
       const experimentId = await client.resolveExperimentId(experimentNameOrId);
       await confirmMetricImpact(client, { experimentId, metricId });
-      console.log(
-        chalk.green(`✓ Metric impact confirmed for experiment ${experimentId}, metric ${metricId}`)
-      );
+      printResult(globalOptions, {
+        message: `✓ Metric impact confirmed for experiment ${experimentId}, metric ${metricId}`,
+        id: experimentId,
+      });
     })
   );
 
@@ -83,7 +85,10 @@ const excludeCommand = new Command('exclude')
       const client = await getAPIClientFromOptions(globalOptions);
       const experimentId = await client.resolveExperimentId(experimentNameOrId);
       await excludeExperimentMetric(client, { experimentId, metricId });
-      console.log(chalk.green(`✓ Metric ${metricId} excluded from experiment ${experimentId}`));
+      printResult(globalOptions, {
+        message: `✓ Metric ${metricId} excluded from experiment ${experimentId}`,
+        id: experimentId,
+      });
     })
   );
 
@@ -97,7 +102,10 @@ const includeCommand = new Command('include')
       const client = await getAPIClientFromOptions(globalOptions);
       const experimentId = await client.resolveExperimentId(experimentNameOrId);
       await includeExperimentMetric(client, { experimentId, metricId });
-      console.log(chalk.green(`✓ Metric ${metricId} included in experiment ${experimentId}`));
+      printResult(globalOptions, {
+        message: `✓ Metric ${metricId} included in experiment ${experimentId}`,
+        id: experimentId,
+      });
     })
   );
 
@@ -111,9 +119,10 @@ const removeImpactCommand = new Command('remove-impact')
       const client = await getAPIClientFromOptions(globalOptions);
       const experimentId = await client.resolveExperimentId(experimentNameOrId);
       await removeMetricImpact(client, { experimentId, metricId });
-      console.log(
-        chalk.green(`✓ Metric impact removed for experiment ${experimentId}, metric ${metricId}`)
-      );
+      printResult(globalOptions, {
+        message: `✓ Metric impact removed for experiment ${experimentId}, metric ${metricId}`,
+        id: experimentId,
+      });
     })
   );
 

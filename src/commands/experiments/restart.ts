@@ -3,6 +3,7 @@ import chalk from 'chalk';
 import {
   getAPIClientFromOptions,
   getGlobalOptions,
+  printResult,
   withErrorHandling,
 } from '../../lib/utils/api-helper.js';
 import { experimentToMarkdown } from '../../api-client/template/serializer.js';
@@ -107,8 +108,10 @@ restartCommand.action(
 
     const result = await restartExperiment(client, params, changes);
     const typeNote = options.asType ? ` as ${options.asType}` : '';
-    console.log(
-      chalk.green(`Experiment ${id} restarted${typeNote} → new iteration ID: ${result.data.newId}`)
-    );
+    printResult(globalOptions, {
+      message: `Experiment ${id} restarted${typeNote} → new iteration ID: ${result.data.newId}`,
+      id: result.data.newId,
+      raw: result.data,
+    });
   })
 );

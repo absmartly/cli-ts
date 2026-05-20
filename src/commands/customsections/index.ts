@@ -1,9 +1,9 @@
 import { Command } from 'commander';
-import chalk from 'chalk';
 import {
   getAPIClientFromOptions,
   getGlobalOptions,
   printFormatted,
+  printResult,
   withErrorHandling,
 } from '../../lib/utils/api-helper.js';
 import { parseCustomSectionId } from '../../lib/utils/validators.js';
@@ -38,8 +38,12 @@ const createCommand = new Command('create')
       const globalOptions = getGlobalOptions(createCommand);
       const client = await getAPIClientFromOptions(globalOptions);
       const result = await createCustomSection(client, { name: options.name, type: options.type });
-      console.log(chalk.green(`✓ Custom section created`));
-      printFormatted(result.data, globalOptions);
+      const data = result.data as { id?: unknown } | undefined;
+      printResult(globalOptions, {
+        message: `✓ Custom section created`,
+        id: data?.id,
+        raw: result.data,
+      });
     })
   );
 
@@ -52,8 +56,11 @@ const updateCommand = new Command('update')
       const globalOptions = getGlobalOptions(updateCommand);
       const client = await getAPIClientFromOptions(globalOptions);
       const result = await updateCustomSection(client, { id, name: options.name });
-      console.log(chalk.green(`✓ Custom section ${id} updated`));
-      printFormatted(result.data, globalOptions);
+      printResult(globalOptions, {
+        message: `✓ Custom section ${id} updated`,
+        id,
+        raw: result.data,
+      });
     })
   );
 
@@ -67,7 +74,7 @@ const archiveCommand = new Command('archive')
       const client = await getAPIClientFromOptions(globalOptions);
       await archiveCustomSection(client, { id, unarchive: !!options.unarchive });
       const action = options.unarchive ? 'unarchived' : 'archived';
-      console.log(chalk.green(`✓ Custom section ${id} ${action}`));
+      printResult(globalOptions, { message: `✓ Custom section ${id} ${action}`, id });
     })
   );
 
@@ -90,7 +97,7 @@ const reorderCommand = new Command('reorder')
         return { id, order_index };
       });
       await reorderCustomSections(client, { sections });
-      console.log(chalk.green(`✓ Custom sections reordered`));
+      printResult(globalOptions, { message: `✓ Custom sections reordered` });
     })
   );
 

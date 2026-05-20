@@ -1,9 +1,9 @@
 import { Command } from 'commander';
-import chalk from 'chalk';
 import {
   getAPIClientFromOptions,
   getGlobalOptions,
   printFormatted,
+  printResult,
   withErrorHandling,
 } from '../../lib/utils/api-helper.js';
 import { parseUnitTypeId } from '../../lib/utils/validators.js';
@@ -52,9 +52,12 @@ const createCommand = new Command('create')
         name: options.name,
         description: options.description,
       });
-      console.log(
-        chalk.green(`✓ Unit type created with ID: ${(result.data as Record<string, unknown>).id}`)
-      );
+      const newId = (result.data as Record<string, unknown>).id;
+      printResult(globalOptions, {
+        message: `✓ Unit type created with ID: ${newId}`,
+        id: newId,
+        raw: result.data,
+      });
     })
   );
 
@@ -68,7 +71,7 @@ const updateCommand = new Command('update')
       const globalOptions = getGlobalOptions(updateCommand);
       const client = await getAPIClientFromOptions(globalOptions);
       await updateUnit(client, { id, name: options.name, description: options.description });
-      console.log(chalk.green(`✓ Unit type ${id} updated`));
+      printResult(globalOptions, { message: `✓ Unit type ${id} updated`, id });
     })
   );
 
@@ -82,7 +85,7 @@ const archiveCommand = new Command('archive')
       const client = await getAPIClientFromOptions(globalOptions);
       await archiveUnit(client, { id, unarchive: options.unarchive });
       const action = options.unarchive ? 'unarchived' : 'archived';
-      console.log(chalk.green(`✓ Unit type ${id} ${action}`));
+      printResult(globalOptions, { message: `✓ Unit type ${id} ${action}`, id });
     })
   );
 

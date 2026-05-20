@@ -3,6 +3,7 @@ import chalk from 'chalk';
 import {
   getAPIClientFromOptions,
   getGlobalOptions,
+  printResult,
   withErrorHandling,
 } from '../../lib/utils/api-helper.js';
 import { experimentToMarkdown } from '../../api-client/template/serializer.js';
@@ -132,6 +133,6 @@ updateCommand.action(
     }
 
     await updateExperiment(client, { experimentId: id, changes, note });
-    console.log(chalk.green(`Experiment ${id} updated`));
+    printResult(globalOptions, { message: `Experiment ${id} updated`, id });
   })
 );

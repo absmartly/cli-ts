@@ -1,8 +1,8 @@
 import { Command } from 'commander';
-import chalk from 'chalk';
 import {
   getAPIClientFromOptions,
   getGlobalOptions,
+  printResult,
   withErrorHandling,
 } from '../../lib/utils/api-helper.js';
 import { parseExperimentId, parseMetricId } from '../../lib/utils/validators.js';
@@ -36,7 +36,7 @@ const addCommand = new Command('add')
       }
 
       await coreAddFavorite(client, { type, id });
-      console.log(chalk.green(`✓ Added ${type} ${id} to favorites`));
+      printResult(globalOptions, { message: `✓ Added ${type} ${id} to favorites`, id });
     })
   );
 
@@ -59,7 +59,7 @@ const removeCommand = new Command('remove')
       }
 
       await coreRemoveFavorite(client, { type, id });
-      console.log(chalk.green(`✓ Removed ${type} ${id} from favorites`));
+      printResult(globalOptions, { message: `✓ Removed ${type} ${id} from favorites`, id });
     })
   );
 

@@ -1,9 +1,9 @@
 import { Command } from 'commander';
-import chalk from 'chalk';
 import {
   getAPIClientFromOptions,
   getGlobalOptions,
   printFormatted,
+  printResult,
   withErrorHandling,
 } from '../../lib/utils/api-helper.js';
 import { validateJSON } from '../../lib/utils/validators.js';
@@ -48,8 +48,11 @@ const updateCommand = new Command('update')
       const client = await getAPIClientFromOptions(globalOptions);
       const value = validateJSON(options.value, '--value') as Record<string, unknown>;
       const result = await updatePlatformConfig(client, { id, value });
-      console.log(chalk.green(`✓ Platform config ${id} updated`));
-      printFormatted(result.data, globalOptions);
+      printResult(globalOptions, {
+        message: `✓ Platform config ${id} updated`,
+        id,
+        raw: result.data,
+      });
     })
   );
 

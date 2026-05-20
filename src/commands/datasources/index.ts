@@ -4,6 +4,7 @@ import {
   getAPIClientFromOptions,
   getGlobalOptions,
   printFormatted,
+  printResult,
   withErrorHandling,
 } from '../../lib/utils/api-helper.js';
 import { parseDatasourceId, validateJSON } from '../../lib/utils/validators.js';
@@ -60,8 +61,12 @@ const createCommand = new Command('create')
       const client = await getAPIClientFromOptions(globalOptions);
       const config = validateJSON(options.jsonConfig, '--json-config') as Record<string, unknown>;
       const result = await coreCreateDatasource(client, { config });
-      console.error(chalk.green(`✓ Datasource created`));
-      printFormatted(result.data, globalOptions);
+      const data = result.data as { id?: unknown } | undefined;
+      printResult(globalOptions, {
+        message: `✓ Datasource created`,
+        id: data?.id,
+        raw: result.data,
+      });
     })
   );
 
@@ -75,8 +80,11 @@ const updateCommand = new Command('update')
       const client = await getAPIClientFromOptions(globalOptions);
       const config = validateJSON(options.jsonConfig, '--json-config') as Record<string, unknown>;
       const result = await coreUpdateDatasource(client, { id, config });
-      console.error(chalk.green(`✓ Datasource ${id} updated`));
-      printFormatted(result.data, globalOptions);
+      printResult(globalOptions, {
+        message: `✓ Datasource ${id} updated`,
+        id,
+        raw: result.data,
+      });
     })
   );
 
@@ -90,7 +98,7 @@ const archiveCommand = new Command('archive')
       const client = await getAPIClientFromOptions(globalOptions);
       await coreArchiveDatasource(client, { id, unarchive: options.unarchive });
       const action = options.unarchive ? 'unarchived' : 'archived';
-      console.log(chalk.green(`✓ Datasource ${id} ${action}`));
+      printResult(globalOptions, { message: `✓ Datasource ${id} ${action}`, id });
     })
   );
 
@@ -103,7 +111,7 @@ const testCommand = new Command('test')
       const client = await getAPIClientFromOptions(globalOptions);
       const config = validateJSON(options.jsonConfig, '--json-config') as Record<string, unknown>;
       await coreTestDatasource(client, { config });
-      console.log(chalk.green(`✓ Datasource connection test passed`));
+      printResult(globalOptions, { message: `✓ Datasource connection test passed` });
     })
   );
 
@@ -129,7 +137,7 @@ const validateQueryCommand = new Command('validate-query')
       const client = await getAPIClientFromOptions(globalOptions);
       const config = validateJSON(options.jsonConfig, '--json-config') as Record<string, unknown>;
       await coreValidateDatasourceQuery(client, { config });
-      console.log(chalk.green(`✓ Datasource query is valid`));
+      printResult(globalOptions, { message: `✓ Datasource query is valid` });
     })
   );
 
@@ -154,7 +162,7 @@ const setDefaultCommand = new Command('set-default')
       const globalOptions = getGlobalOptions(setDefaultCommand);
       const client = await getAPIClientFromOptions(globalOptions);
       await coreSetDefaultDatasource(client, { id });
-      console.log(chalk.green(`✓ Datasource ${id} set as default`));
+      printResult(globalOptions, { message: `✓ Datasource ${id} set as default`, id });
     })
   );
 
@@ -178,7 +186,7 @@ const deleteCommand = new Command('delete')
       const globalOptions = getGlobalOptions(deleteCommand);
       const client = await getAPIClientFromOptions(globalOptions);
       await coreDeleteDatasource(client, { id });
-      console.log(chalk.green(`✓ Datasource ${id} deleted`));
+      printResult(globalOptions, { message: `✓ Datasource ${id} deleted`, id });
     })
   );
 
@@ -194,7 +202,10 @@ const jsonLayoutsCreateCommand = new Command('create')
       const globalOptions = getGlobalOptions(jsonLayoutsCreateCommand);
       const client = await getAPIClientFromOptions(globalOptions);
       await coreCreateDatasourceJsonLayouts(client, { id });
-      console.log(chalk.green(`✓ json_layouts table created on datasource ${id}`));
+      printResult(globalOptions, {
+        message: `✓ json_layouts table created on datasource ${id}`,
+        id,
+      });
     })
   );
 
@@ -217,7 +228,10 @@ const jsonLayoutsRecreateCommand = new Command('recreate')
       const globalOptions = getGlobalOptions(jsonLayoutsRecreateCommand);
       const client = await getAPIClientFromOptions(globalOptions);
       await coreRecreateDatasourceJsonLayouts(client, { id });
-      console.log(chalk.green(`✓ json_layouts table recreated on datasource ${id}`));
+      printResult(globalOptions, {
+        message: `✓ json_layouts table recreated on datasource ${id}`,
+        id,
+      });
     })
   );
 

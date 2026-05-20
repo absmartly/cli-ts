@@ -1,9 +1,9 @@
 import { Command } from 'commander';
-import chalk from 'chalk';
 import {
   getAPIClientFromOptions,
   getGlobalOptions,
   printFormatted,
+  printResult,
   withErrorHandling,
 } from '../../lib/utils/api-helper.js';
 import { parseTeamId } from '../../lib/utils/validators.js';
@@ -69,7 +69,10 @@ const addMembersCommand = new Command('add')
       const userIds = await resolveUserValues(client, options.users);
       const roleIds = options.roles ? await resolveRoleValues(client, options.roles) : undefined;
       await addTeamMembers(client, { id, userIds, roleIds });
-      console.log(chalk.green(`✓ Added ${userIds.length} member(s) to team ${id}`));
+      printResult(globalOptions, {
+        message: `✓ Added ${userIds.length} member(s) to team ${id}`,
+        id,
+      });
     })
   );
 
@@ -85,7 +88,10 @@ const editRolesCommand = new Command('edit-roles')
       const userIds = await resolveUserValues(client, options.users);
       const roleIds = await resolveRoleValues(client, options.roles);
       await editTeamMemberRoles(client, { id, userIds, roleIds });
-      console.log(chalk.green(`✓ Updated roles for ${userIds.length} member(s) in team ${id}`));
+      printResult(globalOptions, {
+        message: `✓ Updated roles for ${userIds.length} member(s) in team ${id}`,
+        id,
+      });
     })
   );
 
@@ -99,7 +105,10 @@ const removeMembersCommand = new Command('remove')
       const client = await getAPIClientFromOptions(globalOptions);
       const userIds = await resolveUserValues(client, options.users);
       await removeTeamMembers(client, { id, userIds });
-      console.log(chalk.green(`✓ Removed ${userIds.length} member(s) from team ${id}`));
+      printResult(globalOptions, {
+        message: `✓ Removed ${userIds.length} member(s) from team ${id}`,
+        id,
+      });
     })
   );
 

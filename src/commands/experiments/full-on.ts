@@ -3,6 +3,7 @@ import chalk from 'chalk';
 import {
   getAPIClientFromOptions,
   getGlobalOptions,
+  printResult,
   withErrorHandling,
 } from '../../lib/utils/api-helper.js';
 import { parseExperimentIdOrName } from './resolve-id.js';
@@ -35,7 +36,6 @@ export const fullOnCommand = new Command('full-on')
           ? await readLinesFromStdin()
           : [];
       if (ids.length === 0) throw new Error('Provide an experiment ID or pipe IDs from stdin');
-      const outputPiped = isStdoutPiped();
 
       const note = await resolveNote(options, 'full_on', getDefaultType(), globalOptions.profile);
 
@@ -44,19 +44,13 @@ export const fullOnCommand = new Command('full-on')
         try {
           const id = await client.resolveExperimentId(idStr);
           await fullOnExperiment(client, { experimentId: id, variant: options.variant, note });
-          if (outputPiped) {
-            console.log(id);
-            console.error(
-              chalk.green(`✓ Experiment ${id} set to full-on (variant ${options.variant})`)
-            );
-          } else {
-            console.log(
-              chalk.green(`✓ Experiment ${id} set to full-on (variant ${options.variant})`)
-            );
-          }
+          printResult(globalOptions, {
+            message: `✓ Experiment ${id} set to full-on (variant ${options.variant})`,
+            id,
+          });
         } catch (e) {
           hasFailures = true;
-          if (outputPiped && options.passThrough) console.log(idStr);
+          if (isStdoutPiped() && options.passThrough) console.log(idStr);
           console.error(chalk.red(`✗ Experiment ${idStr}: ${e instanceof Error ? e.message : e}`));
         }
       }

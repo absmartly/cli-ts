@@ -1,9 +1,9 @@
 import { Command } from 'commander';
-import chalk from 'chalk';
 import {
   getAPIClientFromOptions,
   getGlobalOptions,
   printFormatted,
+  printResult,
   withErrorHandling,
 } from '../../lib/utils/api-helper.js';
 import { parseCustomSectionFieldId, requireAtLeastOneField } from '../../lib/utils/validators.js';
@@ -82,12 +82,12 @@ const createCommand = new Command('create')
         defaultValue: options.defaultValue,
       });
 
-      console.log(
-        chalk.green(
-          `✓ Custom section field created with ID: ${(result.data as Record<string, unknown>).id}`
-        )
-      );
-      printFormatted(result.data, globalOptions);
+      const newId = (result.data as Record<string, unknown>).id;
+      printResult(globalOptions, {
+        message: `✓ Custom section field created with ID: ${newId}`,
+        id: newId,
+        raw: result.data,
+      });
     })
   );
 
@@ -115,8 +115,11 @@ const updateCommand = new Command('update')
         defaultValue: options.defaultValue,
       });
 
-      console.log(chalk.green(`✓ Custom section field ${id} updated`));
-      printFormatted(result.data, globalOptions);
+      printResult(globalOptions, {
+        message: `✓ Custom section field ${id} updated`,
+        id,
+        raw: result.data,
+      });
     })
   );
 
@@ -130,9 +133,10 @@ const archiveCmd = new Command('archive')
       const client = await getAPIClientFromOptions(globalOptions);
 
       await archiveCustomField(client, { id, unarchive: !!options.unarchive });
-      console.log(
-        chalk.green(`✓ Custom section field ${id} ${options.unarchive ? 'unarchived' : 'archived'}`)
-      );
+      printResult(globalOptions, {
+        message: `✓ Custom section field ${id} ${options.unarchive ? 'unarchived' : 'archived'}`,
+        id,
+      });
     })
   );
 

@@ -4,6 +4,7 @@ import {
   getAPIClientFromOptions,
   getGlobalOptions,
   printFormatted,
+  printResult,
   withErrorHandling,
 } from '../../lib/utils/api-helper.js';
 import {
@@ -37,7 +38,7 @@ const markSeenCommand = new Command('mark-seen')
       const globalOptions = getGlobalOptions(markSeenCommand);
       const client = await getAPIClientFromOptions(globalOptions);
       await coreMarkNotificationsSeen(client);
-      console.log(chalk.green('✓ All notifications marked as seen'));
+      printResult(globalOptions, { message: '✓ All notifications marked as seen' });
     })
   );
 
@@ -52,7 +53,7 @@ const markReadCommand = new Command('mark-read')
         ? options.ids.split(',').map((s: string) => parseInt(s.trim(), 10))
         : undefined;
       await coreMarkNotificationsRead(client, { ids });
-      console.log(chalk.green('✓ Notifications marked as read'));
+      printResult(globalOptions, { message: '✓ Notifications marked as read' });
     })
   );
 
