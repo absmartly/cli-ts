@@ -1,9 +1,9 @@
 import { Command } from 'commander';
-import chalk from 'chalk';
 import {
   getAPIClientFromOptions,
   getGlobalOptions,
   printFormatted,
+  printResult,
   withErrorHandling,
 } from '../../lib/utils/api-helper.js';
 import { parseEnvironmentId } from '../../lib/utils/validators.js';
@@ -51,9 +51,12 @@ const createCommand = new Command('create')
       const globalOptions = getGlobalOptions(createCommand);
       const client = await getAPIClientFromOptions(globalOptions);
       const result = await createEnv(client, { name: options.name });
-      console.log(
-        chalk.green(`✓ Environment created with ID: ${(result.data as Record<string, unknown>).id}`)
-      );
+      const newId = (result.data as Record<string, unknown>).id;
+      printResult(globalOptions, {
+        message: `✓ Environment created with ID: ${newId}`,
+        id: newId,
+        raw: result.data,
+      });
     })
   );
 
@@ -66,7 +69,7 @@ const updateCommand = new Command('update')
       const globalOptions = getGlobalOptions(updateCommand);
       const client = await getAPIClientFromOptions(globalOptions);
       await updateEnv(client, { id, name: options.name });
-      console.log(chalk.green(`✓ Environment ${id} updated`));
+      printResult(globalOptions, { message: `✓ Environment ${id} updated`, id });
     })
   );
 
@@ -80,7 +83,7 @@ const archiveCommand = new Command('archive')
       const client = await getAPIClientFromOptions(globalOptions);
       await archiveEnv(client, { id, unarchive: options.unarchive });
       const action = options.unarchive ? 'unarchived' : 'archived';
-      console.log(chalk.green(`✓ Environment ${id} ${action}`));
+      printResult(globalOptions, { message: `✓ Environment ${id} ${action}`, id });
     })
   );
 

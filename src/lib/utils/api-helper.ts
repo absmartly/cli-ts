@@ -3,6 +3,7 @@ import { getProfile, loadConfig } from '../config/config.js';
 import { getAPIKey, getOAuthToken } from '../config/keyring.js';
 import type { AuthConfig } from '../api/axios-adapter.js';
 import { Command } from 'commander';
+import chalk from 'chalk';
 import { formatOutput, type OutputFormat } from '../output/formatter.js';
 import { isStdoutPiped } from './stdin.js';
 
@@ -194,6 +195,66 @@ export function printFormatted(data: unknown, globalOptions: GlobalOptions): voi
     terse: globalOptions.terse ?? false,
   });
   console.log(output);
+}
+
+// Formats that should render structured machine output instead of the
+// human-readable green checkmark. `table` and `rendered` keep the
+// interactive success message; everything machine-oriented (json, yaml,
+// markdown, plain, vertical, template) goes through printFormatted.
+const STRUCTURED_FORMATS: ReadonlySet<OutputFormat> = new Set([
+  'json',
+  'yaml',
+  'markdown',
+  'plain',
+  'vertical',
+  'template',
+]);
+
+// Print the outcome of a mutation (create/update/delete/archive/etc).
+// Honors --output and the same pipe-falls-back-to-ids rule the list
+// commands use, so a single helper covers every command type.
+//
+// Behavior by mode:
+//   - structured --output (json/yaml/markdown/plain/vertical/template):
+//       emits the structured payload to stdout. With --raw + a provided
+//       raw response, that response is used verbatim; otherwise the
+//       minimal { success, message, id? } is rendered.
+//   - explicit --output ids: bare id to stdout (or silent if no id).
+//   - stdout piped without explicit --output: bare id to stdout for
+//       chaining, the green confirmation message to stderr so the user
+//       still sees what happened.
+//   - interactive default: chalk.green(message) to stdout.
+export function printResult(
+  globalOptions: GlobalOptions,
+  args: { message: string; id?: unknown; raw?: unknown }
+): void {
+  const format = (globalOptions.output ?? 'table') as OutputFormat;
+
+  if (globalOptions.outputExplicit && STRUCTURED_FORMATS.has(format)) {
+    const payload =
+      globalOptions.raw && args.raw !== undefined
+        ? args.raw
+        : {
+            success: true,
+            message: args.message,
+            ...(args.id !== undefined ? { id: args.id } : {}),
+          };
+    printFormatted(payload, globalOptions);
+    return;
+  }
+
+  if (shouldOutputIdsOnly(globalOptions)) {
+    if (args.id !== undefined) console.log(args.id);
+    // Piped (no explicit format) → also surface the confirmation on
+    // stderr so users running `cmd | xargs ...` still see success.
+    // Explicit `-o ids` stays quiet to keep the stream machine-clean.
+    if (isStdoutPiped() && !globalOptions.outputExplicit) {
+      console.error(chalk.green(args.message));
+    }
+    return;
+  }
+
+  console.log(chalk.green(args.message));
 }
 
 function handleCommandError(error: unknown): never {

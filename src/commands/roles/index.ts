@@ -1,9 +1,9 @@
 import { Command } from 'commander';
-import chalk from 'chalk';
 import {
   getAPIClientFromOptions,
   getGlobalOptions,
   printFormatted,
+  printResult,
   withErrorHandling,
 } from '../../lib/utils/api-helper.js';
 import { parseRoleId } from '../../lib/utils/validators.js';
@@ -51,9 +51,12 @@ const createCommand = new Command('create')
         name: options.name,
         description: options.description,
       });
-      console.log(
-        chalk.green(`✓ Role created with ID: ${(result.data as Record<string, unknown>).id}`)
-      );
+      const newId = (result.data as Record<string, unknown>).id;
+      printResult(globalOptions, {
+        message: `✓ Role created with ID: ${newId}`,
+        id: newId,
+        raw: result.data,
+      });
     })
   );
 
@@ -71,7 +74,7 @@ const updateCommand = new Command('update')
         name: options.name,
         description: options.description,
       });
-      console.log(chalk.green(`✓ Role ${id} updated`));
+      printResult(globalOptions, { message: `✓ Role ${id} updated`, id });
     })
   );
 
@@ -83,7 +86,7 @@ const deleteCommand = new Command('delete')
       const globalOptions = getGlobalOptions(deleteCommand);
       const client = await getAPIClientFromOptions(globalOptions);
       await deleteRole(client, { id });
-      console.log(chalk.green(`✓ Role ${id} deleted`));
+      printResult(globalOptions, { message: `✓ Role ${id} deleted`, id });
     })
   );
 

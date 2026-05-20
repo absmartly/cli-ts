@@ -3,6 +3,7 @@ import chalk from 'chalk';
 import {
   getAPIClientFromOptions,
   getGlobalOptions,
+  printResult,
   withErrorHandling,
 } from '../../lib/utils/api-helper.js';
 import { parseExperimentIdOrName } from './resolve-id.js';
@@ -29,7 +30,6 @@ export const developmentCommand = new Command('development')
           ? await readLinesFromStdin()
           : [];
       if (ids.length === 0) throw new Error('Provide an experiment ID or pipe IDs from stdin');
-      const outputPiped = isStdoutPiped();
 
       const note = await resolveNote(
         options,
@@ -43,15 +43,13 @@ export const developmentCommand = new Command('development')
         try {
           const id = await client.resolveExperimentId(idStr);
           await developmentExperiment(client, { experimentId: id, note });
-          if (outputPiped) {
-            console.log(id);
-            console.error(chalk.green(`✓ Experiment ${id} set to development mode`));
-          } else {
-            console.log(chalk.green(`✓ Experiment ${id} set to development mode`));
-          }
+          printResult(globalOptions, {
+            message: `✓ Experiment ${id} set to development mode`,
+            id,
+          });
         } catch (e) {
           hasFailures = true;
-          if (outputPiped && options.passThrough) console.log(idStr);
+          if (isStdoutPiped() && options.passThrough) console.log(idStr);
           console.error(chalk.red(`✗ Experiment ${idStr}: ${e instanceof Error ? e.message : e}`));
         }
       }

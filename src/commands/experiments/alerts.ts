@@ -4,6 +4,7 @@ import {
   getAPIClientFromOptions,
   getGlobalOptions,
   printFormatted,
+  printResult,
   withErrorHandling,
 } from '../../lib/utils/api-helper.js';
 import { parseExperimentId, parseAlertId } from '../../lib/utils/validators.js';
@@ -40,7 +41,7 @@ const dismissAlertCommand = new Command('dismiss')
       const client = await getAPIClientFromOptions(globalOptions);
 
       await dismissAlert(client, { alertId });
-      console.log(chalk.green(`✓ Alert ${alertId} dismissed`));
+      printResult(globalOptions, { message: `✓ Alert ${alertId} dismissed`, id: alertId });
     })
   );
 

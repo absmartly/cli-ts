@@ -1,8 +1,8 @@
 import { Command, Option } from 'commander';
-import chalk from 'chalk';
 import {
   getAPIClientFromOptions,
   getGlobalOptions,
+  printResult,
   withErrorHandling,
 } from '../../lib/utils/api-helper.js';
 import { parseExperimentId } from '../../lib/utils/validators.js';
@@ -64,6 +64,9 @@ export const requestUpdateCommand = new Command('request-update')
         tasks: options.tasks,
         replaceGsa: options.replaceGsa,
       });
-      console.log(chalk.green(`✓ Analysis update requested for experiment ${id}`));
+      printResult(globalOptions, {
+        message: `✓ Analysis update requested for experiment ${id}`,
+        id,
+      });
     })
   );

@@ -1,9 +1,9 @@
 import { Command } from 'commander';
-import chalk from 'chalk';
 import {
   getAPIClientFromOptions,
   getGlobalOptions,
   printFormatted,
+  printResult,
   withErrorHandling,
 } from '../../lib/utils/api-helper.js';
 import { parseMetricId } from '../../lib/utils/validators.js';
@@ -284,9 +284,17 @@ const createCommand = addMetricFieldOptions(
         const newId = versionResult.data.id;
         if (options.activate) {
           await client.activateMetric(newId as MetricId, options.reason);
-          console.log(chalk.green(`✓ New metric version created and activated (id: ${newId})`));
+          printResult(globalOptions, {
+            message: `✓ New metric version created and activated (id: ${newId})`,
+            id: newId,
+            raw: versionResult.data,
+          });
         } else {
-          console.log(chalk.green(`✓ New metric version created as draft (id: ${newId})`));
+          printResult(globalOptions, {
+            message: `✓ New metric version created as draft (id: ${newId})`,
+            id: newId,
+            raw: versionResult.data,
+          });
         }
         return;
       }
@@ -318,9 +326,17 @@ const createCommand = addMetricFieldOptions(
 
       if (options.activate) {
         await client.activateMetric(result.data.id as MetricId, 'Initial activation');
-        console.log(chalk.green(`✓ Metric created and activated with ID: ${result.data.id}`));
+        printResult(globalOptions, {
+          message: `✓ Metric created and activated with ID: ${result.data.id}`,
+          id: result.data.id,
+          raw: result.data,
+        });
       } else {
-        console.log(chalk.green(`✓ Metric created with ID: ${result.data.id}`));
+        printResult(globalOptions, {
+          message: `✓ Metric created with ID: ${result.data.id}`,
+          id: result.data.id,
+          raw: result.data,
+        });
       }
     })
   );
@@ -344,7 +360,7 @@ const updateCommand = new Command('update')
         description: options.description,
         owner: options.owner,
       });
-      console.log(chalk.green(`✓ Metric ${id} updated`));
+      printResult(globalOptions, { message: `✓ Metric ${id} updated`, id });
     })
   );
 
@@ -359,7 +375,7 @@ const archiveCommand = new Command('archive')
 
       await archiveMetric(client, { id, unarchive: options.unarchive });
       const action = options.unarchive ? 'unarchived' : 'archived';
-      console.log(chalk.green(`✓ Metric ${id} ${action}`));
+      printResult(globalOptions, { message: `✓ Metric ${id} ${action}`, id });
     })
   );
 
@@ -373,7 +389,7 @@ const activateCommand = new Command('activate')
       const client = await getAPIClientFromOptions(globalOptions);
 
       await activateMetric(client, { id, reason: options.reason });
-      console.log(chalk.green(`✓ Metric ${id} activated`));
+      printResult(globalOptions, { message: `✓ Metric ${id} activated`, id });
     })
   );
 
@@ -406,11 +422,17 @@ const versionCommand = addMetricFieldOptions(
       const newId = result.data.id;
       if (options.activate) {
         await client.activateMetric(newId as MetricId, options.reason);
-        console.log(
-          chalk.green(`✓ New version of metric ${id} created and activated (new id: ${newId})`)
-        );
+        printResult(globalOptions, {
+          message: `✓ New version of metric ${id} created and activated (new id: ${newId})`,
+          id: newId,
+          raw: result.data,
+        });
       } else {
-        console.log(chalk.green(`✓ New draft version of metric ${id} created (new id: ${newId})`));
+        printResult(globalOptions, {
+          message: `✓ New draft version of metric ${id} created (new id: ${newId})`,
+          id: newId,
+          raw: result.data,
+        });
       }
     })
   );

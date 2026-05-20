@@ -1,9 +1,9 @@
 import { Command } from 'commander';
-import chalk from 'chalk';
 import {
   getAPIClientFromOptions,
   getGlobalOptions,
   printFormatted,
+  printResult,
   withErrorHandling,
 } from '../../lib/utils/api-helper.js';
 import { parseTagId } from '../../lib/utils/validators.js';
@@ -50,8 +50,12 @@ const createCommand = new Command('create')
       const globalOptions = getGlobalOptions(createCommand);
       const client = await getAPIClientFromOptions(globalOptions);
       const result = await createTag(client, { tag: options.tag });
-      console.log(chalk.green('Experiment tag created successfully'));
-      printFormatted(result.data, globalOptions);
+      const data = result.data as { id?: unknown } | undefined;
+      printResult(globalOptions, {
+        message: 'Experiment tag created successfully',
+        id: data?.id,
+        raw: result.data,
+      });
     })
   );
 
@@ -64,8 +68,11 @@ const updateCommand = new Command('update')
       const globalOptions = getGlobalOptions(updateCommand);
       const client = await getAPIClientFromOptions(globalOptions);
       const result = await updateTag(client, { id, tag: options.tag });
-      console.log(chalk.green('Experiment tag updated successfully'));
-      printFormatted(result.data, globalOptions);
+      printResult(globalOptions, {
+        message: 'Experiment tag updated successfully',
+        id,
+        raw: result.data,
+      });
     })
   );
 
@@ -77,7 +84,7 @@ const deleteCommand = new Command('delete')
       const globalOptions = getGlobalOptions(deleteCommand);
       const client = await getAPIClientFromOptions(globalOptions);
       await deleteTag(client, { id });
-      console.log(chalk.green('Experiment tag deleted successfully'));
+      printResult(globalOptions, { message: 'Experiment tag deleted successfully', id });
     })
   );
 

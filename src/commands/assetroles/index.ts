@@ -1,9 +1,9 @@
 import { Command } from 'commander';
-import chalk from 'chalk';
 import {
   getAPIClientFromOptions,
   getGlobalOptions,
   printFormatted,
+  printResult,
   withErrorHandling,
 } from '../../lib/utils/api-helper.js';
 import { parseAssetRoleId } from '../../lib/utils/validators.js';
@@ -49,9 +49,12 @@ const createCommand = new Command('create')
       const globalOptions = getGlobalOptions(createCommand);
       const client = await getAPIClientFromOptions(globalOptions);
       const result = await createAssetRole(client, { name: options.name });
-      console.log(
-        chalk.green(`✓ Asset role created with ID: ${(result.data as Record<string, unknown>).id}`)
-      );
+      const newId = (result.data as Record<string, unknown>).id;
+      printResult(globalOptions, {
+        message: `✓ Asset role created with ID: ${newId}`,
+        id: newId,
+        raw: result.data,
+      });
     })
   );
 
@@ -64,7 +67,7 @@ const updateCommand = new Command('update')
       const globalOptions = getGlobalOptions(updateCommand);
       const client = await getAPIClientFromOptions(globalOptions);
       await updateAssetRole(client, { id, name: options.name });
-      console.log(chalk.green(`✓ Asset role ${id} updated`));
+      printResult(globalOptions, { message: `✓ Asset role ${id} updated`, id });
     })
   );
 
@@ -76,7 +79,7 @@ const deleteCommand = new Command('delete')
       const globalOptions = getGlobalOptions(deleteCommand);
       const client = await getAPIClientFromOptions(globalOptions);
       await deleteAssetRole(client, { id });
-      console.log(chalk.green(`✓ Asset role ${id} deleted`));
+      printResult(globalOptions, { message: `✓ Asset role ${id} deleted`, id });
     })
   );
 

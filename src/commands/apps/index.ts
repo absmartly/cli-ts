@@ -1,9 +1,9 @@
 import { Command } from 'commander';
-import chalk from 'chalk';
 import {
   getAPIClientFromOptions,
   getGlobalOptions,
   printFormatted,
+  printResult,
   withErrorHandling,
 } from '../../lib/utils/api-helper.js';
 import { parseApplicationId } from '../../lib/utils/validators.js';
@@ -67,9 +67,12 @@ const createCommand = new Command('create')
       const globalOptions = getGlobalOptions(createCommand);
       const client = await getAPIClientFromOptions(globalOptions);
       const result = await createApp(client, { name: options.name });
-      console.log(
-        chalk.green(`✓ Application created with ID: ${(result.data as Record<string, unknown>).id}`)
-      );
+      const newId = (result.data as Record<string, unknown>).id;
+      printResult(globalOptions, {
+        message: `✓ Application created with ID: ${newId}`,
+        id: newId,
+        raw: result.data,
+      });
     })
   );
 
@@ -82,7 +85,7 @@ const updateCommand = new Command('update')
       const globalOptions = getGlobalOptions(updateCommand);
       const client = await getAPIClientFromOptions(globalOptions);
       await updateApp(client, { id, name: options.name });
-      console.log(chalk.green(`✓ Application ${id} updated`));
+      printResult(globalOptions, { message: `✓ Application ${id} updated`, id });
     })
   );
 
@@ -96,7 +99,7 @@ const archiveCommand = new Command('archive')
       const client = await getAPIClientFromOptions(globalOptions);
       await archiveApp(client, { id, unarchive: options.unarchive });
       const action = options.unarchive ? 'unarchived' : 'archived';
-      console.log(chalk.green(`✓ Application ${id} ${action}`));
+      printResult(globalOptions, { message: `✓ Application ${id} ${action}`, id });
     })
   );
 

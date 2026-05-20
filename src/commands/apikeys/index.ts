@@ -4,6 +4,7 @@ import {
   getAPIClientFromOptions,
   getGlobalOptions,
   printFormatted,
+  printResult,
   withErrorHandling,
 } from '../../lib/utils/api-helper.js';
 import { parseApiKeyId } from '../../lib/utils/validators.js';
@@ -55,10 +56,19 @@ const createCommand = new Command('create')
         description: options.description,
         permissions: options.permissions,
       });
-      console.log(chalk.green(`✓ API key created with ID: ${result.data.id}`));
-      if (result.data.key) {
-        console.log(`  Key: ${result.data.key}`);
-        console.log(chalk.yellow('  Save this key now — it cannot be retrieved later.'));
+      const format = globalOptions.output ?? 'table';
+      if (format === 'table' || format === 'rendered') {
+        console.log(chalk.green(`✓ API key created with ID: ${result.data.id}`));
+        if (result.data.key) {
+          console.log(`  Key: ${result.data.key}`);
+          console.log(chalk.yellow('  Save this key now — it cannot be retrieved later.'));
+        }
+      } else {
+        printResult(globalOptions, {
+          message: `✓ API key created with ID: ${result.data.id}`,
+          id: result.data.id,
+          raw: result.data,
+        });
       }
     })
   );
@@ -77,7 +87,7 @@ const updateCommand = new Command('update')
         name: options.name,
         description: options.description,
       });
-      console.log(chalk.green(`✓ API key ${id} updated`));
+      printResult(globalOptions, { message: `✓ API key ${id} updated`, id });
     })
   );
 
@@ -89,7 +99,7 @@ const deleteCommand = new Command('delete')
       const globalOptions = getGlobalOptions(deleteCommand);
       const client = await getAPIClientFromOptions(globalOptions);
       await deleteApiKey(client, { id });
-      console.log(chalk.green(`✓ API key ${id} deleted`));
+      printResult(globalOptions, { message: `✓ API key ${id} deleted`, id });
     })
   );
 

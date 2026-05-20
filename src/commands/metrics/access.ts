@@ -1,9 +1,9 @@
 import { Command } from 'commander';
-import chalk from 'chalk';
 import {
   getAPIClientFromOptions,
   getGlobalOptions,
   printFormatted,
+  printResult,
   withErrorHandling,
 } from '../../lib/utils/api-helper.js';
 import {
@@ -46,7 +46,10 @@ const grantUserCommand = new Command('grant-user')
       const globalOptions = getGlobalOptions(grantUserCommand);
       const client = await getAPIClientFromOptions(globalOptions);
       await grantMetricAccessUser(client, { id, userId: options.user, roleId: options.role });
-      console.log(chalk.green(`✓ User ${options.user} granted access to metric ${id}`));
+      printResult(globalOptions, {
+        message: `✓ User ${options.user} granted access to metric ${id}`,
+        id,
+      });
     })
   );
 
@@ -60,7 +63,10 @@ const revokeUserCommand = new Command('revoke-user')
       const globalOptions = getGlobalOptions(revokeUserCommand);
       const client = await getAPIClientFromOptions(globalOptions);
       await revokeMetricAccessUser(client, { id, userId: options.user, roleId: options.role });
-      console.log(chalk.green(`✓ User ${options.user} access revoked from metric ${id}`));
+      printResult(globalOptions, {
+        message: `✓ User ${options.user} access revoked from metric ${id}`,
+        id,
+      });
     })
   );
 
@@ -86,7 +92,10 @@ const grantTeamCommand = new Command('grant-team')
       const globalOptions = getGlobalOptions(grantTeamCommand);
       const client = await getAPIClientFromOptions(globalOptions);
       await grantMetricAccessTeam(client, { id, teamId: options.team, roleId: options.role });
-      console.log(chalk.green(`✓ Team ${options.team} granted access to metric ${id}`));
+      printResult(globalOptions, {
+        message: `✓ Team ${options.team} granted access to metric ${id}`,
+        id,
+      });
     })
   );
 
@@ -100,7 +109,10 @@ const revokeTeamCommand = new Command('revoke-team')
       const globalOptions = getGlobalOptions(revokeTeamCommand);
       const client = await getAPIClientFromOptions(globalOptions);
       await revokeMetricAccessTeam(client, { id, teamId: options.team, roleId: options.role });
-      console.log(chalk.green(`✓ Team ${options.team} access revoked from metric ${id}`));
+      printResult(globalOptions, {
+        message: `✓ Team ${options.team} access revoked from metric ${id}`,
+        id,
+      });
     })
   );
 

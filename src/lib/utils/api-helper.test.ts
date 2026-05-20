@@ -23,6 +23,7 @@ import {
   getAPIClientFromOptions,
   getGlobalOptions,
   printFormatted,
+  printResult,
   shouldOutputIdsOnly,
   withErrorHandling,
   resolveAuth,
@@ -388,6 +389,151 @@ describe('API Helper', () => {
     it('returns false on a TTY when explicit --output json was given', () => {
       setTTYOverride({ stdout: true });
       expect(shouldOutputIdsOnly({ output: 'json', outputExplicit: true })).toBe(false);
+    });
+  });
+
+  describe('printResult', () => {
+    let consoleSpy: ReturnType<typeof vi.spyOn>;
+    let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+
+    beforeEach(() => {
+      consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+      consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      setTTYOverride({ stdin: true, stdout: true });
+    });
+
+    afterEach(() => {
+      consoleSpy.mockRestore();
+      consoleErrorSpy.mockRestore();
+      setTTYOverride({ stdin: true, stdout: true });
+    });
+
+    it('prints the chalk success message for table output (default)', () => {
+      printResult(
+        { output: 'table', outputExplicit: false, noColor: true },
+        { message: '✓ Metric 42 updated', id: 42 }
+      );
+
+      expect(formatOutput).not.toHaveBeenCalled();
+      expect(consoleSpy).toHaveBeenCalledOnce();
+      const printed = consoleSpy.mock.calls[0]?.[0] as string;
+      expect(printed).toContain('✓ Metric 42 updated');
+    });
+
+    it('routes through printFormatted with {success,message,id} for json', () => {
+      printResult(
+        { output: 'json', outputExplicit: true, noColor: true },
+        { message: '✓ Metric created with ID: 42', id: 42 }
+      );
+
+      expect(formatOutput).toHaveBeenCalledOnce();
+      expect(formatOutput).toHaveBeenCalledWith(
+        { success: true, message: '✓ Metric created with ID: 42', id: 42 },
+        'json',
+        expect.any(Object)
+      );
+    });
+
+    it('omits id from the JSON payload when no id is provided', () => {
+      printResult(
+        { output: 'json', outputExplicit: true, noColor: true },
+        { message: '✓ Datasource connection test passed' }
+      );
+
+      expect(formatOutput).toHaveBeenCalledWith(
+        { success: true, message: '✓ Datasource connection test passed' },
+        'json',
+        expect.any(Object)
+      );
+    });
+
+    it('emits the raw API response when --raw is set and raw is supplied', () => {
+      const raw = { id: 42, name: 'foo', state: 'created' };
+      printResult(
+        { output: 'json', outputExplicit: true, noColor: true, raw: true },
+        { message: '✓ Metric created', id: 42, raw }
+      );
+
+      expect(formatOutput).toHaveBeenCalledWith(raw, 'json', expect.any(Object));
+    });
+
+    it('falls back to the minimal payload when --raw is set but no raw is supplied', () => {
+      printResult(
+        { output: 'json', outputExplicit: true, noColor: true, raw: true },
+        { message: '✓ Metric 42 updated', id: 42 }
+      );
+
+      expect(formatOutput).toHaveBeenCalledWith(
+        { success: true, message: '✓ Metric 42 updated', id: 42 },
+        'json',
+        expect.any(Object)
+      );
+    });
+
+    it('routes structured outputs (yaml, markdown, plain, vertical, template) through printFormatted', () => {
+      for (const format of ['yaml', 'markdown', 'plain', 'vertical', 'template'] as const) {
+        vi.mocked(formatOutput).mockClear();
+        printResult(
+          { output: format, outputExplicit: true, noColor: true },
+          { message: '✓ X done', id: 1 }
+        );
+        expect(formatOutput).toHaveBeenCalledOnce();
+      }
+    });
+
+    it('prints only the id when output is "ids" (and stays quiet on stderr)', () => {
+      printResult(
+        { output: 'ids', outputExplicit: true },
+        { message: '✓ Metric 42 updated', id: 42 }
+      );
+
+      expect(formatOutput).not.toHaveBeenCalled();
+      expect(consoleSpy).toHaveBeenCalledWith(42);
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
+    });
+
+    it('prints id to stdout and the green confirmation to stderr when piped without explicit -o', () => {
+      setTTYOverride({ stdout: false });
+      printResult(
+        { output: 'table', outputExplicit: false, noColor: true },
+        { message: '✓ Metric created with ID: 42', id: 42 }
+      );
+
+      expect(consoleSpy).toHaveBeenCalledWith(42);
+      const stderrMessage = consoleErrorSpy.mock.calls[0]?.[0] as string;
+      expect(stderrMessage).toContain('✓ Metric created with ID: 42');
+      expect(formatOutput).not.toHaveBeenCalled();
+    });
+
+    it('writes nothing on stdout but still confirms on stderr when piped without an id', () => {
+      // No id available (e.g. connection test): stdout stays empty so a
+      // downstream `xargs` doesn't choke, but the user still gets the
+      // confirmation on stderr.
+      setTTYOverride({ stdout: false });
+      printResult(
+        { output: 'table', outputExplicit: false, noColor: true },
+        { message: '✓ Datasource connection test passed' }
+      );
+
+      expect(consoleSpy).not.toHaveBeenCalled();
+      const stderrMessage = consoleErrorSpy.mock.calls[0]?.[0] as string;
+      expect(stderrMessage).toContain('✓ Datasource connection test passed');
+      expect(formatOutput).not.toHaveBeenCalled();
+    });
+
+    it('still emits JSON when piped if -o json was set explicitly', () => {
+      setTTYOverride({ stdout: false });
+      printResult(
+        { output: 'json', outputExplicit: true, noColor: true },
+        { message: '✓ Metric 42 updated', id: 42 }
+      );
+
+      expect(formatOutput).toHaveBeenCalledWith(
+        { success: true, message: '✓ Metric 42 updated', id: 42 },
+        'json',
+        expect.any(Object)
+      );
+      expect(consoleErrorSpy).not.toHaveBeenCalled();
     });
   });
 

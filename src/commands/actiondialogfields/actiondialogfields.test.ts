@@ -72,7 +72,7 @@ describe('actiondialogfields command', () => {
     ]);
 
     expect(mockClient.createExperimentActionDialogField).toHaveBeenCalledWith({ name: 'Reason' });
-    expect(printFormatted).toHaveBeenCalled();
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Action dialog field created'));
   });
 
   it('should update an action dialog field', async () => {
@@ -88,6 +88,8 @@ describe('actiondialogfields command', () => {
     expect(mockClient.updateExperimentActionDialogField).toHaveBeenCalledWith(1, {
       required: true,
     });
-    expect(printFormatted).toHaveBeenCalled();
+    expect(consoleSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Action dialog field 1 updated')
+    );
   });
 });

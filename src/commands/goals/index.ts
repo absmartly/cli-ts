@@ -1,9 +1,9 @@
 import { Command } from 'commander';
-import chalk from 'chalk';
 import {
   getAPIClientFromOptions,
   getGlobalOptions,
   printFormatted,
+  printResult,
   withErrorHandling,
 } from '../../lib/utils/api-helper.js';
 import { parseGoalId } from '../../lib/utils/validators.js';
@@ -76,7 +76,11 @@ const createCommand = new Command('create')
         description: options.description,
       });
 
-      console.log(chalk.green(`✓ Goal created with ID: ${result.data.id}`));
+      printResult(globalOptions, {
+        message: `✓ Goal created with ID: ${result.data.id}`,
+        id: result.data.id,
+        raw: result.data,
+      });
     })
   );
 
@@ -93,7 +97,7 @@ const updateCommand = new Command('update')
         id,
         description: options.description,
       });
-      console.log(chalk.green(`✓ Goal ${id} updated`));
+      printResult(globalOptions, { message: `✓ Goal ${id} updated`, id });
     })
   );
 

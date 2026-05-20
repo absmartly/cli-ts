@@ -4,6 +4,7 @@ import {
   getAPIClientFromOptions,
   getGlobalOptions,
   printFormatted,
+  printResult,
   withErrorHandling,
 } from '../../lib/utils/api-helper.js';
 import { parseExperimentId, parseRecommendedActionId } from '../../lib/utils/validators.js';
@@ -45,7 +46,10 @@ const dismissRecommendationCommand = new Command('dismiss')
       const client = await getAPIClientFromOptions(globalOptions);
 
       await dismissRecommendedAction(client, { actionId });
-      console.log(chalk.green(`✓ Recommended action ${actionId} dismissed`));
+      printResult(globalOptions, {
+        message: `✓ Recommended action ${actionId} dismissed`,
+        id: actionId,
+      });
     })
   );
 

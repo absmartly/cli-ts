@@ -1,9 +1,9 @@
 import { Command } from 'commander';
-import chalk from 'chalk';
 import {
   getAPIClientFromOptions,
   getGlobalOptions,
   printFormatted,
+  printResult,
   withErrorHandling,
 } from '../../lib/utils/api-helper.js';
 import { parseUpdateScheduleId, validateJSON } from '../../lib/utils/validators.js';
@@ -50,8 +50,12 @@ const createCommand = new Command('create')
       const client = await getAPIClientFromOptions(globalOptions);
       const config = validateJSON(options.jsonConfig, '--json-config') as Record<string, unknown>;
       const result = await createUpdateSchedule(client, { config });
-      console.log(chalk.green(`✓ Update schedule created`));
-      printFormatted(result.data, globalOptions);
+      const data = result.data as { id?: unknown } | undefined;
+      printResult(globalOptions, {
+        message: `✓ Update schedule created`,
+        id: data?.id,
+        raw: result.data,
+      });
     })
   );
 
@@ -65,8 +69,11 @@ const updateCommand = new Command('update')
       const client = await getAPIClientFromOptions(globalOptions);
       const config = validateJSON(options.jsonConfig, '--json-config') as Record<string, unknown>;
       const result = await updateUpdateSchedule(client, { id, config });
-      console.log(chalk.green(`✓ Update schedule ${id} updated`));
-      printFormatted(result.data, globalOptions);
+      printResult(globalOptions, {
+        message: `✓ Update schedule ${id} updated`,
+        id,
+        raw: result.data,
+      });
     })
   );
 
@@ -78,7 +85,7 @@ const deleteCommand = new Command('delete')
       const globalOptions = getGlobalOptions(deleteCommand);
       const client = await getAPIClientFromOptions(globalOptions);
       await deleteUpdateSchedule(client, { id });
-      console.log(chalk.green(`✓ Update schedule ${id} deleted`));
+      printResult(globalOptions, { message: `✓ Update schedule ${id} deleted`, id });
     })
   );
 

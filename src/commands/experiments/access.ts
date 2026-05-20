@@ -1,9 +1,9 @@
 import { Command } from 'commander';
-import chalk from 'chalk';
 import {
   getAPIClientFromOptions,
   getGlobalOptions,
   printFormatted,
+  printResult,
   withErrorHandling,
 } from '../../lib/utils/api-helper.js';
 import {
@@ -50,7 +50,10 @@ const grantUserCommand = new Command('grant-user')
         userId: options.user,
         roleId: options.role,
       });
-      console.log(chalk.green(`✓ User ${options.user} granted access to experiment ${id}`));
+      printResult(globalOptions, {
+        message: `✓ User ${options.user} granted access to experiment ${id}`,
+        id,
+      });
     })
   );
 
@@ -68,7 +71,10 @@ const revokeUserCommand = new Command('revoke-user')
         userId: options.user,
         roleId: options.role,
       });
-      console.log(chalk.green(`✓ User ${options.user} access revoked from experiment ${id}`));
+      printResult(globalOptions, {
+        message: `✓ User ${options.user} access revoked from experiment ${id}`,
+        id,
+      });
     })
   );
 
@@ -98,7 +104,10 @@ const grantTeamCommand = new Command('grant-team')
         teamId: options.team,
         roleId: options.role,
       });
-      console.log(chalk.green(`✓ Team ${options.team} granted access to experiment ${id}`));
+      printResult(globalOptions, {
+        message: `✓ Team ${options.team} granted access to experiment ${id}`,
+        id,
+      });
     })
   );
 
@@ -116,7 +125,10 @@ const revokeTeamCommand = new Command('revoke-team')
         teamId: options.team,
         roleId: options.role,
       });
-      console.log(chalk.green(`✓ Team ${options.team} access revoked from experiment ${id}`));
+      printResult(globalOptions, {
+        message: `✓ Team ${options.team} access revoked from experiment ${id}`,
+        id,
+      });
     })
   );
 

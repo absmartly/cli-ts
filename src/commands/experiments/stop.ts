@@ -4,6 +4,7 @@ import { select } from '@inquirer/prompts';
 import {
   getAPIClientFromOptions,
   getGlobalOptions,
+  printResult,
   withErrorHandling,
 } from '../../lib/utils/api-helper.js';
 import { parseExperimentIdOrName } from './resolve-id.js';
@@ -30,7 +31,6 @@ export const stopCommand = new Command('stop')
           ? await readLinesFromStdin()
           : [];
       if (ids.length === 0) throw new Error('Provide an experiment ID or pipe IDs from stdin');
-      const outputPiped = isStdoutPiped();
 
       const reason =
         options.reason ||
@@ -48,15 +48,10 @@ export const stopCommand = new Command('stop')
         try {
           const id = await client.resolveExperimentId(idStr);
           await stopExperiment(client, { experimentId: id, reason, note });
-          if (outputPiped) {
-            console.log(id);
-            console.error(chalk.green(`✓ Experiment ${id} stopped`));
-          } else {
-            console.log(chalk.green(`✓ Experiment ${id} stopped`));
-          }
+          printResult(globalOptions, { message: `✓ Experiment ${id} stopped`, id });
         } catch (e) {
           hasFailures = true;
-          if (outputPiped && options.passThrough) console.log(idStr);
+          if (isStdoutPiped() && options.passThrough) console.log(idStr);
           console.error(chalk.red(`✗ Experiment ${idStr}: ${e instanceof Error ? e.message : e}`));
         }
       }

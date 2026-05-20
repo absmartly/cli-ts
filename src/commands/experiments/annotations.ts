@@ -1,9 +1,9 @@
 import { Command } from 'commander';
-import chalk from 'chalk';
 import {
   getAPIClientFromOptions,
   getGlobalOptions,
   printFormatted,
+  printResult,
   withErrorHandling,
 } from '../../lib/utils/api-helper.js';
 import {
@@ -44,8 +44,12 @@ const createCommand = new Command('create')
       const globalOptions = getGlobalOptions(createCommand);
       const client = await getAPIClientFromOptions(globalOptions);
       const result = await createAnnotation(client, { experimentId, type: options.type });
-      console.log(chalk.green(`✓ Annotation created`));
-      printFormatted(result.data, globalOptions);
+      const data = result.data as { id?: unknown } | undefined;
+      printResult(globalOptions, {
+        message: `✓ Annotation created`,
+        id: data?.id,
+        raw: result.data,
+      });
     })
   );
 
@@ -61,8 +65,11 @@ const updateCommand = new Command('update')
       if (options.type !== undefined) data.type = options.type;
       requireAtLeastOneField(data, 'update field');
       const result = await updateAnnotation(client, { annotationId, type: options.type });
-      console.log(chalk.green(`✓ Annotation ${annotationId} updated`));
-      printFormatted(result.data, globalOptions);
+      printResult(globalOptions, {
+        message: `✓ Annotation ${annotationId} updated`,
+        id: annotationId,
+        raw: result.data,
+      });
     })
   );
 
@@ -78,7 +85,11 @@ const archiveCmd = new Command('archive')
         annotationId,
         unarchive: !!options.unarchive,
       });
-      console.log(chalk.green(`✓ Annotation ${annotationId} ${result.data.action}`));
+      printResult(globalOptions, {
+        message: `✓ Annotation ${annotationId} ${result.data.action}`,
+        id: annotationId,
+        raw: result.data,
+      });
     })
   );
 

@@ -1,9 +1,9 @@
 import { Command } from 'commander';
-import chalk from 'chalk';
 import {
   getAPIClientFromOptions,
   getGlobalOptions,
   printFormatted,
+  printResult,
   withErrorHandling,
 } from '../../lib/utils/api-helper.js';
 import { parseWebhookId } from '../../lib/utils/validators.js';
@@ -66,9 +66,12 @@ const createCommand = new Command('create')
         ordered: options.ordered,
         maxRetries: options.maxRetries,
       });
-      console.log(
-        chalk.green(`✓ Webhook created with ID: ${(result.data as Record<string, unknown>).id}`)
-      );
+      const newId = (result.data as Record<string, unknown>).id;
+      printResult(globalOptions, {
+        message: `✓ Webhook created with ID: ${newId}`,
+        id: newId,
+        raw: result.data,
+      });
     })
   );
 
@@ -94,7 +97,7 @@ const updateCommand = new Command('update')
         ordered: options.ordered,
         maxRetries: options.maxRetries,
       });
-      console.log(chalk.green(`✓ Webhook ${id} updated`));
+      printResult(globalOptions, { message: `✓ Webhook ${id} updated`, id });
     })
   );
 
@@ -106,7 +109,7 @@ const deleteCommand = new Command('delete')
       const globalOptions = getGlobalOptions(deleteCommand);
       const client = await getAPIClientFromOptions(globalOptions);
       await deleteWebhook(client, { id });
-      console.log(chalk.green(`✓ Webhook ${id} deleted`));
+      printResult(globalOptions, { message: `✓ Webhook ${id} deleted`, id });
     })
   );
 

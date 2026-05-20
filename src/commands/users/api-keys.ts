@@ -4,6 +4,7 @@ import {
   getAPIClientFromOptions,
   getGlobalOptions,
   printFormatted,
+  printResult,
   withErrorHandling,
 } from '../../lib/utils/api-helper.js';
 import { addPaginationOptions, printPaginationFooter } from '../../lib/utils/pagination.js';
@@ -72,9 +73,19 @@ const createCommand = new Command('create')
         name: options.name,
         description: options.description,
       });
-      console.log(chalk.green(`✓ API key created: ${result.data.name}`));
-      console.log(`  Key: ${result.data.key}`);
-      console.log(chalk.yellow('  Save this key now — it cannot be retrieved later.'));
+      const format = globalOptions.output ?? 'table';
+      if (format === 'table' || format === 'rendered') {
+        console.log(chalk.green(`✓ API key created: ${result.data.name}`));
+        console.log(`  Key: ${result.data.key}`);
+        console.log(chalk.yellow('  Save this key now — it cannot be retrieved later.'));
+      } else {
+        const data = result.data as Record<string, unknown>;
+        printResult(globalOptions, {
+          message: `✓ API key created: ${result.data.name}`,
+          id: data.id,
+          raw: result.data,
+        });
+      }
     })
   );
 
@@ -94,7 +105,7 @@ const updateCommand = new Command('update')
         name: options.name,
         description: options.description,
       });
-      console.log(chalk.green(`✓ API key ${id} updated`));
+      printResult(globalOptions, { message: `✓ API key ${id} updated`, id });
     })
   );
 
@@ -110,7 +121,7 @@ const deleteCommand = new Command('delete')
         userRef: options.user as string,
         keyId: id,
       });
-      console.log(chalk.green(`✓ API key ${id} deleted`));
+      printResult(globalOptions, { message: `✓ API key ${id} deleted`, id });
     })
   );
 

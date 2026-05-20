@@ -1,9 +1,9 @@
 import { Command } from 'commander';
-import chalk from 'chalk';
 import {
   getAPIClientFromOptions,
   getGlobalOptions,
   printFormatted,
+  printResult,
   withErrorHandling,
 } from '../../lib/utils/api-helper.js';
 import { parseTagId } from '../../lib/utils/validators.js';
@@ -56,8 +56,12 @@ const createCommand = new Command('create')
       const globalOptions = getGlobalOptions(createCommand);
       const client = await getAPIClientFromOptions(globalOptions);
       const result = await createMetricTag(client, { tag: options.tag });
-      console.log(chalk.green('Metric tag created successfully'));
-      printFormatted(result.data, globalOptions);
+      const data = result.data as { id?: unknown } | undefined;
+      printResult(globalOptions, {
+        message: 'Metric tag created successfully',
+        id: data?.id,
+        raw: result.data,
+      });
     })
   );
 
@@ -70,8 +74,12 @@ const updateCommand = new Command('update')
       const globalOptions = getGlobalOptions(updateCommand);
       const client = await getAPIClientFromOptions(globalOptions);
       const result = await updateMetricTag(client, { id, tag: options.tag });
-      console.log(chalk.green('Metric tag updated successfully'));
-      printFormatted(result.data, globalOptions);
+      const data = result.data as { id?: unknown } | undefined;
+      printResult(globalOptions, {
+        message: 'Metric tag updated successfully',
+        id: data?.id ?? id,
+        raw: result.data,
+      });
     })
   );
 
@@ -83,7 +91,7 @@ const deleteCommand = new Command('delete')
       const globalOptions = getGlobalOptions(deleteCommand);
       const client = await getAPIClientFromOptions(globalOptions);
       await deleteMetricTag(client, { id });
-      console.log(chalk.green('Metric tag deleted successfully'));
+      printResult(globalOptions, { message: 'Metric tag deleted successfully', id });
     })
   );
 

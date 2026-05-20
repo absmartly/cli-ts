@@ -1,9 +1,9 @@
 import { Command } from 'commander';
-import chalk from 'chalk';
 import {
   getAPIClientFromOptions,
   getGlobalOptions,
   printFormatted,
+  printResult,
   withErrorHandling,
 } from '../../lib/utils/api-helper.js';
 import { parseTagId } from '../../lib/utils/validators.js';
@@ -63,8 +63,12 @@ const createCommand = new Command('create')
         description: options.description,
         color: options.color,
       });
-      console.log(chalk.green('Metric category created successfully'));
-      printFormatted(result.data, globalOptions);
+      const data = result.data as { id?: unknown } | undefined;
+      printResult(globalOptions, {
+        message: 'Metric category created successfully',
+        id: data?.id,
+        raw: result.data,
+      });
     })
   );
 
@@ -84,8 +88,12 @@ const updateCommand = new Command('update')
         description: options.description,
         color: options.color,
       });
-      console.log(chalk.green('Metric category updated successfully'));
-      printFormatted(result.data, globalOptions);
+      const data = result.data as { id?: unknown } | undefined;
+      printResult(globalOptions, {
+        message: 'Metric category updated successfully',
+        id: data?.id ?? id,
+        raw: result.data,
+      });
     })
   );
 
@@ -98,9 +106,10 @@ const archiveCommand = new Command('archive')
       const globalOptions = getGlobalOptions(archiveCommand);
       const client = await getAPIClientFromOptions(globalOptions);
       await archiveMetricCategory(client, { id, unarchive: options.unarchive });
-      console.log(
-        chalk.green(`Metric category ${options.unarchive ? 'unarchived' : 'archived'} successfully`)
-      );
+      printResult(globalOptions, {
+        message: `Metric category ${options.unarchive ? 'unarchived' : 'archived'} successfully`,
+        id,
+      });
     })
   );
 

@@ -1,9 +1,9 @@
 import { Command } from 'commander';
-import chalk from 'chalk';
 import {
   getAPIClientFromOptions,
   getGlobalOptions,
   printFormatted,
+  printResult,
   withErrorHandling,
 } from '../../lib/utils/api-helper.js';
 import { parseMetricId } from '../../lib/utils/validators.js';
@@ -39,7 +39,7 @@ const requestCommand = new Command('request')
       const globalOptions = getGlobalOptions(requestCommand);
       const client = await getAPIClientFromOptions(globalOptions);
       await requestMetricReview(client, { id });
-      console.log(chalk.green(`✓ Review requested for metric ${id}`));
+      printResult(globalOptions, { message: `✓ Review requested for metric ${id}`, id });
     })
   );
 
@@ -51,7 +51,7 @@ const approveCommand = new Command('approve')
       const globalOptions = getGlobalOptions(approveCommand);
       const client = await getAPIClientFromOptions(globalOptions);
       await approveMetricReview(client, { id });
-      console.log(chalk.green(`✓ Metric ${id} review approved`));
+      printResult(globalOptions, { message: `✓ Metric ${id} review approved`, id });
     })
   );
 
@@ -76,7 +76,7 @@ const commentCommand = new Command('comment')
       const globalOptions = getGlobalOptions(commentCommand);
       const client = await getAPIClientFromOptions(globalOptions);
       await addMetricReviewComment(client, { id, message: options.message });
-      console.log(chalk.green(`✓ Comment added to metric ${id} review`));
+      printResult(globalOptions, { message: `✓ Comment added to metric ${id} review`, id });
     })
   );
 
@@ -90,7 +90,10 @@ const replyCommand = new Command('reply')
       const globalOptions = getGlobalOptions(replyCommand);
       const client = await getAPIClientFromOptions(globalOptions);
       await replyToMetricReviewComment(client, { id, commentId, message: options.message });
-      console.log(chalk.green(`✓ Reply added to comment ${commentId} on metric ${id} review`));
+      printResult(globalOptions, {
+        message: `✓ Reply added to comment ${commentId} on metric ${id} review`,
+        id,
+      });
     })
   );
 
