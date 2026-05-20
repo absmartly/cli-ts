@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createListCommand } from './list-command.js';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted } from './api-helper.js';
 import { resetCommand } from '../../test/helpers/command-reset.js';
+import { setTTYOverride } from './stdin.js';
 
 vi.mock('./api-helper.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('./api-helper.js')>();
@@ -67,5 +68,67 @@ describe('createListCommand', () => {
 
     expect(mockFetch).toHaveBeenCalledWith(mockClient, expect.any(Object));
     expect(printFormatted).toHaveBeenCalled();
+  });
+
+  describe('output behavior under piping', () => {
+    afterEach(() => {
+      setTTYOverride({ stdin: true, stdout: true });
+    });
+
+    it('prints only ids when stdout is piped and no explicit output is set', async () => {
+      setTTYOverride({ stdout: false });
+      vi.mocked(getGlobalOptions).mockReturnValue({
+        output: 'table',
+        outputExplicit: false,
+      } as any);
+      const fetch = vi.fn().mockResolvedValue([{ id: 1 }, { id: 2 }, { id: 3 }]);
+      const cmd = createListCommand({ description: 'List items', fetch });
+      resetCommand(cmd);
+
+      await cmd.parseAsync(['node', 'test']);
+
+      expect(printFormatted).not.toHaveBeenCalled();
+      expect(consoleSpy).toHaveBeenCalledWith(1);
+      expect(consoleSpy).toHaveBeenCalledWith(2);
+      expect(consoleSpy).toHaveBeenCalledWith(3);
+    });
+
+    it('renders the requested format when stdout is piped and -o json is explicit', async () => {
+      // Regression: previously `--items 200 -o json` over a pipe collapsed
+      // to id-only output because the command read its local `options.output`
+      // (always undefined — the flag lives on the root program), so the
+      // "is explicit?" check always said no.
+      setTTYOverride({ stdout: false });
+      vi.mocked(getGlobalOptions).mockReturnValue({
+        output: 'json',
+        outputExplicit: true,
+      } as any);
+      const fetch = vi.fn().mockResolvedValue([{ id: 1 }, { id: 2 }]);
+      const cmd = createListCommand({ description: 'List items', fetch });
+      resetCommand(cmd);
+
+      await cmd.parseAsync(['node', 'test']);
+
+      expect(printFormatted).toHaveBeenCalledOnce();
+      // Items must not have been spilled as bare ids on stdout.
+      expect(consoleSpy).not.toHaveBeenCalledWith(1);
+      expect(consoleSpy).not.toHaveBeenCalledWith(2);
+    });
+
+    it('prints only ids when output is explicitly "ids", even on a TTY', async () => {
+      setTTYOverride({ stdout: true });
+      vi.mocked(getGlobalOptions).mockReturnValue({
+        output: 'ids',
+        outputExplicit: true,
+      } as any);
+      const fetch = vi.fn().mockResolvedValue([{ id: 42 }]);
+      const cmd = createListCommand({ description: 'List items', fetch });
+      resetCommand(cmd);
+
+      await cmd.parseAsync(['node', 'test']);
+
+      expect(printFormatted).not.toHaveBeenCalled();
+      expect(consoleSpy).toHaveBeenCalledWith(42);
+    });
   });
 });

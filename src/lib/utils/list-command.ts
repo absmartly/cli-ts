@@ -3,9 +3,9 @@ import {
   getAPIClientFromOptions,
   getGlobalOptions,
   printFormatted,
+  shouldOutputIdsOnly,
   withErrorHandling,
 } from './api-helper.js';
-import { isStdoutPiped } from './stdin.js';
 import { addPaginationOptions, printPaginationFooter } from './pagination.js';
 import { applyShowExclude } from '../../api-client/entity-summary.js';
 import type { APIClient } from '../../api-client/api-client.js';
@@ -42,7 +42,7 @@ export function createListCommand(opts: ListCommandOptions): Command {
 
       const items = await opts.fetch(client, options);
 
-      if (globalOptions.output === 'ids' || (isStdoutPiped() && !options.output)) {
+      if (shouldOutputIdsOnly(globalOptions)) {
         for (const item of items) console.log((item as Record<string, unknown>).id);
         return;
       }

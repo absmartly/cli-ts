@@ -3,11 +3,11 @@ import {
   getAPIClientFromOptions,
   getGlobalOptions,
   printFormatted,
+  shouldOutputIdsOnly,
   withErrorHandling,
 } from '../../lib/utils/api-helper.js';
 import { printPaginationFooter } from '../../lib/utils/pagination.js';
 import { getDefaultType } from './default-type.js';
-import { isStdoutPiped } from '../../lib/utils/stdin.js';
 import { listExperiments } from '../../core/experiments/list.js';
 
 export const listCommand = new Command('list')
@@ -73,7 +73,7 @@ export const listCommand = new Command('list')
         raw: globalOptions.raw,
       });
 
-      if (globalOptions.output === 'ids' || (isStdoutPiped() && !options.output)) {
+      if (shouldOutputIdsOnly(globalOptions)) {
         for (const exp of result.data) console.log((exp as Record<string, unknown>).id);
         return;
       }

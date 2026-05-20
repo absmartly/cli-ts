@@ -23,6 +23,7 @@ import {
   getAPIClientFromOptions,
   getGlobalOptions,
   printFormatted,
+  shouldOutputIdsOnly,
   withErrorHandling,
   resolveAuth,
 } from './api-helper.js';
@@ -30,6 +31,7 @@ import { loadConfig, getProfile } from '../config/config.js';
 import { getAPIKey, getOAuthToken } from '../config/keyring.js';
 import { createAPIClient } from '../api/client.js';
 import { formatOutput } from '../output/formatter.js';
+import { setTTYOverride } from './stdin.js';
 
 describe('API Helper', () => {
   const savedEnv: Record<string, string | undefined> = {};
@@ -306,6 +308,86 @@ describe('API Helper', () => {
           terse: false,
         })
       );
+    });
+
+    describe('outputExplicit', () => {
+      it('is false when --output is not passed on the CLI', () => {
+        // Mock command at line 192 registers --output with a default of 'table'.
+        // Defaults must NOT count as "explicit" — that's the whole point.
+        mockCommand.parse(['node', 'test']);
+
+        const options = getGlobalOptions(mockCommand);
+        expect(options.output).toBe('table');
+        expect(options.outputExplicit).toBe(false);
+      });
+
+      it('is true when --output is passed on the CLI', () => {
+        mockCommand.parse(['node', 'test', '--output', 'json']);
+
+        const options = getGlobalOptions(mockCommand);
+        expect(options.output).toBe('json');
+        expect(options.outputExplicit).toBe(true);
+      });
+
+      it('is true even when the user explicitly chooses table', () => {
+        // Regression: prior implementation could not distinguish "no flag"
+        // from "explicit -o table", which broke piping into table format.
+        mockCommand.parse(['node', 'test', '--output', 'table']);
+
+        const options = getGlobalOptions(mockCommand);
+        expect(options.output).toBe('table');
+        expect(options.outputExplicit).toBe(true);
+      });
+
+      it('is detected on the leaf subcommand when --output is set as a global option', () => {
+        const root = new Command();
+        root.option('-o, --output <format>', 'output format');
+        const sub = new Command('list');
+        root.addCommand(sub);
+
+        root.parse(['node', 'test', '--output', 'json', 'list']);
+
+        const options = getGlobalOptions(sub);
+        expect(options.output).toBe('json');
+        expect(options.outputExplicit).toBe(true);
+      });
+    });
+  });
+
+  describe('shouldOutputIdsOnly', () => {
+    afterEach(() => {
+      setTTYOverride({ stdin: true, stdout: true });
+    });
+
+    it('returns true when output is explicitly "ids"', () => {
+      setTTYOverride({ stdout: true });
+      expect(shouldOutputIdsOnly({ output: 'ids', outputExplicit: true })).toBe(true);
+    });
+
+    it('returns true when stdout is piped and no explicit --output was given', () => {
+      setTTYOverride({ stdout: false });
+      expect(shouldOutputIdsOnly({ output: 'table', outputExplicit: false })).toBe(true);
+    });
+
+    it('returns false when stdout is piped but the user explicitly chose --output json', () => {
+      // Regression: this is the original bug — piped + -o json was forcing ids.
+      setTTYOverride({ stdout: false });
+      expect(shouldOutputIdsOnly({ output: 'json', outputExplicit: true })).toBe(false);
+    });
+
+    it('returns false when stdout is piped but the user explicitly chose --output table', () => {
+      setTTYOverride({ stdout: false });
+      expect(shouldOutputIdsOnly({ output: 'table', outputExplicit: true })).toBe(false);
+    });
+
+    it('returns false on a TTY when no explicit output was given', () => {
+      setTTYOverride({ stdout: true });
+      expect(shouldOutputIdsOnly({ output: 'table', outputExplicit: false })).toBe(false);
+    });
+
+    it('returns false on a TTY when explicit --output json was given', () => {
+      setTTYOverride({ stdout: true });
+      expect(shouldOutputIdsOnly({ output: 'json', outputExplicit: true })).toBe(false);
     });
   });
 

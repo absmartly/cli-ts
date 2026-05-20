@@ -96,6 +96,30 @@ describe('events command', () => {
     expect(printFormatted).toHaveBeenCalled();
   });
 
+  it('should send effective_exposures=true with --valid-exposures', async () => {
+    await eventsCommand.parseAsync(['node', 'test', 'list', '--valid-exposures']);
+    expect(mockClient.listEvents).toHaveBeenCalledWith({
+      filters: { effective_exposures: true },
+    });
+  });
+
+  it('should send effective_exposures=false with --invalid-exposures', async () => {
+    await eventsCommand.parseAsync(['node', 'test', 'list', '--invalid-exposures']);
+    expect(mockClient.listEvents).toHaveBeenCalledWith({
+      filters: { effective_exposures: false },
+    });
+  });
+
+  it('should reject combining --valid-exposures and --invalid-exposures', async () => {
+    await expect(
+      eventsCommand.parseAsync(['node', 'test', 'list', '--valid-exposures', '--invalid-exposures'])
+    ).rejects.toThrow('process.exit');
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.stringContaining('mutually exclusive')
+    );
+  });
+
   it('should list events history with filters', async () => {
     await eventsCommand.parseAsync([
       'node',

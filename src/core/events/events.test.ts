@@ -109,6 +109,28 @@ describe('events', () => {
       await listEvents(mockClient as any, {});
       expect(mockClient.listEvents).toHaveBeenCalledWith({});
     });
+
+    it('should send effective_exposures=true when validExposures is true', async () => {
+      mockClient.listEvents.mockResolvedValue([]);
+      await listEvents(mockClient as any, { validExposures: true });
+      expect(mockClient.listEvents).toHaveBeenCalledWith({
+        filters: { effective_exposures: true },
+      });
+    });
+
+    it('should send effective_exposures=false when validExposures is false', async () => {
+      mockClient.listEvents.mockResolvedValue([]);
+      await listEvents(mockClient as any, { validExposures: false });
+      expect(mockClient.listEvents).toHaveBeenCalledWith({
+        filters: { effective_exposures: false },
+      });
+    });
+
+    it('should omit effective_exposures when validExposures is undefined', async () => {
+      mockClient.listEvents.mockResolvedValue([]);
+      await listEvents(mockClient as any, { from: 1 });
+      expect(mockClient.listEvents).toHaveBeenCalledWith({ filters: { from: 1 } });
+    });
   });
 
   describe('listEventsHistory', () => {
