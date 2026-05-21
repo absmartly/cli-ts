@@ -29,9 +29,7 @@ export async function updatePlatformConfig(
 ): Promise<CommandResult<unknown>> {
   const current = await client.getPlatformConfig(params.id);
   if (!current || typeof current !== 'object') {
-    throw new Error(
-      `Cannot update platform config ${params.id}: existing config not found`
-    );
+    throw new Error(`Cannot update platform config ${params.id}: existing config not found`);
   }
   // id is in the URL path; don't echo it in the body
   const { id: _id, ...rest } = current as Record<string, unknown>;

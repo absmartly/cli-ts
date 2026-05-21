@@ -65,8 +65,8 @@ describe('platformconfig', () => {
   it('should throw a clear error if the current config cannot be fetched', async () => {
     mockClient.getPlatformConfig.mockResolvedValue(null);
 
-    await expect(
-      updatePlatformConfig(mockClient as any, { id: 999, value: 'x' })
-    ).rejects.toThrow(/platform config 999/);
+    await expect(updatePlatformConfig(mockClient as any, { id: 999, value: 'x' })).rejects.toThrow(
+      /platform config 999/
+    );
   });
 });

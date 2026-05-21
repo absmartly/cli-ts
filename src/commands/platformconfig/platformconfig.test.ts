@@ -62,14 +62,7 @@ describe('platform-config command', () => {
   });
 
   it('should fetch the current config and PUT the merged payload (string value)', async () => {
-    await platformConfigCommand.parseAsync([
-      'node',
-      'test',
-      'update',
-      '1',
-      '--value',
-      '"30"',
-    ]);
+    await platformConfigCommand.parseAsync(['node', 'test', 'update', '1', '--value', '"30"']);
 
     expect(mockClient.getPlatformConfig).toHaveBeenCalledWith(1);
     expect(mockClient.updatePlatformConfig).toHaveBeenCalledWith(1, {
@@ -79,14 +72,7 @@ describe('platform-config command', () => {
   });
 
   it('should accept a numeric value via --value', async () => {
-    await platformConfigCommand.parseAsync([
-      'node',
-      'test',
-      'update',
-      '1',
-      '--value',
-      '42',
-    ]);
+    await platformConfigCommand.parseAsync(['node', 'test', 'update', '1', '--value', '42']);
 
     expect(mockClient.updatePlatformConfig).toHaveBeenCalledWith(1, {
       name: 'cfg',
