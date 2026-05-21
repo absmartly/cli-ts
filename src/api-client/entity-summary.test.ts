@@ -14,6 +14,7 @@ import {
   summarizeTagRow,
   summarizeMetricCategoryRow,
   summarizeNamedEntityRow,
+  summarizeWebhookRow,
 } from './entity-summary.js';
 
 describe('applyShowExclude', () => {
@@ -366,5 +367,37 @@ describe('summarizeNamedEntityRow', () => {
 
   it('keeps description empty if missing', () => {
     expect(summarizeNamedEntityRow({ id: 1, name: 'x' }).description).toBe('');
+  });
+});
+
+describe('summarizeWebhookRow', () => {
+  it('curates webhook-specific columns and summarizes user fields', () => {
+    expect(
+      summarizeWebhookRow({
+        id: 2,
+        name: 'metrics-sync',
+        url: 'https://example.com/hooks/metrics',
+        enabled: true,
+        ordered: false,
+        max_retries: 5,
+        archived: false,
+        created_at: '2024-05-22T10:29:34.375Z',
+        created_by: { first_name: 'Joe', last_name: 'Bloggs' },
+        updated_at: null,
+        updated_by: null,
+      })
+    ).toEqual({
+      id: 2,
+      name: 'metrics-sync',
+      url: 'https://example.com/hooks/metrics',
+      enabled: true,
+      ordered: false,
+      max_retries: 5,
+      archived: false,
+      created_at: '2024-05-22T10:29:34.375Z',
+      created_by: 'Joe Bloggs',
+      updated_at: '',
+      updated_by: '',
+    });
   });
 });
