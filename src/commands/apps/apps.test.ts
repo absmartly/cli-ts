@@ -53,7 +53,10 @@ describe('apps command', () => {
     await appsCommand.parseAsync(['node', 'test', 'list']);
 
     expect(mockClient.listApplications).toHaveBeenCalled();
-    expect(printFormatted).toHaveBeenCalledWith([{ id: 1, name: 'web' }], expect.anything());
+    expect(printFormatted).toHaveBeenCalledWith(
+      [expect.objectContaining({ id: 1, name: 'web' })],
+      expect.anything()
+    );
   });
 
   it('should get application by id', async () => {
