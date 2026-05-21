@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { apiKeysCommand } from './index.js';
+import { apiKeysCommand, summarizeApiKeyRow } from './index.js';
 import {
   getAPIClientFromOptions,
   getGlobalOptions,
@@ -103,5 +103,51 @@ describe('apikeys command', () => {
     await apiKeysCommand.parseAsync(['node', 'test', 'delete', '5']);
 
     expect(mockClient.deleteApiKey).toHaveBeenCalledWith(5);
+  });
+});
+
+describe('summarizeApiKeyRow', () => {
+  it('picks curated columns and flattens created_by / updated_by', () => {
+    const raw = {
+      id: 36,
+      name: 'test new key',
+      description: 'new key',
+      hashed_key: 'X99upHMkKKM2XUpRuZ53YWCDx5G93SgB043EXx3LG5k=',
+      key_ending: 'ouNy',
+      permissions: '',
+      used_at: null,
+      created_at: '2024-05-22T10:29:34.375Z',
+      updated_at: null,
+      created_by: { id: 4, first_name: 'Márcio', last_name: 'Martins', email: 'm@x' },
+      updated_by: null,
+    };
+    expect(summarizeApiKeyRow(raw)).toEqual({
+      id: 36,
+      name: 'test new key',
+      description: 'new key',
+      key_ending: 'ouNy',
+      permissions: '',
+      used_at: '',
+      created_at: '2024-05-22T10:29:34.375Z',
+      created_by: 'Márcio Martins',
+      updated_at: '',
+      updated_by: '',
+    });
+  });
+
+  it('returns empty strings for missing optional fields', () => {
+    const raw = { id: 1, name: 'k', key_ending: 'xxxx' };
+    expect(summarizeApiKeyRow(raw)).toEqual({
+      id: 1,
+      name: 'k',
+      description: '',
+      key_ending: 'xxxx',
+      permissions: '',
+      used_at: '',
+      created_at: '',
+      created_by: '',
+      updated_at: '',
+      updated_by: '',
+    });
   });
 });
