@@ -228,3 +228,15 @@ export function summarizeCustomField(f: Record<string, unknown>): Record<string,
     created_at: formatDate(f.created_at),
   };
 }
+
+export function summarizeTagRow(t: Record<string, unknown>): Record<string, unknown> {
+  return {
+    id: t.id,
+    tag: t.tag ?? '',
+    archived: t.archived ?? false,
+    created_at: t.created_at ?? '',
+    created_by: formatOwner(t.created_by as Record<string, unknown> | undefined),
+    updated_at: t.updated_at ?? '',
+    updated_by: formatOwner(t.updated_by as Record<string, unknown> | undefined),
+  };
+}

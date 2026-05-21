@@ -11,6 +11,7 @@ import {
   summarizeUserDetail,
   summarizeSegment,
   summarizeSegmentRow,
+  summarizeTagRow,
 } from './entity-summary.js';
 
 describe('applyShowExclude', () => {
@@ -277,5 +278,33 @@ describe('summarizeGoal created_by field', () => {
   it('returns empty string for null created_by', () => {
     const result = summarizeGoal({ id: 1, name: 'g', created_by: null });
     expect(result.created_by).toBe('');
+  });
+});
+
+describe('summarizeTagRow', () => {
+  it('curates the simple tag columns and summarizes user fields', () => {
+    expect(
+      summarizeTagRow({
+        id: 7,
+        tag: 'top-priority',
+        archived: false,
+        created_at: '2024-05-22T10:29:34.375Z',
+        created_by: { first_name: 'Joe', last_name: 'Bloggs' },
+        updated_at: null,
+        updated_by: null,
+      })
+    ).toEqual({
+      id: 7,
+      tag: 'top-priority',
+      archived: false,
+      created_at: '2024-05-22T10:29:34.375Z',
+      created_by: 'Joe Bloggs',
+      updated_at: '',
+      updated_by: '',
+    });
+  });
+
+  it('defaults archived to false when missing', () => {
+    expect(summarizeTagRow({ id: 1, tag: 't' }).archived).toBe(false);
   });
 });
