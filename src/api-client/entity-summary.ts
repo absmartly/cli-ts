@@ -1,4 +1,5 @@
 import { formatDate, resolveDotPath } from './format-helpers.js';
+import { formatUserSummary } from '../lib/output/formatter.js';
 
 export function applyShowExclude(
   summary: Record<string, unknown>,
@@ -44,9 +45,7 @@ export function applyShowExclude(
 
 function formatOwner(obj: Record<string, unknown> | undefined): string {
   if (!obj) return '';
-  const first = (obj.first_name as string) ?? '';
-  const last = (obj.last_name as string) ?? '';
-  return [first, last].filter(Boolean).join(' ') || (obj.email as string) || '';
+  return formatUserSummary(obj) ?? '';
 }
 
 export function summarizeMetric(m: Record<string, unknown>): Record<string, unknown> {

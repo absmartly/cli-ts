@@ -254,3 +254,28 @@ describe('summarizeSegmentRow', () => {
     expect(result).toHaveProperty('attribute', 'device');
   });
 });
+
+describe('summarizeGoal created_by field', () => {
+  it('returns full name when first and last are present', () => {
+    const result = summarizeGoal({
+      id: 1,
+      name: 'g',
+      created_by: { first_name: 'Joe', last_name: 'Bloggs' },
+    });
+    expect(result.created_by).toBe('Joe Bloggs');
+  });
+
+  it('returns email when name parts are missing', () => {
+    const result = summarizeGoal({
+      id: 1,
+      name: 'g',
+      created_by: { email: 'joe@example.com' },
+    });
+    expect(result.created_by).toBe('joe@example.com');
+  });
+
+  it('returns empty string for null created_by', () => {
+    const result = summarizeGoal({ id: 1, name: 'g', created_by: null });
+    expect(result.created_by).toBe('');
+  });
+});
