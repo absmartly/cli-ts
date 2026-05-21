@@ -234,6 +234,25 @@ function isObject(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+export function formatUserSummary(value: unknown): string | null {
+  if (!isObject(value)) return null;
+  const first = typeof value.first_name === 'string' ? value.first_name : '';
+  const last = typeof value.last_name === 'string' ? value.last_name : '';
+  const fullName = [first, last].filter(Boolean).join(' ');
+  if (fullName) return fullName;
+  if (typeof value.email === 'string' && value.email) return value.email;
+  return null;
+}
+
+export function summarizeObjectValue(value: unknown): string | null {
+  if (!isObject(value)) return null;
+  const user = formatUserSummary(value);
+  if (user !== null) return user;
+  if (typeof value.name === 'string' && value.name) return value.name;
+  if (typeof value.title === 'string' && value.title) return value.title;
+  return null;
+}
+
 export function formatValue(value: unknown, options: OutputOptions = {}): string {
   if (value === null || value === undefined) return '';
   if (typeof value === 'boolean') return String(value);
@@ -247,6 +266,8 @@ export function formatValue(value: unknown, options: OutputOptions = {}): string
   }
   if (Array.isArray(value)) return value.map((v) => formatValue(v, options)).join(', ');
   if (isObject(value)) {
+    const summary = summarizeObjectValue(value);
+    if (summary !== null) return summary;
     if (options.format === 'table' || options.format === 'vertical') {
       return JSON.stringify(value, null, 2);
     }
