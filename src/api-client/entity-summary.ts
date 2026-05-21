@@ -240,3 +240,19 @@ export function summarizeTagRow(t: Record<string, unknown>): Record<string, unkn
     updated_by: formatOwner(t.updated_by as Record<string, unknown> | undefined),
   };
 }
+
+export function summarizeMetricCategoryRow(
+  c: Record<string, unknown>
+): Record<string, unknown> {
+  return {
+    id: c.id,
+    name: c.name ?? '',
+    description: c.description ?? '',
+    color: c.color ?? '',
+    archived: c.archived ?? false,
+    created_at: c.created_at ?? '',
+    created_by: formatOwner(c.created_by as Record<string, unknown> | undefined),
+    updated_at: c.updated_at ?? '',
+    updated_by: formatOwner(c.updated_by as Record<string, unknown> | undefined),
+  };
+}

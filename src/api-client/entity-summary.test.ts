@@ -12,6 +12,7 @@ import {
   summarizeSegment,
   summarizeSegmentRow,
   summarizeTagRow,
+  summarizeMetricCategoryRow,
 } from './entity-summary.js';
 
 describe('applyShowExclude', () => {
@@ -306,5 +307,33 @@ describe('summarizeTagRow', () => {
 
   it('defaults archived to false when missing', () => {
     expect(summarizeTagRow({ id: 1, tag: 't' }).archived).toBe(false);
+  });
+});
+
+describe('summarizeMetricCategoryRow', () => {
+  it('picks the useful columns and summarizes user fields', () => {
+    expect(
+      summarizeMetricCategoryRow({
+        id: 3,
+        name: 'Revenue',
+        description: 'all revenue metrics',
+        color: '#ff5733',
+        archived: false,
+        created_at: '2024-05-22T10:29:34.375Z',
+        created_by: { first_name: 'Joe', last_name: 'Bloggs' },
+        updated_at: null,
+        updated_by: null,
+      })
+    ).toEqual({
+      id: 3,
+      name: 'Revenue',
+      description: 'all revenue metrics',
+      color: '#ff5733',
+      archived: false,
+      created_at: '2024-05-22T10:29:34.375Z',
+      created_by: 'Joe Bloggs',
+      updated_at: '',
+      updated_by: '',
+    });
   });
 });
