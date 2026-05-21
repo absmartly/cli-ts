@@ -241,9 +241,7 @@ export function summarizeTagRow(t: Record<string, unknown>): Record<string, unkn
   };
 }
 
-export function summarizeMetricCategoryRow(
-  c: Record<string, unknown>
-): Record<string, unknown> {
+export function summarizeMetricCategoryRow(c: Record<string, unknown>): Record<string, unknown> {
   return {
     id: c.id,
     name: c.name ?? '',
@@ -257,9 +255,7 @@ export function summarizeMetricCategoryRow(
   };
 }
 
-export function summarizeNamedEntityRow(
-  e: Record<string, unknown>
-): Record<string, unknown> {
+export function summarizeNamedEntityRow(e: Record<string, unknown>): Record<string, unknown> {
   return {
     id: e.id,
     name: e.name ?? '',
