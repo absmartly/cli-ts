@@ -10,6 +10,7 @@ import { parseRoleId } from '../../lib/utils/validators.js';
 import { createListCommand } from '../../lib/utils/list-command.js';
 import type { RoleId } from '../../lib/api/branded-types.js';
 import { getRole, createRole, updateRole, deleteRole } from '../../core/roles/index.js';
+import { summarizeNamedEntityRow } from '../../api-client/entity-summary.js';
 
 export const rolesCommand = new Command('roles').alias('role').description('Role commands');
 
@@ -25,6 +26,7 @@ const listCommand = createListCommand({
       archived: options.archived as boolean,
       ids: options.ids as string | undefined,
     }),
+  summarizeRow: summarizeNamedEntityRow,
 });
 
 const getCommand = new Command('get')
