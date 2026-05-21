@@ -256,3 +256,18 @@ export function summarizeMetricCategoryRow(
     updated_by: formatOwner(c.updated_by as Record<string, unknown> | undefined),
   };
 }
+
+export function summarizeNamedEntityRow(
+  e: Record<string, unknown>
+): Record<string, unknown> {
+  return {
+    id: e.id,
+    name: e.name ?? '',
+    description: e.description ?? '',
+    archived: e.archived ?? false,
+    created_at: e.created_at ?? '',
+    created_by: formatOwner(e.created_by as Record<string, unknown> | undefined),
+    updated_at: e.updated_at ?? '',
+    updated_by: formatOwner(e.updated_by as Record<string, unknown> | undefined),
+  };
+}

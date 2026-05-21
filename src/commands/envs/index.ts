@@ -8,6 +8,7 @@ import {
 } from '../../lib/utils/api-helper.js';
 import { parseEnvironmentId } from '../../lib/utils/validators.js';
 import { createListCommand } from '../../lib/utils/list-command.js';
+import { summarizeNamedEntityRow } from '../../api-client/entity-summary.js';
 import type { EnvironmentId } from '../../lib/api/branded-types.js';
 import { getEnv, createEnv, updateEnv, archiveEnv } from '../../core/envs/index.js';
 
@@ -29,6 +30,7 @@ const listCommand = createListCommand({
       archived: options.archived as boolean,
       ids: options.ids as string | undefined,
     }),
+  summarizeRow: summarizeNamedEntityRow,
 });
 
 const getCommand = new Command('get')

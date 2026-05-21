@@ -13,6 +13,7 @@ import {
   summarizeSegmentRow,
   summarizeTagRow,
   summarizeMetricCategoryRow,
+  summarizeNamedEntityRow,
 } from './entity-summary.js';
 
 describe('applyShowExclude', () => {
@@ -335,5 +336,35 @@ describe('summarizeMetricCategoryRow', () => {
       updated_at: '',
       updated_by: '',
     });
+  });
+});
+
+describe('summarizeNamedEntityRow', () => {
+  it('curates id/name/description/archived plus user/time audit fields', () => {
+    expect(
+      summarizeNamedEntityRow({
+        id: 4,
+        name: 'production',
+        description: 'production env',
+        archived: false,
+        created_at: '2024-05-22T10:29:34.375Z',
+        created_by: { first_name: 'Joe', last_name: 'Bloggs' },
+        updated_at: '2024-05-23T10:29:34.375Z',
+        updated_by: { email: 'admin@x' },
+      })
+    ).toEqual({
+      id: 4,
+      name: 'production',
+      description: 'production env',
+      archived: false,
+      created_at: '2024-05-22T10:29:34.375Z',
+      created_by: 'Joe Bloggs',
+      updated_at: '2024-05-23T10:29:34.375Z',
+      updated_by: 'admin@x',
+    });
+  });
+
+  it('keeps description empty if missing', () => {
+    expect(summarizeNamedEntityRow({ id: 1, name: 'x' }).description).toBe('');
   });
 });

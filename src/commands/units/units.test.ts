@@ -53,7 +53,21 @@ describe('units command', () => {
     await unitsCommand.parseAsync(['node', 'test', 'list']);
 
     expect(mockClient.listUnitTypes).toHaveBeenCalled();
-    expect(printFormatted).toHaveBeenCalledWith([{ id: 1, name: 'user_id' }], expect.anything());
+    expect(printFormatted).toHaveBeenCalledWith(
+      [
+        {
+          id: 1,
+          name: 'user_id',
+          description: '',
+          archived: false,
+          created_at: '',
+          created_by: '',
+          updated_at: '',
+          updated_by: '',
+        },
+      ],
+      expect.anything()
+    );
   });
 
   it('should get unit type by id', async () => {
