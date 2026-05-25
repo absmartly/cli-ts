@@ -62,15 +62,25 @@ export const listCommand = new Command('list')
     'include additional fields (e.g. --show experiment_report archived)'
   )
   .option('--exclude <fields...>', 'hide fields (e.g. --exclude primary_metric owner)')
+  .option(
+    '--show-only <fields...>',
+    'show only these fields (mutually exclusive with --show and --exclude)'
+  )
   .action(
     withErrorHandling(async (options) => {
       const globalOptions = getGlobalOptions(listCommand);
       const client = await getAPIClientFromOptions(globalOptions);
 
+      const showOnly = options.showOnly as string[] | undefined;
+      if (showOnly && (options.show || options.exclude)) {
+        throw new Error('--show-only is mutually exclusive with --show and --exclude');
+      }
+
       const result = await listExperiments(client, {
         ...options,
         type: options.type || getDefaultType(),
         raw: globalOptions.raw,
+        showOnly,
       });
 
       if (shouldOutputIdsOnly(globalOptions)) {
