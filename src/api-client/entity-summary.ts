@@ -4,8 +4,20 @@ export function applyShowExclude(
   summary: Record<string, unknown>,
   raw: Record<string, unknown>,
   extraFields: string[] = [],
-  excludeFields: string[] = []
+  excludeFields: string[] = [],
+  onlyFields?: string[]
 ): Record<string, unknown> {
+  if (onlyFields && onlyFields.length > 0) {
+    const result: Record<string, unknown> = {};
+    for (const field of onlyFields) {
+      if (field in summary) {
+        result[field] = summary[field];
+      } else if (field in raw) {
+        result[field] = raw[field];
+      }
+    }
+    return result;
+  }
   for (const field of extraFields) {
     if (!(field in summary) && field in raw) {
       summary[field] = raw[field];
