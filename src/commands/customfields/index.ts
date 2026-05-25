@@ -56,7 +56,13 @@ const getCommand = new Command('get')
       if (showOnly && (show.length > 0 || exclude.length > 0)) {
         throw new Error('--show-only is mutually exclusive with --show and --exclude');
       }
-      const result = await getCustomField(client, { id, show, exclude, showOnly, raw: globalOptions.raw });
+      const result = await getCustomField(client, {
+        id,
+        show,
+        exclude,
+        showOnly,
+        raw: globalOptions.raw,
+      });
       printFormatted(result.data, globalOptions);
     })
   );

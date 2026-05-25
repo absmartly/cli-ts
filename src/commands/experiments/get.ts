@@ -122,20 +122,13 @@ export const getCommand = new Command('get')
           'stop_at',
           ...customFieldTitles,
         ]);
-        const metricSectionKeys = [
-          'secondary_metrics',
-          'guardrail_metrics',
-          'exploratory_metrics',
-        ];
+        const metricSectionKeys = ['secondary_metrics', 'guardrail_metrics', 'exploratory_metrics'];
 
         const summaryKeys = Object.keys(summary);
         const headerKeysInOrder = [
           ...headerOrder.filter((k) => k in summary),
           ...summaryKeys.filter(
-            (k) =>
-              !headerOrder.includes(k) &&
-              !sectionedKeys.has(k) &&
-              !k.startsWith('result')
+            (k) => !headerOrder.includes(k) && !sectionedKeys.has(k) && !k.startsWith('result')
           ),
         ];
         for (const key of headerKeysInOrder) {

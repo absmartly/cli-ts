@@ -200,7 +200,15 @@ describe('get command', () => {
 
   it('rejects --show-only combined with --show', async () => {
     try {
-      await getCommand.parseAsync(['node', 'test', '42', '--show-only', 'id', '--show', 'audience']);
+      await getCommand.parseAsync([
+        'node',
+        'test',
+        '42',
+        '--show-only',
+        'id',
+        '--show',
+        'audience',
+      ]);
     } catch (_e) {
       // process.exit threw a sentinel
     }
@@ -259,9 +267,7 @@ describe('get command', () => {
   it('renders --show-only id name audience minimally', async () => {
     vi.mocked(getGlobalOptions).mockReturnValue({ output: 'rendered' } as any);
 
-    await getCommand.parseAsync([
-      'node', 'test', '42', '--show-only', 'id', 'name', 'audience',
-    ]);
+    await getCommand.parseAsync(['node', 'test', '42', '--show-only', 'id', 'name', 'audience']);
 
     const output = consoleSpy.mock.calls.flat().join('');
     expect(output).toContain('42');
