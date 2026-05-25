@@ -59,6 +59,7 @@ describe('get command', () => {
     resolveExperimentId: vi.fn().mockImplementation((v: string) => Promise.resolve(Number(v))),
     getExperiment: vi.fn().mockResolvedValue(fullExperiment),
     listExperimentActivity: vi.fn().mockResolvedValue([{ id: 1, text: 'note' }]),
+    listUsers: vi.fn().mockResolvedValue([]),
   };
 
   beforeEach(() => {
@@ -219,5 +220,69 @@ describe('get command', () => {
       'Error:',
       '--show-only is mutually exclusive with --show and --exclude'
     );
+  });
+
+  it('renders default sections when no filters are passed', async () => {
+    vi.mocked(getGlobalOptions).mockReturnValue({ output: 'rendered' } as any);
+
+    await getCommand.parseAsync(['node', 'test', '42']);
+
+    expect(printFormatted).not.toHaveBeenCalled();
+    const output = consoleSpy.mock.calls.flat().join('');
+    expect(output).toContain('Test Exp'); // display_name in title
+    expect(output).toContain('## Audience');
+    expect(output).toContain('## Variants');
+    expect(output).toContain('### Hypothesis');
+    expect(output).toContain('Created:');
+  });
+
+  it('renders --exclude audience without ## Audience section', async () => {
+    vi.mocked(getGlobalOptions).mockReturnValue({ output: 'rendered' } as any);
+
+    await getCommand.parseAsync(['node', 'test', '42', '--exclude', 'audience']);
+
+    const output = consoleSpy.mock.calls.flat().join('');
+    expect(output).not.toContain('## Audience');
+    expect(output).toContain('## Variants'); // unrelated section still present
+  });
+
+  it('renders --exclude Hypothesis without that custom field section', async () => {
+    vi.mocked(getGlobalOptions).mockReturnValue({ output: 'rendered' } as any);
+
+    await getCommand.parseAsync(['node', 'test', '42', '--exclude', 'Hypothesis']);
+
+    const output = consoleSpy.mock.calls.flat().join('');
+    expect(output).not.toContain('### Hypothesis');
+    expect(output).toContain('## Audience'); // unrelated section still present
+  });
+
+  it('renders --show-only id name audience minimally', async () => {
+    vi.mocked(getGlobalOptions).mockReturnValue({ output: 'rendered' } as any);
+
+    await getCommand.parseAsync([
+      'node', 'test', '42', '--show-only', 'id', 'name', 'audience',
+    ]);
+
+    const output = consoleSpy.mock.calls.flat().join('');
+    expect(output).toContain('42');
+    expect(output).toContain('test-exp');
+    expect(output).toContain('## Audience');
+    expect(output).not.toContain('## Variants');
+    expect(output).not.toContain('### Hypothesis');
+    expect(output).toContain('Created:'); // footer always renders
+  });
+
+  it('renders --show description adds the description row', async () => {
+    mockClient.getExperiment.mockResolvedValueOnce({
+      ...fullExperiment,
+      description: 'long-form description',
+    });
+    vi.mocked(getGlobalOptions).mockReturnValue({ output: 'rendered' } as any);
+
+    await getCommand.parseAsync(['node', 'test', '42', '--show', 'description']);
+
+    const output = consoleSpy.mock.calls.flat().join('');
+    expect(output).toContain('long-form description');
+    expect(output).toContain('## Audience'); // implicit defaults still kick in
   });
 });
