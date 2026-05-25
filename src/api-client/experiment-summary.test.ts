@@ -152,6 +152,44 @@ describe('summarizeExperiment', () => {
     expect(summary.name).toBe('test-exp');
   });
 
+  it('returns only the requested fields when onlyFields is set', () => {
+    const summary = summarizeExperiment(baseExperiment, [], [], ['id', 'name']);
+    expect(Object.keys(summary)).toEqual(['id', 'name']);
+    expect(summary).toEqual({ id: 1, name: 'test-exp' });
+  });
+
+  it('preserves onlyFields ordering', () => {
+    const summary = summarizeExperiment(baseExperiment, [], [], ['state', 'id']);
+    expect(Object.keys(summary)).toEqual(['state', 'id']);
+  });
+
+  it('resolves audience inside onlyFields and parses JSON value', () => {
+    const exp = { ...baseExperiment, audience: '{"filter":[{"k":"v"}]}' };
+    const summary = summarizeExperiment(exp, [], [], ['audience']);
+    expect(summary.audience).toEqual({ filter: [{ k: 'v' }] });
+  });
+
+  it('resolves custom-field titles inside onlyFields', () => {
+    const exp = {
+      ...baseExperiment,
+      custom_section_field_values: [
+        { custom_section_field: { title: 'Hypothesis' }, value: 'Red converts better' },
+      ],
+    };
+    const summary = summarizeExperiment(exp, [], [], ['Hypothesis']);
+    expect(summary).toEqual({ Hypothesis: 'Red converts better' });
+  });
+
+  it('returns empty object when onlyFields names nothing the experiment has', () => {
+    const summary = summarizeExperiment(baseExperiment, [], [], ['nonexistent_field']);
+    expect(summary).toEqual({});
+  });
+
+  it('ignores extraFields and excludeFields when onlyFields is set', () => {
+    const summary = summarizeExperiment(baseExperiment, ['extra'], ['name'], ['id']);
+    expect(summary).toEqual({ id: 1 });
+  });
+
   it('should format experiment_report extra field', () => {
     const exp = {
       ...baseExperiment,
@@ -257,6 +295,12 @@ describe('summarizeExperimentRow', () => {
   it('should not overwrite existing row fields with extra fields', () => {
     const row = summarizeExperimentRow(baseExperiment, ['name']);
     expect(row.name).toBe('row-exp');
+  });
+
+  it('returns only the requested row fields when onlyFields is set', () => {
+    const row = summarizeExperimentRow(baseExperiment, [], [], ['id', 'state']);
+    expect(Object.keys(row)).toEqual(['id', 'state']);
+    expect(row).toEqual({ id: 10, state: 'running' });
   });
 
   it('should handle missing optional fields gracefully', () => {

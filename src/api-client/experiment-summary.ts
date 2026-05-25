@@ -10,7 +10,8 @@ import {
 export function summarizeExperiment(
   exp: Record<string, unknown>,
   extraFields: string[] = [],
-  excludeFields: string[] = []
+  excludeFields: string[] = [],
+  onlyFields?: string[]
 ): Record<string, unknown> {
   const apps = exp.applications as Array<Record<string, unknown>> | undefined;
   const unitType = exp.unit_type as Record<string, unknown> | undefined;
@@ -133,7 +134,8 @@ export function summarizeExperiment(
     }
   }
 
-  for (const field of extraFields) {
+  const lookupFields = onlyFields ? [...extraFields, ...onlyFields] : extraFields;
+  for (const field of lookupFields) {
     if (field in summary) continue;
 
     if (field in exp) {
@@ -144,6 +146,14 @@ export function summarizeExperiment(
         summary[field] = customValue;
       }
     }
+  }
+
+  if (onlyFields && onlyFields.length > 0) {
+    const filtered: Record<string, unknown> = {};
+    for (const field of onlyFields) {
+      if (field in summary) filtered[field] = summary[field];
+    }
+    return filtered;
   }
 
   if (excludeFields.length > 0) {
@@ -177,7 +187,8 @@ const DEFAULT_ROW_EXCLUDES = ['unit_type', 'traffic', 'owner'];
 export function summarizeExperimentRow(
   exp: Record<string, unknown>,
   extraFields: string[] = [],
-  excludeFields: string[] = []
+  excludeFields: string[] = [],
+  onlyFields?: string[]
 ): Record<string, unknown> {
   const showSet = new Set(extraFields.map((f) => f.toLowerCase()));
   const effectiveExcludes = [
@@ -211,10 +222,19 @@ export function summarizeExperimentRow(
     progress: formatProgress(exp),
   };
 
-  for (const field of extraFields) {
+  const lookupFields = onlyFields ? [...extraFields, ...onlyFields] : extraFields;
+  for (const field of lookupFields) {
     if (!(field in row) && field in exp) {
       row[field] = formatExtraField(field, exp[field]);
     }
+  }
+
+  if (onlyFields && onlyFields.length > 0) {
+    const filtered: Record<string, unknown> = {};
+    for (const field of onlyFields) {
+      if (field in row) filtered[field] = row[field];
+    }
+    return filtered;
   }
 
   if (excludeFields.length > 0) {
