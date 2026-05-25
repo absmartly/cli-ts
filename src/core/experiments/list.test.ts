@@ -104,4 +104,19 @@ describe('list', () => {
       })
     );
   });
+
+  it('forwards showOnly to summarizeExperimentRow', async () => {
+    const { summarizeExperimentRow } = await import('../../api-client/experiment-summary.js');
+    await listExperiments(mockClient as any, {
+      items: 25,
+      page: 1,
+      showOnly: ['id', 'state'],
+    });
+    expect(summarizeExperimentRow).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 1 }),
+      [],
+      [],
+      ['id', 'state']
+    );
+  });
 });

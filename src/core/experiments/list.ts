@@ -50,6 +50,7 @@ export interface ListExperimentsParams {
   desc?: boolean;
   show?: string[];
   exclude?: string[];
+  showOnly?: string[];
   raw?: boolean;
 }
 
@@ -142,7 +143,7 @@ export async function listExperiments(
   const rows = params.raw
     ? (experiments as unknown[])
     : (experiments as Array<Record<string, unknown>>).map((e) =>
-        summarizeExperimentRow(e, extraFields, excludeFields)
+        summarizeExperimentRow(e, extraFields, excludeFields, params.showOnly)
       );
 
   return {
