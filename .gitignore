@@ -46,6 +46,7 @@ docs/plans/
 
 # Claude
 .claude/tasks/
+.claude/worktrees/
 docs/
 PLAN-*.md
 .worktrees/
