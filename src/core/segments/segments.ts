@@ -25,6 +25,7 @@ export interface GetSegmentParams {
   id: SegmentId;
   show?: string[] | undefined;
   exclude?: string[] | undefined;
+  showOnly?: string[] | undefined;
   raw?: boolean | undefined;
 }
 
@@ -42,7 +43,8 @@ export async function getSegment(
         summarizeSegment(segment as Record<string, unknown>),
         segment as Record<string, unknown>,
         show,
-        exclude
+        exclude,
+        params.showOnly
       );
   return { data };
 }
