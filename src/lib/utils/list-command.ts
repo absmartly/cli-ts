@@ -31,7 +31,11 @@ export function createListCommand(opts: ListCommandOptions): Command {
     .option('--archived', 'include archived items')
     .option('--ids <ids>', 'filter by IDs (comma-separated)')
     .option('--show <fields...>', 'include additional fields from API response')
-    .option('--exclude <fields...>', 'hide fields from summary');
+    .option('--exclude <fields...>', 'hide fields from summary')
+    .option(
+      '--show-only <fields...>',
+      'show only these fields (mutually exclusive with --show and --exclude)'
+    );
 
   cmd.action(
     withErrorHandling(async (options) => {
@@ -39,6 +43,10 @@ export function createListCommand(opts: ListCommandOptions): Command {
       const client = await getAPIClientFromOptions(globalOptions);
       const show = (options.show as string[] | undefined) ?? [];
       const exclude = (options.exclude as string[] | undefined) ?? [];
+      const showOnly = options.showOnly as string[] | undefined;
+      if (showOnly && (show.length > 0 || exclude.length > 0)) {
+        throw new Error('--show-only is mutually exclusive with --show and --exclude');
+      }
 
       const items = await opts.fetch(client, options);
 
@@ -52,7 +60,7 @@ export function createListCommand(opts: ListCommandOptions): Command {
         data = items;
       } else {
         data = (items as Array<Record<string, unknown>>).map((item) =>
-          applyShowExclude(opts.summarizeRow!(item), item, show, exclude)
+          applyShowExclude(opts.summarizeRow!(item), item, show, exclude, showOnly)
         );
       }
 
