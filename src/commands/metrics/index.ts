@@ -62,12 +62,20 @@ const getCommand = new Command('get')
   .argument('<id>', 'metric ID', parseMetricId)
   .option('--show <fields...>', 'include additional fields from API response')
   .option('--exclude <fields...>', 'hide fields from summary')
+  .option(
+    '--show-only <fields...>',
+    'show only these fields (mutually exclusive with --show and --exclude)'
+  )
   .action(
     withErrorHandling(async (id: MetricId, options) => {
       const globalOptions = getGlobalOptions(getCommand);
       const client = await getAPIClientFromOptions(globalOptions);
       const show = (options.show as string[] | undefined) ?? [];
       const exclude = (options.exclude as string[] | undefined) ?? [];
+      const showOnly = options.showOnly as string[] | undefined;
+      if (showOnly && (show.length > 0 || exclude.length > 0)) {
+        throw new Error('--show-only is mutually exclusive with --show and --exclude');
+      }
 
       const result = await getMetric(client, { id });
       const data = globalOptions.raw
@@ -76,7 +84,8 @@ const getCommand = new Command('get')
             summarizeMetric(result.data as Record<string, unknown>),
             result.data as Record<string, unknown>,
             show,
-            exclude
+            exclude,
+            showOnly
           );
       printFormatted(data, globalOptions);
     })
