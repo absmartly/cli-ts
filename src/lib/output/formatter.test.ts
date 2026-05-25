@@ -38,6 +38,31 @@ describe('Output Formatter', () => {
     it('should escape multiple pipes correctly', () => {
       expect(formatValue('a|b|c|d', { format: 'markdown' })).toBe('a\\|b\\|c\\|d');
     });
+
+    it('should pretty-print objects in table format', () => {
+      const obj = { filter: [{ k: 'v' }] };
+      expect(formatValue(obj, { format: 'table' })).toBe(JSON.stringify(obj, null, 2));
+    });
+
+    it('should pretty-print objects in vertical format', () => {
+      const obj = { filter: [{ k: 'v' }] };
+      expect(formatValue(obj, { format: 'vertical' })).toBe(JSON.stringify(obj, null, 2));
+    });
+
+    it('should compact-print objects in markdown format', () => {
+      const obj = { filter: [{ k: 'v' }] };
+      expect(formatValue(obj, { format: 'markdown' })).toBe(JSON.stringify(obj));
+    });
+
+    it('should compact-print objects in plain format', () => {
+      const obj = { filter: [{ k: 'v' }] };
+      expect(formatValue(obj, { format: 'plain' })).toBe(JSON.stringify(obj));
+    });
+
+    it('should compact-print objects when no format is set', () => {
+      const obj = { filter: [{ k: 'v' }] };
+      expect(formatValue(obj)).toBe(JSON.stringify(obj));
+    });
   });
 
   describe('truncateText', () => {

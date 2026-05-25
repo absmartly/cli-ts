@@ -55,6 +55,7 @@ export function formatOutput(
   format: OutputFormat = 'table',
   options: OutputOptions = {}
 ): string {
+  const opts = { ...options, format };
   switch (format) {
     case 'json': {
       const json = JSON.stringify(data, null, 2);
@@ -65,15 +66,15 @@ export function formatOutput(
       return options.noColor ? yml : highlight(yml, { language: 'yaml', ignoreIllegals: true });
     }
     case 'plain':
-      return formatPlain(data, options);
+      return formatPlain(data, opts);
     case 'markdown':
-      return formatMarkdown(data, options);
+      return formatMarkdown(data, opts);
     case 'rendered':
-      return (terminalMarked.parse(formatMarkdown(data, options)) as string)
+      return (terminalMarked.parse(formatMarkdown(data, opts)) as string)
         .replace(/^( *)(\* )/gm, '$1● ')
         .trim();
     case 'vertical':
-      return formatVertical(data, options);
+      return formatVertical(data, opts);
     case 'ids':
       if (Array.isArray(data)) {
         return data.map((item) => (item as Record<string, unknown>).id).join('\n');
@@ -81,7 +82,7 @@ export function formatOutput(
       return String((data as Record<string, unknown>).id);
     case 'table':
     default:
-      return formatTable(data, options);
+      return formatTable(data, opts);
   }
 }
 
@@ -191,6 +192,14 @@ export function formatMarkdown(data: unknown, options: OutputOptions = {}): stri
 }
 
 export function formatVertical(data: unknown, options: OutputOptions = {}): string {
+  const renderRow = (key: string, value: unknown, maxKeyLen: number): string => {
+    const label = options.noColor ? key.padStart(maxKeyLen) : chalk.bold(key.padStart(maxKeyLen));
+    const formatted = formatValue(value, { ...options, full: true });
+    if (!formatted.includes('\n')) return `${label}: ${formatted}`;
+    const indent = ' '.repeat(maxKeyLen + 2);
+    return `${label}: ${formatted.split('\n').join('\n' + indent)}`;
+  };
+
   if (Array.isArray(data)) {
     if (data.length === 0) return 'No results found.';
 
@@ -205,12 +214,7 @@ export function formatVertical(data: unknown, options: OutputOptions = {}): stri
         }
 
         const maxKeyLen = Math.max(...Object.keys(item).map((k) => k.length));
-        const lines = Object.entries(item).map(([key, value]) => {
-          const label = options.noColor
-            ? key.padStart(maxKeyLen)
-            : chalk.bold(key.padStart(maxKeyLen));
-          return `${label}: ${formatValue(value, { ...options, full: true })}`;
-        });
+        const lines = Object.entries(item).map(([key, value]) => renderRow(key, value, maxKeyLen));
 
         return `${header}\n${lines.join('\n')}`;
       })
@@ -220,14 +224,7 @@ export function formatVertical(data: unknown, options: OutputOptions = {}): stri
   if (typeof data === 'object' && data !== null) {
     const entries = Object.entries(data);
     const maxKeyLen = Math.max(...entries.map(([k]) => k.length));
-    return entries
-      .map(([key, value]) => {
-        const label = options.noColor
-          ? key.padStart(maxKeyLen)
-          : chalk.bold(key.padStart(maxKeyLen));
-        return `${label}: ${formatValue(value, { ...options, full: true })}`;
-      })
-      .join('\n');
+    return entries.map(([key, value]) => renderRow(key, value, maxKeyLen)).join('\n');
   }
 
   return String(data);
@@ -249,7 +246,12 @@ export function formatValue(value: unknown, options: OutputOptions = {}): string
     return text;
   }
   if (Array.isArray(value)) return value.map((v) => formatValue(v, options)).join(', ');
-  if (isObject(value)) return JSON.stringify(value);
+  if (isObject(value)) {
+    if (options.format === 'table' || options.format === 'vertical') {
+      return JSON.stringify(value, null, 2);
+    }
+    return JSON.stringify(value);
+  }
   return String(value);
 }
 
