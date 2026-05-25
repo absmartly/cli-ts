@@ -1,14 +1,39 @@
-import { formatDate } from './format-helpers.js';
+import { formatDate, resolveDotPath } from './format-helpers.js';
 
 export function applyShowExclude(
   summary: Record<string, unknown>,
   raw: Record<string, unknown>,
   extraFields: string[] = [],
-  excludeFields: string[] = []
+  excludeFields: string[] = [],
+  onlyFields?: string[]
 ): Record<string, unknown> {
+  const resolveExtra = (field: string): unknown => {
+    if (field in summary) return summary[field];
+    if (field in raw) return raw[field];
+    if (field.includes('.')) {
+      const resolved = resolveDotPath(raw, field);
+      if (resolved === undefined) return undefined;
+      if (Array.isArray(resolved) && resolved.every((v) => v === undefined)) return undefined;
+      return resolved;
+    }
+    return undefined;
+  };
+
+  if (onlyFields && onlyFields.length > 0) {
+    const result: Record<string, unknown> = {};
+    for (const field of onlyFields) {
+      const value = resolveExtra(field);
+      if (value !== undefined) {
+        result[field] = value;
+      }
+    }
+    return result;
+  }
   for (const field of extraFields) {
-    if (!(field in summary) && field in raw) {
-      summary[field] = raw[field];
+    if (field in summary) continue;
+    const value = resolveExtra(field);
+    if (value !== undefined) {
+      summary[field] = value;
     }
   }
   if (excludeFields.length > 0) {

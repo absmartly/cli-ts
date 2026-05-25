@@ -7,6 +7,7 @@ export interface GetTeamParams {
   id: TeamId;
   show?: string[] | undefined;
   exclude?: string[] | undefined;
+  showOnly?: string[] | undefined;
   raw?: boolean | undefined;
 }
 
@@ -24,7 +25,8 @@ export async function getTeam(
         summarizeTeam(team as Record<string, unknown>),
         team as Record<string, unknown>,
         show,
-        exclude
+        exclude,
+        params.showOnly
       );
   return { data };
 }

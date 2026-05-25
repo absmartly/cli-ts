@@ -64,4 +64,18 @@ describe('get', () => {
     // detail is the summary (from mock)
     expect(result.detail).toEqual({ id: 1, name: 'Test', state: 'running' });
   });
+
+  it('forwards showOnly to summarizeExperiment', async () => {
+    const { summarizeExperiment } = await import('../../api-client/experiment-summary.js');
+    await getExperiment(mockClient as any, {
+      experimentId: id(1),
+      showOnly: ['id', 'name'],
+    });
+    expect(summarizeExperiment).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 1 }),
+      [],
+      [],
+      ['id', 'name']
+    );
+  });
 });

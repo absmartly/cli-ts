@@ -73,6 +73,10 @@ const listCommand = addPaginationOptions(
     .option('--show <fields...>', 'include additional fields from API response')
     .option('--exclude <fields...>', 'hide fields from summary')
     .option(
+      '--show-only <fields...>',
+      'show only these fields (mutually exclusive with --show and --exclude)'
+    )
+    .option(
       '--show-avatars [cols]',
       'display avatars inline, optional width in columns (default: 3)',
       parseInt
@@ -83,6 +87,10 @@ const listCommand = addPaginationOptions(
     const client = await getAPIClientFromOptions(globalOptions);
     const show = (options.show as string[] | undefined) ?? [];
     const exclude = (options.exclude as string[] | undefined) ?? [];
+    const showOnly = options.showOnly as string[] | undefined;
+    if (showOnly && (show.length > 0 || exclude.length > 0)) {
+      throw new Error('--show-only is mutually exclusive with --show and --exclude');
+    }
 
     const result = await coreListUsers(client, {
       includeArchived: options.includeArchived,
@@ -131,7 +139,7 @@ const listCommand = addPaginationOptions(
       );
 
       const rows = (users as Array<Record<string, unknown>>).map((u) =>
-        applyShowExclude(summarizeUserRow(u), u, show, exclude)
+        applyShowExclude(summarizeUserRow(u), u, show, exclude, showOnly)
       );
       const keys = rows.length > 0 ? Object.keys(rows[0]!) : [];
 
@@ -180,7 +188,7 @@ const listCommand = addPaginationOptions(
       const data = globalOptions.raw
         ? users
         : (users as Array<Record<string, unknown>>).map((u) =>
-            applyShowExclude(summarizeUserRow(u), u, show, exclude)
+            applyShowExclude(summarizeUserRow(u), u, show, exclude, showOnly)
           );
       printFormatted(data, globalOptions);
     }
@@ -200,6 +208,10 @@ const getCommand = new Command('get')
   .option('--show <fields...>', 'include additional fields from API response')
   .option('--exclude <fields...>', 'hide fields from summary')
   .option(
+    '--show-only <fields...>',
+    'show only these fields (mutually exclusive with --show and --exclude)'
+  )
+  .option(
     '--show-avatars [cols]',
     'display avatar inline, optional width in columns (default: 15)',
     parseInt
@@ -210,6 +222,10 @@ const getCommand = new Command('get')
       const client = await getAPIClientFromOptions(globalOptions);
       const show = (options.show as string[] | undefined) ?? [];
       const exclude = (options.exclude as string[] | undefined) ?? [];
+      const showOnly = options.showOnly as string[] | undefined;
+      if (showOnly && (show.length > 0 || exclude.length > 0)) {
+        throw new Error('--show-only is mutually exclusive with --show and --exclude');
+      }
 
       const result = await coreGetUser(client, { id });
       const user = result.data;
@@ -219,7 +235,8 @@ const getCommand = new Command('get')
             summarizeUserDetail(user as Record<string, unknown>),
             user as Record<string, unknown>,
             show,
-            exclude
+            exclude,
+            showOnly
           );
       printFormatted(data, globalOptions);
 

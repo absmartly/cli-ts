@@ -35,6 +35,70 @@ describe('applyShowExclude', () => {
     expect(result.extra).toBe('value');
     expect(result).not.toHaveProperty('name');
   });
+
+  it('should return only the requested fields when onlyFields is provided', () => {
+    const summary = { id: 1, name: 'test', description: 'desc' };
+    const raw = { id: 1, name: 'test', description: 'desc' };
+    const result = applyShowExclude(summary, raw, [], [], ['id', 'name']);
+    expect(Object.keys(result)).toEqual(['id', 'name']);
+    expect(result).toEqual({ id: 1, name: 'test' });
+  });
+
+  it('should preserve onlyFields order even when summary order differs', () => {
+    const summary = { id: 1, name: 'test', description: 'desc' };
+    const raw = summary;
+    const result = applyShowExclude(summary, raw, [], [], ['description', 'id']);
+    expect(Object.keys(result)).toEqual(['description', 'id']);
+  });
+
+  it('should resolve onlyFields not in summary from raw', () => {
+    const summary = { id: 1, name: 'test' };
+    const raw = { id: 1, name: 'test', extra: 'from-raw' };
+    const result = applyShowExclude(summary, raw, [], [], ['extra']);
+    expect(result).toEqual({ extra: 'from-raw' });
+  });
+
+  it('should skip onlyFields that are absent from both summary and raw', () => {
+    const summary = { id: 1 };
+    const raw = { id: 1 };
+    const result = applyShowExclude(summary, raw, [], [], ['nonexistent']);
+    expect(result).toEqual({});
+  });
+
+  it('should ignore extraFields and excludeFields when onlyFields is set', () => {
+    const summary = { id: 1, name: 'test' };
+    const raw = { id: 1, name: 'test', extra: 'value' };
+    const result = applyShowExclude(summary, raw, ['extra'], ['id'], ['name']);
+    expect(result).toEqual({ name: 'test' });
+  });
+
+  it('should fall back to existing show/exclude behavior when onlyFields is undefined', () => {
+    const summary = { id: 1, name: 'test' };
+    const raw = { id: 1, name: 'test', extra: 'value' };
+    const result = applyShowExclude(summary, raw, ['extra'], ['id']);
+    expect(result).toEqual({ name: 'test', extra: 'value' });
+  });
+
+  it('resolves dot-path fields from raw', () => {
+    const summary = { id: 1, name: 'test' };
+    const raw = { id: 1, name: 'test', variants: [{ config: '{"x":1}' }, { config: '{"x":2}' }] };
+    const result = applyShowExclude(summary, raw, ['variants.config']);
+    expect(result['variants.config']).toEqual([{ x: 1 }, { x: 2 }]);
+  });
+
+  it('resolves dot-path fields under onlyFields', () => {
+    const summary = { id: 1, name: 'test' };
+    const raw = { id: 1, name: 'test', variants: [{ config: '{"a":1}' }] };
+    const result = applyShowExclude(summary, raw, [], [], ['variants.config']);
+    expect(result).toEqual({ 'variants.config': [{ a: 1 }] });
+  });
+
+  it('skips dot-paths that resolve to undefined', () => {
+    const summary = { id: 1 };
+    const raw = { id: 1 };
+    const result = applyShowExclude(summary, raw, ['nonexistent.path']);
+    expect(result).not.toHaveProperty('nonexistent.path');
+  });
 });
 
 describe('summarizeMetric', () => {

@@ -46,6 +46,7 @@ export interface GetCustomFieldParams {
   id: CustomSectionFieldId;
   show?: string[] | undefined;
   exclude?: string[] | undefined;
+  showOnly?: string[] | undefined;
   raw?: boolean | undefined;
 }
 
@@ -62,7 +63,8 @@ export async function getCustomField(
         summarizeCustomField(field as unknown as Record<string, unknown>),
         field as unknown as Record<string, unknown>,
         show,
-        exclude
+        exclude,
+        params.showOnly
       );
   return { data };
 }

@@ -9,6 +9,8 @@ import {
   formatOwnerName,
   formatOwnerLabel,
   formatExtraField,
+  tryParseJSON,
+  resolveDotPath,
 } from './format-helpers.js';
 
 describe('renderCIBar', () => {
@@ -412,5 +414,114 @@ describe('formatExtraField', () => {
 
   it('should handle experiment_report key with null value as non-object', () => {
     expect(formatExtraField('experiment_report', null)).toBe(null);
+  });
+
+  it('should parse audience JSON object string into an object', () => {
+    const result = formatExtraField('audience', '{"filter":[{"name":"country","values":["US"]}]}');
+    expect(result).toEqual({ filter: [{ name: 'country', values: ['US'] }] });
+  });
+
+  it('should parse audience JSON array string into an array', () => {
+    const result = formatExtraField('audience', '[1, 2, 3]');
+    expect(result).toEqual([1, 2, 3]);
+  });
+
+  it('should return audience non-JSON string unchanged', () => {
+    expect(formatExtraField('audience', 'US users')).toBe('US users');
+  });
+
+  it('should return audience empty string unchanged', () => {
+    expect(formatExtraField('audience', '')).toBe('');
+  });
+
+  it('should return audience invalid JSON string unchanged', () => {
+    expect(formatExtraField('audience', '{not json')).toBe('{not json');
+  });
+
+  it('should parse JSON object string for arbitrary keys (generalized)', () => {
+    expect(formatExtraField('description', '{"foo":"bar"}')).toEqual({ foo: 'bar' });
+  });
+
+  it('should parse JSON array string for arbitrary keys (generalized)', () => {
+    expect(formatExtraField('tags', '[1,2,3]')).toEqual([1, 2, 3]);
+  });
+});
+
+describe('tryParseJSON', () => {
+  it('parses JSON object strings', () => {
+    expect(tryParseJSON('{"a":1}')).toEqual({ a: 1 });
+  });
+
+  it('parses JSON array strings', () => {
+    expect(tryParseJSON('[1,2,3]')).toEqual([1, 2, 3]);
+  });
+
+  it('returns non-JSON strings unchanged', () => {
+    expect(tryParseJSON('hello')).toBe('hello');
+  });
+
+  it('returns malformed JSON unchanged', () => {
+    expect(tryParseJSON('{not json')).toBe('{not json');
+  });
+
+  it('returns empty string unchanged', () => {
+    expect(tryParseJSON('')).toBe('');
+  });
+
+  it('returns non-string values unchanged', () => {
+    expect(tryParseJSON(42)).toBe(42);
+    expect(tryParseJSON(null)).toBe(null);
+    expect(tryParseJSON(undefined)).toBe(undefined);
+    const obj = { a: 1 };
+    expect(tryParseJSON(obj)).toBe(obj);
+  });
+});
+
+describe('resolveDotPath', () => {
+  it('returns leaf value for object navigation', () => {
+    expect(resolveDotPath({ a: { b: 1 } }, 'a.b')).toBe(1);
+  });
+
+  it('returns undefined for missing path', () => {
+    expect(resolveDotPath({ a: 1 }, 'a.b')).toBe(undefined);
+  });
+
+  it('returns undefined when path hits null in middle', () => {
+    expect(resolveDotPath({ a: null }, 'a.b')).toBe(undefined);
+  });
+
+  it('maps the remaining path over an array', () => {
+    expect(resolveDotPath({ xs: [{ c: 1 }, { c: 2 }] }, 'xs.c')).toEqual([1, 2]);
+  });
+
+  it('preserves array element undefined when key missing', () => {
+    expect(resolveDotPath({ xs: [{ c: 1 }, { d: 2 }] }, 'xs.c')).toEqual([1, undefined]);
+  });
+
+  it('parses JSON-looking leaf strings', () => {
+    expect(resolveDotPath({ a: '{"b":1}' }, 'a')).toEqual({ b: 1 });
+  });
+
+  it('parses JSON in array element leaves', () => {
+    expect(resolveDotPath({ vs: [{ c: '{"x":1}' }, { c: '{"x":2}' }] }, 'vs.c')).toEqual([
+      { x: 1 },
+      { x: 2 },
+    ]);
+  });
+
+  it('returns whole array when path is a single segment hitting array', () => {
+    expect(resolveDotPath({ xs: [1, 2] }, 'xs')).toEqual([1, 2]);
+  });
+
+  it('returns scalar through scalar path with single segment', () => {
+    expect(resolveDotPath({ a: 'hello' }, 'a')).toBe('hello');
+  });
+
+  it('returns undefined for empty path', () => {
+    expect(resolveDotPath({ a: 1 }, '')).toBe(undefined);
+  });
+
+  it('returns undefined when descending into a non-object scalar', () => {
+    expect(resolveDotPath({ a: 'hello' }, 'a.b')).toBe(undefined);
   });
 });
