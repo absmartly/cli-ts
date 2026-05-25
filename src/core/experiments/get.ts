@@ -8,6 +8,7 @@ export interface GetExperimentParams {
   activity?: boolean | undefined;
   show?: string[] | undefined;
   exclude?: string[] | undefined;
+  showOnly?: string[] | undefined;
   raw?: boolean | undefined;
 }
 
@@ -32,7 +33,7 @@ export async function getExperiment(
     activityNotes = await client.listExperimentActivity(params.experimentId);
   }
 
-  const summary = summarizeExperiment(exp, extraFields, excludeFields);
+  const summary = summarizeExperiment(exp, extraFields, excludeFields, params.showOnly);
 
   let detail: unknown;
   if (params.raw) {
