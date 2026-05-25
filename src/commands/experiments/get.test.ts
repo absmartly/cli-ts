@@ -188,4 +188,36 @@ describe('get command', () => {
     expect(data.guardrail_metrics).toBe('Error Rate');
     expect(data.exploratory_metrics).toBe('Bounce Rate');
   });
+
+  it('forwards --show-only to getExperiment and outputs only those fields', async () => {
+    await getCommand.parseAsync(['node', 'test', '42', '--show-only', 'id', 'audience']);
+
+    const data = vi.mocked(printFormatted).mock.calls[0]![0] as Record<string, unknown>;
+    expect(Object.keys(data)).toEqual(['id', 'audience']);
+    expect(data.audience).toEqual({ filter: [] });
+  });
+
+  it('rejects --show-only combined with --show', async () => {
+    try {
+      await getCommand.parseAsync(['node', 'test', '42', '--show-only', 'id', '--show', 'audience']);
+    } catch (_e) {
+      // process.exit threw a sentinel
+    }
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      'Error:',
+      '--show-only is mutually exclusive with --show and --exclude'
+    );
+  });
+
+  it('rejects --show-only combined with --exclude', async () => {
+    try {
+      await getCommand.parseAsync(['node', 'test', '42', '--show-only', 'id', '--exclude', 'tags']);
+    } catch (_e) {
+      // process.exit threw a sentinel
+    }
+    expect(consoleErrorSpy).toHaveBeenCalledWith(
+      'Error:',
+      '--show-only is mutually exclusive with --show and --exclude'
+    );
+  });
 });

@@ -24,6 +24,10 @@ export const getCommand = new Command('get')
     'include additional fields in summary (e.g. --show audience archived)'
   )
   .option('--exclude <fields...>', 'hide fields from summary (e.g. --exclude owners tags)')
+  .option(
+    '--show-only <fields...>',
+    'show only these fields (mutually exclusive with --show and --exclude)'
+  )
   .option('--embed-screenshots', 'embed screenshots as base64 data URIs in template output')
   .option('--screenshots-dir <path>', 'save screenshots to directory in template output')
   .option(
@@ -36,6 +40,11 @@ export const getCommand = new Command('get')
       const globalOptions = getGlobalOptions(getCommand);
       const client = await getAPIClientFromOptions(globalOptions);
       const id = await client.resolveExperimentId(nameOrId);
+
+      const showOnly = options.showOnly as string[] | undefined;
+      if (showOnly && (options.show || options.exclude)) {
+        throw new Error('--show-only is mutually exclusive with --show and --exclude');
+      }
 
       // Template output mode - stays in wrapper (complex formatting)
       if (globalOptions.output === 'template') {
@@ -268,6 +277,7 @@ export const getCommand = new Command('get')
         activity: options.activity,
         show: options.show,
         exclude: options.exclude,
+        showOnly,
         raw: globalOptions.raw,
       });
 
