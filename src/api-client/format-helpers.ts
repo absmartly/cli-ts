@@ -67,6 +67,33 @@ export function formatImpactWithCI(
   return `${pctText} ${coloredCI}`;
 }
 
+export function tryParseJSON(value: unknown): unknown {
+  if (typeof value !== 'string' || value.length === 0) return value;
+  const trimmed = value.trim();
+  if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) return value;
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    return value;
+  }
+}
+
+export function resolveDotPath(obj: unknown, path: string): unknown {
+  if (!path) return undefined;
+  const parts = path.split('.');
+  let current: unknown = obj;
+  for (let i = 0; i < parts.length; i++) {
+    if (current === null || current === undefined) return undefined;
+    if (Array.isArray(current)) {
+      const rest = parts.slice(i).join('.');
+      return current.map((item) => resolveDotPath(item, rest));
+    }
+    if (typeof current !== 'object') return undefined;
+    current = (current as Record<string, unknown>)[parts[i]!];
+  }
+  return tryParseJSON(current);
+}
+
 export function formatExtraField(key: string, value: unknown): unknown {
   if (key === 'experiment_report' && typeof value === 'object' && value !== null) {
     const report = value as Record<string, unknown>;
@@ -78,17 +105,7 @@ export function formatExtraField(key: string, value: unknown): unknown {
     }
     return parts.join(' / ') || '';
   }
-  if (key === 'audience' && typeof value === 'string' && value.length > 0) {
-    const trimmed = value.trim();
-    if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
-      try {
-        return JSON.parse(trimmed);
-      } catch {
-        // Fall through to the unchanged-string return below.
-      }
-    }
-  }
-  return value;
+  return tryParseJSON(value);
 }
 
 export function formatImpact(exp: Record<string, unknown>, ciBar = false): string {

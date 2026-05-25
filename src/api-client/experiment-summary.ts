@@ -5,6 +5,7 @@ import {
   formatProgress,
   formatOwnerName,
   formatDate,
+  resolveDotPath,
 } from './format-helpers.js';
 
 export function summarizeExperiment(
@@ -140,6 +141,13 @@ export function summarizeExperiment(
 
     if (field in exp) {
       summary[field] = formatExtraField(field, exp[field]);
+    } else if (field.includes('.')) {
+      const resolved = resolveDotPath(exp, field);
+      if (resolved !== undefined) {
+        if (!(Array.isArray(resolved) && resolved.every((v) => v === undefined))) {
+          summary[field] = resolved;
+        }
+      }
     } else {
       const customValue = customFields.get(field.toLowerCase());
       if (customValue !== undefined) {
@@ -224,8 +232,16 @@ export function summarizeExperimentRow(
 
   const lookupFields = onlyFields ? [...extraFields, ...onlyFields] : extraFields;
   for (const field of lookupFields) {
-    if (!(field in row) && field in exp) {
+    if (field in row) continue;
+    if (field in exp) {
       row[field] = formatExtraField(field, exp[field]);
+    } else if (field.includes('.')) {
+      const resolved = resolveDotPath(exp, field);
+      if (resolved !== undefined) {
+        if (!(Array.isArray(resolved) && resolved.every((v) => v === undefined))) {
+          row[field] = resolved;
+        }
+      }
     }
   }
 

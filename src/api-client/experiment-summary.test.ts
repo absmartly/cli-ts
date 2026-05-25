@@ -198,6 +198,38 @@ describe('summarizeExperiment', () => {
     const summary = summarizeExperiment(exp, ['experiment_report']);
     expect(summary.experiment_report).toBe('conclusive / winner');
   });
+
+  it('resolves dot-path extraFields from the raw experiment', () => {
+    const exp = {
+      ...baseExperiment,
+      variants: [
+        { variant: 0, name: 'control', config: '{"x":1}' },
+        { variant: 1, name: 'treatment', config: '{"x":2}' },
+      ],
+    };
+    const summary = summarizeExperiment(exp, ['variants.config']);
+    expect(summary['variants.config']).toEqual([{ x: 1 }, { x: 2 }]);
+  });
+
+  it('resolves dot-path under onlyFields', () => {
+    const exp = {
+      ...baseExperiment,
+      variants: [{ variant: 0, name: 'control', config: '{"a":1}' }],
+    };
+    const summary = summarizeExperiment(exp, [], [], ['variants.config']);
+    expect(summary).toEqual({ 'variants.config': [{ a: 1 }] });
+  });
+
+  it('skips dot-paths that resolve to undefined', () => {
+    const summary = summarizeExperiment(baseExperiment, ['nonexistent.path']);
+    expect(summary).not.toHaveProperty('nonexistent.path');
+  });
+
+  it('skips dot-paths where all array elements are undefined', () => {
+    const exp = { ...baseExperiment, variants: [{ variant: 0 }, { variant: 1 }] };
+    const summary = summarizeExperiment(exp, ['variants.nonexistent']);
+    expect(summary).not.toHaveProperty('variants.nonexistent');
+  });
 });
 
 describe('stateToDate', () => {
