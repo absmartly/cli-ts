@@ -78,6 +78,16 @@ export function formatExtraField(key: string, value: unknown): unknown {
     }
     return parts.join(' / ') || '';
   }
+  if (key === 'audience' && typeof value === 'string' && value.length > 0) {
+    const trimmed = value.trim();
+    if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+      try {
+        return JSON.parse(trimmed);
+      } catch {
+        // Fall through to the unchanged-string return below.
+      }
+    }
+  }
   return value;
 }
 

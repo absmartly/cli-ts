@@ -413,4 +413,30 @@ describe('formatExtraField', () => {
   it('should handle experiment_report key with null value as non-object', () => {
     expect(formatExtraField('experiment_report', null)).toBe(null);
   });
+
+  it('should parse audience JSON object string into an object', () => {
+    const result = formatExtraField('audience', '{"filter":[{"name":"country","values":["US"]}]}');
+    expect(result).toEqual({ filter: [{ name: 'country', values: ['US'] }] });
+  });
+
+  it('should parse audience JSON array string into an array', () => {
+    const result = formatExtraField('audience', '[1, 2, 3]');
+    expect(result).toEqual([1, 2, 3]);
+  });
+
+  it('should return audience non-JSON string unchanged', () => {
+    expect(formatExtraField('audience', 'US users')).toBe('US users');
+  });
+
+  it('should return audience empty string unchanged', () => {
+    expect(formatExtraField('audience', '')).toBe('');
+  });
+
+  it('should return audience invalid JSON string unchanged', () => {
+    expect(formatExtraField('audience', '{not json')).toBe('{not json');
+  });
+
+  it('should not parse JSON for non-audience string fields', () => {
+    expect(formatExtraField('description', '{"a":1}')).toBe('{"a":1}');
+  });
 });
