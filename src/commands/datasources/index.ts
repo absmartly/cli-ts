@@ -8,6 +8,7 @@ import {
   withErrorHandling,
 } from '../../lib/utils/api-helper.js';
 import { parseDatasourceId, validateJSON } from '../../lib/utils/validators.js';
+import { readStdinText } from '../../lib/utils/stdin.js';
 import type { DatasourceId } from '../../lib/api/branded-types.js';
 import {
   listDatasources as coreListDatasources,
@@ -162,22 +163,55 @@ const queryCommand = new Command('query')
   .description('Run a SQL query against a datasource')
   .argument('<id>', 'datasource ID', parseDatasourceId)
   .argument('[sql]', 'SQL query (positional). Mutually exclusive with --sql.')
+  .option(
+    '--sql <text>',
+    'SQL query. Use "-" to read from stdin. Mutually exclusive with the positional argument.'
+  )
   .action(
-    withErrorHandling(async (id: DatasourceId, sql: string | undefined) => {
-      const globalOptions = getGlobalOptions(queryCommand);
-      const client = await getAPIClientFromOptions(globalOptions);
+    withErrorHandling(
+      async (
+        id: DatasourceId,
+        positionalSql: string | undefined,
+        options: { sql?: string }
+      ) => {
+        const globalOptions = getGlobalOptions(queryCommand);
 
-      const config: Record<string, unknown> = {
-        datasource_id: id,
-        query: sql,
-      };
+        if (positionalSql !== undefined && options.sql !== undefined) {
+          console.error(
+            chalk.red('✗ Provide SQL via the positional argument OR --sql, not both.')
+          );
+          process.exit(1);
+        }
 
-      const result = await corePreviewDatasourceQuery(client, { config });
-      printFormatted(
-        globalOptions.raw ? result.data : columnarToRows(result.data),
-        globalOptions
-      );
-    })
+        let sql: string | undefined = positionalSql ?? options.sql;
+        if (sql === '-') {
+          sql = await readStdinText();
+          if (sql.length === 0) {
+            console.error(chalk.red('✗ --sql - was specified but stdin was empty.'));
+            process.exit(1);
+          }
+        }
+
+        if (sql === undefined) {
+          console.error(
+            chalk.red('✗ SQL is required. Provide it positionally or via --sql.')
+          );
+          process.exit(1);
+        }
+
+        const client = await getAPIClientFromOptions(globalOptions);
+        const config: Record<string, unknown> = {
+          datasource_id: id,
+          query: sql,
+        };
+
+        const result = await corePreviewDatasourceQuery(client, { config });
+        printFormatted(
+          globalOptions.raw ? result.data : columnarToRows(result.data),
+          globalOptions
+        );
+      }
+    )
   );
 
 const setDefaultCommand = new Command('set-default')

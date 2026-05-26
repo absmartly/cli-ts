@@ -6,6 +6,8 @@ import {
   printFormatted,
 } from '../../lib/utils/api-helper.js';
 import { resetCommand } from '../../test/helpers/command-reset.js';
+import { PassThrough } from 'node:stream';
+import { setTTYOverride } from '../../lib/utils/stdin.js';
 
 vi.mock('../../lib/utils/api-helper.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../lib/utils/api-helper.js')>();
@@ -260,8 +262,109 @@ describe('datasources command', () => {
     expect(printFormatted).toHaveBeenCalled();
   });
 
+  it('should run query with --sql flag', async () => {
+    await datasourcesCommand.parseAsync([
+      'node',
+      'test',
+      'query',
+      '6',
+      '--sql',
+      'SELECT 2 AS two',
+    ]);
+
+    expect(mockClient.previewDatasourceQuery).toHaveBeenCalledWith({
+      datasource_id: 6,
+      query: 'SELECT 2 AS two',
+    });
+  });
+
+  it('should reject when both positional sql and --sql are provided', async () => {
+    await expect(
+      datasourcesCommand.parseAsync([
+        'node',
+        'test',
+        'query',
+        '6',
+        'SELECT 1',
+        '--sql',
+        'SELECT 2',
+      ])
+    ).rejects.toThrow(/process\.exit: 1/);
+
+    expect(mockClient.previewDatasourceQuery).not.toHaveBeenCalled();
+    expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('--sql'));
+  });
+
   it('re-exports columnarToRows from core/datasources', async () => {
     const mod = await import('../../core/datasources/datasources.js');
     expect(typeof (mod as { columnarToRows?: unknown }).columnarToRows).toBe('function');
+  });
+});
+
+describe('datasources query --sql -', () => {
+  let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+  let processExitSpy: ReturnType<typeof vi.spyOn>;
+  let originalStdin: typeof process.stdin;
+
+  const mockClient = {
+    previewDatasourceQuery: vi.fn().mockResolvedValue({
+      columnNames: ['answer'],
+      columnTypes: ['INT64'],
+      rows: [[42]],
+    }),
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    resetCommand(datasourcesCommand);
+    vi.mocked(getAPIClientFromOptions).mockResolvedValue(mockClient as any);
+    vi.mocked(getGlobalOptions).mockReturnValue({ output: 'table' } as any);
+    vi.mocked(printFormatted).mockImplementation(() => {});
+    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    processExitSpy = vi.spyOn(process, 'exit').mockImplementation((code?) => {
+      throw new Error(`process.exit: ${code}`);
+    });
+  });
+
+  afterEach(() => {
+    if (originalStdin) {
+      Object.defineProperty(process, 'stdin', {
+        value: originalStdin,
+        configurable: true,
+      });
+    }
+    setTTYOverride({ stdin: true, stdout: true });
+    consoleErrorSpy.mockRestore();
+    processExitSpy.mockRestore();
+  });
+
+  function replaceStdin(content: string): void {
+    originalStdin = process.stdin;
+    const stream = new PassThrough();
+    stream.end(content);
+    Object.defineProperty(process, 'stdin', {
+      value: stream,
+      configurable: true,
+    });
+    setTTYOverride({ stdin: false });
+  }
+
+  it('reads SQL from stdin when --sql is "-"', async () => {
+    replaceStdin('SELECT 42 AS answer\n');
+    await datasourcesCommand.parseAsync(['node', 'test', 'query', '6', '--sql', '-']);
+
+    expect(mockClient.previewDatasourceQuery).toHaveBeenCalledWith({
+      datasource_id: 6,
+      query: 'SELECT 42 AS answer\n',
+    });
+  });
+
+  it('errors when --sql is "-" but stdin is empty', async () => {
+    replaceStdin('');
+    await expect(
+      datasourcesCommand.parseAsync(['node', 'test', 'query', '6', '--sql', '-'])
+    ).rejects.toThrow(/process\.exit: 1/);
+
+    expect(mockClient.previewDatasourceQuery).not.toHaveBeenCalled();
   });
 });
