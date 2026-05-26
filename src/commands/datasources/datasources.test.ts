@@ -295,6 +295,31 @@ describe('datasources command', () => {
     expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('--sql'));
   });
 
+  it('should pass --limit through to the request body', async () => {
+    await datasourcesCommand.parseAsync([
+      'node',
+      'test',
+      'query',
+      '6',
+      'SELECT 1',
+      '--limit',
+      '20',
+    ]);
+
+    expect(mockClient.previewDatasourceQuery).toHaveBeenCalledWith({
+      datasource_id: 6,
+      query: 'SELECT 1',
+      limit: 20,
+    });
+  });
+
+  it('should omit limit from the body when --limit is not set', async () => {
+    await datasourcesCommand.parseAsync(['node', 'test', 'query', '6', 'SELECT 1']);
+
+    const call = mockClient.previewDatasourceQuery.mock.calls[0]?.[0];
+    expect(call).not.toHaveProperty('limit');
+  });
+
   it('re-exports columnarToRows from core/datasources', async () => {
     const mod = await import('../../core/datasources/datasources.js');
     expect(typeof (mod as { columnarToRows?: unknown }).columnarToRows).toBe('function');

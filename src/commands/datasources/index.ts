@@ -167,12 +167,13 @@ const queryCommand = new Command('query')
     '--sql <text>',
     'SQL query. Use "-" to read from stdin. Mutually exclusive with the positional argument.'
   )
+  .option('--limit <n>', 'maximum number of rows to return', (value) => Number(value))
   .action(
     withErrorHandling(
       async (
         id: DatasourceId,
         positionalSql: string | undefined,
-        options: { sql?: string }
+        options: { sql?: string; limit?: number }
       ) => {
         const globalOptions = getGlobalOptions(queryCommand);
 
@@ -204,6 +205,9 @@ const queryCommand = new Command('query')
           datasource_id: id,
           query: sql,
         };
+        if (options.limit !== undefined) {
+          config.limit = options.limit;
+        }
 
         const result = await corePreviewDatasourceQuery(client, { config });
         printFormatted(
