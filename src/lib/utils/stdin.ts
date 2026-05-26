@@ -30,3 +30,14 @@ export async function readLinesFromStdin(): Promise<string[]> {
     .map((line) => line.trim())
     .filter((line) => line.length > 0);
 }
+
+export async function readStdinText(): Promise<string> {
+  if (!isStdinPiped()) {
+    console.error('Waiting for input on stdin... (pipe data or press Ctrl+D to end)');
+  }
+  const chunks: Buffer[] = [];
+  for await (const chunk of process.stdin) {
+    chunks.push(chunk as Buffer);
+  }
+  return Buffer.concat(chunks).toString('utf-8');
+}
