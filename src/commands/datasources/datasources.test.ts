@@ -180,13 +180,14 @@ describe('datasources command', () => {
   });
 
   it('should preview a datasource query with --raw and keep the columnar shape', async () => {
+    vi.mocked(getGlobalOptions).mockReturnValueOnce({ output: 'table', raw: true } as any);
+
     await datasourcesCommand.parseAsync([
       'node',
       'test',
       'preview-query',
       '--json-config',
       '{"query":"SELECT 1"}',
-      '--raw',
     ]);
 
     expect(printFormatted).toHaveBeenCalledWith(
