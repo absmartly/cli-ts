@@ -212,4 +212,9 @@ describe('datasources command', () => {
     expect(mockClient.recreateDatasourceJsonLayouts).not.toHaveBeenCalled();
     expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('--yes'));
   });
+
+  it('re-exports columnarToRows from core/datasources', async () => {
+    const mod = await import('../../core/datasources/datasources.js');
+    expect(typeof (mod as { columnarToRows?: unknown }).columnarToRows).toBe('function');
+  });
 });

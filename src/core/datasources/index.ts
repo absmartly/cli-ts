@@ -10,6 +10,7 @@ export {
   previewDatasourceQuery,
   setDefaultDatasource,
   getDatasourceSchema,
+  columnarToRows,
 } from './datasources.js';
 export type {
   GetDatasourceParams,
