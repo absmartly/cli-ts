@@ -325,6 +325,36 @@ describe('datasources command', () => {
     expect(typeof (mod as { columnarToRows?: unknown }).columnarToRows).toBe('function');
   });
 
+  it('query reshapes columnar response to rows by default', async () => {
+    await datasourcesCommand.parseAsync(['node', 'test', 'query', '6', 'SELECT 1']);
+
+    expect(printFormatted).toHaveBeenCalledWith(
+      [
+        { experiment_id: 1, cnt: 538217 },
+        { experiment_id: 5, cnt: 250000 },
+      ],
+      expect.anything()
+    );
+  });
+
+  it('query --raw preserves the columnar response', async () => {
+    vi.mocked(getGlobalOptions).mockReturnValueOnce({ output: 'table', raw: true } as any);
+
+    await datasourcesCommand.parseAsync(['node', 'test', 'query', '6', 'SELECT 1']);
+
+    expect(printFormatted).toHaveBeenCalledWith(
+      {
+        columnNames: ['experiment_id', 'cnt'],
+        columnTypes: ['INT64', 'INT64'],
+        rows: [
+          [1, 538217],
+          [5, 250000],
+        ],
+      },
+      expect.anything()
+    );
+  });
+
   it('should accept --json-config as the full body when no other inputs are present', async () => {
     await datasourcesCommand.parseAsync([
       'node',
