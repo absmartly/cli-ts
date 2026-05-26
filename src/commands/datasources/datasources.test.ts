@@ -324,6 +324,81 @@ describe('datasources command', () => {
     const mod = await import('../../core/datasources/datasources.js');
     expect(typeof (mod as { columnarToRows?: unknown }).columnarToRows).toBe('function');
   });
+
+  it('should accept --json-config as the full body when no other inputs are present', async () => {
+    await datasourcesCommand.parseAsync([
+      'node',
+      'test',
+      'query',
+      '6',
+      '--json-config',
+      '{"datasource_id":6,"query":"SELECT 1","limit":3}',
+    ]);
+
+    expect(mockClient.previewDatasourceQuery).toHaveBeenCalledWith({
+      datasource_id: 6,
+      query: 'SELECT 1',
+      limit: 3,
+    });
+  });
+
+  it('should reject --json-config combined with positional sql', async () => {
+    await expect(
+      datasourcesCommand.parseAsync([
+        'node',
+        'test',
+        'query',
+        '6',
+        'SELECT 1',
+        '--json-config',
+        '{"query":"SELECT 1"}',
+      ])
+    ).rejects.toThrow(/process\.exit: 1/);
+
+    expect(mockClient.previewDatasourceQuery).not.toHaveBeenCalled();
+  });
+
+  it('should reject --json-config combined with --sql', async () => {
+    await expect(
+      datasourcesCommand.parseAsync([
+        'node',
+        'test',
+        'query',
+        '6',
+        '--sql',
+        'SELECT 1',
+        '--json-config',
+        '{"query":"SELECT 1"}',
+      ])
+    ).rejects.toThrow(/process\.exit: 1/);
+
+    expect(mockClient.previewDatasourceQuery).not.toHaveBeenCalled();
+  });
+
+  it('should reject --json-config combined with --limit', async () => {
+    await expect(
+      datasourcesCommand.parseAsync([
+        'node',
+        'test',
+        'query',
+        '6',
+        '--limit',
+        '5',
+        '--json-config',
+        '{"query":"SELECT 1"}',
+      ])
+    ).rejects.toThrow(/process\.exit: 1/);
+
+    expect(mockClient.previewDatasourceQuery).not.toHaveBeenCalled();
+  });
+
+  it('should reject when no SQL source is provided', async () => {
+    await expect(
+      datasourcesCommand.parseAsync(['node', 'test', 'query', '6'])
+    ).rejects.toThrow(/process\.exit: 1/);
+
+    expect(mockClient.previewDatasourceQuery).not.toHaveBeenCalled();
+  });
 });
 
 describe('datasources query --sql -', () => {

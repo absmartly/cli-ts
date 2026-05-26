@@ -162,51 +162,78 @@ const previewQueryCommand = new Command('preview-query')
 const queryCommand = new Command('query')
   .description('Run a SQL query against a datasource')
   .argument('<id>', 'datasource ID', parseDatasourceId)
-  .argument('[sql]', 'SQL query (positional). Mutually exclusive with --sql.')
+  .argument('[sql]', 'SQL query (positional). Mutually exclusive with --sql and --json-config.')
   .option(
     '--sql <text>',
-    'SQL query. Use "-" to read from stdin. Mutually exclusive with the positional argument.'
+    'SQL query. Use "-" to read from stdin. Mutually exclusive with the positional argument and --json-config.'
   )
   .option('--limit <n>', 'maximum number of rows to return', (value) => Number(value))
+  .option(
+    '--json-config <json>',
+    'full request body as JSON. Overrides all other inputs and rejects them if set.'
+  )
   .action(
     withErrorHandling(
       async (
         id: DatasourceId,
         positionalSql: string | undefined,
-        options: { sql?: string; limit?: number }
+        options: { sql?: string; limit?: number; jsonConfig?: string }
       ) => {
         const globalOptions = getGlobalOptions(queryCommand);
+        const client = await getAPIClientFromOptions(globalOptions);
 
-        if (positionalSql !== undefined && options.sql !== undefined) {
-          console.error(
-            chalk.red('✗ Provide SQL via the positional argument OR --sql, not both.')
-          );
-          process.exit(1);
-        }
+        let config: Record<string, unknown>;
 
-        let sql: string | undefined = positionalSql ?? options.sql;
-        if (sql === '-') {
-          sql = await readStdinText();
-          if (sql.length === 0) {
-            console.error(chalk.red('✗ --sql - was specified but stdin was empty.'));
+        if (options.jsonConfig !== undefined) {
+          if (
+            positionalSql !== undefined ||
+            options.sql !== undefined ||
+            options.limit !== undefined
+          ) {
+            console.error(
+              chalk.red(
+                '✗ --json-config cannot be combined with positional SQL, --sql, or --limit.'
+              )
+            );
             process.exit(1);
           }
-        }
+          config = validateJSON(options.jsonConfig, '--json-config') as Record<
+            string,
+            unknown
+          >;
+        } else {
+          if (positionalSql !== undefined && options.sql !== undefined) {
+            console.error(
+              chalk.red('✗ Provide SQL via the positional argument OR --sql, not both.')
+            );
+            process.exit(1);
+          }
 
-        if (sql === undefined) {
-          console.error(
-            chalk.red('✗ SQL is required. Provide it positionally or via --sql.')
-          );
-          process.exit(1);
-        }
+          let sql: string | undefined = positionalSql ?? options.sql;
+          if (sql === '-') {
+            sql = await readStdinText();
+            if (sql.length === 0) {
+              console.error(
+                chalk.red('✗ --sql - was specified but stdin was empty.')
+              );
+              process.exit(1);
+            }
+          }
 
-        const client = await getAPIClientFromOptions(globalOptions);
-        const config: Record<string, unknown> = {
-          datasource_id: id,
-          query: sql,
-        };
-        if (options.limit !== undefined) {
-          config.limit = options.limit;
+          if (sql === undefined) {
+            console.error(
+              chalk.red('✗ SQL is required. Provide it positionally or via --sql.')
+            );
+            process.exit(1);
+          }
+
+          config = {
+            datasource_id: id,
+            query: sql,
+          };
+          if (options.limit !== undefined) {
+            config.limit = options.limit;
+          }
         }
 
         const result = await corePreviewDatasourceQuery(client, { config });
