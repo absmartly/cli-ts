@@ -158,6 +158,28 @@ const previewQueryCommand = new Command('preview-query')
     })
   );
 
+const queryCommand = new Command('query')
+  .description('Run a SQL query against a datasource')
+  .argument('<id>', 'datasource ID', parseDatasourceId)
+  .argument('[sql]', 'SQL query (positional). Mutually exclusive with --sql.')
+  .action(
+    withErrorHandling(async (id: DatasourceId, sql: string | undefined) => {
+      const globalOptions = getGlobalOptions(queryCommand);
+      const client = await getAPIClientFromOptions(globalOptions);
+
+      const config: Record<string, unknown> = {
+        datasource_id: id,
+        query: sql,
+      };
+
+      const result = await corePreviewDatasourceQuery(client, { config });
+      printFormatted(
+        globalOptions.raw ? result.data : columnarToRows(result.data),
+        globalOptions
+      );
+    })
+  );
+
 const setDefaultCommand = new Command('set-default')
   .description('Set a datasource as the default')
   .argument('<id>', 'datasource ID', parseDatasourceId)
@@ -264,6 +286,7 @@ datasourcesCommand.addCommand(testCommand);
 datasourcesCommand.addCommand(introspectCommand);
 datasourcesCommand.addCommand(validateQueryCommand);
 datasourcesCommand.addCommand(previewQueryCommand);
+datasourcesCommand.addCommand(queryCommand);
 datasourcesCommand.addCommand(setDefaultCommand);
 datasourcesCommand.addCommand(schemaCommand);
 datasourcesCommand.addCommand(deleteCommand);
