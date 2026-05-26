@@ -25,6 +25,7 @@ import {
   createDatasourceJsonLayouts as coreCreateDatasourceJsonLayouts,
   recreateDatasourceJsonLayouts as coreRecreateDatasourceJsonLayouts,
   previewDatasourceJsonLayouts as corePreviewDatasourceJsonLayouts,
+  columnarToRows,
 } from '../../core/datasources/datasources.js';
 
 export const datasourcesCommand = new Command('datasources')
@@ -150,7 +151,10 @@ const previewQueryCommand = new Command('preview-query')
       const client = await getAPIClientFromOptions(globalOptions);
       const config = validateJSON(options.jsonConfig, '--json-config') as Record<string, unknown>;
       const result = await corePreviewDatasourceQuery(client, { config });
-      printFormatted(result.data, globalOptions);
+      printFormatted(
+        globalOptions.raw ? result.data : columnarToRows(result.data),
+        globalOptions
+      );
     })
   );
 

@@ -31,7 +31,14 @@ describe('datasources command', () => {
     testDatasource: vi.fn().mockResolvedValue(undefined),
     introspectDatasource: vi.fn().mockResolvedValue({ schema: [] }),
     validateDatasourceQuery: vi.fn().mockResolvedValue(undefined),
-    previewDatasourceQuery: vi.fn().mockResolvedValue({ result: [] }),
+    previewDatasourceQuery: vi.fn().mockResolvedValue({
+      columnNames: ['experiment_id', 'cnt'],
+      columnTypes: ['INT64', 'INT64'],
+      rows: [
+        [1, 538217],
+        [5, 250000],
+      ],
+    }),
     setDefaultDatasource: vi.fn().mockResolvedValue(undefined),
     getDatasourceSchema: vi.fn().mockResolvedValue({ tables: [] }),
     deleteDatasource: vi.fn().mockResolvedValue(undefined),
@@ -153,7 +160,7 @@ describe('datasources command', () => {
     expect(mockClient.validateDatasourceQuery).toHaveBeenCalledWith({ query: 'SELECT 1' });
   });
 
-  it('should preview a datasource query', async () => {
+  it('should preview a datasource query and reshape columnar response to rows', async () => {
     await datasourcesCommand.parseAsync([
       'node',
       'test',
@@ -163,7 +170,36 @@ describe('datasources command', () => {
     ]);
 
     expect(mockClient.previewDatasourceQuery).toHaveBeenCalledWith({ query: 'SELECT 1' });
-    expect(printFormatted).toHaveBeenCalled();
+    expect(printFormatted).toHaveBeenCalledWith(
+      [
+        { experiment_id: 1, cnt: 538217 },
+        { experiment_id: 5, cnt: 250000 },
+      ],
+      expect.anything()
+    );
+  });
+
+  it('should preview a datasource query with --raw and keep the columnar shape', async () => {
+    await datasourcesCommand.parseAsync([
+      'node',
+      'test',
+      'preview-query',
+      '--json-config',
+      '{"query":"SELECT 1"}',
+      '--raw',
+    ]);
+
+    expect(printFormatted).toHaveBeenCalledWith(
+      {
+        columnNames: ['experiment_id', 'cnt'],
+        columnTypes: ['INT64', 'INT64'],
+        rows: [
+          [1, 538217],
+          [5, 250000],
+        ],
+      },
+      expect.anything()
+    );
   });
 
   it('should set default datasource', async () => {
