@@ -180,7 +180,6 @@ const queryCommand = new Command('query')
         options: { sql?: string; limit?: number; jsonConfig?: string }
       ) => {
         const globalOptions = getGlobalOptions(queryCommand);
-        const client = await getAPIClientFromOptions(globalOptions);
 
         let config: Record<string, unknown>;
 
@@ -236,6 +235,7 @@ const queryCommand = new Command('query')
           }
         }
 
+        const client = await getAPIClientFromOptions(globalOptions);
         const result = await corePreviewDatasourceQuery(client, { config });
         printFormatted(
           globalOptions.raw ? result.data : columnarToRows(result.data),
