@@ -8,6 +8,7 @@ import {
   withErrorHandling,
 } from '../../lib/utils/api-helper.js';
 import { parseDatasourceId, validateJSON } from '../../lib/utils/validators.js';
+import { readStdinText } from '../../lib/utils/stdin.js';
 import type { DatasourceId } from '../../lib/api/branded-types.js';
 import {
   listDatasources as coreListDatasources,
@@ -25,6 +26,7 @@ import {
   createDatasourceJsonLayouts as coreCreateDatasourceJsonLayouts,
   recreateDatasourceJsonLayouts as coreRecreateDatasourceJsonLayouts,
   previewDatasourceJsonLayouts as corePreviewDatasourceJsonLayouts,
+  columnarToRows,
 } from '../../core/datasources/datasources.js';
 
 export const datasourcesCommand = new Command('datasources')
@@ -150,8 +152,87 @@ const previewQueryCommand = new Command('preview-query')
       const client = await getAPIClientFromOptions(globalOptions);
       const config = validateJSON(options.jsonConfig, '--json-config') as Record<string, unknown>;
       const result = await corePreviewDatasourceQuery(client, { config });
-      printFormatted(result.data, globalOptions);
+      printFormatted(globalOptions.raw ? result.data : columnarToRows(result.data), globalOptions);
     })
+  );
+
+const queryCommand = new Command('query')
+  .description('Run a SQL query against a datasource')
+  .argument('<id>', 'datasource ID', parseDatasourceId)
+  .argument('[sql]', 'SQL query (positional). Mutually exclusive with --sql and --json-config.')
+  .option(
+    '--sql <text>',
+    'SQL query. Use "-" to read from stdin. Mutually exclusive with the positional argument and --json-config.'
+  )
+  .option('--limit <n>', 'maximum number of rows to return', (value) => Number(value))
+  .option(
+    '--json-config <json>',
+    'full request body as JSON. Overrides all other inputs and rejects them if set.'
+  )
+  .action(
+    withErrorHandling(
+      async (
+        id: DatasourceId,
+        positionalSql: string | undefined,
+        options: { sql?: string; limit?: number; jsonConfig?: string }
+      ) => {
+        const globalOptions = getGlobalOptions(queryCommand);
+
+        let config: Record<string, unknown>;
+
+        if (options.jsonConfig !== undefined) {
+          if (
+            positionalSql !== undefined ||
+            options.sql !== undefined ||
+            options.limit !== undefined
+          ) {
+            console.error(
+              chalk.red(
+                '✗ --json-config cannot be combined with positional SQL, --sql, or --limit.'
+              )
+            );
+            process.exit(1);
+          }
+          config = validateJSON(options.jsonConfig, '--json-config') as Record<string, unknown>;
+        } else {
+          if (positionalSql !== undefined && options.sql !== undefined) {
+            console.error(
+              chalk.red('✗ Provide SQL via the positional argument OR --sql, not both.')
+            );
+            process.exit(1);
+          }
+
+          let sql: string | undefined = positionalSql ?? options.sql;
+          if (sql === '-') {
+            sql = await readStdinText();
+            if (sql.length === 0) {
+              console.error(chalk.red('✗ --sql - was specified but stdin was empty.'));
+              process.exit(1);
+            }
+          }
+
+          if (sql === undefined) {
+            console.error(chalk.red('✗ SQL is required. Provide it positionally or via --sql.'));
+            process.exit(1);
+          }
+
+          config = {
+            datasource_id: id,
+            query: sql,
+          };
+          if (options.limit !== undefined) {
+            config.limit = options.limit;
+          }
+        }
+
+        const client = await getAPIClientFromOptions(globalOptions);
+        const result = await corePreviewDatasourceQuery(client, { config });
+        printFormatted(
+          globalOptions.raw ? result.data : columnarToRows(result.data),
+          globalOptions
+        );
+      }
+    )
   );
 
 const setDefaultCommand = new Command('set-default')
@@ -260,6 +341,7 @@ datasourcesCommand.addCommand(testCommand);
 datasourcesCommand.addCommand(introspectCommand);
 datasourcesCommand.addCommand(validateQueryCommand);
 datasourcesCommand.addCommand(previewQueryCommand);
+datasourcesCommand.addCommand(queryCommand);
 datasourcesCommand.addCommand(setDefaultCommand);
 datasourcesCommand.addCommand(schemaCommand);
 datasourcesCommand.addCommand(deleteCommand);

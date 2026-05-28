@@ -176,3 +176,5 @@ export async function previewDatasourceJsonLayouts(
   const data = await client.previewDatasourceJsonLayouts(params.id);
   return { data };
 }
+
+export { columnarToRows } from '../events/events.js';

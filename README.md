@@ -1299,9 +1299,13 @@ abs datasources test --json-config '{"type": "postgres", ...}'
 abs datasources introspect --json-config '{"type": "postgres", ...}'
 abs datasources validate-query --json-config '{"query": "SELECT ..."}'
 abs datasources preview-query --json-config '{"query": "SELECT ..."}'
+abs datasources query 6 "SELECT experiment_id, COUNT(*) FROM exposures GROUP BY 1" --limit 20
+abs datasources query 6 --sql - < my_query.sql
 abs datasources set-default 1
 abs datasources schema 1
 ```
+
+By default, `query` and `preview-query` reshape the columnar API response (`columnNames`, `columnTypes`, `rows`) into row-objects so `-o table`, `-o vertical`, `-o json`, etc. render naturally. Pass `--raw` to get the original columnar payload.
 
 ### Export configurations
 

@@ -6,6 +6,8 @@ import {
   printFormatted,
 } from '../../lib/utils/api-helper.js';
 import { resetCommand } from '../../test/helpers/command-reset.js';
+import { PassThrough } from 'node:stream';
+import { setTTYOverride } from '../../lib/utils/stdin.js';
 
 vi.mock('../../lib/utils/api-helper.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../lib/utils/api-helper.js')>();
@@ -31,7 +33,14 @@ describe('datasources command', () => {
     testDatasource: vi.fn().mockResolvedValue(undefined),
     introspectDatasource: vi.fn().mockResolvedValue({ schema: [] }),
     validateDatasourceQuery: vi.fn().mockResolvedValue(undefined),
-    previewDatasourceQuery: vi.fn().mockResolvedValue({ result: [] }),
+    previewDatasourceQuery: vi.fn().mockResolvedValue({
+      columnNames: ['experiment_id', 'cnt'],
+      columnTypes: ['INT64', 'INT64'],
+      rows: [
+        [1, 538217],
+        [5, 250000],
+      ],
+    }),
     setDefaultDatasource: vi.fn().mockResolvedValue(undefined),
     getDatasourceSchema: vi.fn().mockResolvedValue({ tables: [] }),
     deleteDatasource: vi.fn().mockResolvedValue(undefined),
@@ -153,7 +162,7 @@ describe('datasources command', () => {
     expect(mockClient.validateDatasourceQuery).toHaveBeenCalledWith({ query: 'SELECT 1' });
   });
 
-  it('should preview a datasource query', async () => {
+  it('should preview a datasource query and reshape columnar response to rows', async () => {
     await datasourcesCommand.parseAsync([
       'node',
       'test',
@@ -163,7 +172,37 @@ describe('datasources command', () => {
     ]);
 
     expect(mockClient.previewDatasourceQuery).toHaveBeenCalledWith({ query: 'SELECT 1' });
-    expect(printFormatted).toHaveBeenCalled();
+    expect(printFormatted).toHaveBeenCalledWith(
+      [
+        { experiment_id: 1, cnt: 538217 },
+        { experiment_id: 5, cnt: 250000 },
+      ],
+      expect.anything()
+    );
+  });
+
+  it('should preview a datasource query with --raw and keep the columnar shape', async () => {
+    vi.mocked(getGlobalOptions).mockReturnValueOnce({ output: 'table', raw: true } as any);
+
+    await datasourcesCommand.parseAsync([
+      'node',
+      'test',
+      'preview-query',
+      '--json-config',
+      '{"query":"SELECT 1"}',
+    ]);
+
+    expect(printFormatted).toHaveBeenCalledWith(
+      {
+        columnNames: ['experiment_id', 'cnt'],
+        columnTypes: ['INT64', 'INT64'],
+        rows: [
+          [1, 538217],
+          [5, 250000],
+        ],
+      },
+      expect.anything()
+    );
   });
 
   it('should set default datasource', async () => {
@@ -211,5 +250,236 @@ describe('datasources command', () => {
 
     expect(mockClient.recreateDatasourceJsonLayouts).not.toHaveBeenCalled();
     expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('--yes'));
+  });
+
+  it('should run query with positional SQL and reshape the response', async () => {
+    await datasourcesCommand.parseAsync(['node', 'test', 'query', '6', 'SELECT 1 AS one']);
+
+    expect(mockClient.previewDatasourceQuery).toHaveBeenCalledWith({
+      datasource_id: 6,
+      query: 'SELECT 1 AS one',
+    });
+    expect(printFormatted).toHaveBeenCalled();
+  });
+
+  it('should run query with --sql flag', async () => {
+    await datasourcesCommand.parseAsync(['node', 'test', 'query', '6', '--sql', 'SELECT 2 AS two']);
+
+    expect(mockClient.previewDatasourceQuery).toHaveBeenCalledWith({
+      datasource_id: 6,
+      query: 'SELECT 2 AS two',
+    });
+  });
+
+  it('should reject when both positional sql and --sql are provided', async () => {
+    await expect(
+      datasourcesCommand.parseAsync(['node', 'test', 'query', '6', 'SELECT 1', '--sql', 'SELECT 2'])
+    ).rejects.toThrow(/process\.exit: 1/);
+
+    expect(mockClient.previewDatasourceQuery).not.toHaveBeenCalled();
+    expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('--sql'));
+  });
+
+  it('should pass --limit through to the request body', async () => {
+    await datasourcesCommand.parseAsync([
+      'node',
+      'test',
+      'query',
+      '6',
+      'SELECT 1',
+      '--limit',
+      '20',
+    ]);
+
+    expect(mockClient.previewDatasourceQuery).toHaveBeenCalledWith({
+      datasource_id: 6,
+      query: 'SELECT 1',
+      limit: 20,
+    });
+  });
+
+  it('should omit limit from the body when --limit is not set', async () => {
+    await datasourcesCommand.parseAsync(['node', 'test', 'query', '6', 'SELECT 1']);
+
+    const call = mockClient.previewDatasourceQuery.mock.calls[0]?.[0];
+    expect(call).not.toHaveProperty('limit');
+  });
+
+  it('re-exports columnarToRows from core/datasources', async () => {
+    const mod = await import('../../core/datasources/datasources.js');
+    expect(typeof (mod as { columnarToRows?: unknown }).columnarToRows).toBe('function');
+  });
+
+  it('query reshapes columnar response to rows by default', async () => {
+    await datasourcesCommand.parseAsync(['node', 'test', 'query', '6', 'SELECT 1']);
+
+    expect(printFormatted).toHaveBeenCalledWith(
+      [
+        { experiment_id: 1, cnt: 538217 },
+        { experiment_id: 5, cnt: 250000 },
+      ],
+      expect.anything()
+    );
+  });
+
+  it('query --raw preserves the columnar response', async () => {
+    vi.mocked(getGlobalOptions).mockReturnValueOnce({ output: 'table', raw: true } as any);
+
+    await datasourcesCommand.parseAsync(['node', 'test', 'query', '6', 'SELECT 1']);
+
+    expect(printFormatted).toHaveBeenCalledWith(
+      {
+        columnNames: ['experiment_id', 'cnt'],
+        columnTypes: ['INT64', 'INT64'],
+        rows: [
+          [1, 538217],
+          [5, 250000],
+        ],
+      },
+      expect.anything()
+    );
+  });
+
+  it('should accept --json-config as the full body when no other inputs are present', async () => {
+    await datasourcesCommand.parseAsync([
+      'node',
+      'test',
+      'query',
+      '6',
+      '--json-config',
+      '{"datasource_id":6,"query":"SELECT 1","limit":3}',
+    ]);
+
+    expect(mockClient.previewDatasourceQuery).toHaveBeenCalledWith({
+      datasource_id: 6,
+      query: 'SELECT 1',
+      limit: 3,
+    });
+  });
+
+  it('should reject --json-config combined with positional sql', async () => {
+    await expect(
+      datasourcesCommand.parseAsync([
+        'node',
+        'test',
+        'query',
+        '6',
+        'SELECT 1',
+        '--json-config',
+        '{"query":"SELECT 1"}',
+      ])
+    ).rejects.toThrow(/process\.exit: 1/);
+
+    expect(mockClient.previewDatasourceQuery).not.toHaveBeenCalled();
+  });
+
+  it('should reject --json-config combined with --sql', async () => {
+    await expect(
+      datasourcesCommand.parseAsync([
+        'node',
+        'test',
+        'query',
+        '6',
+        '--sql',
+        'SELECT 1',
+        '--json-config',
+        '{"query":"SELECT 1"}',
+      ])
+    ).rejects.toThrow(/process\.exit: 1/);
+
+    expect(mockClient.previewDatasourceQuery).not.toHaveBeenCalled();
+  });
+
+  it('should reject --json-config combined with --limit', async () => {
+    await expect(
+      datasourcesCommand.parseAsync([
+        'node',
+        'test',
+        'query',
+        '6',
+        '--limit',
+        '5',
+        '--json-config',
+        '{"query":"SELECT 1"}',
+      ])
+    ).rejects.toThrow(/process\.exit: 1/);
+
+    expect(mockClient.previewDatasourceQuery).not.toHaveBeenCalled();
+  });
+
+  it('should reject when no SQL source is provided', async () => {
+    await expect(datasourcesCommand.parseAsync(['node', 'test', 'query', '6'])).rejects.toThrow(
+      /process\.exit: 1/
+    );
+
+    expect(mockClient.previewDatasourceQuery).not.toHaveBeenCalled();
+  });
+});
+
+describe('datasources query --sql -', () => {
+  let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+  let processExitSpy: ReturnType<typeof vi.spyOn>;
+  let originalStdin: typeof process.stdin;
+
+  const mockClient = {
+    previewDatasourceQuery: vi.fn().mockResolvedValue({
+      columnNames: ['answer'],
+      columnTypes: ['INT64'],
+      rows: [[42]],
+    }),
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    resetCommand(datasourcesCommand);
+    vi.mocked(getAPIClientFromOptions).mockResolvedValue(mockClient as any);
+    vi.mocked(getGlobalOptions).mockReturnValue({ output: 'table' } as any);
+    vi.mocked(printFormatted).mockImplementation(() => {});
+    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    processExitSpy = vi.spyOn(process, 'exit').mockImplementation((code?) => {
+      throw new Error(`process.exit: ${code}`);
+    });
+  });
+
+  afterEach(() => {
+    if (originalStdin) {
+      Object.defineProperty(process, 'stdin', {
+        value: originalStdin,
+        configurable: true,
+      });
+    }
+    setTTYOverride({ stdin: true, stdout: true });
+    consoleErrorSpy.mockRestore();
+    processExitSpy.mockRestore();
+  });
+
+  function replaceStdin(content: string): void {
+    originalStdin = process.stdin;
+    const stream = new PassThrough();
+    stream.end(content);
+    Object.defineProperty(process, 'stdin', {
+      value: stream,
+      configurable: true,
+    });
+    setTTYOverride({ stdin: false });
+  }
+
+  it('reads SQL from stdin when --sql is "-"', async () => {
+    replaceStdin('SELECT 42 AS answer\n');
+    await datasourcesCommand.parseAsync(['node', 'test', 'query', '6', '--sql', '-']);
+
+    expect(mockClient.previewDatasourceQuery).toHaveBeenCalledWith({
+      datasource_id: 6,
+      query: 'SELECT 42 AS answer\n',
+    });
+  });
+
+  it('errors when --sql is "-" but stdin is empty', async () => {
+    replaceStdin('');
+    await expect(
+      datasourcesCommand.parseAsync(['node', 'test', 'query', '6', '--sql', '-'])
+    ).rejects.toThrow(/process\.exit: 1/);
+
+    expect(mockClient.previewDatasourceQuery).not.toHaveBeenCalled();
   });
 });
