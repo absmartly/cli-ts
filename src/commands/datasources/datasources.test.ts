@@ -263,14 +263,7 @@ describe('datasources command', () => {
   });
 
   it('should run query with --sql flag', async () => {
-    await datasourcesCommand.parseAsync([
-      'node',
-      'test',
-      'query',
-      '6',
-      '--sql',
-      'SELECT 2 AS two',
-    ]);
+    await datasourcesCommand.parseAsync(['node', 'test', 'query', '6', '--sql', 'SELECT 2 AS two']);
 
     expect(mockClient.previewDatasourceQuery).toHaveBeenCalledWith({
       datasource_id: 6,
@@ -280,15 +273,7 @@ describe('datasources command', () => {
 
   it('should reject when both positional sql and --sql are provided', async () => {
     await expect(
-      datasourcesCommand.parseAsync([
-        'node',
-        'test',
-        'query',
-        '6',
-        'SELECT 1',
-        '--sql',
-        'SELECT 2',
-      ])
+      datasourcesCommand.parseAsync(['node', 'test', 'query', '6', 'SELECT 1', '--sql', 'SELECT 2'])
     ).rejects.toThrow(/process\.exit: 1/);
 
     expect(mockClient.previewDatasourceQuery).not.toHaveBeenCalled();
@@ -423,9 +408,9 @@ describe('datasources command', () => {
   });
 
   it('should reject when no SQL source is provided', async () => {
-    await expect(
-      datasourcesCommand.parseAsync(['node', 'test', 'query', '6'])
-    ).rejects.toThrow(/process\.exit: 1/);
+    await expect(datasourcesCommand.parseAsync(['node', 'test', 'query', '6'])).rejects.toThrow(
+      /process\.exit: 1/
+    );
 
     expect(mockClient.previewDatasourceQuery).not.toHaveBeenCalled();
   });

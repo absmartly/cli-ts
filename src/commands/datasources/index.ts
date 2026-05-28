@@ -152,10 +152,7 @@ const previewQueryCommand = new Command('preview-query')
       const client = await getAPIClientFromOptions(globalOptions);
       const config = validateJSON(options.jsonConfig, '--json-config') as Record<string, unknown>;
       const result = await corePreviewDatasourceQuery(client, { config });
-      printFormatted(
-        globalOptions.raw ? result.data : columnarToRows(result.data),
-        globalOptions
-      );
+      printFormatted(globalOptions.raw ? result.data : columnarToRows(result.data), globalOptions);
     })
   );
 
@@ -196,10 +193,7 @@ const queryCommand = new Command('query')
             );
             process.exit(1);
           }
-          config = validateJSON(options.jsonConfig, '--json-config') as Record<
-            string,
-            unknown
-          >;
+          config = validateJSON(options.jsonConfig, '--json-config') as Record<string, unknown>;
         } else {
           if (positionalSql !== undefined && options.sql !== undefined) {
             console.error(
@@ -212,17 +206,13 @@ const queryCommand = new Command('query')
           if (sql === '-') {
             sql = await readStdinText();
             if (sql.length === 0) {
-              console.error(
-                chalk.red('✗ --sql - was specified but stdin was empty.')
-              );
+              console.error(chalk.red('✗ --sql - was specified but stdin was empty.'));
               process.exit(1);
             }
           }
 
           if (sql === undefined) {
-            console.error(
-              chalk.red('✗ SQL is required. Provide it positionally or via --sql.')
-            );
+            console.error(chalk.red('✗ SQL is required. Provide it positionally or via --sql.'));
             process.exit(1);
           }
 
