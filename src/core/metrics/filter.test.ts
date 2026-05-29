@@ -45,7 +45,9 @@ describe('parseMetricFilters', () => {
     // neither flag: commander leaves propertyFilter at its default true; we ignore it
     expect(parseMetricFilters({ propertyFilter: true }).hasPropertyFilter).toBeUndefined();
     // --has-property-filter
-    expect(parseMetricFilters({ hasPropertyFilter: true, propertyFilter: true }).hasPropertyFilter).toBe(true);
+    expect(
+      parseMetricFilters({ hasPropertyFilter: true, propertyFilter: true }).hasPropertyFilter
+    ).toBe(true);
     // --no-property-filter
     expect(parseMetricFilters({ propertyFilter: false }).hasPropertyFilter).toBe(false);
   });
@@ -70,7 +72,9 @@ describe('validateMetricFilters', () => {
   });
   it('rejects unknown impact directions', () => {
     const opts = { impactDirection: 'sideways' };
-    expect(() => validateMetricFilters(opts, parseMetricFilters(opts))).toThrow(/impact.*direction/i);
+    expect(() => validateMetricFilters(opts, parseMetricFilters(opts))).toThrow(
+      /impact.*direction/i
+    );
   });
   it('rejects passing both --has-property-filter and --no-property-filter', () => {
     const opts = { hasPropertyFilter: true, propertyFilter: false };
@@ -140,7 +144,11 @@ describe('filterMetrics - type / impact / goal', () => {
   it('filters by goal name substring (numerator or denominator)', () => {
     const data = [
       metric({ id: 1, goal: { id: 1, name: 'page_view' } }),
-      metric({ id: 2, goal: { id: 2, name: 'checkout' }, denominator_goal: { id: 3, name: 'page_view_all' } }),
+      metric({
+        id: 2,
+        goal: { id: 2, name: 'checkout' },
+        denominator_goal: { id: 3, name: 'page_view_all' },
+      }),
       metric({ id: 3, goal: { id: 4, name: 'purchase' } }),
     ];
     const out = filterMetrics(data, parseMetricFilters({ goal: 'page_view' }));
@@ -153,7 +161,11 @@ describe('filterMetrics - outlier / cuped', () => {
     const data = [
       metric({ id: 1, outlier_limit_method: 'unlimited' }),
       metric({ id: 2, outlier_limit_method: 'quantile' }),
-      metric({ id: 3, outlier_limit_method: 'unlimited', denominator_outlier_limit_method: 'stdev' }),
+      metric({
+        id: 3,
+        outlier_limit_method: 'unlimited',
+        denominator_outlier_limit_method: 'stdev',
+      }),
     ];
     const out = filterMetrics(data, parseMetricFilters({ outlierLimiting: true }));
     expect(out.map((m) => m.id)).toEqual([2, 3]);
@@ -171,7 +183,11 @@ describe('filterMetrics - outlier / cuped', () => {
   it('filters by outlier method (numerator or denominator, OR within list)', () => {
     const data = [
       metric({ id: 1, outlier_limit_method: 'quantile' }),
-      metric({ id: 2, outlier_limit_method: 'unlimited', denominator_outlier_limit_method: 'fixed' }),
+      metric({
+        id: 2,
+        outlier_limit_method: 'unlimited',
+        denominator_outlier_limit_method: 'fixed',
+      }),
       metric({ id: 3, outlier_limit_method: 'stdev' }),
     ];
     const out = filterMetrics(data, parseMetricFilters({ outlierMethod: 'quantile,fixed' }));
@@ -213,15 +229,15 @@ describe('filterMetrics - property filter', () => {
       metric({ id: 4, property_filter: PF }),
       metric({ id: 5, property_filter: null, denominator_property_filter: PF2 }),
     ];
-    const out = filterMetrics(data, parseMetricFilters({ hasPropertyFilter: true, propertyFilter: true }));
+    const out = filterMetrics(
+      data,
+      parseMetricFilters({ hasPropertyFilter: true, propertyFilter: true })
+    );
     expect(out.map((m) => m.id)).toEqual([4, 5]);
   });
 
   it('--no-property-filter keeps only metrics without a filter', () => {
-    const data = [
-      metric({ id: 1, property_filter: null }),
-      metric({ id: 2, property_filter: PF }),
-    ];
+    const data = [metric({ id: 1, property_filter: null }), metric({ id: 2, property_filter: PF })];
     const out = filterMetrics(data, parseMetricFilters({ propertyFilter: false }));
     expect(out.map((m) => m.id)).toEqual([1]);
   });
@@ -259,7 +275,10 @@ describe('filterMetrics - property filter', () => {
       metric({ id: 4, property_filter: '[]' }),
       metric({ id: 5, property_filter: '[{}]' }),
     ];
-    const out = filterMetrics(data, parseMetricFilters({ hasPropertyFilter: true, propertyFilter: true }));
+    const out = filterMetrics(
+      data,
+      parseMetricFilters({ hasPropertyFilter: true, propertyFilter: true })
+    );
     expect(out.map((m) => m.id)).toEqual([3]);
   });
 });

@@ -827,8 +827,14 @@ describe('listAllMetrics', () => {
 
     expect(result.data.map((m: any) => m.id)).toEqual([1, 2, 3, 4, 5]);
     expect(client.listMetrics).toHaveBeenCalledTimes(3);
-    expect(client.listMetrics).toHaveBeenNthCalledWith(1, expect.objectContaining({ items: 2, page: 1 }));
-    expect(client.listMetrics).toHaveBeenNthCalledWith(3, expect.objectContaining({ items: 2, page: 3 }));
+    expect(client.listMetrics).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ items: 2, page: 1 })
+    );
+    expect(client.listMetrics).toHaveBeenNthCalledWith(
+      3,
+      expect.objectContaining({ items: 2, page: 3 })
+    );
   });
 
   it('stops after a single page when fewer than pageSize are returned', async () => {
@@ -845,7 +851,11 @@ describe('listAllMetrics', () => {
       resolveTeams: vi.fn().mockResolvedValue([{ id: 5, name: 'Growth' }]),
     } as any;
 
-    await listAllMetrics(client, { items: 100, page: 1, owners: 'jane@example.com', teams: 'Growth' }, 2);
+    await listAllMetrics(
+      client,
+      { items: 100, page: 1, owners: 'jane@example.com', teams: 'Growth' },
+      2
+    );
 
     expect(client.resolveUsers).toHaveBeenCalledTimes(1);
     expect(client.resolveTeams).toHaveBeenCalledTimes(1);

@@ -202,14 +202,50 @@ describe('metrics command', () => {
   });
 
   const richMetrics = [
-    { id: 1, name: 'a', type: 'goal_count', effect: 'positive', goal_id: 1, goal: { id: 1, name: 'page_view' }, outlier_limit_method: 'unlimited', vr_lookback_interval: null, property_filter: null },
-    { id: 2, name: 'b', type: 'goal_ratio', effect: 'negative', goal_id: 2, goal: { id: 2, name: 'checkout' }, outlier_limit_method: 'quantile', vr_lookback_interval: '2w', property_filter: '{"filter":{"and":[{"var":{"path":"page_name"}}]}}' },
-    { id: 3, name: 'c', type: 'custom_sql', effect: 'unknown', goal_id: 3, goal: { id: 3, name: 'purchase' }, outlier_limit_method: 'unlimited', vr_lookback_interval: null, property_filter: null },
+    {
+      id: 1,
+      name: 'a',
+      type: 'goal_count',
+      effect: 'positive',
+      goal_id: 1,
+      goal: { id: 1, name: 'page_view' },
+      outlier_limit_method: 'unlimited',
+      vr_lookback_interval: null,
+      property_filter: null,
+    },
+    {
+      id: 2,
+      name: 'b',
+      type: 'goal_ratio',
+      effect: 'negative',
+      goal_id: 2,
+      goal: { id: 2, name: 'checkout' },
+      outlier_limit_method: 'quantile',
+      vr_lookback_interval: '2w',
+      property_filter: '{"filter":{"and":[{"var":{"path":"page_name"}}]}}',
+    },
+    {
+      id: 3,
+      name: 'c',
+      type: 'custom_sql',
+      effect: 'unknown',
+      goal_id: 3,
+      goal: { id: 3, name: 'purchase' },
+      outlier_limit_method: 'unlimited',
+      vr_lookback_interval: null,
+      property_filter: null,
+    },
   ];
 
   it('filters metrics list by --metric-type (client-side)', async () => {
     mockClient.listMetrics.mockResolvedValue(richMetrics);
-    await metricsCommand.parseAsync(['node', 'test', 'list', '--metric-type', 'goal_ratio,custom_sql']);
+    await metricsCommand.parseAsync([
+      'node',
+      'test',
+      'list',
+      '--metric-type',
+      'goal_ratio,custom_sql',
+    ]);
 
     const printed = vi.mocked(printFormatted).mock.calls.at(-1)?.[0] as Array<{ id: number }>;
     expect(printed.map((m) => m.id)).toEqual([2, 3]);
@@ -250,7 +286,13 @@ describe('metrics command', () => {
   it('rejects combining --has-property-filter with --no-property-filter', async () => {
     mockClient.listMetrics.mockResolvedValue(richMetrics);
     try {
-      await metricsCommand.parseAsync(['node', 'test', 'list', '--has-property-filter', '--no-property-filter']);
+      await metricsCommand.parseAsync([
+        'node',
+        'test',
+        'list',
+        '--has-property-filter',
+        '--no-property-filter',
+      ]);
       throw new Error('Should have thrown');
     } catch (error) {
       if (!(error as Error).message.startsWith('process.exit')) throw error;

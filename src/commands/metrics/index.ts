@@ -82,7 +82,10 @@ const listCommand = createListCommand({
         'filter by goal name or ID, comma-separated (matches numerator and denominator goals)'
       )
       // positive flag declared before negative so the boolean stays tri-state
-      .option('--outlier-limiting', 'only metrics that have outlier limiting (method other than unlimited)')
+      .option(
+        '--outlier-limiting',
+        'only metrics that have outlier limiting (method other than unlimited)'
+      )
       .option('--no-outlier-limiting', 'only metrics without outlier limiting')
       .option(
         '--outlier-method <values>',

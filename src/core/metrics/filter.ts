@@ -48,7 +48,8 @@ export function parseMetricFilters(options: Record<string, unknown>): MetricFilt
   return {
     metricType: splitCsv(options.metricType),
     goal: splitCsv(options.goal),
-    outlierLimiting: typeof options.outlierLimiting === 'boolean' ? options.outlierLimiting : undefined,
+    outlierLimiting:
+      typeof options.outlierLimiting === 'boolean' ? options.outlierLimiting : undefined,
     outlierMethod: splitCsv(options.outlierMethod),
     hasPropertyFilter,
     propertyFilterPath: splitCsv(options.propertyFilterPath),
