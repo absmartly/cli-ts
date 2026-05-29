@@ -1200,7 +1200,11 @@ abs events history --event-name my-experiment --env-type production
 abs events unit-data 1:user123 2:device456
 abs events delete-unit-data 1:user123
 abs events json-values --event-type exposure --path "variant" --experiment-id 123
+abs events json-values --event-type goal --path "items/0/segment_flight_number" --goal-id 164 --match "LA8186|LA8153"  # filter values (regex, client-side)
 abs events json-layouts --source unit_attribute --phase after_enrichment
+abs events json-layouts --source unit_goal_property --phase after_enrichment --source-id 164 --match segment_flight  # filter paths (regex)
+abs events json-layouts --source unit_goal_property --phase after_enrichment --source-id 164 --top-level            # only top-level paths
+abs events json-layouts --source unit_goal_property --phase after_enrichment --source-id 164 --max-depth 2          # paths up to 2 segments deep
 abs events summary --from month-start                        # this month, weekly buckets, totals (default)
 abs events summary --from last-month-start --to last-month-end --period month
 abs events summary --from 30d --group-by team --cumulative
