@@ -14,7 +14,13 @@ import {
   summarizeMetricRow,
 } from '../../api-client/entity-summary.js';
 import { createListCommand } from '../../lib/utils/list-command.js';
-import { listMetrics as coreListMetrics } from '../../core/metrics/list.js';
+import { listMetrics as coreListMetrics, listAllMetrics } from '../../core/metrics/list.js';
+import {
+  parseMetricFilters,
+  validateMetricFilters,
+  hasActiveMetricFilters,
+  filterMetrics,
+} from '../../core/metrics/filter.js';
 import { getMetric } from '../../core/metrics/get.js';
 import { createMetric } from '../../core/metrics/create.js';
 import { updateMetric } from '../../core/metrics/update.js';
@@ -33,7 +39,7 @@ const listCommand = createListCommand({
   description: 'List all metrics',
   defaultItems: 100,
   fetch: async (client, options) => {
-    const result = await coreListMetrics(client, {
+    const baseParams = {
       items: options.items as number,
       page: options.page as number,
       archived: options.archived as boolean,
@@ -45,16 +51,59 @@ const listCommand = createListCommand({
       owners: options.owners as string | undefined,
       teams: options.teams as string | undefined,
       reviewStatus: options.reviewStatus as string | undefined,
-    });
+    };
+
+    const filters = parseMetricFilters(options);
+    if (hasActiveMetricFilters(filters)) {
+      validateMetricFilters(options, filters);
+      // Client-side filters need the full set, not a single page.
+      const all = await listAllMetrics(client, baseParams);
+      return filterMetrics(all.data as Array<Record<string, unknown>>, filters);
+    }
+
+    const result = await coreListMetrics(client, baseParams);
     return result.data;
   },
   summarizeRow: summarizeMetricRow,
+  isClientFiltered: (options) => hasActiveMetricFilters(parseMetricFilters(options)),
   extraOptions: (cmd) =>
     cmd
       .option('--include-drafts', 'include draft (non-activated) metrics')
       .option('--owners <values>', 'filter by owners (comma-separated IDs, names, or emails)')
       .option('--teams <values>', 'filter by teams (comma-separated IDs or names)')
-      .option('--review-status <status>', 'filter by review status (pending, approved, none)'),
+      .option('--review-status <status>', 'filter by review status (pending, approved, none)')
+      // Client-side filters (applied across all pages). API-side equivalents are a follow-up.
+      .option(
+        '--metric-type <values>',
+        'filter by metric type(s), comma-separated (goal_count, goal_unique_count, goal_time_to_achievement, goal_property, goal_property_unique_count, goal_ratio, goal_retention, goal_activity_period_count, custom_sql)'
+      )
+      .option(
+        '--goal <values>',
+        'filter by goal name or ID, comma-separated (matches numerator and denominator goals)'
+      )
+      // positive flag declared before negative so the boolean stays tri-state
+      .option('--outlier-limiting', 'only metrics that have outlier limiting (method other than unlimited)')
+      .option('--no-outlier-limiting', 'only metrics without outlier limiting')
+      .option(
+        '--outlier-method <values>',
+        'filter by outlier limit method(s), comma-separated (unlimited, quantile, stdev, fixed)'
+      )
+      .option('--has-property-filter', 'only metrics that have a goal property filter')
+      .option('--no-property-filter', 'only metrics without a goal property filter')
+      .option(
+        '--property-filter-path <values>',
+        'filter by property path(s) referenced in the property filter, comma-separated (substring match)'
+      )
+      .option(
+        '--property-filter-contains <text>',
+        'filter by a substring anywhere in the serialized property filter'
+      )
+      .option(
+        '--impact-direction <values>',
+        'filter by impact direction(s), comma-separated (positive, negative, unknown)'
+      )
+      .option('--cuped', 'only metrics with CUPED (variance reduction) enabled')
+      .option('--no-cuped', 'only metrics without CUPED'),
 });
 
 const getCommand = new Command('get')
