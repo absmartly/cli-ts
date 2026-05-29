@@ -966,7 +966,7 @@ abs metrics access revoke-user 123 --user 1 --role 2
 
 #### Metric list filters (client-side)
 
-These filters run client-side: when any is set, the CLI fetches every metric and filters locally. They combine with AND across flags and OR within a comma-separated list. (Server-side equivalents are a planned follow-up.)
+These filters run client-side: when any is set, the CLI fetches every metric and filters locally. They combine with AND across flags and OR within a comma-separated list. Because the full set is fetched and filtered, `--items`/`--page` do not apply while filtering — every match is shown. (Server-side equivalents are a planned follow-up.)
 
 | Filter | Description |
 |---|---|
