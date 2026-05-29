@@ -863,4 +863,34 @@ describe('listAllMetrics', () => {
       expect.objectContaining({ owners: '10', teams: '5' })
     );
   });
+
+  it('warns and reports hasMore when the page cap is reached (truncation)', async () => {
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    // Every page is full (pageSize 2), so the loop never breaks early and hits the cap.
+    const client = { listMetrics: vi.fn().mockResolvedValue([{ id: 1 }, { id: 2 }]) } as any;
+
+    const result = await listAllMetrics(client, { items: 100, page: 1 }, 2, 3);
+
+    expect(client.listMetrics).toHaveBeenCalledTimes(3); // maxPages
+    expect(result.data).toHaveLength(6);
+    expect(result.pagination?.hasMore).toBe(true);
+    expect(errSpy).toHaveBeenCalledWith(expect.stringContaining('fetch cap'));
+    errSpy.mockRestore();
+  });
+
+  it('does not warn and reports hasMore false when a short page ends the fetch', async () => {
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const client = {
+      listMetrics: vi
+        .fn()
+        .mockResolvedValueOnce([{ id: 1 }, { id: 2 }])
+        .mockResolvedValueOnce([{ id: 3 }]),
+    } as any;
+
+    const result = await listAllMetrics(client, { items: 100, page: 1 }, 2, 3);
+
+    expect(result.pagination?.hasMore).toBe(false);
+    expect(errSpy).not.toHaveBeenCalled();
+    errSpy.mockRestore();
+  });
 });
