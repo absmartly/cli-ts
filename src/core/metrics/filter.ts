@@ -134,7 +134,49 @@ function byGoal(m: Metric, f: MetricFilters): boolean {
   });
 }
 
-const PREDICATES: Array<(m: Metric, f: MetricFilters) => boolean> = [byType, byImpactDirection, byGoal];
+function isLimited(method: unknown): boolean {
+  const m = lc(method);
+  return m !== '' && m !== 'unlimited';
+}
+
+function metricHasOutlierLimiting(m: Metric): boolean {
+  return isLimited(m.outlier_limit_method) || isLimited(m.denominator_outlier_limit_method);
+}
+
+function byOutlierLimiting(m: Metric, f: MetricFilters): boolean {
+  if (f.outlierLimiting === undefined) return true;
+  return metricHasOutlierLimiting(m) === f.outlierLimiting;
+}
+
+function byOutlierMethod(m: Metric, f: MetricFilters): boolean {
+  if (!f.outlierMethod) return true;
+  const want = f.outlierMethod.map((x) => x.toLowerCase());
+  const num = lc(m.outlier_limit_method);
+  const den = lc(m.denominator_outlier_limit_method);
+  return (num !== '' && want.includes(num)) || (den !== '' && want.includes(den));
+}
+
+function nonEmpty(value: unknown): boolean {
+  return value !== null && value !== undefined && String(value).trim() !== '';
+}
+
+function metricHasCuped(m: Metric): boolean {
+  return nonEmpty(m.vr_lookback_interval) || nonEmpty(m.denominator_vr_lookback_interval);
+}
+
+function byCuped(m: Metric, f: MetricFilters): boolean {
+  if (f.cuped === undefined) return true;
+  return metricHasCuped(m) === f.cuped;
+}
+
+const PREDICATES: Array<(m: Metric, f: MetricFilters) => boolean> = [
+  byType,
+  byImpactDirection,
+  byGoal,
+  byOutlierLimiting,
+  byOutlierMethod,
+  byCuped,
+];
 
 export function filterMetrics(metrics: Metric[], f: MetricFilters): Metric[] {
   return metrics.filter((m) => PREDICATES.every((p) => p(m, f)));

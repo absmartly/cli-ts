@@ -147,3 +147,54 @@ describe('filterMetrics - type / impact / goal', () => {
     expect(out.map((m) => m.id)).toEqual([1, 2]);
   });
 });
+
+describe('filterMetrics - outlier / cuped', () => {
+  it('--outlier-limiting keeps only metrics with limiting (numerator or denominator)', () => {
+    const data = [
+      metric({ id: 1, outlier_limit_method: 'unlimited' }),
+      metric({ id: 2, outlier_limit_method: 'quantile' }),
+      metric({ id: 3, outlier_limit_method: 'unlimited', denominator_outlier_limit_method: 'stdev' }),
+    ];
+    const out = filterMetrics(data, parseMetricFilters({ outlierLimiting: true }));
+    expect(out.map((m) => m.id)).toEqual([2, 3]);
+  });
+
+  it('--no-outlier-limiting keeps only metrics without limiting', () => {
+    const data = [
+      metric({ id: 1, outlier_limit_method: 'unlimited' }),
+      metric({ id: 2, outlier_limit_method: 'fixed' }),
+    ];
+    const out = filterMetrics(data, parseMetricFilters({ outlierLimiting: false }));
+    expect(out.map((m) => m.id)).toEqual([1]);
+  });
+
+  it('filters by outlier method (numerator or denominator, OR within list)', () => {
+    const data = [
+      metric({ id: 1, outlier_limit_method: 'quantile' }),
+      metric({ id: 2, outlier_limit_method: 'unlimited', denominator_outlier_limit_method: 'fixed' }),
+      metric({ id: 3, outlier_limit_method: 'stdev' }),
+    ];
+    const out = filterMetrics(data, parseMetricFilters({ outlierMethod: 'quantile,fixed' }));
+    expect(out.map((m) => m.id)).toEqual([1, 2]);
+  });
+
+  it('--cuped keeps only metrics with a lookback interval', () => {
+    const data = [
+      metric({ id: 1, vr_lookback_interval: null }),
+      metric({ id: 2, vr_lookback_interval: '2w' }),
+      metric({ id: 3, vr_lookback_interval: null, denominator_vr_lookback_interval: '1w' }),
+    ];
+    const out = filterMetrics(data, parseMetricFilters({ cuped: true }));
+    expect(out.map((m) => m.id)).toEqual([2, 3]);
+  });
+
+  it('--no-cuped keeps only metrics without a lookback interval', () => {
+    const data = [
+      metric({ id: 1, vr_lookback_interval: '4w' }),
+      metric({ id: 2, vr_lookback_interval: '' }),
+      metric({ id: 3, vr_lookback_interval: null }),
+    ];
+    const out = filterMetrics(data, parseMetricFilters({ cuped: false }));
+    expect(out.map((m) => m.id)).toEqual([2, 3]);
+  });
+});
