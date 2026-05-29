@@ -231,6 +231,34 @@ describe('metrics command', () => {
     expect(printed.map((m) => m.id)).toEqual([1, 3]);
   });
 
+  it('filters metrics list by --has-property-filter (client-side)', async () => {
+    mockClient.listMetrics.mockResolvedValue(richMetrics);
+    await metricsCommand.parseAsync(['node', 'test', 'list', '--has-property-filter']);
+
+    const printed = vi.mocked(printFormatted).mock.calls.at(-1)?.[0] as Array<{ id: number }>;
+    expect(printed.map((m) => m.id)).toEqual([2]);
+  });
+
+  it('filters metrics list by --no-property-filter (client-side)', async () => {
+    mockClient.listMetrics.mockResolvedValue(richMetrics);
+    await metricsCommand.parseAsync(['node', 'test', 'list', '--no-property-filter']);
+
+    const printed = vi.mocked(printFormatted).mock.calls.at(-1)?.[0] as Array<{ id: number }>;
+    expect(printed.map((m) => m.id)).toEqual([1, 3]);
+  });
+
+  it('rejects combining --has-property-filter with --no-property-filter', async () => {
+    mockClient.listMetrics.mockResolvedValue(richMetrics);
+    try {
+      await metricsCommand.parseAsync(['node', 'test', 'list', '--has-property-filter', '--no-property-filter']);
+      throw new Error('Should have thrown');
+    } catch (error) {
+      if (!(error as Error).message.startsWith('process.exit')) throw error;
+      const errorOutput = consoleErrorSpy.mock.calls.flat().join(' ');
+      expect(errorOutput).toContain('property-filter');
+    }
+  });
+
   it('filters metrics list by --goal name (client-side)', async () => {
     mockClient.listMetrics.mockResolvedValue(richMetrics);
     await metricsCommand.parseAsync(['node', 'test', 'list', '--goal', 'checkout']);
