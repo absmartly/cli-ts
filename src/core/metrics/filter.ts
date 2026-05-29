@@ -200,6 +200,7 @@ function hasMeaningfulPropertyFilter(raw: unknown): boolean {
   const inner =
     parsed !== null &&
     typeof parsed === 'object' &&
+    !Array.isArray(parsed) &&
     'filter' in (parsed as Record<string, unknown>)
       ? (parsed as Record<string, unknown>).filter
       : parsed;

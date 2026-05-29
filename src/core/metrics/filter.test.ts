@@ -256,6 +256,8 @@ describe('filterMetrics - property filter', () => {
       metric({ id: 1, property_filter: JSON.stringify({ filter: { and: [] } }) }),
       metric({ id: 2, property_filter: JSON.stringify({ filter: { or: [] } }) }),
       metric({ id: 3, property_filter: PF }),
+      metric({ id: 4, property_filter: '[]' }),
+      metric({ id: 5, property_filter: '[{}]' }),
     ];
     const out = filterMetrics(data, parseMetricFilters({ hasPropertyFilter: true, propertyFilter: true }));
     expect(out.map((m) => m.id)).toEqual([3]);
