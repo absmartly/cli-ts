@@ -3,6 +3,7 @@ import { createListCommand } from './list-command.js';
 import { getAPIClientFromOptions, getGlobalOptions, printFormatted } from './api-helper.js';
 import { resetCommand } from '../../test/helpers/command-reset.js';
 import { setTTYOverride } from './stdin.js';
+import { printPaginationFooter } from './pagination.js';
 
 vi.mock('./api-helper.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('./api-helper.js')>();
@@ -68,6 +69,32 @@ describe('createListCommand', () => {
 
     expect(mockFetch).toHaveBeenCalledWith(mockClient, expect.any(Object));
     expect(printFormatted).toHaveBeenCalled();
+  });
+
+  it('prints a filtered total footer (not the pagination footer) when isClientFiltered returns true', async () => {
+    const fetch = vi.fn().mockResolvedValue([{ id: 1 }, { id: 2 }]);
+    const cmd = createListCommand({
+      description: 'List items',
+      fetch,
+      isClientFiltered: () => true,
+    });
+    resetCommand(cmd);
+
+    await cmd.parseAsync(['node', 'test']);
+
+    const output = consoleSpy.mock.calls.flat().join('\n');
+    expect(output).toContain('(filtered)');
+    expect(printPaginationFooter).not.toHaveBeenCalled();
+  });
+
+  it('uses the pagination footer when isClientFiltered is absent', async () => {
+    const fetch = vi.fn().mockResolvedValue([{ id: 1 }]);
+    const cmd = createListCommand({ description: 'List items', fetch });
+    resetCommand(cmd);
+
+    await cmd.parseAsync(['node', 'test']);
+
+    expect(printPaginationFooter).toHaveBeenCalled();
   });
 
   describe('output behavior under piping', () => {

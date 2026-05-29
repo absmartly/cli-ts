@@ -6,7 +6,7 @@ import {
   shouldOutputIdsOnly,
   withErrorHandling,
 } from './api-helper.js';
-import { addPaginationOptions, printPaginationFooter } from './pagination.js';
+import { addPaginationOptions, printPaginationFooter, printFilteredFooter } from './pagination.js';
 import { applyShowExclude } from '../../api-client/entity-summary.js';
 import type { APIClient } from '../../api-client/api-client.js';
 
@@ -16,6 +16,12 @@ export interface ListCommandOptions {
   fetch: (client: APIClient, options: Record<string, unknown>) => Promise<unknown[]>;
   summarizeRow?: (item: Record<string, unknown>) => Record<string, unknown>;
   extraOptions?: (cmd: Command) => Command;
+  /**
+   * When this returns true for the parsed options, `fetch` is expected to have
+   * already returned the COMPLETE client-filtered result set, so a total-count
+   * footer is printed instead of the page-based pagination footer.
+   */
+  isClientFiltered?: (options: Record<string, unknown>) => boolean;
 }
 
 export function createListCommand(opts: ListCommandOptions): Command {
@@ -65,12 +71,16 @@ export function createListCommand(opts: ListCommandOptions): Command {
       }
 
       printFormatted(data, globalOptions);
-      printPaginationFooter(
-        items.length,
-        options.items,
-        options.page,
-        globalOptions.output as string
-      );
+      if (opts.isClientFiltered?.(options)) {
+        printFilteredFooter(items.length, globalOptions.output as string);
+      } else {
+        printPaginationFooter(
+          items.length,
+          options.items,
+          options.page,
+          globalOptions.output as string
+        );
+      }
     })
   );
 
