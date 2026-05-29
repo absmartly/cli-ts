@@ -929,6 +929,17 @@ abs metrics list --owners "jane@example.com" --teams Growth  # by name/email
 abs metrics list --review-status pending
 abs metrics list --sort name --asc
 abs metrics list --ids 1,2,3
+
+# Client-side filters (applied across all pages)
+abs metrics list --metric-type goal_ratio,custom_sql
+abs metrics list --goal purchase                          # name or ID, incl. denominator
+abs metrics list --outlier-limiting                       # has limiting; --no-outlier-limiting for none
+abs metrics list --outlier-method quantile,stdev
+abs metrics list --has-property-filter                    # --no-property-filter for none
+abs metrics list --property-filter-path page_name
+abs metrics list --property-filter-contains BookingFullDetails
+abs metrics list --impact-direction positive,negative
+abs metrics list --cuped                                  # --no-cuped for none
 abs metrics get 123
 abs metrics create --name "Revenue" --type count
 abs metrics update 123 --description "Updated"
@@ -952,6 +963,22 @@ abs metrics access list-users 123
 abs metrics access grant-user 123 --user 1 --role 2
 abs metrics access revoke-user 123 --user 1 --role 2
 ```
+
+#### Metric list filters (client-side)
+
+These filters run client-side: when any is set, the CLI fetches every metric and filters locally. They combine with AND across flags and OR within a comma-separated list. Because the full set is fetched and filtered, `--items`/`--page` do not apply while filtering — every match is shown. (Server-side equivalents are a planned follow-up.)
+
+| Filter | Description |
+|---|---|
+| `--metric-type <values>` | `goal_count`, `goal_unique_count`, `goal_time_to_achievement`, `goal_property`, `goal_property_unique_count`, `goal_ratio`, `goal_retention`, `goal_activity_period_count`, `custom_sql` |
+| `--goal <values>` | Goal name (substring) or ID; matches numerator and denominator goals |
+| `--outlier-limiting` / `--no-outlier-limiting` | Has / does not have outlier limiting (method other than `unlimited`) |
+| `--outlier-method <values>` | `unlimited`, `quantile`, `stdev`, `fixed` |
+| `--has-property-filter` / `--no-property-filter` | Has / does not have a goal property filter |
+| `--property-filter-path <values>` | Property path(s) referenced inside the property filter (substring) |
+| `--property-filter-contains <text>` | Substring anywhere in the serialized property filter |
+| `--impact-direction <values>` | `positive`, `negative`, `unknown` |
+| `--cuped` / `--no-cuped` | Has / does not have CUPED (variance reduction) enabled |
 
 ### Teams
 

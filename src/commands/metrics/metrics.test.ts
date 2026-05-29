@@ -201,6 +201,131 @@ describe('metrics command', () => {
     expect(printFormatted).toHaveBeenCalled();
   });
 
+  const richMetrics = [
+    {
+      id: 1,
+      name: 'a',
+      type: 'goal_count',
+      effect: 'positive',
+      goal_id: 1,
+      goal: { id: 1, name: 'page_view' },
+      outlier_limit_method: 'unlimited',
+      vr_lookback_interval: null,
+      property_filter: null,
+    },
+    {
+      id: 2,
+      name: 'b',
+      type: 'goal_ratio',
+      effect: 'negative',
+      goal_id: 2,
+      goal: { id: 2, name: 'checkout' },
+      outlier_limit_method: 'quantile',
+      vr_lookback_interval: '2w',
+      property_filter: '{"filter":{"and":[{"var":{"path":"page_name"}}]}}',
+    },
+    {
+      id: 3,
+      name: 'c',
+      type: 'custom_sql',
+      effect: 'unknown',
+      goal_id: 3,
+      goal: { id: 3, name: 'purchase' },
+      outlier_limit_method: 'unlimited',
+      vr_lookback_interval: null,
+      property_filter: null,
+    },
+  ];
+
+  it('filters metrics list by --metric-type (client-side)', async () => {
+    mockClient.listMetrics.mockResolvedValue(richMetrics);
+    await metricsCommand.parseAsync([
+      'node',
+      'test',
+      'list',
+      '--metric-type',
+      'goal_ratio,custom_sql',
+    ]);
+
+    const printed = vi.mocked(printFormatted).mock.calls.at(-1)?.[0] as Array<{ id: number }>;
+    expect(printed.map((m) => m.id)).toEqual([2, 3]);
+  });
+
+  it('filters metrics list by --cuped (client-side)', async () => {
+    mockClient.listMetrics.mockResolvedValue(richMetrics);
+    await metricsCommand.parseAsync(['node', 'test', 'list', '--cuped']);
+
+    const printed = vi.mocked(printFormatted).mock.calls.at(-1)?.[0] as Array<{ id: number }>;
+    expect(printed.map((m) => m.id)).toEqual([2]);
+  });
+
+  it('filters metrics list by --no-cuped (client-side)', async () => {
+    mockClient.listMetrics.mockResolvedValue(richMetrics);
+    await metricsCommand.parseAsync(['node', 'test', 'list', '--no-cuped']);
+
+    const printed = vi.mocked(printFormatted).mock.calls.at(-1)?.[0] as Array<{ id: number }>;
+    expect(printed.map((m) => m.id)).toEqual([1, 3]);
+  });
+
+  it('filters metrics list by --has-property-filter (client-side)', async () => {
+    mockClient.listMetrics.mockResolvedValue(richMetrics);
+    await metricsCommand.parseAsync(['node', 'test', 'list', '--has-property-filter']);
+
+    const printed = vi.mocked(printFormatted).mock.calls.at(-1)?.[0] as Array<{ id: number }>;
+    expect(printed.map((m) => m.id)).toEqual([2]);
+  });
+
+  it('filters metrics list by --no-property-filter (client-side)', async () => {
+    mockClient.listMetrics.mockResolvedValue(richMetrics);
+    await metricsCommand.parseAsync(['node', 'test', 'list', '--no-property-filter']);
+
+    const printed = vi.mocked(printFormatted).mock.calls.at(-1)?.[0] as Array<{ id: number }>;
+    expect(printed.map((m) => m.id)).toEqual([1, 3]);
+  });
+
+  it('rejects combining --has-property-filter with --no-property-filter', async () => {
+    mockClient.listMetrics.mockResolvedValue(richMetrics);
+    try {
+      await metricsCommand.parseAsync([
+        'node',
+        'test',
+        'list',
+        '--has-property-filter',
+        '--no-property-filter',
+      ]);
+      throw new Error('Should have thrown');
+    } catch (error) {
+      if (!(error as Error).message.startsWith('process.exit')) throw error;
+      const errorOutput = consoleErrorSpy.mock.calls.flat().join(' ');
+      expect(errorOutput).toContain('property-filter');
+    }
+  });
+
+  it('filters metrics list by --goal name (client-side)', async () => {
+    mockClient.listMetrics.mockResolvedValue(richMetrics);
+    await metricsCommand.parseAsync(['node', 'test', 'list', '--goal', 'checkout']);
+
+    const printed = vi.mocked(printFormatted).mock.calls.at(-1)?.[0] as Array<{ id: number }>;
+    expect(printed.map((m) => m.id)).toEqual([2]);
+  });
+
+  it('rejects an invalid --impact-direction value', async () => {
+    mockClient.listMetrics.mockResolvedValue(richMetrics);
+    try {
+      await metricsCommand.parseAsync(['node', 'test', 'list', '--impact-direction', 'sideways']);
+      throw new Error('Should have thrown');
+    } catch (error) {
+      if (!(error as Error).message.startsWith('process.exit')) throw error;
+      const errorOutput = consoleErrorSpy.mock.calls.flat().join(' ');
+      expect(errorOutput).toContain('impact-direction');
+    }
+  });
+
+  it('does not client-filter (single page) when no new filters are passed', async () => {
+    await metricsCommand.parseAsync(['node', 'test', 'list']);
+    expect(mockClient.listMetrics).toHaveBeenCalledWith(defaultListParams);
+  });
+
   it('should get metric by id', async () => {
     await metricsCommand.parseAsync(['node', 'test', 'get', '1']);
 

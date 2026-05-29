@@ -20,3 +20,8 @@ export function printPaginationFooter(
     : `Page ${page} (${count} results).`;
   console.log(chalk.gray(footer));
 }
+
+export function printFilteredFooter(count: number, outputFormat?: string): void {
+  if (outputFormat === 'json' || outputFormat === 'yaml') return;
+  console.log(chalk.gray(`${count} result${count === 1 ? '' : 's'} (filtered).`));
+}

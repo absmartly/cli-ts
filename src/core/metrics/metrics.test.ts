@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { listMetrics, resolveOwnerIds, resolveTeamIds } from './list.js';
+import { listMetrics, listAllMetrics, resolveOwnerIds, resolveTeamIds } from './list.js';
 import { getMetric } from './get.js';
 import { createMetric } from './create.js';
 import { updateMetric } from './update.js';
@@ -809,5 +809,88 @@ describe('validateMetricFields', () => {
         { mode: 'strict' }
       )
     ).toThrow(/--value-source-property is required/);
+  });
+});
+
+describe('listAllMetrics', () => {
+  it('pages through results until a short page is returned', async () => {
+    const client = {
+      listMetrics: vi.fn(),
+    } as any;
+    // pageSize 2: page1 full (2), page2 full (2), page3 short (1) -> stop
+    client.listMetrics
+      .mockResolvedValueOnce([{ id: 1 }, { id: 2 }])
+      .mockResolvedValueOnce([{ id: 3 }, { id: 4 }])
+      .mockResolvedValueOnce([{ id: 5 }]);
+
+    const result = await listAllMetrics(client, { items: 100, page: 1 }, 2);
+
+    expect(result.data.map((m: any) => m.id)).toEqual([1, 2, 3, 4, 5]);
+    expect(client.listMetrics).toHaveBeenCalledTimes(3);
+    expect(client.listMetrics).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ items: 2, page: 1 })
+    );
+    expect(client.listMetrics).toHaveBeenNthCalledWith(
+      3,
+      expect.objectContaining({ items: 2, page: 3 })
+    );
+  });
+
+  it('stops after a single page when fewer than pageSize are returned', async () => {
+    const client = { listMetrics: vi.fn().mockResolvedValue([{ id: 1 }]) } as any;
+    const result = await listAllMetrics(client, { items: 100, page: 1 }, 2);
+    expect(result.data).toHaveLength(1);
+    expect(client.listMetrics).toHaveBeenCalledTimes(1);
+  });
+
+  it('resolves owners and teams once, then forwards their IDs on every page', async () => {
+    const client = {
+      listMetrics: vi.fn().mockResolvedValue([]),
+      resolveUsers: vi.fn().mockResolvedValue([{ id: 10, email: 'jane@example.com' }]),
+      resolveTeams: vi.fn().mockResolvedValue([{ id: 5, name: 'Growth' }]),
+    } as any;
+
+    await listAllMetrics(
+      client,
+      { items: 100, page: 1, owners: 'jane@example.com', teams: 'Growth' },
+      2
+    );
+
+    expect(client.resolveUsers).toHaveBeenCalledTimes(1);
+    expect(client.resolveTeams).toHaveBeenCalledTimes(1);
+    expect(client.listMetrics).toHaveBeenCalledWith(
+      expect.objectContaining({ owners: '10', teams: '5' })
+    );
+  });
+
+  it('warns and reports hasMore when the page cap is reached (truncation)', async () => {
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    // Every page is full (pageSize 2), so the loop never breaks early and hits the cap.
+    const client = { listMetrics: vi.fn().mockResolvedValue([{ id: 1 }, { id: 2 }]) } as any;
+
+    const result = await listAllMetrics(client, { items: 100, page: 1 }, 2, 3);
+
+    expect(client.listMetrics).toHaveBeenCalledTimes(3); // maxPages
+    expect(result.data).toHaveLength(6);
+    expect(result.pagination?.hasMore).toBe(true);
+    expect(errSpy).toHaveBeenCalledWith(expect.stringContaining('fetch cap'));
+    errSpy.mockRestore();
+  });
+
+  it('does not warn and reports hasMore false when a short page ends the fetch', async () => {
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const client = {
+      listMetrics: vi
+        .fn()
+        .mockResolvedValueOnce([{ id: 1 }, { id: 2 }])
+        .mockResolvedValueOnce([{ id: 3 }]),
+    } as any;
+
+    const result = await listAllMetrics(client, { items: 100, page: 1 }, 2, 3);
+
+    expect(result.pagination?.hasMore).toBe(false);
+    expect(errSpy).not.toHaveBeenCalled();
+    errSpy.mockRestore();
   });
 });
