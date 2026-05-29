@@ -250,4 +250,14 @@ describe('filterMetrics - property filter', () => {
     const out = filterMetrics(data, parseMetricFilters({ propertyFilterPath: 'amount' }));
     expect(out.map((m) => m.id)).toEqual([1]);
   });
+
+  it('treats an empty filter wrapper (empty and/or array) as no property filter', () => {
+    const data = [
+      metric({ id: 1, property_filter: JSON.stringify({ filter: { and: [] } }) }),
+      metric({ id: 2, property_filter: JSON.stringify({ filter: { or: [] } }) }),
+      metric({ id: 3, property_filter: PF }),
+    ];
+    const out = filterMetrics(data, parseMetricFilters({ hasPropertyFilter: true, propertyFilter: true }));
+    expect(out.map((m) => m.id)).toEqual([3]);
+  });
 });

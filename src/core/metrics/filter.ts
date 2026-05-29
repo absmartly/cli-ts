@@ -179,21 +179,31 @@ function propertyFilterText(raw: unknown): string {
   }
 }
 
+function hasLeafContent(node: unknown): boolean {
+  if (node === null || node === undefined) return false;
+  if (Array.isArray(node)) return node.some(hasLeafContent);
+  if (typeof node === 'object') return Object.values(node).some(hasLeafContent);
+  return true; // a primitive leaf (string/number/boolean) = real content
+}
+
 function hasMeaningfulPropertyFilter(raw: unknown): boolean {
   const t = propertyFilterText(raw).trim();
-  if (t === '' || t === 'null' || t === '{}') return false;
-  // A wrapper like {"filter":{}} or {"filter":{"and":[]}} counts as empty.
+  if (t === '' || t === 'null') return false;
+  let parsed: unknown;
   try {
-    const parsed = JSON.parse(t) as unknown;
-    const inner = (parsed as Record<string, unknown> | null)?.filter;
-    if (inner !== undefined) {
-      const innerText = JSON.stringify(inner);
-      return innerText !== '{}' && innerText !== '[]' && innerText !== 'null';
-    }
+    parsed = JSON.parse(t);
   } catch {
-    // not JSON — treat the raw non-empty string as a present filter
+    // Not JSON but a non-empty string — treat the raw value as a present filter.
+    return true;
   }
-  return true;
+  // Unwrap the {"filter": ...} envelope when present, then check for any leaf.
+  const inner =
+    parsed !== null &&
+    typeof parsed === 'object' &&
+    'filter' in (parsed as Record<string, unknown>)
+      ? (parsed as Record<string, unknown>).filter
+      : parsed;
+  return hasLeafContent(inner);
 }
 
 function metricHasPropertyFilter(m: Metric): boolean {
