@@ -198,3 +198,56 @@ describe('filterMetrics - outlier / cuped', () => {
     expect(out.map((m) => m.id)).toEqual([2, 3]);
   });
 });
+
+const PF = JSON.stringify({
+  filter: { and: [{ in: [{ value: ['BookingFullDetails'] }, { var: { path: 'page_name' } }] }] },
+});
+const PF2 = JSON.stringify({ filter: { and: [{ '==': [{ var: { path: 'currency' } }, 'USD'] }] } });
+
+describe('filterMetrics - property filter', () => {
+  it('--has-property-filter keeps only metrics with a non-empty filter', () => {
+    const data = [
+      metric({ id: 1, property_filter: null }),
+      metric({ id: 2, property_filter: '' }),
+      metric({ id: 3, property_filter: '{}' }),
+      metric({ id: 4, property_filter: PF }),
+      metric({ id: 5, property_filter: null, denominator_property_filter: PF2 }),
+    ];
+    const out = filterMetrics(data, parseMetricFilters({ hasPropertyFilter: true, propertyFilter: true }));
+    expect(out.map((m) => m.id)).toEqual([4, 5]);
+  });
+
+  it('--no-property-filter keeps only metrics without a filter', () => {
+    const data = [
+      metric({ id: 1, property_filter: null }),
+      metric({ id: 2, property_filter: PF }),
+    ];
+    const out = filterMetrics(data, parseMetricFilters({ propertyFilter: false }));
+    expect(out.map((m) => m.id)).toEqual([1]);
+  });
+
+  it('--property-filter-path matches var.path substrings (numerator or denominator)', () => {
+    const data = [
+      metric({ id: 1, property_filter: PF }), // page_name
+      metric({ id: 2, property_filter: null, denominator_property_filter: PF2 }), // currency
+      metric({ id: 3, property_filter: null }),
+    ];
+    const out = filterMetrics(data, parseMetricFilters({ propertyFilterPath: 'PAGE,currency' }));
+    expect(out.map((m) => m.id)).toEqual([1, 2]);
+  });
+
+  it('--property-filter-contains matches anywhere in the serialized filter (incl. values)', () => {
+    const data = [
+      metric({ id: 1, property_filter: PF }), // contains BookingFullDetails
+      metric({ id: 2, property_filter: PF2 }), // contains USD
+    ];
+    const out = filterMetrics(data, parseMetricFilters({ propertyFilterContains: 'bookingfull' }));
+    expect(out.map((m) => m.id)).toEqual([1]);
+  });
+
+  it('handles property_filter supplied as an object, not just a string', () => {
+    const data = [metric({ id: 1, property_filter: { filter: { var: { path: 'amount' } } } })];
+    const out = filterMetrics(data, parseMetricFilters({ propertyFilterPath: 'amount' }));
+    expect(out.map((m) => m.id)).toEqual([1]);
+  });
+});

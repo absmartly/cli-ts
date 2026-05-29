@@ -169,6 +169,101 @@ function byCuped(m: Metric, f: MetricFilters): boolean {
   return metricHasCuped(m) === f.cuped;
 }
 
+function propertyFilterText(raw: unknown): string {
+  if (raw === null || raw === undefined) return '';
+  if (typeof raw === 'string') return raw;
+  try {
+    return JSON.stringify(raw);
+  } catch {
+    return '';
+  }
+}
+
+function hasMeaningfulPropertyFilter(raw: unknown): boolean {
+  const t = propertyFilterText(raw).trim();
+  if (t === '' || t === 'null' || t === '{}') return false;
+  // A wrapper like {"filter":{}} or {"filter":{"and":[]}} counts as empty.
+  try {
+    const parsed = JSON.parse(t) as unknown;
+    const inner = (parsed as Record<string, unknown> | null)?.filter;
+    if (inner !== undefined) {
+      const innerText = JSON.stringify(inner);
+      return innerText !== '{}' && innerText !== '[]' && innerText !== 'null';
+    }
+  } catch {
+    // not JSON — treat the raw non-empty string as a present filter
+  }
+  return true;
+}
+
+function metricHasPropertyFilter(m: Metric): boolean {
+  return (
+    hasMeaningfulPropertyFilter(m.property_filter) ||
+    hasMeaningfulPropertyFilter(m.denominator_property_filter)
+  );
+}
+
+function collectVarPaths(node: unknown, out: string[]): void {
+  if (Array.isArray(node)) {
+    for (const child of node) collectVarPaths(child, out);
+    return;
+  }
+  if (node !== null && typeof node === 'object') {
+    for (const [key, value] of Object.entries(node)) {
+      if (key === 'var') {
+        if (typeof value === 'string') out.push(value);
+        else if (
+          value !== null &&
+          typeof value === 'object' &&
+          typeof (value as Record<string, unknown>).path === 'string'
+        ) {
+          out.push((value as Record<string, unknown>).path as string);
+        }
+      }
+      collectVarPaths(value, out);
+    }
+  }
+}
+
+function extractPropertyFilterPaths(raw: unknown): string[] {
+  const text = propertyFilterText(raw);
+  if (text === '') return [];
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    return [];
+  }
+  const out: string[] = [];
+  collectVarPaths(parsed, out);
+  return out;
+}
+
+function byPropertyFilterPresence(m: Metric, f: MetricFilters): boolean {
+  if (f.hasPropertyFilter === undefined) return true;
+  return metricHasPropertyFilter(m) === f.hasPropertyFilter;
+}
+
+function byPropertyFilterPath(m: Metric, f: MetricFilters): boolean {
+  if (!f.propertyFilterPath) return true;
+  const paths = [
+    ...extractPropertyFilterPaths(m.property_filter),
+    ...extractPropertyFilterPaths(m.denominator_property_filter),
+  ].map((p) => p.toLowerCase());
+  const want = f.propertyFilterPath.map((t) => t.toLowerCase());
+  return want.some((t) => paths.some((p) => p.includes(t)));
+}
+
+function byPropertyFilterContains(m: Metric, f: MetricFilters): boolean {
+  if (!f.propertyFilterContains) return true;
+  const hay = (
+    propertyFilterText(m.property_filter) +
+    ' ' +
+    propertyFilterText(m.denominator_property_filter)
+  ).toLowerCase();
+  return hay.includes(f.propertyFilterContains.toLowerCase());
+}
+
 const PREDICATES: Array<(m: Metric, f: MetricFilters) => boolean> = [
   byType,
   byImpactDirection,
@@ -176,6 +271,9 @@ const PREDICATES: Array<(m: Metric, f: MetricFilters) => boolean> = [
   byOutlierLimiting,
   byOutlierMethod,
   byCuped,
+  byPropertyFilterPresence,
+  byPropertyFilterPath,
+  byPropertyFilterContains,
 ];
 
 export function filterMetrics(metrics: Metric[], f: MetricFilters): Metric[] {
