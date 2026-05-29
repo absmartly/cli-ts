@@ -181,6 +181,8 @@ const jsonValuesCommand = new Command('json-values')
   .option('--goal-id <id>', 'goal ID', Number)
   .option('--from <date>', 'start time (e.g. 7d, 2w, 2026-01-01, epoch ms)')
   .option('--to <date>', 'end time (e.g. 7d, 2w, 2026-01-01, epoch ms)')
+  // Client-side filter applied to the returned values.
+  .option('--match <regex>', 'filter values by case-insensitive regex (client-side)')
   .action(
     withErrorHandling(async (options) => {
       const globalOptions = getGlobalOptions(jsonValuesCommand);
@@ -197,7 +199,10 @@ const jsonValuesCommand = new Command('json-values')
         from: jvFrom,
         to: jvTo,
       });
-      printFormatted(result.data, globalOptions);
+      const filtered = filterColumnarRows(result.data, 'value', {
+        match: options.match as string | undefined,
+      });
+      printFormatted(filtered, globalOptions);
     })
   );
 

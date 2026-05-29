@@ -184,6 +184,49 @@ describe('events command', () => {
     expect(printFormatted).toHaveBeenCalled();
   });
 
+  const columnarValues = {
+    columnNames: ['value', 'last_event_at'],
+    columnTypes: ['String', 'Int64'],
+    rows: [
+      ['LA3027 / LA3528 / LA8072', 1],
+      ['LA8186', 2],
+      ['DL2702 / LA8185', 3],
+      ['', 4],
+    ],
+  };
+
+  it('filters json-values by --match (case-insensitive regex on value)', async () => {
+    mockClient.getEventJsonValues.mockResolvedValueOnce(columnarValues);
+    await eventsCommand.parseAsync([
+      'node',
+      'test',
+      'json-values',
+      '--event-type',
+      'goal',
+      '--path',
+      'items/0/segment_flight_number',
+      '--match',
+      'la8186|la8153',
+    ]);
+    const printed = vi.mocked(printFormatted).mock.calls.at(-1)?.[0] as { rows: unknown[][] };
+    expect(printed.rows.map((r) => r[0])).toEqual(['LA8186']);
+  });
+
+  it('passes json-values output through unchanged when no --match is set', async () => {
+    mockClient.getEventJsonValues.mockResolvedValueOnce(columnarValues);
+    await eventsCommand.parseAsync([
+      'node',
+      'test',
+      'json-values',
+      '--event-type',
+      'goal',
+      '--path',
+      'items/0/segment_flight_number',
+    ]);
+    const printed = vi.mocked(printFormatted).mock.calls.at(-1)?.[0] as { rows: unknown[][] };
+    expect(printed.rows.length).toBe(4);
+  });
+
   it('should get event json layouts', async () => {
     await eventsCommand.parseAsync([
       'node',
