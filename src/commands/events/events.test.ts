@@ -184,6 +184,49 @@ describe('events command', () => {
     expect(printFormatted).toHaveBeenCalled();
   });
 
+  const columnarValues = {
+    columnNames: ['value', 'last_event_at'],
+    columnTypes: ['String', 'Int64'],
+    rows: [
+      ['LA3027 / LA3528 / LA8072', 1],
+      ['LA8186', 2],
+      ['DL2702 / LA8185', 3],
+      ['', 4],
+    ],
+  };
+
+  it('filters json-values by --match (case-insensitive regex on value)', async () => {
+    mockClient.getEventJsonValues.mockResolvedValueOnce(columnarValues);
+    await eventsCommand.parseAsync([
+      'node',
+      'test',
+      'json-values',
+      '--event-type',
+      'goal',
+      '--path',
+      'items/0/segment_flight_number',
+      '--match',
+      'la8186|la8153',
+    ]);
+    const printed = vi.mocked(printFormatted).mock.calls.at(-1)?.[0] as { rows: unknown[][] };
+    expect(printed.rows.map((r) => r[0])).toEqual(['LA8186']);
+  });
+
+  it('passes json-values output through unchanged when no --match is set', async () => {
+    mockClient.getEventJsonValues.mockResolvedValueOnce(columnarValues);
+    await eventsCommand.parseAsync([
+      'node',
+      'test',
+      'json-values',
+      '--event-type',
+      'goal',
+      '--path',
+      'items/0/segment_flight_number',
+    ]);
+    const printed = vi.mocked(printFormatted).mock.calls.at(-1)?.[0] as { rows: unknown[][] };
+    expect(printed.rows.length).toBe(4);
+  });
+
   it('should get event json layouts', async () => {
     await eventsCommand.parseAsync([
       'node',
@@ -200,6 +243,105 @@ describe('events command', () => {
       phase: 'after_enrichment',
     });
     expect(printFormatted).toHaveBeenCalled();
+  });
+
+  const columnarLayouts = {
+    columnNames: ['key', 'value_type', 'last_event_at'],
+    columnTypes: ['String', 'String', 'Int64'],
+    rows: [
+      ['currency', 'string', 1],
+      ['items', 'array', 2],
+      ['items/0', 'object', 3],
+      ['items/0/segment_flight_number', 'string', 4],
+      ['pageName', 'string', 5],
+    ],
+  };
+
+  it('filters json-layouts paths by --match (case-insensitive regex)', async () => {
+    mockClient.getEventJsonLayouts.mockResolvedValueOnce(columnarLayouts);
+    await eventsCommand.parseAsync([
+      'node',
+      'test',
+      'json-layouts',
+      '--source',
+      'unit_goal_property',
+      '--phase',
+      'after_enrichment',
+      '--match',
+      'PAGE|segment_flight',
+    ]);
+    const printed = vi.mocked(printFormatted).mock.calls.at(-1)?.[0] as { rows: unknown[][] };
+    expect(printed.rows.map((r) => r[0])).toEqual(['items/0/segment_flight_number', 'pageName']);
+  });
+
+  it('filters json-layouts paths by --top-level', async () => {
+    mockClient.getEventJsonLayouts.mockResolvedValueOnce(columnarLayouts);
+    await eventsCommand.parseAsync([
+      'node',
+      'test',
+      'json-layouts',
+      '--source',
+      'unit_goal_property',
+      '--phase',
+      'after_enrichment',
+      '--top-level',
+    ]);
+    const printed = vi.mocked(printFormatted).mock.calls.at(-1)?.[0] as { rows: unknown[][] };
+    expect(printed.rows.map((r) => r[0])).toEqual(['currency', 'items', 'pageName']);
+  });
+
+  it('filters json-layouts paths by --max-depth', async () => {
+    mockClient.getEventJsonLayouts.mockResolvedValueOnce(columnarLayouts);
+    await eventsCommand.parseAsync([
+      'node',
+      'test',
+      'json-layouts',
+      '--source',
+      'unit_goal_property',
+      '--phase',
+      'after_enrichment',
+      '--max-depth',
+      '2',
+    ]);
+    const printed = vi.mocked(printFormatted).mock.calls.at(-1)?.[0] as { rows: unknown[][] };
+    expect(printed.rows.map((r) => r[0])).toEqual(['currency', 'items', 'items/0', 'pageName']);
+  });
+
+  it('passes json-layouts output through unchanged when no client filter is set', async () => {
+    mockClient.getEventJsonLayouts.mockResolvedValueOnce(columnarLayouts);
+    await eventsCommand.parseAsync([
+      'node',
+      'test',
+      'json-layouts',
+      '--source',
+      'unit_goal_property',
+      '--phase',
+      'after_enrichment',
+    ]);
+    const printed = vi.mocked(printFormatted).mock.calls.at(-1)?.[0] as { rows: unknown[][] };
+    expect(printed.rows.length).toBe(5);
+  });
+
+  it('rejects an invalid --match regex with a clear error', async () => {
+    mockClient.getEventJsonLayouts.mockResolvedValueOnce(columnarLayouts);
+    try {
+      await eventsCommand.parseAsync([
+        'node',
+        'test',
+        'json-layouts',
+        '--source',
+        'unit_goal_property',
+        '--phase',
+        'after_enrichment',
+        '--match',
+        '(',
+      ]);
+      throw new Error('Should have thrown');
+    } catch (error) {
+      if (!(error as Error).message.startsWith('process.exit')) throw error;
+      const errorOutput = consoleErrorSpy.mock.calls.flat().join(' ');
+      expect(errorOutput).toContain('Invalid --match regex');
+    }
   });
 
   it('should error on unit-data with invalid format (no colon)', async () => {

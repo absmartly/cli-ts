@@ -18,6 +18,7 @@ import {
   getEventJsonLayouts as coreGetEventJsonLayouts,
   parseUnits,
 } from '../../core/events/events.js';
+import { filterColumnarRows } from '../../core/events/json-filter.js';
 import { summaryCommand } from './summary.js';
 
 function parseNumberArray(value: string, previous: number[]): number[] {
@@ -180,6 +181,8 @@ const jsonValuesCommand = new Command('json-values')
   .option('--goal-id <id>', 'goal ID', Number)
   .option('--from <date>', 'start time (e.g. 7d, 2w, 2026-01-01, epoch ms)')
   .option('--to <date>', 'end time (e.g. 7d, 2w, 2026-01-01, epoch ms)')
+  // Client-side filter applied to the returned values.
+  .option('--match <regex>', 'filter values by case-insensitive regex (client-side)')
   .action(
     withErrorHandling(async (options) => {
       const globalOptions = getGlobalOptions(jsonValuesCommand);
@@ -196,7 +199,10 @@ const jsonValuesCommand = new Command('json-values')
         from: jvFrom,
         to: jvTo,
       });
-      printFormatted(result.data, globalOptions);
+      const filtered = filterColumnarRows(result.data, 'value', {
+        match: options.match as string | undefined,
+      });
+      printFormatted(filtered, globalOptions);
     })
   );
 
@@ -208,6 +214,10 @@ const jsonLayoutsCommand = new Command('json-layouts')
   .option('--source-id <id>', 'source ID', Number)
   .option('--from <date>', 'start time (e.g. 7d, 2w, 2026-01-01, epoch ms)')
   .option('--to <date>', 'end time (e.g. 7d, 2w, 2026-01-01, epoch ms)')
+  // Client-side filters applied to the returned paths.
+  .option('--match <regex>', 'filter paths by case-insensitive regex (client-side)')
+  .option('--top-level', 'show only top-level paths (no slash); shorthand for --max-depth 1')
+  .option('--max-depth <n>', 'show only paths with at most N segments', (v) => parseInt(v, 10))
   .action(
     withErrorHandling(async (options) => {
       const globalOptions = getGlobalOptions(jsonLayoutsCommand);
@@ -224,7 +234,12 @@ const jsonLayoutsCommand = new Command('json-layouts')
         from: jlFrom,
         to: jlTo,
       });
-      printFormatted(result.data, globalOptions);
+      const filtered = filterColumnarRows(result.data, 'key', {
+        match: options.match as string | undefined,
+        topLevel: options.topLevel as boolean | undefined,
+        maxDepth: options.maxDepth as number | undefined,
+      });
+      printFormatted(filtered, globalOptions);
     })
   );
 
