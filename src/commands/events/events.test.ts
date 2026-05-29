@@ -322,6 +322,28 @@ describe('events command', () => {
     expect(printed.rows.length).toBe(5);
   });
 
+  it('rejects an invalid --match regex with a clear error', async () => {
+    mockClient.getEventJsonLayouts.mockResolvedValueOnce(columnarLayouts);
+    try {
+      await eventsCommand.parseAsync([
+        'node',
+        'test',
+        'json-layouts',
+        '--source',
+        'unit_goal_property',
+        '--phase',
+        'after_enrichment',
+        '--match',
+        '(',
+      ]);
+      throw new Error('Should have thrown');
+    } catch (error) {
+      if (!(error as Error).message.startsWith('process.exit')) throw error;
+      const errorOutput = consoleErrorSpy.mock.calls.flat().join(' ');
+      expect(errorOutput).toContain('Invalid --match regex');
+    }
+  });
+
   it('should error on unit-data with invalid format (no colon)', async () => {
     await expect(
       eventsCommand.parseAsync(['node', 'test', 'unit-data', 'invalidformat'])

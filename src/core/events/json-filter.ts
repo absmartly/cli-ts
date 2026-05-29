@@ -55,9 +55,19 @@ export function filterColumnarRows(
     throw new Error('--max-depth must be a positive integer');
   }
 
-  if (!isColumnar(data)) return data;
+  if (!isColumnar(data)) {
+    console.error(
+      'Warning: filter options ignored — response is not in the expected columnar shape; returning unfiltered results.'
+    );
+    return data;
+  }
   const colIdx = data.columnNames.indexOf(column);
-  if (colIdx === -1) return data;
+  if (colIdx === -1) {
+    console.error(
+      `Warning: filter options ignored — column "${column}" not found in response (columns: ${data.columnNames.join(', ')}); returning unfiltered results.`
+    );
+    return data;
+  }
 
   const depthLimit = opts.topLevel ? 1 : opts.maxDepth;
 

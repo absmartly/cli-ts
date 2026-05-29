@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { filterColumnarRows, hasColumnarFilters } from './json-filter.js';
 
 // Mimics the json-layouts response shape (key/value_type/last_event_at).
@@ -99,13 +99,26 @@ describe('filterColumnarRows - composition & defensive behavior', () => {
     const d = layouts();
     expect(filterColumnarRows(d, 'key', {})).toBe(d);
   });
-  it('returns data unchanged when the column is absent', () => {
+  it('returns data unchanged (with a stderr warning) when the column is absent', () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const d = layouts();
     expect(filterColumnarRows(d, 'nope', { match: 'x' })).toBe(d);
+    expect(spy).toHaveBeenCalledWith(expect.stringContaining('column "nope" not found'));
+    spy.mockRestore();
   });
-  it('returns data unchanged for non-columnar shapes', () => {
+  it('returns data unchanged (with a stderr warning) for non-columnar shapes', () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const weird = { foo: 'bar' };
     expect(filterColumnarRows(weird, 'key', { match: 'x' })).toBe(weird);
+    expect(spy).toHaveBeenCalledWith(expect.stringContaining('not in the expected columnar shape'));
+    spy.mockRestore();
+  });
+  it('does NOT warn when no filters are active, even on non-columnar data', () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const weird = { foo: 'bar' };
+    expect(filterColumnarRows(weird, 'key', {})).toBe(weird);
+    expect(spy).not.toHaveBeenCalled();
+    spy.mockRestore();
   });
   it('does not mutate the input rows', () => {
     const d = layouts();
