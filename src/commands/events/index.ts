@@ -202,7 +202,7 @@ const jsonValuesCommand = new Command('json-values')
       const filtered = filterColumnarRows(result.data, 'value', {
         match: options.match as string | undefined,
       });
-      printFormatted(filtered, globalOptions);
+      printFormatted(globalOptions.raw ? filtered : columnarToRows(filtered), globalOptions);
     })
   );
 
@@ -239,7 +239,7 @@ const jsonLayoutsCommand = new Command('json-layouts')
         topLevel: options.topLevel as boolean | undefined,
         maxDepth: options.maxDepth as number | undefined,
       });
-      printFormatted(filtered, globalOptions);
+      printFormatted(globalOptions.raw ? filtered : columnarToRows(filtered), globalOptions);
     })
   );
 
