@@ -3,6 +3,7 @@ import {
   parseMetricFilters,
   validateMetricFilters,
   hasActiveMetricFilters,
+  filterMetrics,
 } from './filter.js';
 
 describe('parseMetricFilters', () => {
@@ -78,5 +79,71 @@ describe('validateMetricFilters', () => {
   it('accepts valid values', () => {
     const opts = { outlierMethod: 'quantile,stdev', impactDirection: 'positive,negative' };
     expect(() => validateMetricFilters(opts, parseMetricFilters(opts))).not.toThrow();
+  });
+});
+
+type M = Record<string, unknown>;
+const metric = (over: M = {}): M => ({
+  id: 1,
+  name: 'm',
+  type: 'goal_count',
+  effect: 'positive',
+  goal_id: 1,
+  goal: { id: 1, name: 'page_view' },
+  denominator_goal_id: null,
+  denominator_goal: null,
+  outlier_limit_method: 'unlimited',
+  denominator_outlier_limit_method: null,
+  vr_lookback_interval: null,
+  denominator_vr_lookback_interval: null,
+  property_filter: null,
+  denominator_property_filter: null,
+  ...over,
+});
+
+describe('filterMetrics - type / impact / goal', () => {
+  it('returns all metrics when no filters are active', () => {
+    const data = [metric(), metric({ id: 2 })];
+    expect(filterMetrics(data, parseMetricFilters({}))).toHaveLength(2);
+  });
+
+  it('filters by metric type (case-insensitive, OR within list)', () => {
+    const data = [
+      metric({ id: 1, type: 'goal_count' }),
+      metric({ id: 2, type: 'goal_ratio' }),
+      metric({ id: 3, type: 'custom_sql' }),
+    ];
+    const out = filterMetrics(data, parseMetricFilters({ metricType: 'GOAL_COUNT,goal_ratio' }));
+    expect(out.map((m) => m.id)).toEqual([1, 2]);
+  });
+
+  it('filters by impact direction', () => {
+    const data = [
+      metric({ id: 1, effect: 'positive' }),
+      metric({ id: 2, effect: 'negative' }),
+      metric({ id: 3, effect: 'unknown' }),
+    ];
+    const out = filterMetrics(data, parseMetricFilters({ impactDirection: 'negative,unknown' }));
+    expect(out.map((m) => m.id)).toEqual([2, 3]);
+  });
+
+  it('filters by goal numeric id (numerator or denominator)', () => {
+    const data = [
+      metric({ id: 1, goal_id: 1 }),
+      metric({ id: 2, goal_id: 9, denominator_goal_id: 1 }),
+      metric({ id: 3, goal_id: 5 }),
+    ];
+    const out = filterMetrics(data, parseMetricFilters({ goal: '1' }));
+    expect(out.map((m) => m.id)).toEqual([1, 2]);
+  });
+
+  it('filters by goal name substring (numerator or denominator)', () => {
+    const data = [
+      metric({ id: 1, goal: { id: 1, name: 'page_view' } }),
+      metric({ id: 2, goal: { id: 2, name: 'checkout' }, denominator_goal: { id: 3, name: 'page_view_all' } }),
+      metric({ id: 3, goal: { id: 4, name: 'purchase' } }),
+    ];
+    const out = filterMetrics(data, parseMetricFilters({ goal: 'page_view' }));
+    expect(out.map((m) => m.id)).toEqual([1, 2]);
   });
 });

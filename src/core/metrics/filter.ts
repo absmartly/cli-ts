@@ -100,3 +100,42 @@ export function validateMetricFilters(
     }
   }
 }
+
+type Metric = Record<string, unknown>;
+
+const lc = (v: unknown): string => String(v ?? '').toLowerCase();
+
+function byType(m: Metric, f: MetricFilters): boolean {
+  if (!f.metricType) return true;
+  const want = f.metricType.map((t) => t.toLowerCase());
+  return want.includes(lc(m.type));
+}
+
+function byImpactDirection(m: Metric, f: MetricFilters): boolean {
+  if (!f.impactDirection) return true;
+  const want = f.impactDirection.map((d) => d.toLowerCase());
+  return want.includes(lc(m.effect));
+}
+
+function byGoal(m: Metric, f: MetricFilters): boolean {
+  if (!f.goal) return true;
+  const goal = m.goal as Metric | null | undefined;
+  const denomGoal = m.denominator_goal as Metric | null | undefined;
+  const ids = [m.goal_id, m.denominator_goal_id]
+    .filter((v) => v !== null && v !== undefined)
+    .map((v) => String(v));
+  const names = [goal?.name, denomGoal?.name]
+    .filter((v): v is string => typeof v === 'string')
+    .map((n) => n.toLowerCase());
+  return f.goal.some((token) => {
+    if (/^\d+$/.test(token)) return ids.includes(token);
+    const t = token.toLowerCase();
+    return names.some((n) => n.includes(t));
+  });
+}
+
+const PREDICATES: Array<(m: Metric, f: MetricFilters) => boolean> = [byType, byImpactDirection, byGoal];
+
+export function filterMetrics(metrics: Metric[], f: MetricFilters): Metric[] {
+  return metrics.filter((m) => PREDICATES.every((p) => p(m, f)));
+}
