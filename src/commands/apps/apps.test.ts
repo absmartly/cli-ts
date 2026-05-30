@@ -23,7 +23,13 @@ describe('apps command', () => {
   let processExitSpy: ReturnType<typeof vi.spyOn>;
 
   const mockClient = {
-    listApplications: vi.fn().mockResolvedValue([{ id: 1, name: 'web' }]),
+    listApplications: vi.fn().mockResolvedValue([
+      {
+        id: 1,
+        name: 'web',
+        created_by: { first_name: 'Ada', last_name: 'Lovelace', email: 'ada@example.com' },
+      },
+    ]),
     getApplication: vi.fn().mockResolvedValue({ id: 1, name: 'web' }),
     createApplication: vi.fn().mockResolvedValue({ id: 3, name: 'new-app' }),
     updateApplication: vi.fn().mockResolvedValue({ id: 1, name: 'updated' }),
@@ -54,7 +60,7 @@ describe('apps command', () => {
 
     expect(mockClient.listApplications).toHaveBeenCalled();
     expect(printFormatted).toHaveBeenCalledWith(
-      [expect.objectContaining({ id: 1, name: 'web' })],
+      [expect.objectContaining({ id: 1, name: 'web', created_by: 'Ada Lovelace' })],
       expect.anything()
     );
   });

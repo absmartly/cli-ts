@@ -112,7 +112,7 @@ describe('summarizeApiKeyRow', () => {
       id: 36,
       name: 'test new key',
       description: 'new key',
-      hashed_key: 'X99upHMkKKM2XUpRuZ53YWCDx5G93SgB043EXx3LG5k=',
+      hashed_key: 'TEST_HASHED_KEY_PLACEHOLDER',
       key_ending: 'ouNy',
       permissions: '',
       used_at: null,
