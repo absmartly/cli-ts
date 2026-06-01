@@ -5,6 +5,7 @@ import {
   printFormatted,
   shouldOutputIdsOnly,
   withErrorHandling,
+  addFieldProjectionHelp,
 } from './api-helper.js';
 import { addPaginationOptions, printPaginationFooter, printFilteredFooter } from './pagination.js';
 import { applyShowExclude } from '../../api-client/entity-summary.js';
@@ -35,24 +36,13 @@ export function createListCommand(opts: ListCommandOptions): Command {
     .option('--asc', 'sort in ascending order')
     .option('--desc', 'sort in descending order')
     .option('--archived', 'include archived items')
-    .option('--ids <ids>', 'filter by IDs (comma-separated)')
-    .option('--show <fields...>', 'include additional fields from API response')
-    .option('--exclude <fields...>', 'hide fields from summary')
-    .option(
-      '--show-only <fields...>',
-      'show only these fields (mutually exclusive with --show and --exclude)'
-    );
+    .option('--ids <ids>', 'filter by IDs (comma-separated)');
 
   cmd.action(
     withErrorHandling(async (options) => {
       const globalOptions = getGlobalOptions(cmd);
       const client = await getAPIClientFromOptions(globalOptions);
-      const show = (options.show as string[] | undefined) ?? [];
-      const exclude = (options.exclude as string[] | undefined) ?? [];
-      const showOnly = options.showOnly as string[] | undefined;
-      if (showOnly && (show.length > 0 || exclude.length > 0)) {
-        throw new Error('--show-only is mutually exclusive with --show and --exclude');
-      }
+      const { show = [], exclude = [], showOnly } = globalOptions;
 
       const items = await opts.fetch(client, options);
 
@@ -84,5 +74,6 @@ export function createListCommand(opts: ListCommandOptions): Command {
     })
   );
 
+  addFieldProjectionHelp(cmd);
   return cmd;
 }

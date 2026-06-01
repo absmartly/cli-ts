@@ -144,7 +144,9 @@ describe('get command', () => {
   });
 
   it('should include extra fields with --show', async () => {
-    await getCommand.parseAsync(['node', 'test', '42', '--show', 'audience']);
+    vi.mocked(getGlobalOptions).mockReturnValue({ output: 'table', show: ['audience'] } as any);
+
+    await getCommand.parseAsync(['node', 'test', '42']);
 
     const data = vi.mocked(printFormatted).mock.calls[0]![0] as Record<string, unknown>;
     expect(data.id).toBe(42);
@@ -152,7 +154,9 @@ describe('get command', () => {
   });
 
   it('should include custom fields by title with --show', async () => {
-    await getCommand.parseAsync(['node', 'test', '42', '--show', 'Hypothesis']);
+    vi.mocked(getGlobalOptions).mockReturnValue({ output: 'table', show: ['Hypothesis'] } as any);
+
+    await getCommand.parseAsync(['node', 'test', '42']);
 
     const data = vi.mocked(printFormatted).mock.calls[0]![0] as Record<string, unknown>;
     expect(data.Hypothesis).toBe('Red button converts better');
@@ -191,43 +195,16 @@ describe('get command', () => {
   });
 
   it('forwards --show-only to getExperiment and outputs only those fields', async () => {
-    await getCommand.parseAsync(['node', 'test', '42', '--show-only', 'id', 'audience']);
+    vi.mocked(getGlobalOptions).mockReturnValue({
+      output: 'table',
+      showOnly: ['id', 'audience'],
+    } as any);
+
+    await getCommand.parseAsync(['node', 'test', '42']);
 
     const data = vi.mocked(printFormatted).mock.calls[0]![0] as Record<string, unknown>;
     expect(Object.keys(data)).toEqual(['id', 'audience']);
     expect(data.audience).toEqual({ filter: [] });
-  });
-
-  it('rejects --show-only combined with --show', async () => {
-    try {
-      await getCommand.parseAsync([
-        'node',
-        'test',
-        '42',
-        '--show-only',
-        'id',
-        '--show',
-        'audience',
-      ]);
-    } catch (_e) {
-      // process.exit threw a sentinel
-    }
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      'Error:',
-      '--show-only is mutually exclusive with --show and --exclude'
-    );
-  });
-
-  it('rejects --show-only combined with --exclude', async () => {
-    try {
-      await getCommand.parseAsync(['node', 'test', '42', '--show-only', 'id', '--exclude', 'tags']);
-    } catch (_e) {
-      // process.exit threw a sentinel
-    }
-    expect(consoleErrorSpy).toHaveBeenCalledWith(
-      'Error:',
-      '--show-only is mutually exclusive with --show and --exclude'
-    );
   });
 
   it('renders default sections when no filters are passed', async () => {
@@ -245,9 +222,12 @@ describe('get command', () => {
   });
 
   it('renders --exclude audience without ## Audience section', async () => {
-    vi.mocked(getGlobalOptions).mockReturnValue({ output: 'rendered' } as any);
+    vi.mocked(getGlobalOptions).mockReturnValue({
+      output: 'rendered',
+      exclude: ['audience'],
+    } as any);
 
-    await getCommand.parseAsync(['node', 'test', '42', '--exclude', 'audience']);
+    await getCommand.parseAsync(['node', 'test', '42']);
 
     const output = consoleSpy.mock.calls.flat().join('');
     expect(output).not.toContain('## Audience');
@@ -255,9 +235,12 @@ describe('get command', () => {
   });
 
   it('renders --exclude Hypothesis without that custom field section', async () => {
-    vi.mocked(getGlobalOptions).mockReturnValue({ output: 'rendered' } as any);
+    vi.mocked(getGlobalOptions).mockReturnValue({
+      output: 'rendered',
+      exclude: ['Hypothesis'],
+    } as any);
 
-    await getCommand.parseAsync(['node', 'test', '42', '--exclude', 'Hypothesis']);
+    await getCommand.parseAsync(['node', 'test', '42']);
 
     const output = consoleSpy.mock.calls.flat().join('');
     expect(output).not.toContain('### Hypothesis');
@@ -265,9 +248,12 @@ describe('get command', () => {
   });
 
   it('renders --show-only id name audience minimally', async () => {
-    vi.mocked(getGlobalOptions).mockReturnValue({ output: 'rendered' } as any);
+    vi.mocked(getGlobalOptions).mockReturnValue({
+      output: 'rendered',
+      showOnly: ['id', 'name', 'audience'],
+    } as any);
 
-    await getCommand.parseAsync(['node', 'test', '42', '--show-only', 'id', 'name', 'audience']);
+    await getCommand.parseAsync(['node', 'test', '42']);
 
     const output = consoleSpy.mock.calls.flat().join('');
     expect(output).toContain('42');
@@ -283,9 +269,12 @@ describe('get command', () => {
       ...fullExperiment,
       description: 'long-form description',
     });
-    vi.mocked(getGlobalOptions).mockReturnValue({ output: 'rendered' } as any);
+    vi.mocked(getGlobalOptions).mockReturnValue({
+      output: 'rendered',
+      show: ['description'],
+    } as any);
 
-    await getCommand.parseAsync(['node', 'test', '42', '--show', 'description']);
+    await getCommand.parseAsync(['node', 'test', '42']);
 
     const output = consoleSpy.mock.calls.flat().join('');
     expect(output).toContain('long-form description');

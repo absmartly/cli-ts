@@ -1,4 +1,5 @@
 import type { APIClient } from '../../api-client/api-client.js';
+import { formatDateTime } from '../../api-client/format-helpers.js';
 import type { CommandResult } from '../types.js';
 
 export function parseUnits(units: string[]): Array<{ unit_type_id: number; uid: string }> {
@@ -32,6 +33,25 @@ export function columnarToRows(data: unknown): Record<string, unknown>[] {
     const obj: Record<string, unknown> = {};
     for (let i = 0; i < cols.length; i++) obj[cols[i]!] = row[i];
     return obj;
+  });
+}
+
+// Timestamp columns returned by the json-layouts/json-values endpoints as epoch
+// milliseconds. Rendered as locale-/timezone-localized strings for the table,
+// matching how created_at/updated_at are shown elsewhere (see entity-summary.ts).
+const TIMESTAMP_COLUMNS = ['last_event_at', 'first_event_at'];
+
+export function formatEventRowTimestamps(
+  rows: Record<string, unknown>[]
+): Record<string, unknown>[] {
+  return rows.map((row) => {
+    const out = { ...row };
+    for (const col of TIMESTAMP_COLUMNS) {
+      if (col in out && out[col] !== null && out[col] !== undefined) {
+        out[col] = formatDateTime(out[col]);
+      }
+    }
+    return out;
   });
 }
 

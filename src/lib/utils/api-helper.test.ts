@@ -197,7 +197,10 @@ describe('API Helper', () => {
         .option('-v, --verbose', 'verbose')
         .option('--profile <name>', 'profile')
         .option('--terse', 'terse')
-        .option('--full', 'full');
+        .option('--full', 'full')
+        .option('--show <fields...>', 'show')
+        .option('--exclude <fields...>', 'exclude')
+        .option('--show-only <fields...>', 'show only');
     });
 
     it('should parse options with defaults', () => {
@@ -248,6 +251,35 @@ describe('API Helper', () => {
       const options = getGlobalOptions(mockCommand);
       expect(options.statusOnly).toBe(false);
       expect(options.showResponse).toBe(false);
+    });
+
+    it('parses show/exclude/show-only into arrays (defaulting show/exclude to [])', () => {
+      const options = getGlobalOptions(mockCommand);
+      expect(options.show).toEqual([]);
+      expect(options.exclude).toEqual([]);
+      expect(options.showOnly).toBeUndefined();
+
+      mockCommand.setOptionValue('show', ['a', 'b']);
+      mockCommand.setOptionValue('exclude', ['c']);
+      const parsed = getGlobalOptions(mockCommand);
+      expect(parsed.show).toEqual(['a', 'b']);
+      expect(parsed.exclude).toEqual(['c']);
+    });
+
+    it('rejects --show-only combined with --show', () => {
+      mockCommand.setOptionValue('showOnly', ['id']);
+      mockCommand.setOptionValue('show', ['audience']);
+      expect(() => getGlobalOptions(mockCommand)).toThrow(
+        '--show-only is mutually exclusive with --show and --exclude'
+      );
+    });
+
+    it('rejects --show-only combined with --exclude', () => {
+      mockCommand.setOptionValue('showOnly', ['id']);
+      mockCommand.setOptionValue('exclude', ['tags']);
+      expect(() => getGlobalOptions(mockCommand)).toThrow(
+        '--show-only is mutually exclusive with --show and --exclude'
+      );
     });
 
     it('should handle --no-color flag', () => {
@@ -352,6 +384,37 @@ describe('API Helper', () => {
         expect(options.output).toBe('json');
         expect(options.outputExplicit).toBe(true);
       });
+    });
+  });
+
+  describe('printFormatted', () => {
+    let logSpy: ReturnType<typeof vi.spyOn>;
+
+    beforeEach(() => {
+      logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+      logSpy.mockRestore();
+    });
+
+    it('applies global --exclude to the data before formatting', () => {
+      printFormatted([{ id: 1, secret: 'x' }], { output: 'json', exclude: ['secret'] });
+      expect(formatOutput).toHaveBeenLastCalledWith([{ id: 1 }], 'json', expect.anything());
+    });
+
+    it('applies global --show-only to the data before formatting', () => {
+      printFormatted([{ id: 1, name: 'a', secret: 'x' }], {
+        output: 'json',
+        showOnly: ['name'],
+      });
+      expect(formatOutput).toHaveBeenLastCalledWith([{ name: 'a' }], 'json', expect.anything());
+    });
+
+    it('leaves data untouched when no projection flags are set', () => {
+      const data = [{ id: 1, secret: 'x' }];
+      printFormatted(data, { output: 'json' });
+      expect(formatOutput).toHaveBeenLastCalledWith(data, 'json', expect.anything());
     });
   });
 

@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import {
   getAPIClientFromOptions,
+  addFieldProjectionHelp,
   getGlobalOptions,
   printFormatted,
   printResult,
@@ -40,22 +41,11 @@ const listCommand = createListCommand({
 const getCommand = new Command('get')
   .description('Get custom section field details')
   .argument('<id>', 'field ID', parseCustomSectionFieldId)
-  .option('--show <fields...>', 'include additional fields from API response')
-  .option('--exclude <fields...>', 'hide fields from summary')
-  .option(
-    '--show-only <fields...>',
-    'show only these fields (mutually exclusive with --show and --exclude)'
-  )
   .action(
-    withErrorHandling(async (id: CustomSectionFieldId, options) => {
+    withErrorHandling(async (id: CustomSectionFieldId) => {
       const globalOptions = getGlobalOptions(getCommand);
       const client = await getAPIClientFromOptions(globalOptions);
-      const show = (options.show as string[] | undefined) ?? [];
-      const exclude = (options.exclude as string[] | undefined) ?? [];
-      const showOnly = options.showOnly as string[] | undefined;
-      if (showOnly && (show.length > 0 || exclude.length > 0)) {
-        throw new Error('--show-only is mutually exclusive with --show and --exclude');
-      }
+      const { show = [], exclude = [], showOnly } = globalOptions;
       const result = await getCustomField(client, {
         id,
         show,
@@ -138,7 +128,7 @@ const archiveCommand = new Command('archive')
   );
 
 customFieldsCommand.addCommand(listCommand);
-customFieldsCommand.addCommand(getCommand);
+customFieldsCommand.addCommand(addFieldProjectionHelp(getCommand));
 customFieldsCommand.addCommand(createCommand);
 customFieldsCommand.addCommand(updateCommand);
 customFieldsCommand.addCommand(archiveCommand);

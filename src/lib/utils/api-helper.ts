@@ -5,6 +5,7 @@ import type { AuthConfig } from '../api/axios-adapter.js';
 import { Command } from 'commander';
 import chalk from 'chalk';
 import { formatOutput, type OutputFormat } from '../output/formatter.js';
+import { projectFields } from '../output/project-fields.js';
 import { isStdoutPiped } from './stdin.js';
 
 export async function resolveAPIKey(options: GlobalOptions): Promise<string> {
@@ -118,6 +119,13 @@ export interface GlobalOptions {
   terse?: boolean;
   full?: boolean;
   raw?: boolean;
+  // Column-projection flags, global across all commands. `show` adds extra
+  // fields where a summarized view exists (no-op otherwise); `exclude` hides
+  // fields; `showOnly` keeps only the listed fields. showOnly is mutually
+  // exclusive with show/exclude (validated in getGlobalOptions).
+  show?: string[] | undefined;
+  exclude?: string[] | undefined;
+  showOnly?: string[] | undefined;
   showRequest?: boolean;
   showResponse?: boolean;
   curl?: boolean;
@@ -156,6 +164,13 @@ export function getGlobalOptions(cmd: Command): GlobalOptions {
   const statusOnly = opts.statusOnly || false;
   const showResponse = opts.showResponse || statusOnly || false;
 
+  const show = (opts.show as string[] | undefined) ?? [];
+  const exclude = (opts.exclude as string[] | undefined) ?? [];
+  const showOnly = opts.showOnly as string[] | undefined;
+  if (showOnly && (show.length > 0 || exclude.length > 0)) {
+    throw new Error('--show-only is mutually exclusive with --show and --exclude');
+  }
+
   return {
     config: opts.config,
     apiKey: opts.apiKey,
@@ -172,6 +187,9 @@ export function getGlobalOptions(cmd: Command): GlobalOptions {
     terse: opts.terse || false,
     full: opts.full || false,
     raw: opts.raw || false,
+    show,
+    exclude,
+    showOnly,
     showRequest: opts.showRequest || false,
     showResponse,
     curl: opts.curl || false,
@@ -188,8 +206,26 @@ export function shouldOutputIdsOnly(globalOptions: GlobalOptions): boolean {
   return globalOptions.output === 'ids' || (isStdoutPiped() && !globalOptions.outputExplicit);
 }
 
+// Appends a one-line reminder to a read command's `--help` that the global
+// field-projection flags are available. They live on the root program (so they
+// don't appear under each subcommand's Options), and this keeps them
+// discoverable where they're useful. Returns the command for chaining.
+export function addFieldProjectionHelp(cmd: Command): Command {
+  return cmd.addHelpText(
+    'after',
+    '\nField selection (global): --show <fields...>, --exclude <fields...>, --show-only <fields...>\nSee `abs --help` for details.'
+  );
+}
+
 export function printFormatted(data: unknown, globalOptions: GlobalOptions): void {
-  const output = formatOutput(data, globalOptions.output, {
+  // Apply the global --exclude / --show-only key projection. This is idempotent
+  // for commands that already projected at the summary layer and is the only
+  // place projection happens for commands without a summarized view.
+  const projected = projectFields(data, {
+    exclude: globalOptions.exclude,
+    showOnly: globalOptions.showOnly,
+  });
+  const output = formatOutput(projected, globalOptions.output, {
     noColor: globalOptions.noColor ?? false,
     full: globalOptions.full ?? false,
     terse: globalOptions.terse ?? false,

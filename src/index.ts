@@ -66,6 +66,15 @@ program
   .option('--terse', 'show compact format with truncation')
   .option('--full', 'show full text without truncation')
   .option('--raw', 'show raw API response without summarizing or transforming')
+  .option(
+    '--show <fields...>',
+    'include additional fields in the output (where a summarized view exists)'
+  )
+  .option('--exclude <fields...>', 'hide fields from the output')
+  .option(
+    '--show-only <fields...>',
+    'show only these fields (mutually exclusive with --show and --exclude)'
+  )
   .option('--show-request', 'print outgoing HTTP requests to stderr')
   .option('--show-response', 'print HTTP responses to stderr (success and error)')
   .option('--curl', 'print outgoing requests as curl commands to stderr')

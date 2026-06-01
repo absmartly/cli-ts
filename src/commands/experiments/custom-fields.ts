@@ -49,26 +49,15 @@ const listCommand = addPaginationOptions(
 const getCommand = new Command('get')
   .description('Get custom section field details')
   .argument('<id>', 'field ID', parseCustomSectionFieldId)
-  .option('--show <fields...>', 'include additional fields from API response')
-  .option('--exclude <fields...>', 'hide fields from summary')
-  .option(
-    '--show-only <fields...>',
-    'show only these fields (mutually exclusive with --show and --exclude)'
-  )
   .action(
-    withErrorHandling(async (id: CustomSectionFieldId, options) => {
+    withErrorHandling(async (id: CustomSectionFieldId) => {
       const globalOptions = getGlobalOptions(getCommand);
       const client = await getAPIClientFromOptions(globalOptions);
-      const showOnly = options.showOnly as string[] | undefined;
-      if (showOnly && (options.show || options.exclude)) {
-        throw new Error('--show-only is mutually exclusive with --show and --exclude');
-      }
-
       const result = await getCustomField(client, {
         id,
-        show: options.show,
-        exclude: options.exclude,
-        showOnly,
+        show: globalOptions.show,
+        exclude: globalOptions.exclude,
+        showOnly: globalOptions.showOnly,
         raw: globalOptions.raw,
       });
       printFormatted(result.data, globalOptions);
