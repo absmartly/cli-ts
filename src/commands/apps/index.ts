@@ -8,6 +8,7 @@ import {
 } from '../../lib/utils/api-helper.js';
 import { parseApplicationId } from '../../lib/utils/validators.js';
 import { createListCommand } from '../../lib/utils/list-command.js';
+import { formatUserSummary } from '../../lib/output/formatter.js';
 import type { ApplicationId } from '../../lib/api/branded-types.js';
 import { getApp, createApp, updateApp, archiveApp } from '../../core/apps/index.js';
 
@@ -35,15 +36,7 @@ const listCommand = createListCommand({
     description: item.description,
     archived: item.archived,
     created_at: item.created_at,
-    created_by:
-      item.created_by && typeof item.created_by === 'object'
-        ? [
-            (item.created_by as Record<string, unknown>).first_name ?? '',
-            (item.created_by as Record<string, unknown>).last_name ?? '',
-          ]
-            .filter(Boolean)
-            .join(' ')
-        : item.created_by,
+    created_by: formatUserSummary(item.created_by) ?? '',
   }),
 });
 

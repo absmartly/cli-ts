@@ -8,6 +8,7 @@ import {
 } from '../../lib/utils/api-helper.js';
 import { parseTagId } from '../../lib/utils/validators.js';
 import { createListCommand } from '../../lib/utils/list-command.js';
+import { summarizeTagRow } from '../../api-client/entity-summary.js';
 import type { TagId } from '../../lib/api/branded-types.js';
 import { getTag, createTag, updateTag, deleteTag } from '../../core/tags/index.js';
 
@@ -28,6 +29,7 @@ const listCommand = createListCommand({
       archived: options.archived as boolean,
       ids: options.ids as string | undefined,
     }),
+  summarizeRow: summarizeTagRow,
 });
 
 const getCommand = new Command('get')

@@ -11,6 +11,10 @@ import {
   summarizeUserDetail,
   summarizeSegment,
   summarizeSegmentRow,
+  summarizeTagRow,
+  summarizeMetricCategoryRow,
+  summarizeNamedEntityRow,
+  summarizeWebhookRow,
 } from './entity-summary.js';
 
 describe('applyShowExclude', () => {
@@ -252,5 +256,148 @@ describe('summarizeSegmentRow', () => {
     expect(result).toHaveProperty('id', 5);
     expect(result).toHaveProperty('name', 'Mobile Users');
     expect(result).toHaveProperty('attribute', 'device');
+  });
+});
+
+describe('summarizeGoal created_by field', () => {
+  it('returns full name when first and last are present', () => {
+    const result = summarizeGoal({
+      id: 1,
+      name: 'g',
+      created_by: { first_name: 'Joe', last_name: 'Bloggs' },
+    });
+    expect(result.created_by).toBe('Joe Bloggs');
+  });
+
+  it('returns email when name parts are missing', () => {
+    const result = summarizeGoal({
+      id: 1,
+      name: 'g',
+      created_by: { email: 'joe@example.com' },
+    });
+    expect(result.created_by).toBe('joe@example.com');
+  });
+
+  it('returns empty string for null created_by', () => {
+    const result = summarizeGoal({ id: 1, name: 'g', created_by: null });
+    expect(result.created_by).toBe('');
+  });
+});
+
+describe('summarizeTagRow', () => {
+  it('curates the simple tag columns and summarizes user fields', () => {
+    expect(
+      summarizeTagRow({
+        id: 7,
+        tag: 'top-priority',
+        archived: false,
+        created_at: '2024-05-22T10:29:34.375Z',
+        created_by: { first_name: 'Joe', last_name: 'Bloggs' },
+        updated_at: null,
+        updated_by: null,
+      })
+    ).toEqual({
+      id: 7,
+      tag: 'top-priority',
+      archived: false,
+      created_at: '2024-05-22T10:29:34.375Z',
+      created_by: 'Joe Bloggs',
+      updated_at: '',
+      updated_by: '',
+    });
+  });
+
+  it('defaults archived to false when missing', () => {
+    expect(summarizeTagRow({ id: 1, tag: 't' }).archived).toBe(false);
+  });
+});
+
+describe('summarizeMetricCategoryRow', () => {
+  it('picks the useful columns and summarizes user fields', () => {
+    expect(
+      summarizeMetricCategoryRow({
+        id: 3,
+        name: 'Revenue',
+        description: 'all revenue metrics',
+        color: '#ff5733',
+        archived: false,
+        created_at: '2024-05-22T10:29:34.375Z',
+        created_by: { first_name: 'Joe', last_name: 'Bloggs' },
+        updated_at: null,
+        updated_by: null,
+      })
+    ).toEqual({
+      id: 3,
+      name: 'Revenue',
+      description: 'all revenue metrics',
+      color: '#ff5733',
+      archived: false,
+      created_at: '2024-05-22T10:29:34.375Z',
+      created_by: 'Joe Bloggs',
+      updated_at: '',
+      updated_by: '',
+    });
+  });
+});
+
+describe('summarizeNamedEntityRow', () => {
+  it('curates id/name/description/archived plus user/time audit fields', () => {
+    expect(
+      summarizeNamedEntityRow({
+        id: 4,
+        name: 'production',
+        description: 'production env',
+        archived: false,
+        created_at: '2024-05-22T10:29:34.375Z',
+        created_by: { first_name: 'Joe', last_name: 'Bloggs' },
+        updated_at: '2024-05-23T10:29:34.375Z',
+        updated_by: { email: 'admin@x' },
+      })
+    ).toEqual({
+      id: 4,
+      name: 'production',
+      description: 'production env',
+      archived: false,
+      created_at: '2024-05-22T10:29:34.375Z',
+      created_by: 'Joe Bloggs',
+      updated_at: '2024-05-23T10:29:34.375Z',
+      updated_by: 'admin@x',
+    });
+  });
+
+  it('keeps description empty if missing', () => {
+    expect(summarizeNamedEntityRow({ id: 1, name: 'x' }).description).toBe('');
+  });
+});
+
+describe('summarizeWebhookRow', () => {
+  it('curates webhook-specific columns and summarizes user fields', () => {
+    expect(
+      summarizeWebhookRow({
+        id: 2,
+        name: 'metrics-sync',
+        url: 'https://example.com/hooks/metrics',
+        enabled: true,
+        ordered: false,
+        max_retries: 5,
+        archived: false,
+        created_at: '2024-05-22T10:29:34.375Z',
+        created_by: { first_name: 'Joe', last_name: 'Bloggs' },
+        updated_at: null,
+        updated_by: null,
+      })
+    ).toEqual({
+      id: 2,
+      name: 'metrics-sync',
+      url: 'https://example.com/hooks/metrics',
+      enabled: true,
+      ordered: false,
+      max_retries: 5,
+      archived: false,
+      created_at: '2024-05-22T10:29:34.375Z',
+      created_by: 'Joe Bloggs',
+      updated_at: '',
+      updated_by: '',
+    });
   });
 });

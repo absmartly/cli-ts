@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { formatOutput, formatValue, truncateText } from './formatter.js';
+import { summarizeObjectValue, formatUserSummary } from './formatter.js';
 
 describe('Output Formatter', () => {
   describe('formatValue', () => {
@@ -62,6 +63,72 @@ describe('Output Formatter', () => {
     it('should compact-print objects when no format is set', () => {
       const obj = { filter: [{ k: 'v' }] };
       expect(formatValue(obj)).toBe(JSON.stringify(obj));
+    });
+  });
+
+  describe('formatUserSummary', () => {
+    it('returns "First Last" when both names are present', () => {
+      expect(formatUserSummary({ first_name: 'Joe', last_name: 'Bloggs' })).toBe('Joe Bloggs');
+    });
+
+    it('returns the email when names are missing', () => {
+      expect(formatUserSummary({ email: 'joe@example.com' })).toBe('joe@example.com');
+    });
+
+    it('prefers full name over email when both are present', () => {
+      expect(
+        formatUserSummary({ first_name: 'Joe', last_name: 'Bloggs', email: 'joe@example.com' })
+      ).toBe('Joe Bloggs');
+    });
+
+    it('returns just the first name if last is missing', () => {
+      expect(formatUserSummary({ first_name: 'Joe' })).toBe('Joe');
+    });
+
+    it('returns null when the value is not user-shaped', () => {
+      expect(formatUserSummary({ id: 1, name: 'thing' })).toBe(null);
+      expect(formatUserSummary({})).toBe(null);
+      expect(formatUserSummary(null)).toBe(null);
+    });
+  });
+
+  describe('summarizeObjectValue', () => {
+    it('summarizes user-shaped objects via formatUserSummary', () => {
+      expect(summarizeObjectValue({ first_name: 'Joe', last_name: 'Bloggs', id: 4 })).toBe(
+        'Joe Bloggs'
+      );
+    });
+
+    it('falls back to the name field when no user shape', () => {
+      expect(summarizeObjectValue({ id: 7, name: 'Revenue' })).toBe('Revenue');
+    });
+
+    it('falls back to the title field when there is no name', () => {
+      expect(summarizeObjectValue({ id: 9, title: 'Owner' })).toBe('Owner');
+    });
+
+    it('returns null for an empty object', () => {
+      expect(summarizeObjectValue({})).toBe(null);
+    });
+
+    it('returns null for an object with only opaque fields', () => {
+      expect(summarizeObjectValue({ foo: 1, bar: 2 })).toBe(null);
+    });
+  });
+
+  describe('formatValue (nested object handling)', () => {
+    it('summarizes nested user objects instead of JSON.stringify-ing them', () => {
+      expect(formatValue({ first_name: 'Joe', last_name: 'Bloggs' })).toBe('Joe Bloggs');
+    });
+
+    it('summarizes nested named objects instead of JSON.stringify-ing them', () => {
+      expect(formatValue({ id: 1, name: 'Revenue' })).toBe('Revenue');
+    });
+
+    it('falls back to JSON for other nested objects', () => {
+      const obj = { foo: 1, bar: 2 };
+      expect(formatValue(obj)).toBe(JSON.stringify(obj));
+      expect(formatValue(obj, { format: 'table' })).toBe(JSON.stringify(obj, null, 2));
     });
   });
 

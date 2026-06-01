@@ -53,7 +53,21 @@ describe('envs command', () => {
     await envsCommand.parseAsync(['node', 'test', 'list']);
 
     expect(mockClient.listEnvironments).toHaveBeenCalled();
-    expect(printFormatted).toHaveBeenCalledWith([{ id: 1, name: 'production' }], expect.anything());
+    expect(printFormatted).toHaveBeenCalledWith(
+      [
+        {
+          id: 1,
+          name: 'production',
+          description: '',
+          archived: false,
+          created_at: '',
+          created_by: '',
+          updated_at: '',
+          updated_by: '',
+        },
+      ],
+      expect.anything()
+    );
   });
 
   it('should get environment by id', async () => {

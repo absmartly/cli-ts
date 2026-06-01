@@ -6,6 +6,7 @@ import {
   printFormatted,
 } from '../../lib/utils/api-helper.js';
 import { resetCommand } from '../../test/helpers/command-reset.js';
+import { summarizeNamedEntityRow } from '../../api-client/entity-summary.js';
 
 vi.mock('../../lib/utils/api-helper.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../lib/utils/api-helper.js')>();
@@ -86,5 +87,19 @@ describe('roles command', () => {
     expect(mockClient.deleteRole).toHaveBeenCalledWith(1);
     const output = consoleSpy.mock.calls.flat().join(' ');
     expect(output).toContain('Role 1 deleted');
+  });
+});
+
+describe('roles list summarizer', () => {
+  it('uses summarizeNamedEntityRow for clean columns', () => {
+    expect(
+      summarizeNamedEntityRow({
+        id: 1,
+        name: 'admin',
+        description: 'all powerful',
+        archived: false,
+        created_by: { email: 'root@x' },
+      }).created_by
+    ).toBe('root@x');
   });
 });

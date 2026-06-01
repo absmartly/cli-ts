@@ -9,12 +9,29 @@ import {
 } from '../../lib/utils/api-helper.js';
 import { parseApiKeyId } from '../../lib/utils/validators.js';
 import { createListCommand } from '../../lib/utils/list-command.js';
+import { formatUserSummary } from '../../lib/output/formatter.js';
 import type { ApiKeyId } from '../../lib/api/branded-types.js';
 import { getApiKey, createApiKey, updateApiKey, deleteApiKey } from '../../core/apikeys/index.js';
 
 export const apiKeysCommand = new Command('api-keys')
   .aliases(['apikeys', 'apikey', 'api-key'])
   .description('API key commands');
+
+export function summarizeApiKeyRow(item: Record<string, unknown>): Record<string, unknown> {
+  const summarizeUser = (v: unknown) => formatUserSummary(v) ?? '';
+  return {
+    id: item.id,
+    name: item.name ?? '',
+    description: item.description ?? '',
+    key_ending: item.key_ending ?? '',
+    permissions: item.permissions ?? '',
+    used_at: item.used_at ?? '',
+    created_at: item.created_at ?? '',
+    created_by: summarizeUser(item.created_by),
+    updated_at: item.updated_at ?? '',
+    updated_by: summarizeUser(item.updated_by),
+  };
+}
 
 const listCommand = createListCommand({
   description: 'List all API keys',
@@ -28,6 +45,7 @@ const listCommand = createListCommand({
       archived: options.archived as boolean,
       ids: options.ids as string | undefined,
     }),
+  summarizeRow: summarizeApiKeyRow,
 });
 
 const getCommand = new Command('get')

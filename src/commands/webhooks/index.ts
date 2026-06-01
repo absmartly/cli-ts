@@ -8,6 +8,7 @@ import {
 } from '../../lib/utils/api-helper.js';
 import { parseWebhookId } from '../../lib/utils/validators.js';
 import { createListCommand } from '../../lib/utils/list-command.js';
+import { summarizeWebhookRow } from '../../api-client/entity-summary.js';
 import type { WebhookId } from '../../lib/api/branded-types.js';
 import { getWebhook } from '../../core/webhooks/get.js';
 import { createWebhook } from '../../core/webhooks/create.js';
@@ -31,6 +32,7 @@ const listCommand = createListCommand({
       archived: options.archived as boolean,
       ids: options.ids as string | undefined,
     }),
+  summarizeRow: summarizeWebhookRow,
 });
 
 const getCommand = new Command('get')

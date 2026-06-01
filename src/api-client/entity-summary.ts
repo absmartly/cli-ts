@@ -1,4 +1,5 @@
 import { formatDate, resolveDotPath } from './format-helpers.js';
+import { formatUserSummary } from '../lib/output/formatter.js';
 
 export function applyShowExclude(
   summary: Record<string, unknown>,
@@ -44,9 +45,7 @@ export function applyShowExclude(
 
 function formatOwner(obj: Record<string, unknown> | undefined): string {
   if (!obj) return '';
-  const first = (obj.first_name as string) ?? '';
-  const last = (obj.last_name as string) ?? '';
-  return [first, last].filter(Boolean).join(' ') || (obj.email as string) || '';
+  return formatUserSummary(obj) ?? '';
 }
 
 export function summarizeMetric(m: Record<string, unknown>): Record<string, unknown> {
@@ -227,5 +226,60 @@ export function summarizeCustomField(f: Record<string, unknown>): Record<string,
     sdk_field_name: f.sdk_field_name ?? '',
     archived: f.archived ?? false,
     created_at: formatDate(f.created_at),
+  };
+}
+
+export function summarizeTagRow(t: Record<string, unknown>): Record<string, unknown> {
+  return {
+    id: t.id,
+    tag: t.tag ?? '',
+    archived: t.archived ?? false,
+    created_at: t.created_at ?? '',
+    created_by: formatOwner(t.created_by as Record<string, unknown> | undefined),
+    updated_at: t.updated_at ?? '',
+    updated_by: formatOwner(t.updated_by as Record<string, unknown> | undefined),
+  };
+}
+
+export function summarizeMetricCategoryRow(c: Record<string, unknown>): Record<string, unknown> {
+  return {
+    id: c.id,
+    name: c.name ?? '',
+    description: c.description ?? '',
+    color: c.color ?? '',
+    archived: c.archived ?? false,
+    created_at: c.created_at ?? '',
+    created_by: formatOwner(c.created_by as Record<string, unknown> | undefined),
+    updated_at: c.updated_at ?? '',
+    updated_by: formatOwner(c.updated_by as Record<string, unknown> | undefined),
+  };
+}
+
+export function summarizeNamedEntityRow(e: Record<string, unknown>): Record<string, unknown> {
+  return {
+    id: e.id,
+    name: e.name ?? '',
+    description: e.description ?? '',
+    archived: e.archived ?? false,
+    created_at: e.created_at ?? '',
+    created_by: formatOwner(e.created_by as Record<string, unknown> | undefined),
+    updated_at: e.updated_at ?? '',
+    updated_by: formatOwner(e.updated_by as Record<string, unknown> | undefined),
+  };
+}
+
+export function summarizeWebhookRow(w: Record<string, unknown>): Record<string, unknown> {
+  return {
+    id: w.id,
+    name: w.name ?? '',
+    url: w.url ?? '',
+    enabled: w.enabled ?? false,
+    ordered: w.ordered ?? false,
+    max_retries: w.max_retries ?? 0,
+    archived: w.archived ?? false,
+    created_at: w.created_at ?? '',
+    created_by: formatOwner(w.created_by as Record<string, unknown> | undefined),
+    updated_at: w.updated_at ?? '',
+    updated_by: formatOwner(w.updated_by as Record<string, unknown> | undefined),
   };
 }
