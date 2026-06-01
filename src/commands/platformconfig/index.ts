@@ -46,7 +46,7 @@ const updateCommand = new Command('update')
     withErrorHandling(async (id: number, options) => {
       const globalOptions = getGlobalOptions(updateCommand);
       const client = await getAPIClientFromOptions(globalOptions);
-      const value = validateJSON(options.value, '--value') as Record<string, unknown>;
+      const value = validateJSON(options.value, '--value');
       const result = await updatePlatformConfig(client, { id, value });
       printResult(globalOptions, {
         message: `✓ Platform config ${id} updated`,
