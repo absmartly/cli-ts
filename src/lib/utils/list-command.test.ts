@@ -54,8 +54,10 @@ describe('createListCommand', () => {
     const optionNames = cmd.options.map((o) => o.long);
     expect(optionNames).toContain('--items');
     expect(optionNames).toContain('--page');
-    expect(optionNames).toContain('--show');
-    expect(optionNames).toContain('--exclude');
+    // --show/--exclude/--show-only are now global (declared on the root program),
+    // so they are no longer per-command options here.
+    expect(optionNames).not.toContain('--show');
+    expect(optionNames).not.toContain('--exclude');
   });
 
   it('should call fetch and printFormatted when action runs', async () => {

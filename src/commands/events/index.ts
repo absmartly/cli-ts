@@ -2,6 +2,7 @@ import { Command } from 'commander';
 import chalk from 'chalk';
 import {
   getAPIClientFromOptions,
+  addFieldProjectionHelp,
   getGlobalOptions,
   printFormatted,
   printResult,
@@ -10,6 +11,7 @@ import {
 import { parseDateFlagOrUndefined } from '../../lib/utils/date-parser.js';
 import {
   columnarToRows,
+  formatEventRowTimestamps,
   listEvents as coreListEvents,
   listEventsHistory as coreListEventsHistory,
   getEventUnitData as coreGetEventUnitData,
@@ -202,7 +204,10 @@ const jsonValuesCommand = new Command('json-values')
       const filtered = filterColumnarRows(result.data, 'value', {
         match: options.match as string | undefined,
       });
-      printFormatted(globalOptions.raw ? filtered : columnarToRows(filtered), globalOptions);
+      printFormatted(
+        globalOptions.raw ? filtered : formatEventRowTimestamps(columnarToRows(filtered)),
+        globalOptions
+      );
     })
   );
 
@@ -239,14 +244,17 @@ const jsonLayoutsCommand = new Command('json-layouts')
         topLevel: options.topLevel as boolean | undefined,
         maxDepth: options.maxDepth as number | undefined,
       });
-      printFormatted(globalOptions.raw ? filtered : columnarToRows(filtered), globalOptions);
+      printFormatted(
+        globalOptions.raw ? filtered : formatEventRowTimestamps(columnarToRows(filtered)),
+        globalOptions
+      );
     })
   );
 
-eventsCommand.addCommand(listCommand);
+eventsCommand.addCommand(addFieldProjectionHelp(listCommand));
 eventsCommand.addCommand(historyCommand);
 eventsCommand.addCommand(unitDataCommand);
 eventsCommand.addCommand(deleteUnitDataCommand);
-eventsCommand.addCommand(jsonValuesCommand);
-eventsCommand.addCommand(jsonLayoutsCommand);
+eventsCommand.addCommand(addFieldProjectionHelp(jsonValuesCommand));
+eventsCommand.addCommand(addFieldProjectionHelp(jsonLayoutsCommand));
 eventsCommand.addCommand(summaryCommand);

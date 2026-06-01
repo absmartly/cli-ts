@@ -1,4 +1,5 @@
 import { Command } from 'commander';
+import { addFieldProjectionHelp } from '../../lib/utils/api-helper.js';
 import { listCommand } from './list.js';
 import { getCommand } from './get.js';
 import { analyzeCommand } from './analyze.js';
@@ -72,5 +73,9 @@ export const experimentsCommand = new Command('experiments')
   .alias('features')
   .alias('feature')
   .description('Experiment and feature flag commands');
+
+// These read commands honor the global --show/--exclude/--show-only flags;
+// surface that on their --help (the flags live on the root program).
+for (const cmd of [listCommand, getCommand, customFieldsCommand]) addFieldProjectionHelp(cmd);
 
 for (const cmd of subcommands) experimentsCommand.addCommand(cmd);

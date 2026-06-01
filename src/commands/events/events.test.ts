@@ -6,6 +6,7 @@ import {
   printFormatted,
 } from '../../lib/utils/api-helper.js';
 import { resetCommand } from '../../test/helpers/command-reset.js';
+import { formatDateTime } from '../../api-client/format-helpers.js';
 
 vi.mock('../../lib/utils/api-helper.js', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../../lib/utils/api-helper.js')>();
@@ -337,7 +338,11 @@ describe('events command', () => {
       Record<string, unknown>
     >;
     expect(Array.isArray(printed)).toBe(true);
-    expect(printed[0]).toEqual({ key: 'currency', value_type: 'string', last_event_at: 1 });
+    expect(printed[0]).toEqual({
+      key: 'currency',
+      value_type: 'string',
+      last_event_at: formatDateTime(1),
+    });
   });
 
   it('keeps the columnar shape for json-layouts with --raw', async () => {

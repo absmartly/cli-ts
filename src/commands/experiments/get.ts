@@ -20,15 +20,6 @@ export const getCommand = new Command('get')
   .description('Get experiment details')
   .argument('<id>', 'experiment ID or name', parseExperimentIdOrName)
   .option('--activity', 'include activity notes in the output')
-  .option(
-    '--show <fields...>',
-    'include additional fields in summary (e.g. --show audience archived)'
-  )
-  .option('--exclude <fields...>', 'hide fields from summary (e.g. --exclude owners tags)')
-  .option(
-    '--show-only <fields...>',
-    'show only these fields (mutually exclusive with --show and --exclude)'
-  )
   .option('--embed-screenshots', 'embed screenshots as base64 data URIs in template output')
   .option('--screenshots-dir <path>', 'save screenshots to directory in template output')
   .option(
@@ -42,10 +33,9 @@ export const getCommand = new Command('get')
       const client = await getAPIClientFromOptions(globalOptions);
       const id = await client.resolveExperimentId(nameOrId);
 
-      const showOnly = options.showOnly as string[] | undefined;
-      if (showOnly && (options.show || options.exclude)) {
-        throw new Error('--show-only is mutually exclusive with --show and --exclude');
-      }
+      const show = globalOptions.show ?? [];
+      const exclude = globalOptions.exclude ?? [];
+      const showOnly = globalOptions.showOnly;
 
       // Template output mode - stays in wrapper (complex formatting)
       if (globalOptions.output === 'template') {
@@ -67,8 +57,8 @@ export const getCommand = new Command('get')
         const experiment = await client.getExperiment(id);
         const exp = experiment as Record<string, unknown>;
 
-        const userShow = (options.show as string[] | undefined) ?? [];
-        const userExclude = (options.exclude as string[] | undefined) ?? [];
+        const userShow = show;
+        const userExclude = exclude;
 
         const customFieldEntries =
           (exp.custom_section_field_values as Array<Record<string, unknown>> | undefined) ?? [];
@@ -321,8 +311,8 @@ export const getCommand = new Command('get')
       const result = await getExperiment(client, {
         experimentId: id,
         activity: options.activity,
-        show: options.show,
-        exclude: options.exclude,
+        show,
+        exclude,
         showOnly,
         raw: globalOptions.raw,
       });

@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import {
   getAPIClientFromOptions,
+  addFieldProjectionHelp,
   getGlobalOptions,
   printFormatted,
   printResult,
@@ -40,22 +41,11 @@ const listCommand = createListCommand({
 const getCommand = new Command('get')
   .description('Get segment details')
   .argument('<id>', 'segment ID', parseSegmentId)
-  .option('--show <fields...>', 'include additional fields from API response')
-  .option('--exclude <fields...>', 'hide fields from summary')
-  .option(
-    '--show-only <fields...>',
-    'show only these fields (mutually exclusive with --show and --exclude)'
-  )
   .action(
-    withErrorHandling(async (id: SegmentId, options) => {
+    withErrorHandling(async (id: SegmentId) => {
       const globalOptions = getGlobalOptions(getCommand);
       const client = await getAPIClientFromOptions(globalOptions);
-      const show = (options.show as string[] | undefined) ?? [];
-      const exclude = (options.exclude as string[] | undefined) ?? [];
-      const showOnly = options.showOnly as string[] | undefined;
-      if (showOnly && (show.length > 0 || exclude.length > 0)) {
-        throw new Error('--show-only is mutually exclusive with --show and --exclude');
-      }
+      const { show = [], exclude = [], showOnly } = globalOptions;
       const result = await getSegment(client, {
         id,
         show,
@@ -121,7 +111,7 @@ const deleteCommand = new Command('delete')
   );
 
 segmentsCommand.addCommand(listCommand);
-segmentsCommand.addCommand(getCommand);
+segmentsCommand.addCommand(addFieldProjectionHelp(getCommand));
 segmentsCommand.addCommand(createCommand);
 segmentsCommand.addCommand(updateCommand);
 segmentsCommand.addCommand(deleteCommand);

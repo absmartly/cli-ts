@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import {
   getAPIClientFromOptions,
+  addFieldProjectionHelp,
   getGlobalOptions,
   printFormatted,
   printResult,
@@ -37,22 +38,11 @@ const listCommand = createListCommand({
 const getCommand = new Command('get')
   .description('Get team details')
   .argument('<id>', 'team ID', parseTeamId)
-  .option('--show <fields...>', 'include additional fields from API response')
-  .option('--exclude <fields...>', 'hide fields from summary')
-  .option(
-    '--show-only <fields...>',
-    'show only these fields (mutually exclusive with --show and --exclude)'
-  )
   .action(
-    withErrorHandling(async (id: TeamId, options) => {
+    withErrorHandling(async (id: TeamId) => {
       const globalOptions = getGlobalOptions(getCommand);
       const client = await getAPIClientFromOptions(globalOptions);
-      const show = (options.show as string[] | undefined) ?? [];
-      const exclude = (options.exclude as string[] | undefined) ?? [];
-      const showOnly = options.showOnly as string[] | undefined;
-      if (showOnly && (show.length > 0 || exclude.length > 0)) {
-        throw new Error('--show-only is mutually exclusive with --show and --exclude');
-      }
+      const { show = [], exclude = [], showOnly } = globalOptions;
       const result = await getTeam(client, { id, show, exclude, showOnly, raw: globalOptions.raw });
       printFormatted(result.data, globalOptions);
     })
@@ -109,7 +99,7 @@ const archiveCommand = new Command('archive')
 import { membersCommand } from './members.js';
 
 teamsCommand.addCommand(listCommand);
-teamsCommand.addCommand(getCommand);
+teamsCommand.addCommand(addFieldProjectionHelp(getCommand));
 teamsCommand.addCommand(createCommand);
 teamsCommand.addCommand(updateCommand);
 teamsCommand.addCommand(archiveCommand);
