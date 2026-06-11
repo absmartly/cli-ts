@@ -25,3 +25,21 @@ export function printFilteredFooter(count: number, outputFormat?: string): void 
   if (outputFormat === 'json' || outputFormat === 'yaml') return;
   console.log(chalk.gray(`${count} result${count === 1 ? '' : 's'} (filtered).`));
 }
+
+export function printMetricFooter(
+  total: number,
+  metricName: string,
+  metricId: number,
+  page: number,
+  items: number,
+  outputFormat?: string
+): void {
+  if (outputFormat === 'json' || outputFormat === 'yaml') return;
+  const verb = total === 1 ? 'experiment uses' : 'experiments use';
+  let footer = `${total} ${verb} metric "${metricName}" (#${metricId})`;
+  if (total > items) {
+    const totalPages = Math.max(1, Math.ceil(total / items));
+    footer += ` — page ${page}/${totalPages}`;
+  }
+  console.log(chalk.gray(footer));
+}

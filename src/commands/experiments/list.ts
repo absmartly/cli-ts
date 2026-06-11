@@ -6,7 +6,7 @@ import {
   shouldOutputIdsOnly,
   withErrorHandling,
 } from '../../lib/utils/api-helper.js';
-import { printPaginationFooter } from '../../lib/utils/pagination.js';
+import { printPaginationFooter, printMetricFooter } from '../../lib/utils/pagination.js';
 import { getDefaultType } from './default-type.js';
 import { listExperiments } from '../../core/experiments/list.js';
 
@@ -33,6 +33,14 @@ export const listCommand = new Command('list')
   )
   .option('--iterations <n>', 'filter by iteration count', (v) => parseInt(v, 10))
   .option('--iterations-of <id>', 'show all iterations of experiment ID', (v) => parseInt(v, 10))
+  .option(
+    '--metric <id|name>',
+    'find experiments using this metric (by ID or name) in any role; scans all pages'
+  )
+  .option(
+    '--metric-role <roles>',
+    'with --metric, limit to roles: primary,secondary,guardrail,exploratory (comma-separated; default: all)'
+  )
   .option('--created-after <timestamp>', 'filter experiments created after timestamp')
   .option('--created-before <timestamp>', 'filter experiments created before timestamp')
   .option('--started-after <timestamp>', 'filter experiments started after timestamp')
@@ -82,11 +90,23 @@ export const listCommand = new Command('list')
         printFormatted(result.rows, globalOptions);
       }
 
-      printPaginationFooter(
-        result.data.length,
-        options.items,
-        options.page,
-        globalOptions.output as string
-      );
+      const metricPagination = result.pagination?.metric;
+      if (metricPagination) {
+        printMetricFooter(
+          result.pagination!.total ?? result.data.length,
+          metricPagination.name,
+          metricPagination.id,
+          options.page,
+          options.items,
+          globalOptions.output as string
+        );
+      } else {
+        printPaginationFooter(
+          result.data.length,
+          options.items,
+          options.page,
+          globalOptions.output as string
+        );
+      }
     })
   );
