@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Command } from 'commander';
-import { addPaginationOptions, printPaginationFooter } from './pagination.js';
+import { addPaginationOptions, printPaginationFooter, printMetricFooter } from './pagination.js';
 
 describe('addPaginationOptions', () => {
   it('should add --items and --page options to a Command', () => {
@@ -47,5 +47,43 @@ describe('printPaginationFooter', () => {
     const output = logSpy.mock.calls[0][0] as string;
     expect(output).toContain('5 results');
     expect(output).not.toContain('Next:');
+  });
+});
+
+describe('printMetricFooter', () => {
+  let logSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    logSpy.mockRestore();
+  });
+
+  it('summarizes the total and the metric when everything fits on one page', () => {
+    printMetricFooter(3, 'Revenue', 42, 1, 20);
+    const output = logSpy.mock.calls[0]![0] as string;
+    expect(output).toContain('3 experiments use metric "Revenue" (#42)');
+    expect(output).not.toContain('page');
+  });
+
+  it('uses the singular form for a single match', () => {
+    printMetricFooter(1, 'Revenue', 42, 1, 20);
+    const output = logSpy.mock.calls[0]![0] as string;
+    expect(output).toContain('1 experiment use'.replace('use', 'uses'));
+    expect(output).toContain('1 experiment uses metric "Revenue" (#42)');
+  });
+
+  it('shows the page indicator when matches span multiple pages', () => {
+    printMetricFooter(45, 'Revenue', 42, 2, 20);
+    const output = logSpy.mock.calls[0]![0] as string;
+    expect(output).toContain('page 2/3');
+  });
+
+  it('stays silent for json/yaml output', () => {
+    printMetricFooter(3, 'Revenue', 42, 1, 20, 'json');
+    printMetricFooter(3, 'Revenue', 42, 1, 20, 'yaml');
+    expect(logSpy).not.toHaveBeenCalled();
   });
 });

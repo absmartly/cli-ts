@@ -186,6 +186,11 @@ abs experiments list --state running --items 50 --sort created_at --desc
 abs experiments list --app my-app --search "checkout" --page 2
 abs experiments list --created-after 2025-01-01 --tags v1,mobile
 
+# Find experiments that use a specific metric (by ID or name), in any role
+abs experiments list --metric "Revenue"
+abs experiments list --metric 42 --metric-role guardrail,primary
+abs experiments list --metric 42 --type test,feature --state running -o ids
+
 # Customize columns
 abs experiments list --show experiment_report archived   # add extra columns
 abs experiments list --exclude primary_metric owner      # hide columns

@@ -10,6 +10,12 @@ import {
   resolveApplicationIds,
   resolveUnitTypeIds,
 } from '../resolve.js';
+import {
+  resolveMetricId,
+  parseMetricRoles,
+  fetchAllExperiments,
+  filterExperimentsByMetric,
+} from './metric-filter.js';
 
 export interface ListExperimentsParams {
   state?: string;
@@ -27,6 +33,8 @@ export interface ListExperimentsParams {
   significance?: string;
   iterations?: number;
   iterationsOf?: number;
+  metric?: string;
+  metricRole?: string;
   createdAfter?: string;
   createdBefore?: string;
   startedAfter?: string;
@@ -135,10 +143,44 @@ export async function listExperiments(
     ...(params.significance && { significance: params.significance }),
   } as ListOptions;
 
+  const excludeFields = params.exclude ?? [];
+
+  if (params.metric) {
+    const { id: metricId, name: metricName } = await resolveMetricId(client, params.metric);
+    const roles = parseMetricRoles(params.metricRole);
+
+    // Scan all pages (ignoring the display page/items) then filter client-side,
+    // since the API has no server-side metric filter.
+    const { page: _page, items: _items, ...scanOptions } = listOptions;
+    const allExperiments = await fetchAllExperiments(client, scanOptions as ListOptions);
+    const matched = filterExperimentsByMetric(allExperiments, metricId, roles);
+
+    const start = (params.page - 1) * params.items;
+    const pageItems = matched.slice(start, start + params.items);
+
+    const metricExtraFields = [...(params.show ?? []), 'metric_role'];
+    const rows = params.raw
+      ? (pageItems as unknown[])
+      : pageItems.map((e) =>
+          summarizeExperimentRow(e, metricExtraFields, excludeFields, params.showOnly)
+        );
+
+    return {
+      data: pageItems as unknown[],
+      rows: rows as Record<string, unknown>[],
+      pagination: {
+        page: params.page,
+        items: params.items,
+        hasMore: start + params.items < matched.length,
+        total: matched.length,
+        metric: { id: Number(metricId), name: metricName },
+      },
+    };
+  }
+
   const experiments = await client.listExperiments(listOptions);
 
   const extraFields = params.show ?? [];
-  const excludeFields = params.exclude ?? [];
 
   const rows = params.raw
     ? (experiments as unknown[])
